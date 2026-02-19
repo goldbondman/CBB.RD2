@@ -127,15 +127,12 @@ def add_per_game_metrics(df: pd.DataFrame) -> pd.DataFrame:
     # Games with OT will show slightly lower pace — flag in is_ot column.
     df["pace"] = (poss / REGULATION_MINUTES * 40).round(1)
 
-    # ── Adjusted pace = team pace normalized to league average ──
-    # adj_pace = pace * (LEAGUE_AVG_PACE / team_pace)
-    # This re-scales each team's pace to what it would be at a neutral 70-poss tempo.
-    df["adj_pace"] = (
-        df["pace"].where(df["pace"] > 0)
-        .apply(lambda p: round(p * (LEAGUE_AVG_PACE / p), 1) if pd.notna(p) and p > 0 else np.nan)
-    )
-    # Note: adj_pace here is always LEAGUE_AVG_PACE until opponent data is joined.
-    # True adjusted pace (accounts for opponent pace) is computed in rolling section.
+    # ── Adjusted pace ──
+    # True adj_pace requires opponent pace data and is computed in espn_sos.py
+    # after the opponent join. Formula:
+    #   adj_pace = (team_pace / avg(team_pace, opp_pace)) * LEAGUE_AVG_PACE
+    # We do NOT compute a placeholder here since it would always equal LEAGUE_AVG_PACE
+    # and would be misleading. See espn_sos.py for the real computation.
 
     return df
 
