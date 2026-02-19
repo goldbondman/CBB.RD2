@@ -320,6 +320,11 @@ def compute_resume_score(df: pd.DataFrame, quad_df: pd.DataFrame) -> pd.Series:
         return pd.Series(np.nan, index=df.index, name="resume_score")
 
     snap = df.set_index("team_id") if "team_id" in df.columns else df
+    # Snapshot may already carry quad columns from prior runs; drop overlaps so
+    # fresh quad_df values always win and join stays deterministic.
+    overlap_cols = [c for c in quad_df.columns if c in snap.columns]
+    if overlap_cols:
+        snap = snap.drop(columns=overlap_cols, errors="ignore")
     merged = snap.join(quad_df, how="left")
 
     # Raw components
