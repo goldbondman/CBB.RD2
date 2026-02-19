@@ -68,6 +68,15 @@ def add_player_per_game_metrics(df: pd.DataFrame,
     """
     df = df.copy()
 
+    # ── Normalize blank counting columns to 0 ──────────────────────────────────
+    # ESPN returns empty string (not "0") for players with 0 attempts.
+    # Fill these in the dataframe so the raw columns show 0 in the output CSV
+    # and so rolling windows in add_player_rolling() get clean numeric data.
+    for _col_name in ["fgm", "fga", "tpm", "tpa", "ftm", "fta",
+                      "orb", "drb", "plus_minus"]:
+        if _col_name in df.columns:
+            df[_col_name] = pd.to_numeric(df[_col_name], errors="coerce").fillna(0)
+
     fgm = _col(df, "fgm", 0); fga = _col(df, "fga", 0)
     tpm = _col(df, "tpm", 0); tpa = _col(df, "tpa", 0)
     ftm = _col(df, "ftm", 0); fta = _col(df, "fta", 0)
@@ -152,15 +161,18 @@ def add_player_rolling(df: pd.DataFrame,
 
     all_metrics = [m for m in COUNTING_STATS + DERIVED_METRICS if m in df.columns]
 
+    # Counting stats: fill blank/NaN with 0 (0 FGM means they attempted none, not missing)
+    # Derived metrics: keep NaN (NaN means DNP or insufficient data — don't impute)
+    counting_set = set(COUNTING_STATS)
+
     for window in windows:
         for metric in all_metrics:
             col_name = f"{metric}_l{window}"
-            # Replace values in DNP rows with NaN before rolling so they
-            # don't dilute the window, but their row still gets the rolling value
-            active_vals = pd.to_numeric(df[metric], errors="coerce").where(active)
+            is_counting = metric in counting_set
             df[col_name] = df.groupby("athlete_id")[metric].transform(
-                lambda s: (
+                lambda s, _is_counting=is_counting: (
                     pd.to_numeric(s, errors="coerce")
+                    .fillna(0 if _is_counting else float("nan"))  # 0 for counts, NaN for rates
                     .where(active.reindex(s.index, fill_value=True))
                     .shift(1)
                     .rolling(window, min_periods=min(MIN_PERIODS, window))
@@ -170,16 +182,18 @@ def add_player_rolling(df: pd.DataFrame,
             )
 
     # ── Shooting variance ──
-    for metric, col_name in [
-        ("efg_pct",   "efg_std_l10"),
-        ("three_pct", "three_pct_std_l10"),
-        ("pts",       "pts_std_l10"),
-        ("min",       "min_std_l10"),
+    # Variance metrics: pts/min are counting (fillna 0), rates keep NaN
+    for metric, col_name, fill_zero in [
+        ("efg_pct",   "efg_std_l10",       False),  # rate — keep NaN for DNP
+        ("three_pct", "three_pct_std_l10", False),  # rate — keep NaN for DNP
+        ("pts",       "pts_std_l10",       True),   # count — 0 if didn't score
+        ("min",       "min_std_l10",       True),   # count — 0 if DNP
     ]:
         if metric in df.columns:
             df[col_name] = df.groupby("athlete_id")[metric].transform(
-                lambda s: (
+                lambda s, _fill=fill_zero: (
                     pd.to_numeric(s, errors="coerce")
+                    .fillna(0 if _fill else float("nan"))
                     .where(active.reindex(s.index, fill_value=True))
                     .shift(1)
                     .rolling(10, min_periods=MIN_PERIODS)
