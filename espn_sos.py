@@ -275,6 +275,25 @@ def _add_context_metrics(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _add_adjusted_pace(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    True adjusted pace using opponent pace data.
+    adj_pace = (team_pace / avg(team_pace, opp_avg_pace_season)) * LEAGUE_AVG_PACE
+
+    Accounts for opponent tempo — a team that plays fast against slow opponents
+    is genuinely faster than one that plays fast only because opponents push pace.
+    """
+    if "pace" not in df.columns or "opp_avg_pace_season" not in df.columns:
+        return df
+
+    team_pace = pd.to_numeric(df["pace"], errors="coerce")
+    opp_pace  = pd.to_numeric(df["opp_avg_pace_season"], errors="coerce")
+    avg_pace  = (team_pace + opp_pace) / 2
+
+    df["adj_pace"] = (team_pace / avg_pace.replace(0, np.nan) * LEAGUE_AVG_PACE).round(1)
+    return df
+
+
 def _add_adjusted_ratings(df: pd.DataFrame) -> pd.DataFrame:
     """
     Compute opponent-adjusted efficiency ratings.
@@ -331,6 +350,7 @@ def compute_sos_metrics(df: pd.DataFrame) -> pd.DataFrame:
     df = _build_allowed_forced_lookup(df)
     df = _add_sos_columns(df)
     df = _add_context_metrics(df)
+    df = _add_adjusted_pace(df)
     df = _add_adjusted_ratings(df)
 
     # Clean up internal sort column
