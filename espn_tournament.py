@@ -133,7 +133,9 @@ def add_tournament_dna(df: pd.DataFrame) -> pd.DataFrame:
     # ── Z-score each component within this dataset population ──
     def _zscore(s: pd.Series) -> pd.Series:
         mu, sigma = s.mean(), s.std()
-        return (s - mu) / sigma.replace(0, np.nan) if sigma else s * 0
+        if pd.isna(sigma) or sigma == 0:
+            return pd.Series(0.0, index=s.index)
+        return (s - mu) / sigma
 
     z_efg   = _zscore(efg_diff)
     z_tov   = _zscore(tov_diff)
