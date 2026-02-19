@@ -1,0 +1,225 @@
+name: CBB Predictions — Tomorrow's Games
+
+on:
+  # ── Automatic: runs after the data pipeline completes ──────────────────────
+  # This workflow is triggered by the data pipeline completing, NOT on its
+  # own schedule. That ensures predictions always use the freshest data.
+  workflow_run:
+    workflows: ["Update ESPN CBB Data"]
+    types: [completed]
+
+  # ── Manual override: run on demand with optional date/game-type params ──────
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Target date YYYYMMDD (default: tomorrow)"
+        required: false
+        default: ""
+      game_type:
+        description: "Game type for UWS context"
+        required: false
+        default: "regular"
+        type: choice
+        options:
+          - regular
+          - conf_tournament
+          - ncaa_r1
+          - ncaa_r2
+      decay:
+        description: "Game weight decay function"
+        required: false
+        default: "smooth"
+        type: choice
+        options:
+          - smooth
+          - plateau
+          - simple
+
+permissions:
+  contents: write     # needed to push predictions CSV back to repo (optional)
+  actions:  read      # needed to download artifacts from the triggering workflow
+
+jobs:
+  predict:
+    # ── Only run if the triggering workflow succeeded (or if manually triggered) ──
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # ── 2. Restore CSVs from the pipeline run (the data we need) ─────────────
+      #      If triggered by workflow_run, download from that specific run.
+      #      If triggered manually, pull from the most recent data pipeline run.
+      - name: Download ESPN CSVs (from triggering pipeline run)
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name:    espn-cbb-csvs
+          path:    data/
+          run-id:  ${{ github.event.workflow_run.id }}
+        continue-on-error: false   # Fail hard — we need the data
+
+      - name: Download ESPN CSVs (manual trigger — latest available)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/download-artifact@v4
+        with:
+          name:              espn-cbb-csvs
+          path:              data/
+          github-token:      ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true   # OK to warn — may be running without prior data
+
+      # ── 3. Sanity check: make sure we have the data we need ──────────────────
+      - name: Verify data files exist
+        run: |
+          python - <<'PY'
+          import pathlib, sys
+          required = [
+              "data/team_game_weighted.csv",   # richest — runner prefers this
+              "data/games.csv",                # needed for schedule lookup
+          ]
+          fallbacks = [
+              "data/team_game_metrics.csv",    # runner falls back to this
+              "data/team_game_logs.csv",       # last resort
+          ]
+          ok = True
+          for f in required:
+              p = pathlib.Path(f)
+              if p.exists():
+                  import pandas as pd
+                  size = p.stat().st_size
+                  rows = len(pd.read_csv(p))
+                  print(f"[OK]   {f}: {rows} rows ({size:,} bytes)")
+              else:
+                  # Check if a fallback covers it
+                  fallback_found = any(pathlib.Path(fb).exists() for fb in fallbacks)
+                  if fallback_found and "weighted" in f:
+                      print(f"[WARN] {f} not found — runner will use fallback")
+                  else:
+                      print(f"[FAIL] {f} missing — cannot run predictions")
+                      ok = False
+          if not ok:
+              sys.exit(1)
+          PY
+
+      # ── 4. Set up Python ─────────────────────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # ── 5. Install dependencies ───────────────────────────────────────────────
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # ── 6. Run predictions ────────────────────────────────────────────────────
+      #      DATE defaults to empty string → runner resolves to tomorrow in PST
+      - name: Run predictions for tomorrow's games
+        run: |
+          python espn_prediction_runner.py \
+            --date       "${{ github.event.inputs.date || '' }}" \
+            --game-type  "${{ github.event.inputs.game_type || 'regular' }}" \
+            --decay      "${{ github.event.inputs.decay || 'smooth' }}"
+        env:
+          # Inherit any env vars the pipeline uses (API keys, etc.)
+          TZ: "America/Los_Angeles"
+
+      # ── 7. Validate output ────────────────────────────────────────────────────
+      - name: Validate prediction output
+        run: |
+          python - <<'PY'
+          import pandas as pd, pathlib, sys
+
+          latest = pathlib.Path("data/predictions_latest.csv")
+          if not latest.exists():
+              print("[FAIL] predictions_latest.csv not found")
+              sys.exit(1)
+
+          df = pd.read_csv(latest)
+          if df.empty:
+              print("[WARN] predictions_latest.csv is empty — no games scheduled?")
+              sys.exit(0)   # Not a failure — could be no games tomorrow
+
+          print(f"[OK]   {len(df)} game predictions written")
+          print(f"[OK]   Columns: {len(df.columns)}")
+
+          # Basic sanity: spreads should be within reasonable range
+          spreads = df["pred_spread"].dropna()
+          if (spreads.abs() > 40).any():
+              print(f"[WARN] Outlier spreads detected: {spreads[spreads.abs() > 40].values}")
+
+          # Check confidence scores
+          confs = df["model_confidence"].dropna()
+          print(f"[OK]   Confidence range: {confs.min():.1%} – {confs.max():.1%}")
+
+          # Print edge alerts
+          edges = df[df.get("edge_flag", pd.Series(0, index=df.index)) == 1]
+          if not edges.empty:
+              print(f"\n⚡ {len(edges)} EDGE ALERT(s) found:")
+              for _, row in edges.iterrows():
+                  print(f"   {row['home_team']} vs {row['away_team']}: "
+                        f"pred {row['pred_spread']:+.1f} vs line {row.get('spread_line', 'N/A')}")
+
+          # Print UWS upset alerts if available
+          if "uws_uws_total" in df.columns:
+              alerts = df[pd.to_numeric(df["uws_uws_total"], errors="coerce") >= 55]
+              if not alerts.empty:
+                  print(f"\n🚨 {len(alerts)} STRONG UPSET ALERT(s):")
+                  for _, row in alerts.iterrows():
+                      print(f"   {row['home_team']} vs {row['away_team']}: "
+                            f"UWS {row['uws_uws_total']:.0f}/70")
+
+          print("\n[OK]   Validation passed")
+          PY
+
+      # ── 8. Show full output table in CI logs ──────────────────────────────────
+      - name: Display prediction summary
+        if: always()
+        run: |
+          python - <<'PY'
+          import pandas as pd, pathlib
+          p = pathlib.Path("data/predictions_latest.csv")
+          if not p.exists():
+              print("No predictions file found")
+          else:
+              df = pd.read_csv(p)
+              if df.empty:
+                  print("No predictions (empty file)")
+              else:
+                  cols = ["home_team", "away_team", "pred_spread", "pred_total",
+                          "spread_line", "spread_diff_vs_line", "model_confidence",
+                          "edge_flag"]
+                  available = [c for c in cols if c in df.columns]
+                  pd.set_option("display.max_rows",    100)
+                  pd.set_option("display.max_columns", 20)
+                  pd.set_option("display.width",       120)
+                  print(df[available].to_string(index=False))
+          PY
+
+      # ── 9. Upload prediction CSV as artifact ──────────────────────────────────
+      - name: Upload predictions artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name:              cbb-predictions-${{ github.run_id }}
+          path:              data/predictions_*.csv
+          retention-days:    30
+          if-no-files-found: warn
+
+      # ── 10. (OPTIONAL) Commit predictions back to repo ────────────────────────
+      #       Uncomment this block if you want predictions committed to the repo
+      #       so they're browsable in GitHub. Requires contents: write permission
+      #       (already set above).
+      #
+      # - name: Commit predictions to repo
+      #   run: |
+      #     git config user.name  "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add data/predictions_*.csv data/predictions_latest.csv
+      #     git diff --staged --quiet || git commit -m "predictions: $(date +'%Y-%m-%d')"
+      #     git push
