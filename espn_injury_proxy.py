@@ -76,6 +76,39 @@ def _z_score(s: pd.Series, w: int) -> pd.Series:
     return ((s - mean) / std).round(2)
 
 
+def _minutes_to_float(s: pd.Series) -> pd.Series:
+    """
+    Convert ESPN minutes field to numeric minutes (float).
+
+    Handles:
+      - "12" -> 12.0
+      - "12.5" -> 12.5
+      - "12:34" -> 12 + 34/60
+      - "DNP", "--", "", NaN -> 0.0
+    """
+    if s is None:
+        return pd.Series(dtype="float64")
+
+    s = s.astype("string")
+
+    # mm:ss format
+    mmss = s.str.match(r"^\s*\d+\s*:\s*\d+\s*$", na=False)
+    out = pd.Series(np.nan, index=s.index, dtype="float64")
+
+    if mmss.any():
+        parts = s[mmss].str.split(":", n=1, expand=True)
+        mins = pd.to_numeric(parts[0].str.strip(), errors="coerce")
+        secs = pd.to_numeric(parts[1].str.strip(), errors="coerce")
+        out.loc[mmss] = mins + (secs / 60.0)
+
+    # numeric-ish fallback (including "0", "12.5")
+    not_mmss = ~mmss
+    if not_mmss.any():
+        out.loc[not_mmss] = pd.to_numeric(s[not_mmss].str.strip(), errors="coerce")
+
+    return out.fillna(0.0)
+
+
 # ── Step 1: Build full player appearance history ──────────────────────────────
 
 def _build_appearance_history(df: pd.DataFrame,
@@ -96,11 +129,20 @@ def _build_appearance_history(df: pd.DataFrame,
     df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
     df = df.sort_values(["athlete_id", "_sort_dt"])
 
+    # Normalize minutes to numeric once, and use everywhere (prevents dtype crashes)
+    min_col = "min" if "min" in df.columns else ("minutes" if "minutes" in df.columns else None)
+    if min_col is None:
+        df["_min_num"] = 0.0
+    else:
+        df["_min_num"] = _minutes_to_float(df[min_col])
+
     # Mark actual appearances (played with real stats)
+    dnp = df.get("did_not_play", False)
+    dnp = dnp.astype(bool) if isinstance(dnp, pd.Series) else pd.Series(False, index=df.index)
+
     df["appeared"] = (
-        ~df["did_not_play"].astype(bool) &
-        df["min"].notna() &
-        (df["min"] > 0)
+        (~dnp) &
+        (df["_min_num"] > 0)
     ).astype(int)
 
     # Game number per player (1 = first game they appear in data)
@@ -134,8 +176,8 @@ def add_availability_flags(df: pd.DataFrame) -> pd.DataFrame:
         df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
     df = df.sort_values(["athlete_id", "_sort_dt"])
 
-    did_not_play = df["did_not_play"].astype(bool)
-    appeared     = df.get("appeared", (~did_not_play).astype(int))
+    did_not_play = df.get("did_not_play", False)
+    did_not_play = did_not_play.astype(bool) if isinstance(did_not_play, pd.Series) else pd.Series(False, index=df.index)
 
     # DNP this game
     df["dnp_flag"] = did_not_play.astype(int)
@@ -168,11 +210,14 @@ def add_availability_flags(df: pd.DataFrame) -> pd.DataFrame:
     ).astype(int)
 
     # Starter → bench flag
-    df["starter_to_bench"] = (
-        (df.groupby("athlete_id")["starter"].transform(
-            lambda s: s.shift(1).rolling(3, min_periods=2).mean()) >= 0.67) &
-        (~df["starter"].astype(bool))
-    ).astype(int)
+    if "starter" in df.columns:
+        df["starter_to_bench"] = (
+            (df.groupby("athlete_id")["starter"].transform(
+                lambda s: s.shift(1).rolling(3, min_periods=2).mean()) >= 0.67) &
+            (~df["starter"].astype(bool))
+        ).astype(int)
+    else:
+        df["starter_to_bench"] = 0
 
     return df
 
@@ -180,24 +225,29 @@ def add_availability_flags(df: pd.DataFrame) -> pd.DataFrame:
 # ── Step 3: Minutes signals ───────────────────────────────────────────────────
 
 def add_minutes_signals(df: pd.DataFrame) -> pd.DataFrame:
-    if "min" not in df.columns:
-        return df
+    # Prefer normalized minutes created in _build_appearance_history
+    if "_min_num" not in df.columns:
+        if "min" not in df.columns and "minutes" not in df.columns:
+            return df
+        df = df.copy()
+        min_col = "min" if "min" in df.columns else "minutes"
+        df["_min_num"] = _minutes_to_float(df[min_col])
 
     df = df.copy()
     if "_sort_dt" not in df.columns:
         df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
     df = df.sort_values(["athlete_id", "_sort_dt"])
 
-    minutes = pd.to_numeric(df["min"], errors="coerce")
+    minutes = pd.to_numeric(df["_min_num"], errors="coerce").fillna(0.0)
 
     # Season average minutes (prior games only)
-    df["min_season_avg"] = df.groupby("athlete_id")["min"].transform(
+    df["min_season_avg"] = df.groupby("athlete_id")["_min_num"].transform(
         lambda s: pd.to_numeric(s, errors="coerce")
         .shift(1).expanding(min_periods=MIN_GAMES_FOR_BASELINE).mean().round(1)
     )
 
     # L5 average minutes
-    df["min_l5_avg"] = df.groupby("athlete_id")["min"].transform(
+    df["min_l5_avg"] = df.groupby("athlete_id")["_min_num"].transform(
         lambda s: pd.to_numeric(s, errors="coerce")
         .shift(1).rolling(5, min_periods=MIN_GAMES_FOR_BASELINE).mean().round(1)
     )
@@ -208,7 +258,7 @@ def add_minutes_signals(df: pd.DataFrame) -> pd.DataFrame:
     ).round(1)
 
     # Minutes z-score vs L5
-    df["min_z_l5"] = df.groupby("athlete_id")["min"].transform(
+    df["min_z_l5"] = df.groupby("athlete_id")["_min_num"].transform(
         lambda s: _z_score(pd.to_numeric(s, errors="coerce"), 5)
     )
 
@@ -338,11 +388,16 @@ def compute_team_injury_impact(player_proxy_df: pd.DataFrame,
     df  = player_proxy_df.copy()
     tdf = team_logs_df[["event_id", "team_id", "game_datetime_utc"]].drop_duplicates()
 
+    # Ensure numeric minutes exist
+    if "_min_num" not in df.columns:
+        min_col = "min" if "min" in df.columns else ("minutes" if "minutes" in df.columns else None)
+        df["_min_num"] = _minutes_to_float(df[min_col]) if min_col else 0.0
+
     # Get player's share of team minutes
-    total_min = (df.groupby(["event_id", "team_id"])["min"]
+    total_min = (df.groupby(["event_id", "team_id"])["_min_num"]
                  .transform("sum")
                  .replace(0, np.nan))
-    df["min_share"] = pd.to_numeric(df["min"], errors="coerce") / total_min
+    df["min_share"] = pd.to_numeric(df["_min_num"], errors="coerce").fillna(0) / total_min
 
     # Weighted injury load
     df["_weighted_score"] = df["injury_proxy_score"] * df["min_share"].fillna(0)
@@ -356,7 +411,7 @@ def compute_team_injury_impact(player_proxy_df: pd.DataFrame,
         starters_flagged  = pd.NamedAgg(
             column="injury_proxy_flag",
             aggfunc=lambda x: (x & df.loc[x.index, "starter"].astype(bool)).sum()
-        ),
+        ) if "starter" in df.columns else pd.NamedAgg(column="injury_proxy_flag", aggfunc=lambda x: 0),
         team_injury_load  = ("_weighted_score", "sum"),
         minutes_at_risk_pct = pd.NamedAgg(
             column="min_share",
@@ -365,29 +420,33 @@ def compute_team_injury_impact(player_proxy_df: pd.DataFrame,
     ).reset_index()
 
     # Key player flag: is one of the team's top-3 scorers flagged?
-    top_scorers = (
-        df[df["appeared"] == 1]
-        .groupby(["team_id", "athlete_id"])["pts"]
-        .apply(lambda s: pd.to_numeric(s, errors="coerce").mean())
-        .reset_index()
-        .sort_values(["team_id", "pts"], ascending=[True, False])
-        .groupby("team_id")
-        .head(3)
-    )
-    top_scorer_ids = set(top_scorers["athlete_id"].astype(str))
+    if "pts" in df.columns:
+        top_scorers = (
+            df[df.get("appeared", 0) == 1]
+            .groupby(["team_id", "athlete_id"])["pts"]
+            .apply(lambda s: pd.to_numeric(s, errors="coerce").mean())
+            .reset_index()
+            .sort_values(["team_id", "pts"], ascending=[True, False])
+            .groupby("team_id")
+            .head(3)
+        )
+        top_scorer_ids = set(top_scorers["athlete_id"].astype(str))
 
-    key_flag = (
-        flagged[flagged["athlete_id"].astype(str).isin(top_scorer_ids)]
-        .groupby(["event_id", "team_id"])
-        .size()
-        .gt(0)
-        .astype(int)
-        .reset_index()
-        .rename(columns={0: "key_player_flag"})
-    )
+        key_flag = (
+            flagged[flagged["athlete_id"].astype(str).isin(top_scorer_ids)]
+            .groupby(["event_id", "team_id"])
+            .size()
+            .gt(0)
+            .astype(int)
+            .reset_index()
+            .rename(columns={0: "key_player_flag"})
+        )
 
-    agg = agg.merge(key_flag, on=["event_id", "team_id"], how="left")
-    agg["key_player_flag"] = agg["key_player_flag"].fillna(0).astype(int)
+        agg = agg.merge(key_flag, on=["event_id", "team_id"], how="left")
+        agg["key_player_flag"] = agg["key_player_flag"].fillna(0).astype(int)
+    else:
+        agg["key_player_flag"] = 0
+
     agg["team_injury_load"] = agg["team_injury_load"].round(2)
     agg["minutes_at_risk_pct"] = agg["minutes_at_risk_pct"].round(1)
 
