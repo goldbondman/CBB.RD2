@@ -5,28 +5,21 @@ One function per data shape. No I/O here.
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any, Dict, List, Optional, Tuple
 
 log = logging.getLogger(__name__)
 
-TZ_PST = ZoneInfo("America/Los_Angeles")  # handles PST/PDT automatically
+TZ_PST = ZoneInfo("America/Los_Angeles")
 
 
 def _utc_to_pst(utc_str: str) -> Optional[str]:
-    """
-    Convert an ISO 8601 UTC string from ESPN to PST/PDT local datetime string.
-    Returns None if the input cannot be parsed.
-    Example: '2026-02-18T03:00Z' -> '2026-02-17 07:00 PM PST'
-    """
     if not utc_str:
         return None
     try:
-        utc_clean = utc_str.replace("Z", "+00:00")
-        dt_utc = datetime.fromisoformat(utc_clean)
-        dt_pst = dt_utc.astimezone(TZ_PST)
-        return dt_pst.strftime("%Y-%m-%d %I:%M %p %Z")
+        dt_utc = datetime.fromisoformat(utc_str.replace("Z", "+00:00"))
+        return dt_utc.astimezone(TZ_PST).strftime("%Y-%m-%d %I:%M %p %Z")
     except Exception:
         return None
 
@@ -48,7 +41,6 @@ def _safe_float(val: Any, default: Optional[float] = None) -> Optional[float]:
 
 
 def _parse_made_attempt(s: Any) -> Tuple[Optional[int], Optional[int]]:
-    """Parse '12-20' style strings into (made, attempted)."""
     try:
         parts = str(s).split("-")
         if len(parts) == 2:
@@ -59,13 +51,6 @@ def _parse_made_attempt(s: Any) -> Tuple[Optional[int], Optional[int]]:
 
 
 def _parse_minutes(val: Any) -> Optional[float]:
-    """
-    Parse ESPN minutes string. ESPN returns minutes as:
-      - "32" (integer string)
-      - "32:15" (minutes:seconds)
-      - "32.0" (float string)
-    Returns decimal minutes.
-    """
     if val is None:
         return None
     s = str(val).strip()
@@ -74,78 +59,55 @@ def _parse_minutes(val: Any) -> Optional[float]:
     try:
         if ":" in s:
             parts = s.split(":")
-            mins = int(parts[0])
-            secs = int(parts[1]) if len(parts) > 1 else 0
-            return round(mins + secs / 60, 1)
+            return round(int(parts[0]) + int(parts[1]) / 60, 1)
         return float(s)
     except Exception:
         return None
 
 
+def _parse_record(record_obj: Any) -> Tuple[Optional[int], Optional[int]]:
+    """Parse ESPN record object or 'W-L' string → (wins, losses)."""
+    if not record_obj:
+        return None, None
+    # Sometimes it's a dict with summary key like "15-8"
+    if isinstance(record_obj, dict):
+        summary = record_obj.get("summary", "")
+    else:
+        summary = str(record_obj)
+    try:
+        parts = summary.strip().split("-")
+        if len(parts) == 2:
+            return int(parts[0]), int(parts[1])
+    except Exception:
+        pass
+    return None, None
+
+
 # ── Stat label normalization ──────────────────────────────────────────────────
-# ESPN returns player stat keys in various formats depending on endpoint/version.
-# This master map covers all known variants (case-insensitive after .lower()).
 
 PLAYER_STAT_MAP = {
-    # Minutes
-    "min":          "min",
-    "minutes":      "min",
-    # Points
-    "pts":          "pts",
-    "points":       "pts",
-    # Field goals — shooting split "made-attempted"
-    "fg":           "_fg",
-    "fgm-a":        "_fg",
-    "field goals":  "_fg",
-    # Three pointers
-    "3pt":          "_3pt",
-    "3p":           "_3pt",
-    "3-pt":         "_3pt",
-    "3pm-a":        "_3pt",
+    "min": "min", "minutes": "min",
+    "pts": "pts", "points": "pts",
+    "fg": "_fg", "fgm-a": "_fg", "field goals": "_fg",
+    "3pt": "_3pt", "3p": "_3pt", "3-pt": "_3pt", "3pm-a": "_3pt",
     "three pointers": "_3pt",
-    # Free throws
-    "ft":           "_ft",
-    "ftm-a":        "_ft",
-    "free throws":  "_ft",
-    # Rebounds
-    "oreb":         "orb",
-    "or":           "orb",
-    "offensive rebounds": "orb",
-    "dreb":         "drb",
-    "dr":           "drb",
-    "defensive rebounds": "drb",
-    "reb":          "reb",
-    "tr":           "reb",
-    "rebounds":     "reb",
-    "total rebounds": "reb",
-    # Other
-    "ast":          "ast",
-    "a":            "ast",
-    "assists":      "ast",
-    "stl":          "stl",
-    "s":            "stl",
-    "steals":       "stl",
-    "blk":          "blk",
-    "b":            "blk",
-    "blocks":       "blk",
-    "to":           "tov",
-    "tov":          "tov",
-    "turnovers":    "tov",
-    "pf":           "pf",
-    "fouls":        "pf",
-    "personal fouls": "pf",
-    "+/-":          "plus_minus",
-    "plusminus":    "plus_minus",
+    "ft": "_ft", "ftm-a": "_ft", "free throws": "_ft",
+    "oreb": "orb", "or": "orb", "offensive rebounds": "orb",
+    "dreb": "drb", "dr": "drb", "defensive rebounds": "drb",
+    "reb": "reb", "tr": "reb", "rebounds": "reb", "total rebounds": "reb",
+    "ast": "ast", "a": "ast", "assists": "ast",
+    "stl": "stl", "s": "stl", "steals": "stl",
+    "blk": "blk", "b": "blk", "blocks": "blk",
+    "to": "tov", "tov": "tov", "turnovers": "tov",
+    "pf": "pf", "fouls": "pf", "personal fouls": "pf",
+    "+/-": "plus_minus", "plusminus": "plus_minus",
 }
 
 
 # ── Scoreboard parser ─────────────────────────────────────────────────────────
 
 def parse_scoreboard_event(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """
-    Parse one event from the ESPN scoreboard response into a flat game row.
-    Returns None if the event cannot be meaningfully parsed.
-    """
+    """Parse one ESPN scoreboard event into a flat game row."""
     try:
         game_id = str(event.get("id", "")).strip()
         if not game_id:
@@ -156,58 +118,83 @@ def parse_scoreboard_event(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
             return None
         comp = comps[0]
 
-        # Status
-        status      = comp.get("status", {})
-        status_type = status.get("type", {})
+        status_type = comp.get("status", {}).get("type", {})
         completed   = bool(status_type.get("completed", False))
         state       = status_type.get("state", "")
         status_desc = status_type.get("description", "")
-
-        # Date/time
         game_dt_utc = comp.get("date", event.get("date", ""))
-
-        # Venue
-        venue_obj = comp.get("venue", {})
-        venue = venue_obj.get("fullName", "")
-
-        # Neutral site
+        venue       = comp.get("venue", {}).get("fullName", "")
         neutral_site = bool(comp.get("neutralSite", False))
 
-        # Competitors
-        home_team = away_team = ""
-        home_id   = away_id   = ""
-        home_score = away_score = None
-        home_conf = away_conf = ""
-        home_conf_id = away_conf_id = ""
-
+        # ── Competitors ──
+        home = away = {}
         for c in comp.get("competitors", []):
-            ha    = c.get("homeAway", "").lower()
-            team  = c.get("team", {})
-            tname = team.get("displayName", team.get("name", ""))
-            tid   = str(team.get("id", "")).strip()
-            score = _safe_int(c.get("score"))
-            # Conference
-            conf     = team.get("conferenceId", "")
-            conf_obj = team.get("conference", {})
-            conf_name = conf_obj.get("name", conf_obj.get("shortName", ""))
-
+            ha = c.get("homeAway", "").lower()
             if ha == "home":
-                home_team, home_id, home_score = tname, tid, score
-                home_conf, home_conf_id = conf_name, str(conf)
+                home = c
             elif ha == "away":
-                away_team, away_id, away_score = tname, tid, score
-                away_conf, away_conf_id = conf_name, str(conf)
+                away = c
 
-        if not home_team or not away_team:
+        if not home or not away:
             return None
 
-        # Odds (best-effort)
-        odds_list  = comp.get("odds", [])
-        odds_obj   = odds_list[0] if odds_list else {}
-        spread     = _safe_float(odds_obj.get("spread"))
-        over_under = _safe_float(odds_obj.get("overUnder"))
-        home_ml    = _safe_float(odds_obj.get("homeTeamOdds", {}).get("moneyLine"))
-        away_ml    = _safe_float(odds_obj.get("awayTeamOdds", {}).get("moneyLine"))
+        def _comp_fields(c: Dict, prefix: str) -> Dict:
+            team     = c.get("team", {})
+            conf_obj = team.get("conference", {})
+            # Records — ESPN provides multiple record types
+            records  = {r.get("type", ""): r for r in c.get("records", [])}
+            overall  = records.get("total", records.get("", {}))
+            home_rec = records.get("home", {})
+            away_rec = records.get("road", records.get("away", {}))
+            conf_rec = records.get("vsconf", records.get("conference", {}))
+
+            ow, ol = _parse_record(overall.get("summary", ""))
+            hw, hl = _parse_record(home_rec.get("summary", ""))
+            aw, al = _parse_record(away_rec.get("summary", ""))
+            cw, cl = _parse_record(conf_rec.get("summary", ""))
+
+            # AP/Coaches ranking
+            rank = c.get("curatedRank", {}).get("current")
+            rank = _safe_int(rank) if rank and str(rank) != "99" else None
+
+            return {
+                f"{prefix}team":        team.get("displayName", team.get("name", "")),
+                f"{prefix}team_id":     str(team.get("id", "")).strip(),
+                f"{prefix}conference":  conf_obj.get("name", conf_obj.get("shortName",
+                                        str(team.get("conferenceId", "")))),
+                f"{prefix}conf_id":     str(team.get("conferenceId", "")),
+                f"{prefix}score":       _safe_int(c.get("score")),
+                f"{prefix}rank":        rank,
+                f"{prefix}wins":        ow,
+                f"{prefix}losses":      ol,
+                f"{prefix}home_wins":   hw,
+                f"{prefix}home_losses": hl,
+                f"{prefix}away_wins":   aw,
+                f"{prefix}away_losses": al,
+                f"{prefix}conf_wins":   cw,
+                f"{prefix}conf_losses": cl,
+            }
+
+        home_fields = _comp_fields(home, "home_")
+        away_fields = _comp_fields(away, "away_")
+
+        # ── Period scores ──
+        # linescores on each competitor give per-half/OT scores
+        home_periods = [_safe_int(ls.get("value")) for ls in home.get("linescores", [])]
+        away_periods = [_safe_int(ls.get("value")) for ls in away.get("linescores", [])]
+
+        period_data: Dict = {}
+        for i, (hp, ap) in enumerate(zip(home_periods, away_periods), 1):
+            label = f"h{i}" if i <= 2 else f"ot{i-2}"
+            period_data[f"home_{label}"] = hp
+            period_data[f"away_{label}"] = ap
+
+        # ── Odds ──
+        odds_obj      = (comp.get("odds") or [{}])[0]
+        spread        = _safe_float(odds_obj.get("spread"))
+        over_under    = _safe_float(odds_obj.get("overUnder"))
+        home_ml       = _safe_float(odds_obj.get("homeTeamOdds", {}).get("moneyLine"))
+        away_ml       = _safe_float(odds_obj.get("awayTeamOdds", {}).get("moneyLine"))
         odds_provider = odds_obj.get("provider", {}).get("name", "")
         odds_details  = odds_obj.get("details", "")
 
@@ -217,16 +204,6 @@ def parse_scoreboard_event(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
             "game_datetime_pst": _utc_to_pst(game_dt_utc),
             "venue":             venue,
             "neutral_site":      neutral_site,
-            "home_team":         home_team,
-            "home_team_id":      home_id,
-            "home_conference":   home_conf,
-            "home_conf_id":      home_conf_id,
-            "away_team":         away_team,
-            "away_team_id":      away_id,
-            "away_conference":   away_conf,
-            "away_conf_id":      away_conf_id,
-            "home_score":        home_score,
-            "away_score":        away_score,
             "completed":         completed,
             "state":             state,
             "status_desc":       status_desc,
@@ -236,46 +213,38 @@ def parse_scoreboard_event(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
             "away_ml":           away_ml,
             "odds_provider":     odds_provider,
             "odds_details":      odds_details,
+            **home_fields,
+            **away_fields,
+            **period_data,
         }
 
     except Exception as exc:
-        log.warning(f"parse_scoreboard_event failed for event {event.get('id','?')}: {exc}")
+        log.warning(f"parse_scoreboard_event failed for {event.get('id','?')}: {exc}")
         return None
 
 
 # ── Summary parser ────────────────────────────────────────────────────────────
 
 def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]]:
-    """
-    Parse ESPN summary response into a structured dict with:
-      - header:  game-level metadata
-      - home:    home team box score stats
-      - away:    away team box score stats
-      - players: list of player rows
-    Returns None on failure.
-    """
+    """Parse ESPN summary JSON into structured game + team + player dicts."""
     try:
         header   = raw.get("header", {})
         boxscore = raw.get("boxscore", {})
         comps    = header.get("competitions", [])
         comp     = comps[0] if comps else {}
 
-        # ── Game metadata ──
         game_dt_utc  = comp.get("date", "")
         neutral_site = bool(comp.get("neutralSite", False))
         venue        = comp.get("venue", {}).get("fullName", "")
         status_type  = comp.get("status", {}).get("type", {})
         completed    = bool(status_type.get("completed", False))
         state        = status_type.get("state", "")
+        period       = comp.get("status", {}).get("period", 2)
+        is_ot        = period > 2
+        num_ot       = max(0, period - 2) if is_ot else 0
 
-        # OT detection
-        period = comp.get("status", {}).get("period", 2)
-        is_ot  = period > 2
-        num_ot = max(0, period - 2) if is_ot else 0
-
-        # Odds from summary (fallback if scoreboard odds missing)
-        odds_list     = comp.get("odds", [])
-        odds_obj      = odds_list[0] if odds_list else {}
+        # ── Odds ──
+        odds_obj      = (comp.get("odds") or [{}])[0]
         spread        = _safe_float(odds_obj.get("spread"))
         over_under    = _safe_float(odds_obj.get("overUnder"))
         home_ml       = _safe_float(odds_obj.get("homeTeamOdds", {}).get("moneyLine"))
@@ -286,15 +255,31 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
         # ── Competitors ──
         home_meta = away_meta = {}
         for c in comp.get("competitors", []):
-            ha = c.get("homeAway", "").lower()
-            if ha == "home":
+            if c.get("homeAway", "").lower() == "home":
                 home_meta = c
-            elif ha == "away":
+            elif c.get("homeAway", "").lower() == "away":
                 away_meta = c
 
         def _team_meta(meta: Dict) -> Dict:
             team     = meta.get("team", {})
             conf_obj = team.get("conference", {})
+            records  = {r.get("type", ""): r for r in meta.get("records", [])}
+            overall  = records.get("total", records.get("", {}))
+            home_rec = records.get("home", {})
+            away_rec = records.get("road", records.get("away", {}))
+            conf_rec = records.get("vsconf", records.get("conference", {}))
+
+            ow, ol = _parse_record(overall.get("summary", ""))
+            hw, hl = _parse_record(home_rec.get("summary", ""))
+            aw, al = _parse_record(away_rec.get("summary", ""))
+            cw, cl = _parse_record(conf_rec.get("summary", ""))
+
+            rank = meta.get("curatedRank", {}).get("current")
+            rank = _safe_int(rank) if rank and str(rank) != "99" else None
+
+            # Per-period scores (linescores)
+            periods = [_safe_int(ls.get("value")) for ls in meta.get("linescores", [])]
+
             return {
                 "team_id":    str(team.get("id", "")).strip(),
                 "team":       team.get("displayName", team.get("name", "")),
@@ -303,6 +288,12 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                 "conf_id":    str(team.get("conferenceId", "")),
                 "score":      _safe_int(meta.get("score")),
                 "home_away":  meta.get("homeAway", "").lower(),
+                "rank":       rank,
+                "wins":       ow,   "losses":      ol,
+                "home_wins":  hw,   "home_losses": hl,
+                "away_wins":  aw,   "away_losses": al,
+                "conf_wins":  cw,   "conf_losses": cl,
+                "periods":    periods,  # list: [h1, h2, ot1, ot2, ...]
             }
 
         home_info = _team_meta(home_meta)
@@ -310,19 +301,16 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
 
         # ── Box score team stats ──
         def _parse_team_stats(teams_list: List, target_id: str) -> Dict:
-            """Extract flat stat dict for a team from boxscore.teams."""
             stats: Dict[str, Any] = {}
             for t in teams_list:
-                tid = str(t.get("team", {}).get("id", "")).strip()
-                if tid != target_id:
+                if str(t.get("team", {}).get("id", "")).strip() != target_id:
                     continue
                 for s in t.get("statistics", []):
                     name  = s.get("name", "")
                     label = s.get("abbreviation", name).lower().replace(" ", "_")
                     dv    = s.get("displayValue", "")
-
-                    # Shooting splits: "12-20" → _made/_attempted
-                    if "-" in str(dv) and any(x in name.lower() for x in ["goal", "throw", "three"]):
+                    if "-" in str(dv) and any(x in name.lower() for x in
+                                              ["goal", "throw", "three"]):
                         made, att = _parse_made_attempt(dv)
                         if "three" in name.lower() or "3" in name.lower():
                             stats["tpm"], stats["tpa"] = made, att
@@ -334,22 +322,22 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                         col_map = {
                             "oreb": "orb", "offensiverebounds": "orb",
                             "dreb": "drb", "defensiverebounds": "drb",
-                            "reb":  "reb", "rebounds": "reb",
+                            "reb": "reb",  "rebounds": "reb",
                             "totalrebounds": "reb",
-                            "ast": "ast", "assists": "ast",
-                            "to":  "tov", "turnovers": "tov",
-                            "stl": "stl", "steals": "stl",
-                            "blk": "blk", "blocks": "blk",
-                            "pf":  "pf",  "fouls": "pf",
+                            "ast": "ast",  "assists": "ast",
+                            "to": "tov",   "turnovers": "tov",
+                            "stl": "stl",  "steals": "stl",
+                            "blk": "blk",  "blocks": "blk",
+                            "pf": "pf",    "fouls": "pf",
                         }
-                        key = col_map.get(label) or col_map.get(
-                            name.lower().replace(" ", ""), label)
-                        val_parsed = (_safe_int(dv) if str(dv).isdigit()
-                                      else _safe_float(dv))
+                        key = (col_map.get(label) or
+                               col_map.get(name.lower().replace(" ", ""), label))
+                        val_p = (_safe_int(dv) if str(dv).isdigit()
+                                 else _safe_float(dv))
                         if key == "reb" and ("orb" in stats or "drb" in stats):
-                            stats.setdefault("reb", val_parsed)
+                            stats.setdefault("reb", val_p)
                         else:
-                            stats[key] = val_parsed
+                            stats[key] = val_p
             return stats
 
         bs_teams   = boxscore.get("teams", [])
@@ -364,17 +352,15 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
             ha    = "home" if tid == home_info["team_id"] else "away"
 
             for pg in team_block.get("statistics", []):
-                # ESPN returns keys as the column headers for stats array
-                raw_keys = pg.get("keys", [])
-                stat_labels = [k.lower().strip() for k in raw_keys]
+                stat_labels = [k.lower().strip() for k in pg.get("keys", [])]
 
-                for athlete_entry in pg.get("athletes", []):
-                    athlete      = athlete_entry.get("athlete", {})
-                    vals         = athlete_entry.get("stats", [])
-                    did_not_play = bool(athlete_entry.get("didNotPlay", False))
+                for ae in pg.get("athletes", []):
+                    athlete      = ae.get("athlete", {})
+                    vals         = ae.get("stats", [])
+                    did_not_play = bool(ae.get("didNotPlay", False))
 
-                    # Skip DNP with no stats
-                    if did_not_play and not any(v not in ("", "--", "-", "0") for v in vals):
+                    if did_not_play and not any(
+                            v not in ("", "--", "-", "0") for v in vals):
                         continue
 
                     athlete_id = str(athlete.get("id", "")).strip()
@@ -382,30 +368,29 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                         continue
 
                     prow: Dict[str, Any] = {
-                        "event_id":         event_id,
-                        "game_datetime_utc": game_dt_utc,
-                        "game_datetime_pst": _utc_to_pst(game_dt_utc),
-                        "team_id":          tid,
-                        "team":             tname,
-                        "home_away":        ha,
-                        "athlete_id":       athlete_id,
-                        "player":           athlete.get("displayName", ""),
-                        "jersey":           athlete.get("jersey", ""),
-                        "position":         athlete.get("position", {}).get("abbreviation", ""),
-                        "starter":          bool(athlete_entry.get("starter", False)),
-                        "did_not_play":     did_not_play,
-                        # Init all stat cols to None
-                        "min":  None, "pts":  None,
-                        "fgm":  None, "fga":  None,
-                        "tpm":  None, "tpa":  None,
-                        "ftm":  None, "fta":  None,
-                        "orb":  None, "drb":  None, "reb": None,
-                        "ast":  None, "stl":  None, "blk": None,
-                        "tov":  None, "pf":   None,
+                        "event_id":          event_id,
+                        "game_datetime_utc":  game_dt_utc,
+                        "game_datetime_pst":  _utc_to_pst(game_dt_utc),
+                        "team_id":           tid,
+                        "team":              tname,
+                        "home_away":         ha,
+                        "athlete_id":        athlete_id,
+                        "player":            athlete.get("displayName", ""),
+                        "jersey":            athlete.get("jersey", ""),
+                        "position":          athlete.get("position", {}).get(
+                                             "abbreviation", ""),
+                        "starter":           bool(ae.get("starter", False)),
+                        "did_not_play":      did_not_play,
+                        "min": None, "pts": None,
+                        "fgm": None, "fga": None,
+                        "tpm": None, "tpa": None,
+                        "ftm": None, "fta": None,
+                        "orb": None, "drb": None, "reb": None,
+                        "ast": None, "stl": None, "blk": None,
+                        "tov": None, "pf":  None,
                         "plus_minus": None,
                     }
 
-                    # Map each stat label to its value
                     raw_stats: Dict[str, str] = {}
                     for lbl, val in zip(stat_labels, vals):
                         raw_stats[lbl] = val
@@ -414,19 +399,14 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                             continue
                         if mapped == "min":
                             prow["min"] = _parse_minutes(val)
-                        elif mapped.startswith("_"):
-                            pass  # handled below as shooting split
-                        else:
+                        elif not mapped.startswith("_"):
                             cleaned = str(val).strip()
-                            if cleaned in ("", "--", "-"):
-                                prow[mapped] = None
-                            else:
-                                prow[mapped] = (_safe_int(cleaned)
-                                                if cleaned.isdigit()
-                                                else _safe_float(cleaned))
+                            prow[mapped] = (None if cleaned in ("", "--", "-")
+                                           else (_safe_int(cleaned)
+                                                 if cleaned.isdigit()
+                                                 else _safe_float(cleaned)))
 
-                    # Parse shooting splits: "7-14" → made=7, attempted=14
-                    # Each split type is handled independently — no shared break.
+                    # Shooting splits — independent loops per type
                     for fg_lbl in ("fg", "fgm-a"):
                         if fg_lbl in raw_stats:
                             m, a = _parse_made_attempt(raw_stats[fg_lbl])
@@ -446,15 +426,13 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                                 prow["ftm"], prow["fta"] = m, a
                             break
 
-                    # Derive pts from shooting if ESPN omits it
+                    # Derive pts/reb if ESPN omits them
                     if prow["pts"] is None:
                         fgm = prow.get("fgm") or 0
                         tpm = prow.get("tpm") or 0
                         ftm = prow.get("ftm") or 0
                         if fgm or tpm or ftm:
                             prow["pts"] = (fgm - tpm) * 2 + tpm * 3 + ftm
-
-                    # Derive total reb if missing
                     if prow["reb"] is None:
                         orb = prow.get("orb") or 0
                         drb = prow.get("drb") or 0
@@ -464,24 +442,24 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                     players.append(prow)
 
         return {
-            "event_id":         event_id,
-            "game_datetime_utc": game_dt_utc,
-            "game_datetime_pst": _utc_to_pst(game_dt_utc),
-            "venue":            venue,
-            "neutral_site":     neutral_site,
-            "completed":        completed,
-            "state":            state,
-            "is_ot":            is_ot,
-            "num_ot":           num_ot,
-            "spread":           spread,
-            "over_under":       over_under,
-            "home_ml":          home_ml,
-            "away_ml":          away_ml,
-            "odds_provider":    odds_provider,
-            "odds_details":     odds_details,
-            "home":             {**home_info, **home_stats},
-            "away":             {**away_info, **away_stats},
-            "players":          players,
+            "event_id":          event_id,
+            "game_datetime_utc":  game_dt_utc,
+            "game_datetime_pst":  _utc_to_pst(game_dt_utc),
+            "venue":             venue,
+            "neutral_site":      neutral_site,
+            "completed":         completed,
+            "state":             state,
+            "is_ot":             is_ot,
+            "num_ot":            num_ot,
+            "spread":            spread,
+            "over_under":        over_under,
+            "home_ml":           home_ml,
+            "away_ml":           away_ml,
+            "odds_provider":     odds_provider,
+            "odds_details":      odds_details,
+            "home":              {**home_info, **home_stats},
+            "away":              {**away_info, **away_stats},
+            "players":           players,
         }
 
     except Exception as exc:
@@ -490,9 +468,16 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
 
 
 def summary_to_team_rows(parsed: Dict[str, Any]) -> Tuple[Dict, Dict]:
-    """
-    Convert a parsed summary dict into two flat team-game rows (home + away).
-    """
+    """Convert parsed summary into two flat team-game rows (home + away)."""
+
+    def _period_cols(side_info: Dict, prefix: str) -> Dict:
+        """Flatten per-period scores into named columns."""
+        cols = {}
+        for i, score in enumerate(side_info.get("periods", []), 1):
+            label = f"{prefix}h{i}" if i <= 2 else f"{prefix}ot{i-2}"
+            cols[label] = score
+        return cols
+
     base = {
         "event_id":          parsed["event_id"],
         "game_datetime_utc": parsed["game_datetime_utc"],
@@ -509,33 +494,62 @@ def summary_to_team_rows(parsed: Dict[str, Any]) -> Tuple[Dict, Dict]:
         "away_team_id":      parsed["away"].get("team_id"),
         "home_conference":   parsed["home"].get("conference"),
         "away_conference":   parsed["away"].get("conference"),
-        # Odds — pulled from summary endpoint
+        "home_rank":         parsed["home"].get("rank"),
+        "away_rank":         parsed["away"].get("rank"),
         "spread":            parsed.get("spread"),
         "over_under":        parsed.get("over_under"),
         "home_ml":           parsed.get("home_ml"),
         "away_ml":           parsed.get("away_ml"),
         "odds_provider":     parsed.get("odds_provider"),
         "odds_details":      parsed.get("odds_details"),
+        # Period scores
+        **_period_cols(parsed["home"], "home_"),
+        **_period_cols(parsed["away"], "away_"),
     }
 
     def _make_row(side: str) -> Dict:
         me  = parsed[side]
         opp = parsed["away" if side == "home" else "home"]
+        periods = me.get("periods", [])
+        h1 = periods[0] if len(periods) > 0 else None
+        h2 = periods[1] if len(periods) > 1 else None
+
         return {
             **base,
-            "team_id":        me.get("team_id"),
-            "team":           me.get("team"),
-            "conference":     me.get("conference"),
-            "conf_id":        me.get("conf_id"),
-            "home_away":      side,
-            "opponent_id":    opp.get("team_id"),
-            "opponent":       opp.get("team"),
-            "opp_conference": opp.get("conference"),
-            "points_for":     me.get("score"),
-            "points_against": opp.get("score"),
-            "margin":         ((me.get("score") or 0) - (opp.get("score") or 0)
-                               if me.get("score") is not None
-                               and opp.get("score") is not None else None),
+            "team_id":          me.get("team_id"),
+            "team":             me.get("team"),
+            "conference":       me.get("conference"),
+            "conf_id":          me.get("conf_id"),
+            "home_away":        side,
+            "rank":             me.get("rank"),
+            "wins":             me.get("wins"),
+            "losses":           me.get("losses"),
+            "home_wins":        me.get("home_wins"),
+            "home_losses":      me.get("home_losses"),
+            "away_wins":        me.get("away_wins"),
+            "away_losses":      me.get("away_losses"),
+            "conf_wins":        me.get("conf_wins"),
+            "conf_losses":      me.get("conf_losses"),
+            "win_pct":          round(me["wins"] / (me["wins"] + me["losses"]), 3)
+                                if me.get("wins") is not None
+                                and (me.get("wins", 0) + me.get("losses", 0)) > 0
+                                else None,
+            "opponent_id":      opp.get("team_id"),
+            "opponent":         opp.get("team"),
+            "opp_conference":   opp.get("conference"),
+            "opp_rank":         opp.get("rank"),
+            "opp_wins":         opp.get("wins"),
+            "opp_losses":       opp.get("losses"),
+            "points_for":       me.get("score"),
+            "points_against":   opp.get("score"),
+            "margin":           ((me.get("score") or 0) - (opp.get("score") or 0)
+                                 if me.get("score") is not None
+                                 and opp.get("score") is not None else None),
+            "h1_pts":           h1,
+            "h2_pts":           h2,
+            "h1_pts_against":   opp.get("periods", [None])[0] if opp.get("periods") else None,
+            "h2_pts_against":   opp.get("periods", [None, None])[1]
+                                if opp.get("periods") and len(opp.get("periods")) > 1 else None,
             "fgm": me.get("fgm"), "fga": me.get("fga"),
             "tpm": me.get("tpm"), "tpa": me.get("tpa"),
             "ftm": me.get("ftm"), "fta": me.get("fta"),
