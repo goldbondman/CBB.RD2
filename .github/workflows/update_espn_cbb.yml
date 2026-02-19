@@ -35,7 +35,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install pandas requests
+        run: pip install -r requirements.txt
 
       - name: Run ESPN pipeline
         run: python espn_pipeline.py
@@ -89,6 +89,7 @@ jobs:
         if: always()
         run: ls -lh data/*.csv 2>/dev/null || echo "No CSVs found"
 
+      # ── Upload CSVs — also used as input for next run's download step ──
       - name: Upload ESPN CSVs as artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -97,3 +98,13 @@ jobs:
           path: data/*.csv
           retention-days: 7
           if-no-files-found: warn
+
+      # ── Upload raw JSON separately for debugging (shorter retention) ──
+      - name: Upload raw JSON as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: espn-cbb-raw-json
+          path: data/raw_json/
+          retention-days: 3
+          if-no-files-found: ignore
