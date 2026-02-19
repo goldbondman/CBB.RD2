@@ -822,7 +822,8 @@ def build_rankings(
 
     # ── 13. Rank by CAGE_EM (primary), BARTHAG (tiebreak) ────────────────────
     df = df.sort_values(["cage_em", "barthag"], ascending=[False, False])
-    df.insert(0, "rank", range(1, len(df) + 1))
+    df["rank"] = range(1, len(df) + 1)
+    df = df[["rank", *[c for c in df.columns if c != "rank"]]]
 
     # ── 14. Metadata ──────────────────────────────────────────────────────────
     df["updated_at"] = datetime.now(TZ).strftime("%Y-%m-%d %H:%M %Z")
