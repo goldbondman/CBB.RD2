@@ -1,374 +1,389 @@
 """
-ESPN CBB Pipeline — Advanced Metrics
-Per-game stats and rolling team averages from box score data.
-All functions pure (DataFrame in, DataFrame out). No I/O.
-
-Per-game metrics:
-  efg_pct, ts_pct, fg_pct, three_pct, ft_pct
-  three_par, ftr
-  orb_pct, drb_pct, tov_pct
-  poss, ortg, drtg, net_rtg, pace
-  h1_margin, h2_margin, h1_ortg, h2_ortg (half splits)
-  pythagorean_win_pct, luck_score
-  win, cover, cover_margin, ats_result
-  blowout_flag, close_game_flag, garbage_margin
-
-Rolling windows (L5, L10) — all leak-free via shift(1):
-  All per-game metrics above
-  points_for, points_against, margin
-  Shooting variance: efg_std_l10, three_pct_std_l10
-  Schedule: rest_days, games_l7, games_l14
-  Streaks: win_streak, lose_streak, cover_streak
-  Home/away splits: ha_ortg_l10, ha_drtg_l10, ha_net_rtg_l10
-  ATS rolling: cover_rate_l10, ats_margin_l10
-  Close game: close_win_pct_season
+ESPN CBB Pipeline — Main Builder
+Orchestrates scoreboard fetch → summary fetch → CSV write.
+Keep this file focused on coordination only; logic lives in other modules.
 """
 
+import json
 import logging
-from typing import List
+import time
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-import numpy as np
 import pandas as pd
 
+from espn_config import (
+    BASE_DIR, CSV_DIR, JSON_DIR,
+    OUT_GAMES, OUT_TEAM_LOGS, OUT_PLAYER_LOGS, OUT_METRICS, OUT_SOS,
+    OUT_PLAYER_PROXY, OUT_TEAM_INJURY,
+    DAYS_BACK, TZ, CHECKPOINT_FILE,
+    SOURCE, PARSE_VERSION,
+    FETCH_SLEEP, DRY_RUN,
+)
+from espn_client import fetch_scoreboard, fetch_summary
+from espn_parsers import parse_scoreboard_event, parse_summary, summary_to_team_rows
+from espn_metrics import compute_all_metrics
+from espn_sos import compute_sos_metrics
+from espn_injury_proxy import compute_injury_proxy, compute_team_injury_impact
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-8s  %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 log = logging.getLogger(__name__)
 
-# ── Constants ─────────────────────────────────────────────────────────────────
-REGULATION_MINUTES  = 40.0
-LEAGUE_AVG_PACE     = 70.0
-PYTHAGOREAN_EXP     = 11.5   # standard CBB exponent
-BLOWOUT_THRESHOLD   = 15     # margin >= this = blowout
-CLOSE_GAME_THRESHOLD = 5     # margin <= this = close game
-CAP_MARGIN          = 15     # cap margin for Pythagorean/rolling to reduce garbage time noise
-ROLLING_WINDOWS     = [5, 10]
 
-ROLLING_METRICS = [
-    "points_for", "points_against", "margin", "margin_capped",
-    "efg_pct", "ts_pct", "three_par", "ftr",
-    "fg_pct", "three_pct", "ft_pct",
-    "orb_pct", "drb_pct", "tov_pct",
-    "ortg", "drtg", "net_rtg", "poss", "pace",
-    "h1_pts", "h2_pts", "h1_pts_against", "h2_pts_against",
-    "h1_margin", "h2_margin",
-    "win", "cover", "cover_margin",
-    "stl", "blk", "ast",
-]
+# ── Checkpoint helpers ────────────────────────────────────────────────────────
+
+def _load_checkpoint() -> Dict[str, Any]:
+    p = Path(CHECKPOINT_FILE)
+    if p.exists():
+        try:
+            return json.loads(p.read_text())
+        except Exception as exc:
+            log.warning(f"Could not load checkpoint ({exc}), starting fresh")
+    return {}
 
 
-# ── Safe math ─────────────────────────────────────────────────────────────────
-
-def _col(df: pd.DataFrame, name: str) -> pd.Series:
-    return (pd.to_numeric(df[name], errors="coerce")
-            if name in df.columns
-            else pd.Series(np.nan, index=df.index))
-
-
-# ── Per-game metrics ──────────────────────────────────────────────────────────
-
-def add_per_game_metrics(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-
-    fgm = _col(df, "fgm"); fga = _col(df, "fga")
-    tpm = _col(df, "tpm"); tpa = _col(df, "tpa")
-    ftm = _col(df, "ftm"); fta = _col(df, "fta")
-    orb = _col(df, "orb"); drb = _col(df, "drb"); reb = _col(df, "reb")
-    tov = _col(df, "tov")
-    pts     = _col(df, "points_for")
-    opp_pts = _col(df, "points_against")
-    spread  = _col(df, "spread")
-    h1_pts  = _col(df, "h1_pts")
-    h2_pts  = _col(df, "h2_pts")
-    h1_opp  = _col(df, "h1_pts_against")
-    h2_opp  = _col(df, "h2_pts_against")
-
-    fga_s = fga.replace(0, np.nan)
-
-    # ── Shooting ──
-    df["efg_pct"]    = ((fgm + 0.5 * tpm) / fga_s * 100).round(1)
-    df["ts_pct"]     = (pts / (2 * (fga + 0.44 * fta)).replace(0, np.nan) * 100).round(1)
-    df["fg_pct"]     = (fgm / fga_s * 100).round(1)
-    df["three_pct"]  = (tpm / tpa.replace(0, np.nan) * 100).round(1)
-    df["ft_pct"]     = (ftm / fta.replace(0, np.nan) * 100).round(1)
-    df["three_par"]  = (tpa / fga_s * 100).round(1)
-    df["ftr"]        = (fta / fga_s * 100).round(1)
-
-    # ── Rebounding ──
-    orb_c = orb.fillna(reb - drb)
-    drb_c = drb.fillna(reb - orb)
-    df["orb_pct"] = (orb_c / reb.replace(0, np.nan) * 100).round(1)
-    df["drb_pct"] = (drb_c / reb.replace(0, np.nan) * 100).round(1)
-
-    # ── Possessions ──
-    poss = fga - orb_c + tov + 0.44 * fta
-    df["poss"] = poss.round(1)
-
-    # ── Efficiency ──
-    poss_s = poss.replace(0, np.nan)
-    df["ortg"]    = (pts    / poss_s * 100).round(1)
-    df["drtg"]    = (opp_pts / poss_s * 100).round(1)
-    df["net_rtg"] = (df["ortg"] - df["drtg"]).round(1)
-    df["tov_pct"] = (tov / poss_s * 100).round(1)
-
-    # ── Pace ──
-    df["pace"] = (poss / REGULATION_MINUTES * 40).round(1)
-    # Note: adj_pace computed in espn_sos.py after opponent join
-
-    # ── Half splits ──
-    df["h1_margin"] = (h1_pts - h1_opp).round(1)
-    df["h2_margin"] = (h2_pts - h2_opp).round(1)
-    # Half ORTG (rough — uses team poss estimate, halved)
-    half_poss = poss_s / 2
-    df["h1_ortg"] = (h1_pts  / half_poss * 100).round(1)
-    df["h2_ortg"] = (h2_pts  / half_poss * 100).round(1)
-    df["h1_drtg"] = (h1_opp / half_poss * 100).round(1)
-    df["h2_drtg"] = (h2_opp / half_poss * 100).round(1)
-
-    # ── Game outcome flags ──
-    margin = _col(df, "margin")
-    df["win"]             = (margin > 0).astype(float).where(margin.notna())
-    df["close_game_flag"] = (margin.abs() <= CLOSE_GAME_THRESHOLD).astype(float).where(margin.notna())
-    df["blowout_flag"]    = (margin.abs() >= BLOWOUT_THRESHOLD).astype(float).where(margin.notna())
-
-    # Margin capped — reduces blowout inflation in rolling metrics
-    df["margin_capped"] = margin.clip(-CAP_MARGIN, CAP_MARGIN)
-
-    # ── ATS (vs spread) ──
-    # Positive spread = team is favorite (spread given as negative for favorite)
-    # cover = team margin > -spread (i.e. margin + spread > 0)
-    # ESPN spread convention: negative = home favorite (e.g. -5.5 means home -5.5)
-    home_away = df.get("home_away", pd.Series("", index=df.index))
-    team_spread = spread.where(home_away == "home", -spread)  # flip for away team
-    df["cover_margin"] = (margin + team_spread).round(1)
-    df["cover"]        = (df["cover_margin"] > 0).astype(float).where(
-                          margin.notna() & team_spread.notna())
-    df["ats_push"]     = (df["cover_margin"] == 0).astype(float).where(
-                          margin.notna() & team_spread.notna())
-
-    # ── Pythagorean win % ──
-    exp = PYTHAGOREAN_EXP
-    pts_pow     = pts    ** exp
-    opp_pts_pow = opp_pts ** exp
-    denom = (pts_pow + opp_pts_pow).replace(0, np.nan)
-    df["pythagorean_win_pct"] = (pts_pow / denom).round(3)
-
-    return df
+def _save_checkpoint(data: Dict[str, Any]) -> None:
+    try:
+        Path(CHECKPOINT_FILE).write_text(json.dumps(data, indent=2))
+    except Exception as exc:
+        log.warning(f"Could not save checkpoint: {exc}")
 
 
-def add_luck_score(df: pd.DataFrame) -> pd.DataFrame:
+def _clear_checkpoint() -> None:
+    p = Path(CHECKPOINT_FILE)
+    if p.exists():
+        p.unlink()
+
+
+# ── CSV helpers ───────────────────────────────────────────────────────────────
+
+def _append_dedupe_write(
+    path: Path,
+    new_df: pd.DataFrame,
+    unique_keys: List[str],
+    sort_cols: Optional[List[str]] = None,
+) -> pd.DataFrame:
     """
-    Luck score = actual win% - Pythagorean win%.
-    Positive = team is over-performing their scoring margin (due to regress).
-    Negative = team is under-performing (due to improve).
-    Computed as season-to-date using expanding mean, leak-free.
+    Append new_df to existing CSV, deduplicate on unique_keys keeping the
+    newest row (by pulled_at_utc then completeness), then write back.
+    Always prefers newer/more-complete rows over stale ones.
     """
-    if "win" not in df.columns or "pythagorean_win_pct" not in df.columns:
-        return df
+    if path.exists() and path.stat().st_size > 0:
+        try:
+            existing = pd.read_csv(path, dtype=str)
+        except Exception as exc:
+            log.warning(f"Could not read {path} ({exc}), overwriting")
+            existing = pd.DataFrame()
+    else:
+        existing = pd.DataFrame()
 
-    df = df.copy()
-    df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
-    df = df.sort_values(["team_id", "_sort_dt"])
+    combined = pd.concat([existing, new_df.astype(str)], ignore_index=True)
 
-    df["actual_win_pct_season"] = df.groupby("team_id")["win"].transform(
-        lambda s: s.shift(1).expanding(min_periods=3).mean().round(3)
-    )
-    df["pyth_win_pct_season"] = df.groupby("team_id")["pythagorean_win_pct"].transform(
-        lambda s: s.shift(1).expanding(min_periods=3).mean().round(3)
-    )
-    df["luck_score"] = (df["actual_win_pct_season"] - df["pyth_win_pct_season"]).round(3)
+    if unique_keys:
+        # Score rows: prefer completed=True, then newest pulled_at_utc
+        if "completed" in combined.columns:
+            combined["_completed_int"] = (
+                combined["completed"].str.lower().isin(["true", "1", "yes"])
+            ).astype(int)
+        else:
+            combined["_completed_int"] = 0
 
-    df = df.drop(columns=["_sort_dt"], errors="ignore")
-    return df
+        if "pulled_at_utc" in combined.columns:
+            combined["_pulled_ts"] = pd.to_datetime(
+                combined["pulled_at_utc"], utc=True, errors="coerce"
+            ).astype("int64", errors="ignore").fillna(0)
+        else:
+            combined["_pulled_ts"] = 0
+
+        combined = (
+            combined
+            .sort_values(["_completed_int", "_pulled_ts"], ascending=[False, False])
+            .drop_duplicates(subset=unique_keys, keep="first")
+            .drop(columns=["_completed_int", "_pulled_ts"], errors="ignore")
+        )
+
+    if sort_cols:
+        present = [c for c in sort_cols if c in combined.columns]
+        if present:
+            combined = combined.sort_values(present)
+
+    if not DRY_RUN:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # Atomic write via temp file
+        tmp = path.with_suffix(".tmp")
+        combined.to_csv(tmp, index=False)
+        tmp.replace(path)
+    else:
+        log.info(f"[DRY RUN] Would write {len(combined)} rows → {path}")
+
+    return combined
 
 
-def add_schedule_features(df: pd.DataFrame) -> pd.DataFrame:
+def _save_raw_json(subdir: str, name: str, data: Any) -> None:
+    """Save raw API response JSON for debugging/audit."""
+    try:
+        dest = JSON_DIR / subdir
+        dest.mkdir(parents=True, exist_ok=True)
+        (dest / f"{name}.json").write_text(json.dumps(data, indent=2))
+    except Exception as exc:
+        log.warning(f"Could not save raw JSON ({exc})")
+
+
+# ── Scoreboard pass ───────────────────────────────────────────────────────────
+
+def build_games(days_back: int = DAYS_BACK) -> pd.DataFrame:
     """
-    Rest days, schedule density, win/loss/cover streaks.
-    All computed per team, leak-free.
+    Fetch scoreboard for the past `days_back` days + today + tomorrow.
+    Returns a DataFrame of all parsed game rows and writes games.csv.
     """
-    if "team_id" not in df.columns or "game_datetime_utc" not in df.columns:
-        return df
+    now = datetime.now(TZ)
+    dates = set()
+    for i in range(days_back):
+        dates.add((now - timedelta(days=i)).strftime("%Y%m%d"))
+    dates.add(now.strftime("%Y%m%d"))
+    dates.add((now + timedelta(days=1)).strftime("%Y%m%d"))  # catch late-night UTC games
 
-    df = df.copy()
-    df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
-    df = df.sort_values(["team_id", "_sort_dt"])
+    all_rows: List[Dict] = []
+    for d in sorted(dates, reverse=True):
+        try:
+            raw = fetch_scoreboard(d)
+            _save_raw_json("scoreboard", d, raw)
+        except Exception as exc:
+            log.error(f"Scoreboard fetch failed for {d}: {exc}")
+            continue
 
-    # ── Rest days ──
-    df["rest_days"] = (
-        df.groupby("team_id")["_sort_dt"]
-        .transform(lambda s: s.diff().dt.days)
-    ).fillna(3).clip(0, 21)   # cap at 21, fill first game with 3 (neutral)
-
-    # ── Games played in last 7 / 14 days ──
-    def _games_in_window(group: pd.Series, days: int) -> pd.Series:
-        result = []
-        dates = group.values
-        for i, dt in enumerate(dates):
-            cutoff = dt - pd.Timedelta(days=days)
-            # Count games strictly before this game within the window
-            count = sum(1 for d in dates[:i] if d >= cutoff)
-            result.append(count)
-        return pd.Series(result, index=group.index)
-
-    df["games_l7"]  = df.groupby("team_id")["_sort_dt"].transform(
-        lambda s: _games_in_window(s, 7))
-    df["games_l14"] = df.groupby("team_id")["_sort_dt"].transform(
-        lambda s: _games_in_window(s, 14))
-
-    # ── Win/loss streak ──
-    def _streak(series: pd.Series) -> pd.Series:
-        """Current streak length (+N = win streak, -N = loss streak) using prior games."""
-        result = []
-        streak = 0
-        for val in series.shift(1):
-            if pd.isna(val):
-                result.append(0)
-                continue
-            w = int(val)
-            if streak == 0:
-                streak = 1 if w else -1
-            elif w and streak > 0:
-                streak += 1
-            elif not w and streak < 0:
-                streak -= 1
+        events = raw.get("events") or []
+        day_rows = []
+        for e in events:
+            parsed = parse_scoreboard_event(e)
+            if parsed:
+                parsed["date"]          = d
+                parsed["pulled_at_utc"] = datetime.now(TZ).isoformat()
+                parsed["source"]        = SOURCE
+                day_rows.append(parsed)
             else:
-                streak = 1 if w else -1
-            result.append(streak)
-        return pd.Series(result, index=series.index)
+                log.warning(f"Could not parse scoreboard event {e.get('id','?')} on {d}")
 
-    if "win" in df.columns:
-        df["win_streak"] = df.groupby("team_id")["win"].transform(_streak)
+        finals = sum(1 for r in day_rows if str(r.get("completed", "")).lower() == "true")
+        log.info(f"Scoreboard {d}: {len(day_rows)} games, {finals} final")
+        all_rows.extend(day_rows)
 
-    if "cover" in df.columns:
-        df["cover_streak"] = df.groupby("team_id")["cover"].transform(_streak)
+    if not all_rows:
+        log.warning("No scoreboard games returned")
+        return pd.DataFrame()
 
-    df = df.drop(columns=["_sort_dt"], errors="ignore")
-    return df
+    df_new = pd.DataFrame(all_rows)
+    df_all = _append_dedupe_write(
+        OUT_GAMES,
+        df_new,
+        unique_keys=["game_id"],
+        sort_cols=["date", "game_id"],
+    )
+    log.info(f"games.csv: {len(df_all)} total rows")
+    return df_all
 
 
-def add_rolling_metrics(df: pd.DataFrame,
-                        windows: List[int] = ROLLING_WINDOWS) -> pd.DataFrame:
+# ── Summary pass ──────────────────────────────────────────────────────────────
+
+def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BACK) -> None:
     """
-    Rolling averages per metric in ROLLING_METRICS, grouped by team_id.
-    Uses shift(1) for leak-free pregame features.
+    For each completed game in the run window, fetch the ESPN summary and
+    write team + player rows to their respective CSVs.
     """
-    if "team_id" not in df.columns or "game_datetime_utc" not in df.columns:
-        return df
+    now = datetime.now(TZ)
+    window = {(now - timedelta(days=i)).strftime("%Y%m%d") for i in range(days_back)}
+    window.add(now.strftime("%Y%m%d"))
 
-    df = df.copy()
-    df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
-    df = df.sort_values(["team_id", "_sort_dt"])
+    # Only process games within our date window
+    run_games = games_df[games_df["date"].astype(str).isin(window)].copy()
+    game_ids  = run_games["game_id"].astype(str).unique().tolist()
+    log.info(f"Games in run window: {len(game_ids)}")
 
-    present = [m for m in ROLLING_METRICS if m in df.columns]
+    # Load checkpoint so we can resume interrupted runs
+    checkpoint   = _load_checkpoint()
+    processed    = set(map(str, checkpoint.get("processed_ids", [])))
 
-    for w in windows:
-        for m in present:
-            df[f"{m}_l{w}"] = df.groupby("team_id")[m].transform(
-                lambda s, ww=w: s.shift(1).rolling(ww, min_periods=1).mean().round(2)
+    team_rows:   List[Dict] = []
+    player_rows: List[Dict] = []
+    failed:      List[str]  = []
+
+    for i, gid in enumerate(game_ids, 1):
+        if gid in processed:
+            log.debug(f"Skipping {gid} (checkpoint)")
+            continue
+
+        try:
+            raw    = fetch_summary(gid)
+            _save_raw_json("summaries", gid, raw)
+            parsed = parse_summary(raw, gid)
+
+            if parsed is None:
+                log.warning(f"parse_summary returned None for {gid}")
+                failed.append(gid)
+                continue
+
+            now_iso = datetime.now(TZ).isoformat()
+            hrow, arow = summary_to_team_rows(parsed)
+            for row in (hrow, arow):
+                row["pulled_at_utc"] = now_iso
+                row["source"]        = SOURCE
+                row["parse_version"] = PARSE_VERSION
+            team_rows.extend([hrow, arow])
+
+            for p in parsed.get("players", []):
+                p["pulled_at_utc"] = now_iso
+                p["source"]        = SOURCE
+                p["parse_version"] = PARSE_VERSION
+                player_rows.append(p)
+
+            processed.add(gid)
+
+        except Exception as exc:
+            log.error(f"Failed to process game {gid}: {exc}")
+            failed.append(gid)
+
+        # Checkpoint every 25 games
+        if i % 25 == 0:
+            _save_checkpoint({"processed_ids": list(processed)})
+            log.info(f"Progress: {i}/{len(game_ids)} games processed")
+
+        time.sleep(FETCH_SLEEP)
+
+    # ── Retry failed games once ──
+    if failed:
+        log.info(f"Retrying {len(failed)} failed games...")
+        time.sleep(2.0)
+        still_failed = []
+        for gid in failed:
+            if gid in processed:
+                continue
+            try:
+                raw    = fetch_summary(gid)
+                parsed = parse_summary(raw, gid)
+                if parsed:
+                    now_iso = datetime.now(TZ).isoformat()
+                    hrow, arow = summary_to_team_rows(parsed)
+                    for row in (hrow, arow):
+                        row["pulled_at_utc"] = now_iso
+                        row["source"]        = SOURCE
+                        row["parse_version"] = PARSE_VERSION
+                    team_rows.extend([hrow, arow])
+                    for p in parsed.get("players", []):
+                        p["pulled_at_utc"] = now_iso
+                        p["source"]        = SOURCE
+                        p["parse_version"] = PARSE_VERSION
+                        player_rows.append(p)
+                    processed.add(gid)
+                    log.info(f"  Retry OK: {gid}")
+                else:
+                    still_failed.append(gid)
+            except Exception as exc:
+                log.error(f"  Retry failed {gid}: {exc}")
+                still_failed.append(gid)
+            time.sleep(0.25)
+        failed = still_failed
+
+    # ── Write CSVs ──
+    if team_rows:
+        df_team = pd.DataFrame(team_rows)
+        df_all  = _append_dedupe_write(
+            OUT_TEAM_LOGS,
+            df_team,
+            unique_keys=["event_id", "team_id"],
+            sort_cols=["game_datetime_utc", "event_id", "team_id"],
+        )
+        log.info(f"team_game_logs.csv: {len(df_all)} total rows")
+
+        # ── Compute advanced metrics + rolling windows on full history ──
+        # Always runs on the full df_all (not just new rows) so rolling
+        # windows are accurate across the entire season, not just this run.
+        df_metrics = compute_all_metrics(df_all)
+        df_metrics_out = _append_dedupe_write(
+            OUT_METRICS,
+            df_metrics,
+            unique_keys=["event_id", "team_id"],
+            sort_cols=["game_datetime_utc", "event_id", "team_id"],
+        )
+        log.info(f"team_game_metrics.csv: {len(df_metrics_out)} total rows")
+
+        # ── Compute SOS + opponent-context metrics ──
+        # Requires opponent_id column from summary_to_team_rows.
+        df_sos = compute_sos_metrics(df_metrics_out)
+        df_sos_out = _append_dedupe_write(
+            OUT_SOS,
+            df_sos,
+            unique_keys=["event_id", "team_id"],
+            sort_cols=["game_datetime_utc", "event_id", "team_id"],
+        )
+        log.info(f"team_game_sos.csv: {len(df_sos_out)} total rows")
+    else:
+        log.warning("No team rows to write")
+
+    if player_rows:
+        df_players = pd.DataFrame(player_rows)
+        df_all_p   = _append_dedupe_write(
+            OUT_PLAYER_LOGS,
+            df_players,
+            unique_keys=["event_id", "team_id", "athlete_id"],
+            sort_cols=["game_datetime_utc", "event_id", "team_id", "athlete_id"],
+        )
+        log.info(f"player_game_logs.csv: {len(df_all_p)} total rows")
+
+        # ── Injury proxy ──
+        df_proxy = compute_injury_proxy(df_all_p, df_all if team_rows else pd.DataFrame())
+        if not df_proxy.empty:
+            df_proxy_out = _append_dedupe_write(
+                OUT_PLAYER_PROXY,
+                df_proxy,
+                unique_keys=["event_id", "athlete_id"],
+                sort_cols=["game_datetime_utc", "event_id", "athlete_id"],
             )
+            log.info(f"player_injury_proxy.csv: {len(df_proxy_out)} total rows")
 
-    # ── Shooting variance (10-game rolling std) ──
-    for metric, col_name in [("efg_pct", "efg_std_l10"),
-                              ("three_pct", "three_pct_std_l10"),
-                              ("net_rtg", "net_rtg_std_l10")]:
-        if metric in df.columns:
-            df[col_name] = df.groupby("team_id")[metric].transform(
-                lambda s: s.shift(1).rolling(10, min_periods=3).std().round(2)
-            )
+            # Team-level injury impact
+            df_team_logs = pd.read_csv(OUT_TEAM_LOGS) if OUT_TEAM_LOGS.exists() else pd.DataFrame()
+            df_impact = compute_team_injury_impact(df_proxy_out, df_team_logs)
+            if not df_impact.empty:
+                df_impact_out = _append_dedupe_write(
+                    OUT_TEAM_INJURY,
+                    df_impact,
+                    unique_keys=["event_id", "team_id"],
+                    sort_cols=["game_datetime_utc", "event_id", "team_id"],
+                )
+                log.info(f"team_injury_impact.csv: {len(df_impact_out)} total rows")
+    else:
+        log.warning("No player rows to write")
 
-    # ── ATS rolling rates ──
-    if "cover" in df.columns:
-        df["cover_rate_l10"] = df.groupby("team_id")["cover"].transform(
-            lambda s: s.shift(1).rolling(10, min_periods=3).mean().round(3)
-        )
-        df["cover_rate_season"] = df.groupby("team_id")["cover"].transform(
-            lambda s: s.shift(1).expanding(min_periods=3).mean().round(3)
-        )
+    # ── Reconciliation report ──
+    log.info("=== Reconciliation ===")
+    log.info(f"Total games in window:   {len(game_ids)}")
+    log.info(f"Successfully processed:  {len(processed)}")
+    log.info(f"Failed after retry:      {len(failed)}")
+    if failed:
+        log.warning(f"Still failing: {failed[:20]}")
 
-    if "cover_margin" in df.columns:
-        df["ats_margin_l10"] = df.groupby("team_id")["cover_margin"].transform(
-            lambda s: s.shift(1).rolling(10, min_periods=3).mean().round(2)
-        )
+    completion = len(processed) / max(1, len(game_ids))
+    log.info(f"Completion rate: {completion*100:.1f}%")
 
-    # ── Close game win % ──
-    if "win" in df.columns and "close_game_flag" in df.columns:
-        # Win % in close games only — season rolling
-        close_wins = df["win"].where(df["close_game_flag"] == 1)
-        df["close_win_pct_season"] = df.groupby("team_id")[df.columns[
-            df.columns.get_loc("win")]].transform(
-            lambda s: s.shift(1).expanding(min_periods=2).mean().round(3)
-        )
-        # Simpler approach
-        df["close_game_win_pct"] = df.groupby("team_id").apply(
-            lambda g: g["win"].where(g["close_game_flag"] == 1)
-            .shift(1).expanding(min_periods=2).mean()
-        ).reset_index(level=0, drop=True).round(3)
-
-    df = df.drop(columns=["_sort_dt"], errors="ignore")
-    return df
+    _clear_checkpoint()
 
 
-def add_home_away_splits(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Separate rolling efficiency metrics split by home vs away.
-    Gives context on how a team performs at home vs on the road.
-    """
-    if "home_away" not in df.columns:
-        return df
+# ── Entry point ───────────────────────────────────────────────────────────────
 
-    df = df.copy()
-    df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
-    df = df.sort_values(["team_id", "_sort_dt"])
-
-    ha_metrics = ["ortg", "drtg", "net_rtg", "efg_pct", "tov_pct", "pace"]
-    present    = [m for m in ha_metrics if m in df.columns]
-
-    for m in present:
-        df[f"ha_{m}_l10"] = df.groupby(["team_id", "home_away"])[m].transform(
-            lambda s: s.shift(1).rolling(10, min_periods=3).mean().round(2)
-        )
-
-    # Home/away net rating differential — how much better/worse on road
-    if "net_rtg" in df.columns:
-        home_rtg = df[df["home_away"] == "home"].groupby("team_id")["net_rtg"].transform(
-            lambda s: s.shift(1).expanding(min_periods=3).mean()
-        )
-        away_rtg = df[df["home_away"] == "away"].groupby("team_id")["net_rtg"].transform(
-            lambda s: s.shift(1).expanding(min_periods=3).mean()
-        )
-        df.loc[df["home_away"] == "home", "home_net_rtg_season"] = home_rtg
-        df.loc[df["home_away"] == "away", "away_net_rtg_season"] = away_rtg
-
-    df = df.drop(columns=["_sort_dt"], errors="ignore")
-    return df
+def run(days_back: int = DAYS_BACK) -> None:
+    log.info(f"=== ESPN CBB Pipeline | DAYS_BACK={days_back} | PARSE_VERSION={PARSE_VERSION} ===")
+    games_df = build_games(days_back=days_back)
+    if games_df.empty:
+        log.error("No games from scoreboard — aborting")
+        return
+    build_team_and_player_logs(games_df, days_back=days_back)
+    log.info("=== Run complete ===")
 
 
-def add_true_rebound_pcts(df: pd.DataFrame) -> pd.DataFrame:
-    """True ORB%/DRB% using opponent boards. Only runs if opp columns present."""
-    if not all(c in df.columns for c in ["opp_orb", "opp_drb"]):
-        return df
-    df = df.copy()
-    orb = pd.to_numeric(df.get("orb", np.nan), errors="coerce")
-    drb = pd.to_numeric(df.get("drb", np.nan), errors="coerce")
-    opp_orb = pd.to_numeric(df["opp_orb"], errors="coerce")
-    opp_drb = pd.to_numeric(df["opp_drb"], errors="coerce")
-    df["true_orb_pct"] = (orb / (orb + opp_drb).replace(0, np.nan) * 100).round(1)
-    df["true_drb_pct"] = (drb / (drb + opp_orb).replace(0, np.nan) * 100).round(1)
-    return df
-
-
-# ── Main entry point ──────────────────────────────────────────────────────────
-
-def compute_all_metrics(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Full metrics pipeline. Call from espn_pipeline.py after team logs are written.
-    Input: team_game_logs DataFrame (full historical, not just current run).
-    Output: same DataFrame with all derived columns appended.
-    """
-    log.info(f"Computing metrics for {len(df)} team-game rows")
-    df = add_per_game_metrics(df)
-    df = add_luck_score(df)
-    df = add_schedule_features(df)
-    df = add_rolling_metrics(df, windows=ROLLING_WINDOWS)
-    df = add_home_away_splits(df)
-    df = add_true_rebound_pcts(df)
-    log.info("Metrics complete")
-    return df
+if __name__ == "__main__":
+    run()
