@@ -1,0 +1,99 @@
+name: Update ESPN CBB Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      days_back:
+        description: "Days back to fetch (default 3, use 120 for full season backfill)"
+        required: false
+        default: "3"
+  schedule:
+    - cron: "0 10 * * *"   # 10:00 AM UTC daily (2 AM PST / 3 AM PDT)
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # ── Restore previous CSVs so append/dedupe works correctly ──
+      - name: Download previous ESPN CSVs
+        uses: actions/download-artifact@v4
+        with:
+          name: espn-cbb-csvs
+          path: data/
+        continue-on-error: true   # OK to fail on first-ever run
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pandas requests
+
+      - name: Run ESPN pipeline
+        run: python espn_pipeline.py
+        env:
+          DAYS_BACK: ${{ github.event.inputs.days_back || '3' }}
+
+      - name: Validate outputs
+        run: |
+          python - <<'PY'
+          import pandas as pd, sys, pathlib
+
+          games   = pathlib.Path("data/games.csv")
+          logs    = pathlib.Path("data/team_game_logs.csv")
+          players = pathlib.Path("data/player_game_logs.csv")
+
+          ok = True
+          for f in [games, logs, players]:
+              if not f.exists():
+                  print(f"[FAIL] Missing: {f}")
+                  ok = False
+                  continue
+              df = pd.read_csv(f)
+              print(f"[OK]   {f.name}: {len(df)} rows, {len(df.columns)} cols")
+
+          if not ok:
+              sys.exit(1)
+
+          # Cross-check: every completed game in games.csv should have team log rows
+          gdf = pd.read_csv(games)
+          ldf = pd.read_csv(logs)
+          completed_ids = set(gdf[gdf["completed"].astype(str).str.lower() == "true"]["game_id"].astype(str))
+          log_ids       = set(ldf["event_id"].astype(str))
+          missing       = completed_ids - log_ids
+          print(f"\nCompleted games:        {len(completed_ids)}")
+          print(f"Games with team logs:   {len(log_ids)}")
+          print(f"Missing from logs:      {len(missing)}")
+
+          if missing:
+              rate = 1 - len(missing) / max(1, len(completed_ids))
+              print(f"Completion rate: {rate*100:.1f}%")
+              for m in sorted(missing)[:20]:
+                  print(f"  MISSING: {m}")
+              if rate < 0.90:
+                  print("[FAIL] Completion rate below 90%")
+                  sys.exit(1)
+          else:
+              print("[OK] All completed games have team log rows")
+          PY
+
+      - name: Show output sizes
+        if: always()
+        run: ls -lh data/*.csv 2>/dev/null || echo "No CSVs found"
+
+      - name: Upload ESPN CSVs as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: espn-cbb-csvs
+          path: data/*.csv
+          retention-days: 7
+          if-no-files-found: warn
