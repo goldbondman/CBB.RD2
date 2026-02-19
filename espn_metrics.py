@@ -1,27 +1,27 @@
 """
 ESPN CBB Pipeline — Advanced Metrics
-Computes derived per-game stats and rolling team averages from box score data.
-All functions are pure (DataFrame in, DataFrame out). No I/O here.
+Per-game stats and rolling team averages from box score data.
+All functions pure (DataFrame in, DataFrame out). No I/O.
 
-Per-game metrics computed:
-  - eFG%         Effective Field Goal %
-  - TS%          True Shooting %
-  - ORB%         Offensive Rebound %
-  - DRB%         Defensive Rebound %
-  - TRB%         Total Rebound %
-  - TOV%         Turnover %
-  - FTR          Free Throw Rate (FTA/FGA)
-  - 3PAR         Three Point Attempt Rate (3PA/FGA)
-  - Possessions  Estimated possessions
-  - ORTG         Offensive Rating (points per 100 possessions)
-  - DRTG         Defensive Rating (opponent points per 100 possessions)
-  - NetRTG       Net Rating (ORTG - DRTG)
-  - Pace         Estimated possessions per 40 minutes
-  - AdjPace      Pace normalized to 70 possessions per game (league average)
+Per-game metrics:
+  efg_pct, ts_pct, fg_pct, three_pct, ft_pct
+  three_par, ftr
+  orb_pct, drb_pct, tov_pct
+  poss, ortg, drtg, net_rtg, pace
+  h1_margin, h2_margin, h1_ortg, h2_ortg (half splits)
+  pythagorean_win_pct, luck_score
+  win, cover, cover_margin, ats_result
+  blowout_flag, close_game_flag, garbage_margin
 
-Rolling windows (last 5 and last 10 games, per team):
-  - All per-game metrics above
-  - Points for / against / margin
+Rolling windows (L5, L10) — all leak-free via shift(1):
+  All per-game metrics above
+  points_for, points_against, margin
+  Shooting variance: efg_std_l10, three_pct_std_l10
+  Schedule: rest_days, games_l7, games_l14
+  Streaks: win_streak, lose_streak, cover_streak
+  Home/away splits: ha_ortg_l10, ha_drtg_l10, ha_net_rtg_l10
+  ATS rolling: cover_rate_l10, ats_margin_l10
+  Close game: close_win_pct_season
 """
 
 import logging
@@ -33,184 +33,325 @@ import pandas as pd
 log = logging.getLogger(__name__)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-REGULATION_MINUTES = 40.0
-LEAGUE_AVG_PACE    = 70.0   # approximate D1 average possessions per 40 min
-ROLLING_WINDOWS    = [5, 10]
+REGULATION_MINUTES  = 40.0
+LEAGUE_AVG_PACE     = 70.0
+PYTHAGOREAN_EXP     = 11.5   # standard CBB exponent
+BLOWOUT_THRESHOLD   = 15     # margin >= this = blowout
+CLOSE_GAME_THRESHOLD = 5     # margin <= this = close game
+CAP_MARGIN          = 15     # cap margin for Pythagorean/rolling to reduce garbage time noise
+ROLLING_WINDOWS     = [5, 10]
+
+ROLLING_METRICS = [
+    "points_for", "points_against", "margin", "margin_capped",
+    "efg_pct", "ts_pct", "three_par", "ftr",
+    "fg_pct", "three_pct", "ft_pct",
+    "orb_pct", "drb_pct", "tov_pct",
+    "ortg", "drtg", "net_rtg", "poss", "pace",
+    "h1_pts", "h2_pts", "h1_pts_against", "h2_pts_against",
+    "h1_margin", "h2_margin",
+    "win", "cover", "cover_margin",
+    "stl", "blk", "ast",
+]
 
 
-# ── Safe math helpers ─────────────────────────────────────────────────────────
+# ── Safe math ─────────────────────────────────────────────────────────────────
 
-def _div(num, den, fill=np.nan):
-    """Safe division — returns fill if denominator is 0 or NaN."""
-    try:
-        if pd.isna(den) or den == 0:
-            return fill
-        return num / den
-    except Exception:
-        return fill
-
-
-def _pct(num, den, fill=np.nan):
-    """Safe percentage (0–100 scale)."""
-    return _div(num, den, fill) * 100 if not np.isnan(_div(num, den, fill)) else fill
+def _col(df: pd.DataFrame, name: str) -> pd.Series:
+    return (pd.to_numeric(df[name], errors="coerce")
+            if name in df.columns
+            else pd.Series(np.nan, index=df.index))
 
 
 # ── Per-game metrics ──────────────────────────────────────────────────────────
 
 def add_per_game_metrics(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Add advanced per-game metrics to a team_game_logs DataFrame.
-    Expects columns: fgm, fga, tpm, tpa, ftm, fta, orb, drb, reb,
-                     tov, points_for, points_against, margin.
-    Safe to call even if some columns are missing — missing inputs produce NaN.
-
-    Returns the DataFrame with new columns appended.
-    """
     df = df.copy()
 
-    def col(name):
-        """Return series or NaN series if column missing."""
-        return pd.to_numeric(df[name], errors="coerce") if name in df.columns else pd.Series(np.nan, index=df.index)
+    fgm = _col(df, "fgm"); fga = _col(df, "fga")
+    tpm = _col(df, "tpm"); tpa = _col(df, "tpa")
+    ftm = _col(df, "ftm"); fta = _col(df, "fta")
+    orb = _col(df, "orb"); drb = _col(df, "drb"); reb = _col(df, "reb")
+    tov = _col(df, "tov")
+    pts     = _col(df, "points_for")
+    opp_pts = _col(df, "points_against")
+    spread  = _col(df, "spread")
+    h1_pts  = _col(df, "h1_pts")
+    h2_pts  = _col(df, "h2_pts")
+    h1_opp  = _col(df, "h1_pts_against")
+    h2_opp  = _col(df, "h2_pts_against")
 
-    fgm  = col("fgm");  fga  = col("fga")
-    tpm  = col("tpm");  tpa  = col("tpa")
-    ftm  = col("ftm");  fta  = col("fta")
-    orb  = col("orb");  drb  = col("drb");  reb = col("reb")
-    tov  = col("tov")
-    pts  = col("points_for")
-    opp_pts = col("points_against")
+    fga_s = fga.replace(0, np.nan)
 
     # ── Shooting ──
-    # eFG% = (FGM + 0.5 * 3PM) / FGA
-    df["efg_pct"] = ((fgm + 0.5 * tpm) / fga.replace(0, np.nan) * 100).round(1)
-
-    # TS% = PTS / (2 * (FGA + 0.44 * FTA))
-    ts_denom = 2 * (fga + 0.44 * fta)
-    df["ts_pct"] = (pts / ts_denom.replace(0, np.nan) * 100).round(1)
-
-    # 3PAR = 3PA / FGA
-    df["three_par"] = (tpa / fga.replace(0, np.nan) * 100).round(1)
-
-    # FTR = FTA / FGA
-    df["ftr"] = (fta / fga.replace(0, np.nan) * 100).round(1)
-
-    # FT% and FG% (basic, useful for context)
-    df["fg_pct"]  = (fgm / fga.replace(0, np.nan) * 100).round(1)
-    df["three_pct"] = (tpm / tpa.replace(0, np.nan) * 100).round(1)
-    df["ft_pct"]  = (ftm / fta.replace(0, np.nan) * 100).round(1)
+    df["efg_pct"]    = ((fgm + 0.5 * tpm) / fga_s * 100).round(1)
+    df["ts_pct"]     = (pts / (2 * (fga + 0.44 * fta)).replace(0, np.nan) * 100).round(1)
+    df["fg_pct"]     = (fgm / fga_s * 100).round(1)
+    df["three_pct"]  = (tpm / tpa.replace(0, np.nan) * 100).round(1)
+    df["ft_pct"]     = (ftm / fta.replace(0, np.nan) * 100).round(1)
+    df["three_par"]  = (tpa / fga_s * 100).round(1)
+    df["ftr"]        = (fta / fga_s * 100).round(1)
 
     # ── Rebounding ──
-    # Use reb as fallback if orb/drb missing
-    orb_clean = orb.fillna(reb - drb) if "drb" in df.columns else orb
-    drb_clean = drb.fillna(reb - orb) if "orb" in df.columns else drb
+    orb_c = orb.fillna(reb - drb)
+    drb_c = drb.fillna(reb - orb)
+    df["orb_pct"] = (orb_c / reb.replace(0, np.nan) * 100).round(1)
+    df["drb_pct"] = (drb_c / reb.replace(0, np.nan) * 100).round(1)
 
-    # ORB% = ORB / (ORB + opp_DRB)  — requires opponent join; approximate here
-    # as share of own total boards until opponent merge is available
-    df["orb_pct"] = (orb_clean / reb.replace(0, np.nan) * 100).round(1)
-    df["drb_pct"] = (drb_clean / reb.replace(0, np.nan) * 100).round(1)
-
-    # ── Possessions estimate ──
-    # Poss ≈ FGA - ORB + TOV + 0.44 * FTA  (standard Kubatko formula)
-    poss = fga - orb_clean + tov + 0.44 * fta
+    # ── Possessions ──
+    poss = fga - orb_c + tov + 0.44 * fta
     df["poss"] = poss.round(1)
 
-    # ── Efficiency ratings (per 100 possessions) ──
-    df["ortg"]   = (pts    / poss.replace(0, np.nan) * 100).round(1)
-    df["drtg"]   = (opp_pts / poss.replace(0, np.nan) * 100).round(1)
+    # ── Efficiency ──
+    poss_s = poss.replace(0, np.nan)
+    df["ortg"]    = (pts    / poss_s * 100).round(1)
+    df["drtg"]    = (opp_pts / poss_s * 100).round(1)
     df["net_rtg"] = (df["ortg"] - df["drtg"]).round(1)
+    df["tov_pct"] = (tov / poss_s * 100).round(1)
 
-    # ── Turnover % = TOV / Poss ──
-    df["tov_pct"] = (tov / poss.replace(0, np.nan) * 100).round(1)
-
-    # ── Pace = possessions per 40 minutes ──
-    # Without minutes played we use regulation as denominator.
-    # Games with OT will show slightly lower pace — flag in is_ot column.
+    # ── Pace ──
     df["pace"] = (poss / REGULATION_MINUTES * 40).round(1)
+    # Note: adj_pace computed in espn_sos.py after opponent join
 
-    # ── Adjusted pace ──
-    # True adj_pace requires opponent pace data and is computed in espn_sos.py
-    # after the opponent join. Formula:
-    #   adj_pace = (team_pace / avg(team_pace, opp_pace)) * LEAGUE_AVG_PACE
-    # We do NOT compute a placeholder here since it would always equal LEAGUE_AVG_PACE
-    # and would be misleading. See espn_sos.py for the real computation.
+    # ── Half splits ──
+    df["h1_margin"] = (h1_pts - h1_opp).round(1)
+    df["h2_margin"] = (h2_pts - h2_opp).round(1)
+    # Half ORTG (rough — uses team poss estimate, halved)
+    half_poss = poss_s / 2
+    df["h1_ortg"] = (h1_pts  / half_poss * 100).round(1)
+    df["h2_ortg"] = (h2_pts  / half_poss * 100).round(1)
+    df["h1_drtg"] = (h1_opp / half_poss * 100).round(1)
+    df["h2_drtg"] = (h2_opp / half_poss * 100).round(1)
+
+    # ── Game outcome flags ──
+    margin = _col(df, "margin")
+    df["win"]             = (margin > 0).astype(float).where(margin.notna())
+    df["close_game_flag"] = (margin.abs() <= CLOSE_GAME_THRESHOLD).astype(float).where(margin.notna())
+    df["blowout_flag"]    = (margin.abs() >= BLOWOUT_THRESHOLD).astype(float).where(margin.notna())
+
+    # Margin capped — reduces blowout inflation in rolling metrics
+    df["margin_capped"] = margin.clip(-CAP_MARGIN, CAP_MARGIN)
+
+    # ── ATS (vs spread) ──
+    # Positive spread = team is favorite (spread given as negative for favorite)
+    # cover = team margin > -spread (i.e. margin + spread > 0)
+    # ESPN spread convention: negative = home favorite (e.g. -5.5 means home -5.5)
+    home_away = df.get("home_away", pd.Series("", index=df.index))
+    team_spread = spread.where(home_away == "home", -spread)  # flip for away team
+    df["cover_margin"] = (margin + team_spread).round(1)
+    df["cover"]        = (df["cover_margin"] > 0).astype(float).where(
+                          margin.notna() & team_spread.notna())
+    df["ats_push"]     = (df["cover_margin"] == 0).astype(float).where(
+                          margin.notna() & team_spread.notna())
+
+    # ── Pythagorean win % ──
+    exp = PYTHAGOREAN_EXP
+    pts_pow     = pts    ** exp
+    opp_pts_pow = opp_pts ** exp
+    denom = (pts_pow + opp_pts_pow).replace(0, np.nan)
+    df["pythagorean_win_pct"] = (pts_pow / denom).round(3)
 
     return df
 
 
-# ── Rolling window features ───────────────────────────────────────────────────
-
-ROLLING_METRICS = [
-    "points_for", "points_against", "margin",
-    "efg_pct", "ts_pct", "three_par", "ftr", "fg_pct", "three_pct", "ft_pct",
-    "orb_pct", "drb_pct", "tov_pct",
-    "ortg", "drtg", "net_rtg",
-    "poss", "pace",
-]
-
-
-def add_rolling_metrics(df: pd.DataFrame, windows: List[int] = ROLLING_WINDOWS) -> pd.DataFrame:
+def add_luck_score(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Add rolling averages for each metric in ROLLING_METRICS, grouped by team_id.
-    Uses only prior games (shift(1)) to avoid data leakage — the rolling value
-    on row N reflects the average of the N-1 most recent games before that game.
-
-    New columns follow the pattern:
-      {metric}_l{window}   e.g. ortg_l5, net_rtg_l10
-
-    Requires columns: team_id, game_datetime_utc (for sort order).
+    Luck score = actual win% - Pythagorean win%.
+    Positive = team is over-performing their scoring margin (due to regress).
+    Negative = team is under-performing (due to improve).
+    Computed as season-to-date using expanding mean, leak-free.
     """
-    if "team_id" not in df.columns or "game_datetime_utc" not in df.columns:
-        log.warning("add_rolling_metrics: missing team_id or game_datetime_utc — skipping")
+    if "win" not in df.columns or "pythagorean_win_pct" not in df.columns:
         return df
 
     df = df.copy()
     df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
     df = df.sort_values(["team_id", "_sort_dt"])
 
-    metrics_present = [m for m in ROLLING_METRICS if m in df.columns]
-
-    for window in windows:
-        for metric in metrics_present:
-            col_name = f"{metric}_l{window}"
-            df[col_name] = (
-                df.groupby("team_id")[metric]
-                .transform(lambda s: s.shift(1).rolling(window, min_periods=1).mean().round(2))
-            )
+    df["actual_win_pct_season"] = df.groupby("team_id")["win"].transform(
+        lambda s: s.shift(1).expanding(min_periods=3).mean().round(3)
+    )
+    df["pyth_win_pct_season"] = df.groupby("team_id")["pythagorean_win_pct"].transform(
+        lambda s: s.shift(1).expanding(min_periods=3).mean().round(3)
+    )
+    df["luck_score"] = (df["actual_win_pct_season"] - df["pyth_win_pct_season"]).round(3)
 
     df = df.drop(columns=["_sort_dt"], errors="ignore")
     return df
 
 
-# ── Opponent-adjusted ORB%/DRB% ──────────────────────────────────────────────
-
-def add_true_rebound_pcts(df: pd.DataFrame) -> pd.DataFrame:
+def add_schedule_features(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Compute true ORB% and DRB% using opponent rebound data.
-    Requires opponent columns: opp_orb, opp_drb, opp_reb (added after opponent join).
-
-    True ORB% = ORB / (ORB + opp_DRB)
-    True DRB% = DRB / (DRB + opp_ORB)
-
-    Only runs if opponent columns are present — safe to call otherwise.
+    Rest days, schedule density, win/loss/cover streaks.
+    All computed per team, leak-free.
     """
-    df = df.copy()
-
-    has_opp = all(c in df.columns for c in ["opp_orb", "opp_drb"])
-    if not has_opp:
-        log.debug("add_true_rebound_pcts: opponent rebound columns not present, skipping")
+    if "team_id" not in df.columns or "game_datetime_utc" not in df.columns:
         return df
 
+    df = df.copy()
+    df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
+    df = df.sort_values(["team_id", "_sort_dt"])
+
+    # ── Rest days ──
+    df["rest_days"] = (
+        df.groupby("team_id")["_sort_dt"]
+        .transform(lambda s: s.diff().dt.days)
+    ).fillna(3).clip(0, 21)   # cap at 21, fill first game with 3 (neutral)
+
+    # ── Games played in last 7 / 14 days ──
+    def _games_in_window(group: pd.Series, days: int) -> pd.Series:
+        result = []
+        dates = group.values
+        for i, dt in enumerate(dates):
+            cutoff = dt - pd.Timedelta(days=days)
+            # Count games strictly before this game within the window
+            count = sum(1 for d in dates[:i] if d >= cutoff)
+            result.append(count)
+        return pd.Series(result, index=group.index)
+
+    df["games_l7"]  = df.groupby("team_id")["_sort_dt"].transform(
+        lambda s: _games_in_window(s, 7))
+    df["games_l14"] = df.groupby("team_id")["_sort_dt"].transform(
+        lambda s: _games_in_window(s, 14))
+
+    # ── Win/loss streak ──
+    def _streak(series: pd.Series) -> pd.Series:
+        """Current streak length (+N = win streak, -N = loss streak) using prior games."""
+        result = []
+        streak = 0
+        for val in series.shift(1):
+            if pd.isna(val):
+                result.append(0)
+                continue
+            w = int(val)
+            if streak == 0:
+                streak = 1 if w else -1
+            elif w and streak > 0:
+                streak += 1
+            elif not w and streak < 0:
+                streak -= 1
+            else:
+                streak = 1 if w else -1
+            result.append(streak)
+        return pd.Series(result, index=series.index)
+
+    if "win" in df.columns:
+        df["win_streak"] = df.groupby("team_id")["win"].transform(_streak)
+
+    if "cover" in df.columns:
+        df["cover_streak"] = df.groupby("team_id")["cover"].transform(_streak)
+
+    df = df.drop(columns=["_sort_dt"], errors="ignore")
+    return df
+
+
+def add_rolling_metrics(df: pd.DataFrame,
+                        windows: List[int] = ROLLING_WINDOWS) -> pd.DataFrame:
+    """
+    Rolling averages per metric in ROLLING_METRICS, grouped by team_id.
+    Uses shift(1) for leak-free pregame features.
+    """
+    if "team_id" not in df.columns or "game_datetime_utc" not in df.columns:
+        return df
+
+    df = df.copy()
+    df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
+    df = df.sort_values(["team_id", "_sort_dt"])
+
+    present = [m for m in ROLLING_METRICS if m in df.columns]
+
+    for w in windows:
+        for m in present:
+            df[f"{m}_l{w}"] = df.groupby("team_id")[m].transform(
+                lambda s, ww=w: s.shift(1).rolling(ww, min_periods=1).mean().round(2)
+            )
+
+    # ── Shooting variance (10-game rolling std) ──
+    for metric, col_name in [("efg_pct", "efg_std_l10"),
+                              ("three_pct", "three_pct_std_l10"),
+                              ("net_rtg", "net_rtg_std_l10")]:
+        if metric in df.columns:
+            df[col_name] = df.groupby("team_id")[metric].transform(
+                lambda s: s.shift(1).rolling(10, min_periods=3).std().round(2)
+            )
+
+    # ── ATS rolling rates ──
+    if "cover" in df.columns:
+        df["cover_rate_l10"] = df.groupby("team_id")["cover"].transform(
+            lambda s: s.shift(1).rolling(10, min_periods=3).mean().round(3)
+        )
+        df["cover_rate_season"] = df.groupby("team_id")["cover"].transform(
+            lambda s: s.shift(1).expanding(min_periods=3).mean().round(3)
+        )
+
+    if "cover_margin" in df.columns:
+        df["ats_margin_l10"] = df.groupby("team_id")["cover_margin"].transform(
+            lambda s: s.shift(1).rolling(10, min_periods=3).mean().round(2)
+        )
+
+    # ── Close game win % ──
+    if "win" in df.columns and "close_game_flag" in df.columns:
+        # Win % in close games only — season rolling
+        close_wins = df["win"].where(df["close_game_flag"] == 1)
+        df["close_win_pct_season"] = df.groupby("team_id")[df.columns[
+            df.columns.get_loc("win")]].transform(
+            lambda s: s.shift(1).expanding(min_periods=2).mean().round(3)
+        )
+        # Simpler approach
+        df["close_game_win_pct"] = df.groupby("team_id").apply(
+            lambda g: g["win"].where(g["close_game_flag"] == 1)
+            .shift(1).expanding(min_periods=2).mean()
+        ).reset_index(level=0, drop=True).round(3)
+
+    df = df.drop(columns=["_sort_dt"], errors="ignore")
+    return df
+
+
+def add_home_away_splits(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Separate rolling efficiency metrics split by home vs away.
+    Gives context on how a team performs at home vs on the road.
+    """
+    if "home_away" not in df.columns:
+        return df
+
+    df = df.copy()
+    df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
+    df = df.sort_values(["team_id", "_sort_dt"])
+
+    ha_metrics = ["ortg", "drtg", "net_rtg", "efg_pct", "tov_pct", "pace"]
+    present    = [m for m in ha_metrics if m in df.columns]
+
+    for m in present:
+        df[f"ha_{m}_l10"] = df.groupby(["team_id", "home_away"])[m].transform(
+            lambda s: s.shift(1).rolling(10, min_periods=3).mean().round(2)
+        )
+
+    # Home/away net rating differential — how much better/worse on road
+    if "net_rtg" in df.columns:
+        home_rtg = df[df["home_away"] == "home"].groupby("team_id")["net_rtg"].transform(
+            lambda s: s.shift(1).expanding(min_periods=3).mean()
+        )
+        away_rtg = df[df["home_away"] == "away"].groupby("team_id")["net_rtg"].transform(
+            lambda s: s.shift(1).expanding(min_periods=3).mean()
+        )
+        df.loc[df["home_away"] == "home", "home_net_rtg_season"] = home_rtg
+        df.loc[df["home_away"] == "away", "away_net_rtg_season"] = away_rtg
+
+    df = df.drop(columns=["_sort_dt"], errors="ignore")
+    return df
+
+
+def add_true_rebound_pcts(df: pd.DataFrame) -> pd.DataFrame:
+    """True ORB%/DRB% using opponent boards. Only runs if opp columns present."""
+    if not all(c in df.columns for c in ["opp_orb", "opp_drb"]):
+        return df
+    df = df.copy()
     orb = pd.to_numeric(df.get("orb", np.nan), errors="coerce")
     drb = pd.to_numeric(df.get("drb", np.nan), errors="coerce")
     opp_orb = pd.to_numeric(df["opp_orb"], errors="coerce")
     opp_drb = pd.to_numeric(df["opp_drb"], errors="coerce")
-
-    denom_orb = orb + opp_drb
-    denom_drb = drb + opp_orb
-
-    df["true_orb_pct"] = (orb / denom_orb.replace(0, np.nan) * 100).round(1)
-    df["true_drb_pct"] = (drb / denom_drb.replace(0, np.nan) * 100).round(1)
-
+    df["true_orb_pct"] = (orb / (orb + opp_drb).replace(0, np.nan) * 100).round(1)
+    df["true_drb_pct"] = (drb / (drb + opp_orb).replace(0, np.nan) * 100).round(1)
     return df
 
 
@@ -218,16 +359,16 @@ def add_true_rebound_pcts(df: pd.DataFrame) -> pd.DataFrame:
 
 def compute_all_metrics(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Full metrics pipeline:
-      1. Per-game advanced metrics
-      2. Rolling window averages (L5 / L10)
-      3. True rebound % if opponent data available
-
-    This is the function to call from espn_pipeline.py.
+    Full metrics pipeline. Call from espn_pipeline.py after team logs are written.
+    Input: team_game_logs DataFrame (full historical, not just current run).
+    Output: same DataFrame with all derived columns appended.
     """
     log.info(f"Computing metrics for {len(df)} team-game rows")
     df = add_per_game_metrics(df)
+    df = add_luck_score(df)
+    df = add_schedule_features(df)
     df = add_rolling_metrics(df, windows=ROLLING_WINDOWS)
+    df = add_home_away_splits(df)
     df = add_true_rebound_pcts(df)
     log.info("Metrics complete")
     return df
