@@ -17,6 +17,7 @@ from espn_config import (
     BASE_DIR, CSV_DIR, JSON_DIR,
     OUT_GAMES, OUT_TEAM_LOGS, OUT_PLAYER_LOGS, OUT_METRICS, OUT_SOS,
     OUT_PLAYER_PROXY, OUT_TEAM_INJURY,
+    OUT_WEIGHTED, OUT_PLAYER_METRICS,
     DAYS_BACK, TZ, CHECKPOINT_FILE,
     SOURCE, PARSE_VERSION,
     FETCH_SLEEP, DRY_RUN,
@@ -26,6 +27,8 @@ from espn_parsers import parse_scoreboard_event, parse_summary, summary_to_team_
 from espn_metrics import compute_all_metrics
 from espn_sos import compute_sos_metrics
 from espn_injury_proxy import compute_injury_proxy, compute_team_injury_impact
+from espn_weighted_metrics import compute_weighted_metrics
+from espn_player_metrics import compute_player_metrics
 
 logging.basicConfig(
     level=logging.INFO,
@@ -321,6 +324,17 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
             sort_cols=["game_datetime_utc", "event_id", "team_id"],
         )
         log.info(f"team_game_sos.csv: {len(df_sos_out)} total rows")
+
+        # ── Opponent-weighted rolling metrics ──
+        # Runs on SOS output so opponent quality weights are available.
+        df_weighted = compute_weighted_metrics(df_sos_out)
+        df_weighted_out = _append_dedupe_write(
+            OUT_WEIGHTED,
+            df_weighted,
+            unique_keys=["event_id", "team_id"],
+            sort_cols=["game_datetime_utc", "event_id", "team_id"],
+        )
+        log.info(f"team_game_weighted.csv: {len(df_weighted_out)} total rows")
     else:
         log.warning("No team rows to write")
 
@@ -333,6 +347,17 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
             sort_cols=["game_datetime_utc", "event_id", "team_id", "athlete_id"],
         )
         log.info(f"player_game_logs.csv: {len(df_all_p)} total rows")
+
+        # ── Player rolling metrics ──
+        team_logs_for_poss = df_metrics_out if team_rows else pd.DataFrame()
+        df_player_metrics = compute_player_metrics(df_all_p, team_logs_for_poss)
+        df_player_metrics_out = _append_dedupe_write(
+            OUT_PLAYER_METRICS,
+            df_player_metrics,
+            unique_keys=["event_id", "athlete_id"],
+            sort_cols=["game_datetime_utc", "event_id", "athlete_id"],
+        )
+        log.info(f"player_game_metrics.csv: {len(df_player_metrics_out)} total rows")
 
         # ── Injury proxy ──
         df_proxy = compute_injury_proxy(df_all_p, df_all if team_rows else pd.DataFrame())
