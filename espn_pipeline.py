@@ -15,13 +15,15 @@ import pandas as pd
 
 from espn_config import (
     BASE_DIR, CSV_DIR, JSON_DIR,
-    OUT_GAMES, OUT_TEAM_LOGS, OUT_PLAYER_LOGS,
+    OUT_GAMES, OUT_TEAM_LOGS, OUT_PLAYER_LOGS, OUT_METRICS, OUT_SOS,
     DAYS_BACK, TZ, CHECKPOINT_FILE,
     SOURCE, PARSE_VERSION,
     FETCH_SLEEP, DRY_RUN,
 )
 from espn_client import fetch_scoreboard, fetch_summary
 from espn_parsers import parse_scoreboard_event, parse_summary, summary_to_team_rows
+from espn_metrics import compute_all_metrics
+from espn_sos import compute_sos_metrics
 
 logging.basicConfig(
     level=logging.INFO,
@@ -294,6 +296,29 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
             sort_cols=["game_datetime_utc", "event_id", "team_id"],
         )
         log.info(f"team_game_logs.csv: {len(df_all)} total rows")
+
+        # ── Compute advanced metrics + rolling windows on full history ──
+        # Always runs on the full df_all (not just new rows) so rolling
+        # windows are accurate across the entire season, not just this run.
+        df_metrics = compute_all_metrics(df_all)
+        df_metrics_out = _append_dedupe_write(
+            OUT_METRICS,
+            df_metrics,
+            unique_keys=["event_id", "team_id"],
+            sort_cols=["game_datetime_utc", "event_id", "team_id"],
+        )
+        log.info(f"team_game_metrics.csv: {len(df_metrics_out)} total rows")
+
+        # ── Compute SOS + opponent-context metrics ──
+        # Requires opponent_id column from summary_to_team_rows.
+        df_sos = compute_sos_metrics(df_metrics_out)
+        df_sos_out = _append_dedupe_write(
+            OUT_SOS,
+            df_sos,
+            unique_keys=["event_id", "team_id"],
+            sort_cols=["game_datetime_utc", "event_id", "team_id"],
+        )
+        log.info(f"team_game_sos.csv: {len(df_sos_out)} total rows")
     else:
         log.warning("No team rows to write")
 
