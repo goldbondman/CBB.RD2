@@ -18,6 +18,8 @@ from espn_config import (
     OUT_GAMES, OUT_TEAM_LOGS, OUT_PLAYER_LOGS, OUT_METRICS, OUT_SOS,
     OUT_PLAYER_PROXY, OUT_TEAM_INJURY,
     OUT_WEIGHTED, OUT_PLAYER_METRICS,
+    OUT_TOURNAMENT_METRICS, OUT_TOURNAMENT_SNAPSHOT,
+    OUT_RANKINGS, OUT_RANKINGS_CONF,
     DAYS_BACK, TZ, CHECKPOINT_FILE,
     SOURCE, PARSE_VERSION,
     FETCH_SLEEP, DRY_RUN,
@@ -29,6 +31,8 @@ from espn_sos import compute_sos_metrics
 from espn_injury_proxy import compute_injury_proxy, compute_team_injury_impact
 from espn_weighted_metrics import compute_weighted_metrics
 from espn_player_metrics import compute_player_metrics
+from espn_tournament import compute_tournament_metrics, build_pretournament_snapshot
+from espn_rankings import run as run_rankings
 
 logging.basicConfig(
     level=logging.INFO,
@@ -335,6 +339,48 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
             sort_cols=["game_datetime_utc", "event_id", "team_id"],
         )
         log.info(f"team_game_weighted.csv: {len(df_weighted_out)} total rows")
+
+        # ── Tournament composite metrics ──
+        # Runs on weighted output so adj_ortg, adj_drtg, opp_avg_net_rtg,
+        # efg_vs_opp, rolling windows are all available.
+        # player_df is optional — uses player-level scoring distribution for
+        # star reliance when available, falls back to box-score proxies.
+        _player_df_for_tournament = (
+            pd.read_csv(OUT_PLAYER_METRICS)
+            if OUT_PLAYER_METRICS.exists() and OUT_PLAYER_METRICS.stat().st_size > 0
+            else pd.DataFrame()
+        )
+        df_tournament = compute_tournament_metrics(
+            df_weighted_out,
+            player_df=_player_df_for_tournament if not _player_df_for_tournament.empty else None,
+        )
+        df_tournament_out = _append_dedupe_write(
+            OUT_TOURNAMENT_METRICS,
+            df_tournament,
+            unique_keys=["event_id", "team_id"],
+            sort_cols=["game_datetime_utc", "event_id", "team_id"],
+        )
+        log.info(f"team_tournament_metrics.csv: {len(df_tournament_out)} total rows")
+
+        # ── Pre-tournament snapshot (one row per team = most recent game) ──
+        # Primary input for matchup projections (game totals, UWS, rankings).
+        # Rebuilt every run so it always reflects the latest completed game.
+        df_snapshot = build_pretournament_snapshot(df_tournament_out)
+        if not DRY_RUN:
+            OUT_TOURNAMENT_SNAPSHOT.parent.mkdir(parents=True, exist_ok=True)
+            df_snapshot.to_csv(OUT_TOURNAMENT_SNAPSHOT, index=False)
+        log.info(f"team_pretournament_snapshot.csv: {len(df_snapshot)} teams")
+
+        # ── CAGE Rankings ──
+        # Requires snapshot to be on disk — runs immediately after writing it.
+        # Writes cbb_rankings.csv + cbb_rankings_by_conference.csv.
+        try:
+            from pathlib import Path as _Path
+            run_rankings(output_dir=_Path("data"))
+            log.info("cbb_rankings.csv updated")
+        except Exception as exc:
+            log.warning(f"Rankings generation failed (non-fatal): {exc}")
+
     else:
         log.warning("No team rows to write")
 
