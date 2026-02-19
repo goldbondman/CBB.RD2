@@ -5,10 +5,30 @@ One function per data shape. No I/O here.
 """
 
 import logging
+from zoneinfo import ZoneInfo
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 log = logging.getLogger(__name__)
+
+TZ_PST = ZoneInfo("America/Los_Angeles")  # handles PST/PDT automatically
+
+
+def _utc_to_pst(utc_str: str) -> Optional[str]:
+    """
+    Convert an ISO 8601 UTC string from ESPN to a PST/PDT local datetime string.
+    Returns None if the input cannot be parsed.
+    Example: '2026-02-18T03:00Z' -> '2026-02-17 07:00 PM PST'
+    """
+    if not utc_str:
+        return None
+    try:
+        utc_clean = utc_str.replace("Z", "+00:00")
+        dt_utc = datetime.fromisoformat(utc_clean)
+        dt_pst = dt_utc.astimezone(TZ_PST)
+        return dt_pst.strftime("%Y-%m-%d %I:%M %p %Z")
+    except Exception:
+        return None
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -101,6 +121,7 @@ def parse_scoreboard_event(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         return {
             "game_id":          game_id,
             "game_datetime_utc": game_dt_utc,
+            "game_datetime_pst": _utc_to_pst(game_dt_utc),
             "venue":            venue,
             "neutral_site":     neutral_site,
             "home_team":        home_team,
@@ -197,17 +218,30 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                         else:
                             stats["fgm"], stats["fga"] = made, att
                     else:
-                        # Map common abbreviations to clean names
+                        # Map abbreviations AND full names → clean column names.
+                        # ORB/DRB must be mapped before REB so total rebounds
+                        # don't overwrite them if ESPN sends all three.
                         col_map = {
-                            "reb": "reb", "rebounds": "reb",
+                            # Rebounds — specific before general
+                            "oreb": "orb", "offensiverebounds": "orb",
+                            "dreb": "drb", "defensiverebounds": "drb",
+                            "reb":  "reb", "rebounds": "reb",
+                            "totalrebounds": "reb",
+                            # Other
                             "ast": "ast", "assists": "ast",
                             "to":  "tov", "turnovers": "tov",
-                            "stl": "stl", "blk": "blk",
-                            "oreb": "orb", "dreb": "drb",
-                            "pf":  "pf",
+                            "stl": "stl", "steals": "stl",
+                            "blk": "blk", "blocks": "blk",
+                            "pf":  "pf",  "fouls": "pf",
                         }
-                        key = col_map.get(label, label)
-                        stats[key] = _safe_int(dv) if str(dv).isdigit() else _safe_float(dv)
+                        # Match on abbreviation first, then full name
+                        key = col_map.get(label) or col_map.get(name.lower().replace(" ", ""), label)
+                        val_parsed = _safe_int(dv) if str(dv).isdigit() else _safe_float(dv)
+                        # Only set REB if ORB/DRB not already found
+                        if key == "reb" and ("orb" in stats or "drb" in stats):
+                            stats.setdefault("reb", val_parsed)
+                        else:
+                            stats[key] = val_parsed
             return stats
 
         bs_teams  = boxscore.get("teams", [])
@@ -229,26 +263,33 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                     vals    = athlete_entry.get("stats", [])
                     did_not_play = athlete_entry.get("didNotPlay", False)
 
+                    # Skip players with no stats and who didn't play
+                    if did_not_play and not vals:
+                        continue
+
                     prow: Dict[str, Any] = {
-                        "event_id":   event_id,
-                        "team_id":    tid,
-                        "team":       tname,
-                        "home_away":  ha,
-                        "athlete_id": str(athlete.get("id", "")).strip(),
-                        "player":     athlete.get("displayName", ""),
-                        "starter":    bool(athlete_entry.get("starter", False)),
-                        "did_not_play": did_not_play,
+                        "event_id":         event_id,
+                        "game_datetime_utc": game_dt_utc,
+                        "game_datetime_pst": _utc_to_pst(game_dt_utc),
+                        "team_id":          tid,
+                        "team":             tname,
+                        "home_away":        ha,
+                        "athlete_id":       str(athlete.get("id", "")).strip(),
+                        "player":           athlete.get("displayName", ""),
+                        "starter":          bool(athlete_entry.get("starter", False)),
+                        "did_not_play":     did_not_play,
                     }
 
-                    # Map stat labels to values
+                    # Map stat labels → clean column names
+                    # ORB/DRB before REB to avoid total overwriting splits
                     label_map = {
-                        "min": "min", "pts": "pts",
-                        "fg":  "_fg_raw",  # parsed below
-                        "3pt": "_3pt_raw",
-                        "ft":  "_ft_raw",
-                        "oreb": "orb", "dreb": "drb", "reb": "reb",
-                        "ast": "ast", "stl": "stl", "blk": "blk",
-                        "to":  "tov", "pf": "pf",
+                        "min":  "min",  "pts":  "pts",
+                        "fg":   "_fg_raw",   # parsed as made-attempt below
+                        "3pt":  "_3pt_raw",
+                        "ft":   "_ft_raw",
+                        "oreb": "orb",  "dreb": "drb",  "reb": "reb",
+                        "ast":  "ast",  "stl":  "stl",  "blk": "blk",
+                        "to":   "tov",  "pf":   "pf",
                     }
                     raw_stats: Dict[str, str] = {}
                     for lbl, val in zip(stat_labels, vals):
@@ -257,24 +298,24 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                         if mapped and not mapped.startswith("_"):
                             prow[mapped] = _safe_int(val) if str(val).isdigit() else _safe_float(val)
 
-                    # Parse shooting splits
-                    for raw_key, m_col, a_col in [
-                        ("_fg_raw",  "fgm", "fga"),
-                        ("_3pt_raw", "tpm", "tpa"),
-                        ("_ft_raw",  "ftm", "fta"),
+                    # Parse shooting splits (e.g. "12-20" → fgm=12, fga=20)
+                    for src_key, m_col, a_col in [
+                        ("fg",  "fgm", "fga"),
+                        ("3pt", "tpm", "tpa"),
+                        ("ft",  "ftm", "fta"),
                     ]:
-                        src_key = {
-                            "_fg_raw": "fg", "_3pt_raw": "3pt", "_ft_raw": "ft"
-                        }[raw_key]
                         if src_key in raw_stats:
                             m, a = _parse_made_attempt(raw_stats[src_key])
                             prow[m_col], prow[a_col] = m, a
 
-                    players.append(prow)
+                    # Only append if we have at least an athlete_id
+                    if prow.get("athlete_id"):
+                        players.append(prow)
 
         return {
             "event_id":         event_id,
             "game_datetime_utc": game_dt_utc,
+            "game_datetime_pst": _utc_to_pst(game_dt_utc),
             "venue":            venue,
             "neutral_site":     neutral_site,
             "completed":        completed,
@@ -298,6 +339,7 @@ def summary_to_team_rows(parsed: Dict[str, Any]) -> Tuple[Dict, Dict]:
     base = {
         "event_id":          parsed["event_id"],
         "game_datetime_utc": parsed["game_datetime_utc"],
+        "game_datetime_pst": parsed.get("game_datetime_pst"),
         "venue":             parsed["venue"],
         "neutral_site":      parsed["neutral_site"],
         "completed":         parsed["completed"],
