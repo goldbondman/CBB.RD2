@@ -430,6 +430,33 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
     else:
         log.warning("No player rows to write")
 
+        # Keep required player artifacts present even when no boxscore player
+        # data is available in this run window (e.g., pre-tip schedule slate).
+        # This keeps downstream validators/pipelines deterministic.
+        if not OUT_PLAYER_LOGS.exists():
+            empty_player_logs = pd.DataFrame(columns=[
+                "event_id", "game_datetime_utc", "game_datetime_pst",
+                "team_id", "team", "home_away", "athlete_id", "player",
+                "jersey", "position", "starter", "did_not_play",
+                "min", "pts", "fgm", "fga", "tpm", "tpa", "ftm", "fta",
+                "orb", "drb", "reb", "ast", "stl", "blk", "tov", "pf", "plus_minus",
+            ])
+            OUT_PLAYER_LOGS.parent.mkdir(parents=True, exist_ok=True)
+            empty_player_logs.to_csv(OUT_PLAYER_LOGS, index=False)
+            log.info("player_game_logs.csv: 0 total rows")
+
+        if not OUT_PLAYER_METRICS.exists():
+            empty_player_metrics = pd.DataFrame(columns=[
+                "event_id", "game_datetime_utc", "game_datetime_pst",
+                "team_id", "team", "home_away", "athlete_id", "player",
+                "jersey", "position", "starter", "did_not_play",
+                "min", "pts", "fgm", "fga", "tpm", "tpa", "ftm", "fta",
+                "orb", "drb", "reb", "ast", "stl", "blk", "tov", "pf", "plus_minus",
+            ])
+            OUT_PLAYER_METRICS.parent.mkdir(parents=True, exist_ok=True)
+            empty_player_metrics.to_csv(OUT_PLAYER_METRICS, index=False)
+            log.info("player_game_metrics.csv: 0 total rows")
+
     # ── Reconciliation report ──
     log.info("=== Reconciliation ===")
     log.info(f"Total games in window:   {len(game_ids)}")

@@ -286,6 +286,15 @@ def compute_quad_records(game_log: pd.DataFrame) -> pd.DataFrame:
 
         records.append(row)
 
+    if not records:
+        return pd.DataFrame(
+            columns=[
+                "q1_w", "q1_l", "q2_w", "q2_l", "q3_w", "q3_l", "q4_w", "q4_l",
+                "q1_wpct", "best_win_net", "bad_loss_count",
+            ],
+            index=pd.Index([], name="team_id"),
+        )
+
     return pd.DataFrame(records).set_index("team_id")
 
 
@@ -593,7 +602,7 @@ def compute_conference_ranks(df: pd.DataFrame) -> pd.Series:
     df["conf_rank"] = (
         df.groupby("conference")["adj_net_rtg"]
         .rank(ascending=False, method="min")
-        .astype(int)
+        .astype("Int64")
     )
     return df["conf_rank"]
 
@@ -813,6 +822,7 @@ def build_rankings(
 
     # ── 13. Rank by CAGE_EM (primary), BARTHAG (tiebreak) ────────────────────
     df = df.sort_values(["cage_em", "barthag"], ascending=[False, False])
+    df = df.drop(columns=["rank"], errors="ignore")
     df.insert(0, "rank", range(1, len(df) + 1))
 
     # ── 14. Metadata ──────────────────────────────────────────────────────────
