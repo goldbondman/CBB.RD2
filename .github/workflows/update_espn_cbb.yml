@@ -37,7 +37,6 @@ jobs:
   update:
     runs-on: ubuntu-latest
     outputs:
-      # Pass pipeline success state to downstream jobs
       pipeline_success: ${{ steps.run_pipeline.outputs.success }}
       game_count:       ${{ steps.run_pipeline.outputs.game_count }}
 
@@ -45,7 +44,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # ── Restore previous CSVs so append/dedupe works correctly ──────────────
       - name: Download previous ESPN CSVs
         uses: actions/download-artifact@v4
         with:
@@ -57,18 +55,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"            # Cache pip dependencies across runs
+          cache: "pip"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # ── Main pipeline ────────────────────────────────────────────────────────
       - name: Run ESPN pipeline
         id: run_pipeline
         run: |
           python espn_pipeline.py
           echo "success=true" >> $GITHUB_OUTPUT
-          # Capture game count for downstream jobs
           GAME_COUNT=$(python -c "
           import pandas as pd, pathlib
           p = pathlib.Path('data/games.csv')
@@ -82,10 +78,10 @@ jobs:
         env:
           DAYS_BACK: ${{ github.event.inputs.days_back || '3' }}
 
-      # ── Tournament metrics (espn_tournament.py) ──────────────────────────────
-      # Runs AFTER the pipeline so team_game_weighted.csv exists.
-      # Produces team_tournament_metrics.csv and team_pretournament_snapshot.csv.
-      # Required by rankings and prediction runner.
+      # ── Tournament metrics ────────────────────────────────────────────────
+      # Safety net: espn_pipeline.py now calls this inline, but we run it
+      # here too so the YML is self-contained if pipeline is run standalone.
+      # build_pretournament_snapshot writes the file rankings + predictions need.
       - name: Run tournament metrics
         run: |
           python - <<'PY'
@@ -96,6 +92,12 @@ jobs:
               print("[SKIP] team_game_weighted.csv not found — skipping tournament metrics")
               sys.exit(0)
 
+          # Skip if pipeline already wrote these (check recency vs weighted)
+          snap = pathlib.Path("data/team_pretournament_snapshot.csv")
+          if snap.exists() and snap.stat().st_mtime >= weighted.stat().st_mtime:
+              print("[SKIP] Snapshot already current (pipeline wrote it)")
+              sys.exit(0)
+
           try:
               from espn_tournament import compute_tournament_metrics, build_pretournament_snapshot
 
@@ -104,34 +106,33 @@ jobs:
 
               df = pd.read_csv(weighted, dtype=str, low_memory=False)
               df["game_datetime_utc"] = pd.to_datetime(df.get("game_datetime_utc"), utc=True, errors="coerce")
+              str_cols = {"team_id","team","opponent_id","opponent","home_away",
+                          "conference","conf_id","event_id","game_id",
+                          "game_datetime_utc","game_datetime_pst","venue",
+                          "state","source","parse_version","t_offensive_archetype"}
               for col in df.columns:
-                  if col not in {"team_id","team","opponent_id","opponent","home_away",
-                                 "conference","conf_id","event_id","game_id",
-                                 "game_datetime_utc","game_datetime_pst","venue",
-                                 "state","source","parse_version","t_offensive_archetype"}:
+                  if col not in str_cols:
                       df[col] = pd.to_numeric(df[col], errors="coerce")
 
               df_t = compute_tournament_metrics(df, player_df=player_df if not player_df.empty else None)
               df_t.to_csv("data/team_tournament_metrics.csv", index=False)
               print(f"[OK]   team_tournament_metrics.csv: {len(df_t)} rows")
 
-              snap = build_pretournament_snapshot(df_t)
-              snap.to_csv("data/team_pretournament_snapshot.csv", index=False)
-              print(f"[OK]   team_pretournament_snapshot.csv: {len(snap)} teams")
+              snap_df = build_pretournament_snapshot(df_t)
+              snap_df.to_csv("data/team_pretournament_snapshot.csv", index=False)
+              print(f"[OK]   team_pretournament_snapshot.csv: {len(snap_df)} teams")
 
           except Exception as exc:
-              print(f"[WARN] Tournament metrics failed: {exc}")
+              print(f"[WARN] Tournament metrics failed (non-fatal): {exc}")
               import traceback; traceback.print_exc()
-              # Non-fatal — pipeline data is still valid
           PY
 
-      # ── Validate outputs ──────────────────────────────────────────────────────
+      # ── Validate outputs ──────────────────────────────────────────────────
       - name: Validate outputs
         run: |
           python - <<'PY'
           import pandas as pd, sys, pathlib
 
-          # ── Core pipeline outputs (hard fail if missing) ─────────────────────
           required = {
               "data/games.csv":               "scoreboard",
               "data/team_game_logs.csv":       "team logs",
@@ -141,8 +142,6 @@ jobs:
               "data/team_game_weighted.csv":   "weighted metrics",
               "data/player_game_metrics.csv":  "player metrics",
           }
-
-          # ── Optional outputs (warn only) ─────────────────────────────────────
           optional = {
               "data/player_injury_proxy.csv":        "injury proxy",
               "data/team_injury_impact.csv":          "team injury impact",
@@ -171,7 +170,7 @@ jobs:
           if not ok:
               sys.exit(1)
 
-          # ── Cross-check: completed games → team log rows ──────────────────────
+          # Cross-check: completed games → team log rows
           gdf = pd.read_csv("data/games.csv")
           ldf = pd.read_csv("data/team_game_logs.csv")
           completed_ids = set(
@@ -195,8 +194,7 @@ jobs:
           else:
               print("[OK]   All completed games have team log rows")
 
-          # ── Data freshness check ──────────────────────────────────────────────
-          import datetime
+          # Data freshness
           df = pd.read_csv("data/games.csv")
           if "game_datetime_utc" in df.columns:
               df["game_datetime_utc"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
@@ -213,7 +211,6 @@ jobs:
         if: always()
         run: ls -lh data/*.csv 2>/dev/null || echo "No CSVs found"
 
-      # ── Upload CSVs ──────────────────────────────────────────────────────────
       - name: Upload ESPN CSVs as artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -234,8 +231,7 @@ jobs:
 
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 2 — CAGE RANKINGS
-  # Builds cbb_rankings.csv from pipeline outputs.
-  # Runs in parallel with predictions (both depend on update job only).
+  # Builds cbb_rankings.csv. Runs in parallel with predictions after update.
   # ════════════════════════════════════════════════════════════════════════════
   rankings:
     runs-on: ubuntu-latest
@@ -264,6 +260,21 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # Guard: rankings require snapshot — verify it exists before running
+      - name: Check snapshot dependency
+        run: |
+          python - <<'PY'
+          import pathlib, sys
+          snap = pathlib.Path("data/team_pretournament_snapshot.csv")
+          if not snap.exists() or snap.stat().st_size < 100:
+              print("[WARN] team_pretournament_snapshot.csv missing or empty.")
+              print("       espn_rankings.py will build snapshot from game logs as fallback.")
+          else:
+              import pandas as pd
+              df = pd.read_csv(snap)
+              print(f"[OK]   Snapshot present: {len(df)} teams")
+          PY
+
       - name: Build CAGE rankings
         run: python espn_rankings.py --top 25
 
@@ -284,22 +295,19 @@ jobs:
 
           print(f"[OK]   cbb_rankings.csv: {len(df)} teams, {len(df.columns)} columns")
 
-          # Check required columns present
           required_cols = ["rank","team","cage_em","cage_o","cage_d","barthag",
                            "wab","eff_grade","cage_power_index"]
           missing_cols = [c for c in required_cols if c not in df.columns]
           if missing_cols:
               print(f"[WARN] Missing columns: {missing_cols}")
           else:
-              print(f"[OK]   All required ranking columns present")
+              print("[OK]   All required ranking columns present")
 
-          # Sanity: top team should have positive cage_em
           top = df.iloc[0]
           print(f"\nRank 1: {top.get('team','?')} — CAGE_EM: {top.get('cage_em','?')}")
           if pd.to_numeric(top.get('cage_em', 0), errors='coerce') <= 0:
               print("[WARN] Top-ranked team has non-positive CAGE_EM — check data")
 
-          # Range check
           em = pd.to_numeric(df["cage_em"], errors="coerce").dropna()
           print(f"CAGE_EM range:  {em.min():.1f}  to  {em.max():.1f}")
           print(f"Teams ranked:   {len(df)}")
@@ -361,7 +369,7 @@ jobs:
           p = pathlib.Path("data/predictions_latest.csv")
           if not p.exists():
               print("[WARN] predictions_latest.csv not found — no games tomorrow?")
-              sys.exit(0)   # Not a hard failure
+              sys.exit(0)
 
           df = pd.read_csv(p)
           if df.empty:
@@ -370,7 +378,6 @@ jobs:
 
           print(f"[OK]   {len(df)} game prediction(s) written")
 
-          # Print summary table
           cols = ["home_team","away_team","pred_spread","pred_total",
                   "spread_line","model_confidence","edge_flag"]
           avail = [c for c in cols if c in df.columns]
@@ -381,15 +388,23 @@ jobs:
 
           # Edge alerts
           if "edge_flag" in df.columns:
-              edges = df[df["edge_flag"] == 1]
+              edges = df[pd.to_numeric(df["edge_flag"], errors="coerce") == 1]
               if not edges.empty:
                   print(f"\n⚡ {len(edges)} EDGE ALERT(s) — spread diff > 3 pts vs line")
 
-          # UWS alerts
-          if "uws_uws_total" in df.columns:
-              alerts = df[pd.to_numeric(df["uws_uws_total"], errors="coerce") >= 55]
+          # UWS alerts — handle both column naming conventions:
+          # runner writes uws_total; _compute_uws_for_matchup prefixes to uws_uws_total
+          uws_col = next(
+              (c for c in ["uws_total", "uws_uws_total"] if c in df.columns),
+              None
+          )
+          if uws_col:
+              alerts = df[pd.to_numeric(df[uws_col], errors="coerce") >= 55]
               if not alerts.empty:
                   print(f"🚨 {len(alerts)} STRONG UPSET ALERT(s) — UWS ≥ 55/70")
+                  for _, row in alerts.iterrows():
+                      print(f"   {row.get('home_team','?')} vs {row.get('away_team','?')}: "
+                            f"UWS {row.get(uws_col, float('nan')):.0f}/70")
           PY
 
       - name: Upload predictions artifact
