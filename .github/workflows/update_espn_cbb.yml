@@ -52,9 +52,14 @@ jobs:
           players = pathlib.Path("data/player_game_logs.csv")
           metrics = pathlib.Path("data/team_game_metrics.csv")
           sos     = pathlib.Path("data/team_game_sos.csv")
+          proxy   = pathlib.Path("data/player_injury_proxy.csv")
+          impact   = pathlib.Path("data/team_injury_impact.csv")
+          weighted = pathlib.Path("data/team_game_weighted.csv")
+          player_m = pathlib.Path("data/player_game_metrics.csv")
 
           ok = True
-          for f in [games, logs, players, metrics, sos]:
+          for f in [games, logs, players, metrics, sos, proxy, impact,
+                    weighted, player_m]:
               if not f.exists():
                   print(f"[FAIL] Missing: {f}")
                   ok = False
