@@ -106,19 +106,21 @@ jobs:
 
       # Rolling window behavior:
       # - If inputs.date provided: run exactly that YYYYMMDD (old behavior)
-      # - Else: run for all PST dates that fall in [now, now+40h], then merge outputs
+      # - Else: run for all PST dates that fall in [now, now+40h], then merge outputs,
+      #         and FILTER to the true rolling 40-hour window.
       - name: Run predictions (rolling 40 hours ahead if date blank)
         env:
           TZ: "America/Los_Angeles"
-          INPUT_DATE: ${{ github.event.inputs.date || '' }}
-          GAME_TYPE: ${{ github.event.inputs.game_type || 'regular' }}
-          DECAY: ${{ github.event.inputs.decay || 'smooth' }}
+          # Guard: inputs.* only exists for workflow_dispatch
+          INPUT_DATE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.date || '' }}
+          GAME_TYPE:  ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.game_type || 'regular' }}
+          DECAY:      ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.decay || 'smooth' }}
         run: |
           python - <<'PY'
           import os
           import sys
           import subprocess
-          from datetime import datetime, timedelta
+          from datetime import datetime, timedelta, date
           from zoneinfo import ZoneInfo
           import pathlib
 
@@ -144,17 +146,17 @@ jobs:
               raise SystemExit(0)
 
           # Rolling 40h window (PST)
-          start = datetime.now(tz=tz)
-          end   = start + timedelta(hours=40)
+          start_pst = datetime.now(tz=tz)
+          end_pst   = start_pst + timedelta(hours=40)
 
           # Unique PST dates in the window
           dates = []
-          d = start.date()
-          while d <= end.date():
+          d = start_pst.date()
+          while d <= end_pst.date():
               dates.append(d.strftime("%Y%m%d"))
-              d = (datetime.combine(d, datetime.min.time(), tzinfo=tz) + timedelta(days=1)).date()
+              d = d + timedelta(days=1)
 
-          print(f"[INFO] Rolling window PST: {start.isoformat()} -> {end.isoformat()}")
+          print(f"[INFO] Rolling window PST: {start_pst.isoformat()} -> {end_pst.isoformat()}")
           print(f"[INFO] Dates in window: {dates}")
 
           # Run runner once per date and keep any per-date outputs it produces
@@ -195,9 +197,10 @@ jobs:
               raise SystemExit(1)
 
           merged = pd.concat([d for d in dfs if d is not None], ignore_index=True)
+          out = data_dir / "predictions_latest.csv"
+
           if merged.empty:
               # Legit: no games in 40h window
-              out = data_dir / "predictions_latest.csv"
               merged.to_csv(out, index=False)
               print("[OK] Merged output empty (no games in window). Wrote predictions_latest.csv.")
               raise SystemExit(0)
@@ -210,12 +213,22 @@ jobs:
               if key_cols:
                   merged = merged.drop_duplicates(subset=key_cols, keep="last")
 
+          # ── NEW: Filter to TRUE rolling 40-hour window ───────────────────────
+          # Assumes game_datetime_utc is ISO-ish. Convert to UTC -> PST for filter.
+          if "game_datetime_utc" in merged.columns:
+              dt_utc = pd.to_datetime(merged["game_datetime_utc"], utc=True, errors="coerce")
+              dt_pst = dt_utc.dt.tz_convert(tz)
+              mask = (dt_pst >= start_pst) & (dt_pst <= end_pst)
+              before = len(merged)
+              merged = merged[mask].copy()
+              after = len(merged)
+              print(f"[INFO] Window filter applied: {before} -> {after} rows within next 40h")
+
           # Sort for readability
           sort_cols = [c for c in ["game_datetime_utc", "game_time_local", "home_team"] if c in merged.columns]
           if sort_cols:
               merged = merged.sort_values(sort_cols)
 
-          out = data_dir / "predictions_latest.csv"
           merged.to_csv(out, index=False)
           print(f"[OK] Wrote merged rolling-window predictions: {out} ({len(merged)} rows)")
           PY
@@ -294,7 +307,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cbb-predictions-${{ github.run_id }}
-          path: data/predictions_*.csv
+          path: |
+            data/predictions_*.csv
+            data/predictions_latest.csv
           retention-days: 30
           if-no-files-found: warn
 
