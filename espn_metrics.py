@@ -357,6 +357,146 @@ def add_true_rebound_pcts(df: pd.DataFrame) -> pd.DataFrame:
 
 # ── Main entry point ──────────────────────────────────────────────────────────
 
+def derive_records(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Derive cumulative wins/losses/record from game results.
+
+    ESPN's summary API competitor objects do NOT carry a records[] field —
+    that only exists on the scoreboard competitor. Rather than patching the
+    parser, we compute all record columns here from the margin/win column
+    that is already in the dataset.
+
+    Columns added (all reflect the team's record ENTERING this game — leak-free):
+      wins, losses, record              overall (e.g. "15-8")
+      home_wins, home_losses, home_record
+      away_wins, away_losses, away_record
+      conf_wins, conf_losses, conf_record
+      conf_rank                         rank within conference by win% entering game
+      win_pct, home_win_pct, away_win_pct, conf_win_pct
+    """
+    if df.empty:
+        return df
+
+    df = df.copy()
+    df["_sort_dt"] = pd.to_datetime(df.get("game_datetime_utc", ""), utc=True,
+                                     errors="coerce")
+    df = df.sort_values(["team_id", "_sort_dt"])
+
+    win_col = "win"
+    if win_col not in df.columns:
+        log.warning("derive_records: 'win' column missing — skipping record derivation")
+        df = df.drop(columns=["_sort_dt"], errors="ignore")
+        return df
+
+    win = pd.to_numeric(df[win_col], errors="coerce").fillna(0)
+    loss = 1 - win  # completed games only; NaN margin → win=NaN → treat as 0
+
+    # Only count completed games (margin is not NaN)
+    completed = pd.to_numeric(df.get("margin", pd.Series(np.nan, index=df.index)),
+                               errors="coerce").notna().astype(float)
+    win_c  = win  * completed
+    loss_c = loss * completed
+
+    # ── Overall record ────────────────────────────────────────────────────────
+    df["wins"]   = df.groupby("team_id")[win_col].transform(
+        lambda s: pd.to_numeric(s, errors="coerce").fillna(0)
+                    .mul(completed.reindex(s.index, fill_value=0))
+                    .shift(1).expanding().sum().fillna(0).astype(int)
+    )
+    df["losses"] = df.groupby("team_id")["win"].transform(
+        lambda s: (1 - pd.to_numeric(s, errors="coerce").fillna(0))
+                    .mul(completed.reindex(s.index, fill_value=0))
+                    .shift(1).expanding().sum().fillna(0).astype(int)
+    )
+    df["win_pct"] = (
+        df["wins"] / (df["wins"] + df["losses"]).replace(0, np.nan)
+    ).round(3)
+    df["record"] = df["wins"].astype(int).astype(str) + "-" + df["losses"].astype(int).astype(str)
+
+    # ── Home / away splits ─────────────────────────────────────────────────────
+    home_away = df.get("home_away", pd.Series("", index=df.index)).fillna("")
+
+    for side, label in [("home", "home"), ("away", "away")]:
+        mask = (home_away == side).astype(float)
+        w_side = win_c  * mask
+        l_side = loss_c * mask
+
+        df[f"{label}_wins"] = df.groupby("team_id")["win"].transform(
+            lambda s, m=mask: (
+                pd.to_numeric(s, errors="coerce").fillna(0)
+                .mul(completed.reindex(s.index, fill_value=0))
+                .mul(m.reindex(s.index, fill_value=0))
+                .shift(1).expanding().sum().fillna(0).astype(int)
+            )
+        )
+        df[f"{label}_losses"] = df.groupby("team_id")["win"].transform(
+            lambda s, m=mask: (
+                (1 - pd.to_numeric(s, errors="coerce").fillna(0))
+                .mul(completed.reindex(s.index, fill_value=0))
+                .mul(m.reindex(s.index, fill_value=0))
+                .shift(1).expanding().sum().fillna(0).astype(int)
+            )
+        )
+        df[f"{label}_win_pct"] = (
+            df[f"{label}_wins"] /
+            (df[f"{label}_wins"] + df[f"{label}_losses"]).replace(0, np.nan)
+        ).round(3)
+        df[f"{label}_record"] = (
+            df[f"{label}_wins"].astype(int).astype(str) + "-" +
+            df[f"{label}_losses"].astype(int).astype(str)
+        )
+
+    # ── Conference record ─────────────────────────────────────────────────────
+    # opp_conference must match team's conference for conf game
+    opp_conf = df.get("opp_conference", pd.Series("", index=df.index)).fillna("")
+    team_conf = df.get("conference", pd.Series("", index=df.index)).fillna("")
+    # A game is a conf game if both teams share a non-empty conference
+    conf_game = (
+        (team_conf != "") & (opp_conf != "") & (team_conf == opp_conf)
+    ).astype(float)
+
+    df["conf_wins"] = df.groupby("team_id")["win"].transform(
+        lambda s: (
+            pd.to_numeric(s, errors="coerce").fillna(0)
+            .mul(completed.reindex(s.index, fill_value=0))
+            .mul(conf_game.reindex(s.index, fill_value=0))
+            .shift(1).expanding().sum().fillna(0).astype(int)
+        )
+    )
+    df["conf_losses"] = df.groupby("team_id")["win"].transform(
+        lambda s: (
+            (1 - pd.to_numeric(s, errors="coerce").fillna(0))
+            .mul(completed.reindex(s.index, fill_value=0))
+            .mul(conf_game.reindex(s.index, fill_value=0))
+            .shift(1).expanding().sum().fillna(0).astype(int)
+        )
+    )
+    df["conf_win_pct"] = (
+        df["conf_wins"] /
+        (df["conf_wins"] + df["conf_losses"]).replace(0, np.nan)
+    ).round(3)
+    df["conf_record"] = (
+        df["conf_wins"].astype(int).astype(str) + "-" +
+        df["conf_losses"].astype(int).astype(str)
+    )
+
+    # ── Conference rank (within conference, by win_pct at time of game) ───────
+    if "conference" in df.columns:
+        # Rank each team within its conference based on overall win_pct entering game
+        # Ties broken by wins (more wins = better rank)
+        df["conf_rank"] = (
+            df.groupby(["conference", "_sort_dt"])["win_pct"]
+            .rank(method="min", ascending=False, na_option="bottom")
+            .astype("Int64")
+        )
+    else:
+        df["conf_rank"] = pd.NA
+
+    df = df.drop(columns=["_sort_dt"], errors="ignore")
+    log.info("derive_records: computed wins/losses/record/conf_rank for all teams")
+    return df
+
+
 def compute_all_metrics(df: pd.DataFrame) -> pd.DataFrame:
     """
     Full metrics pipeline. Call from espn_pipeline.py after team logs are written.
@@ -365,6 +505,7 @@ def compute_all_metrics(df: pd.DataFrame) -> pd.DataFrame:
     """
     log.info(f"Computing metrics for {len(df)} team-game rows")
     df = add_per_game_metrics(df)
+    df = derive_records(df)          # wins/losses/record/conf_rank from game results
     df = add_luck_score(df)
     df = add_schedule_features(df)
     df = add_rolling_metrics(df, windows=ROLLING_WINDOWS)
