@@ -45,17 +45,17 @@ log = logging.getLogger(__name__)
 
 # ── Thresholds ────────────────────────────────────────────────────────────────
 MIN_GAMES_FOR_BASELINE = 3     # minimum games before computing z-scores
-MIN_DROP_FLAG          = 0.30  # 30% minutes drop = flag
-MIN_DROP_SEVERE        = 0.50  # 50% minutes drop = severe
+MIN_DROP_FLAG = 0.30           # 30% minutes drop = flag
+MIN_DROP_SEVERE = 0.50         # 50% minutes drop = severe
 SCORE_WEIGHTS = {
-    "dnp_flag":          30,
-    "sudden_absence":    25,
-    "min_drop_severe":   25,
-    "min_drop_flag":     15,
-    "multi_stat_down":   15,
-    "starter_to_bench":  10,
-    "dnp_prev_game":     10,
-    "usage_z_l10":        5,   # partial — scaled by z-score magnitude
+    "dnp_flag": 30,
+    "sudden_absence": 25,
+    "min_drop_severe": 25,
+    "min_drop_flag": 15,
+    "multi_stat_down": 15,
+    "starter_to_bench": 10,
+    "dnp_prev_game": 10,
+    "usage_z_l10": 5,  # partial — scaled by z-score magnitude
 }
 
 
@@ -71,7 +71,7 @@ def _rolling_std(s: pd.Series, w: int) -> pd.Series:
 
 def _z_score(s: pd.Series, w: int) -> pd.Series:
     mean = _rolling_mean(s, w)
-    std  = _rolling_std(s, w).replace(0, np.nan)
+    std = _rolling_std(s, w).replace(0, np.nan)
     return ((s - mean) / std).round(2)
 
 
@@ -108,6 +108,20 @@ def _minutes_to_float(s: pd.Series) -> pd.Series:
     return out.fillna(0.0)
 
 
+def _normalize_key_cols_to_string(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    """
+    Force merge/group keys to a consistent dtype to prevent pandas merge crashes
+    (e.g. str vs int64 on event_id).
+    """
+    if df is None or df.empty:
+        return df
+    df = df.copy()
+    for c in cols:
+        if c in df.columns:
+            df[c] = df[c].astype("string")
+    return df
+
+
 # ── Step 1: Build full player appearance history ──────────────────────────────
 
 def _build_appearance_history(df: pd.DataFrame,
@@ -137,7 +151,7 @@ def _build_appearance_history(df: pd.DataFrame,
     dnp = df.get("did_not_play", False)
     dnp = dnp.astype(bool) if isinstance(dnp, pd.Series) else pd.Series(False, index=df.index)
 
-    df["appeared"] = ((~dnp) & (df["_min_num"] > 0)).astype(int)
+    df["appeared"] = ((~dnp) & (pd.to_numeric(df["_min_num"], errors="coerce").fillna(0.0) > 0)).astype(int)
 
     # Game number per player
     df["game_number"] = df.groupby("athlete_id").cumcount() + 1
@@ -254,12 +268,12 @@ def add_minutes_signals(df: pd.DataFrame) -> pd.DataFrame:
 
     # Drop flags
     min_ratio = minutes / df["min_l5_avg"].replace(0, np.nan)
-    df["min_drop_flag"]   = (min_ratio < (1 - MIN_DROP_FLAG)).astype(int)
+    df["min_drop_flag"] = (min_ratio < (1 - MIN_DROP_FLAG)).astype(int)
     df["min_drop_severe"] = (min_ratio < (1 - MIN_DROP_SEVERE)).astype(int)
 
     # Only flag for players with established baselines (5+ games)
     has_baseline = df["game_number"].ge(5) if "game_number" in df.columns else pd.Series(True, index=df.index)
-    df["min_drop_flag"]   = df["min_drop_flag"].where(has_baseline, 0)
+    df["min_drop_flag"] = df["min_drop_flag"].where(has_baseline, 0)
     df["min_drop_severe"] = df["min_drop_severe"].where(has_baseline, 0)
 
     return df
@@ -347,8 +361,8 @@ def add_injury_proxy_score(df: pd.DataFrame) -> pd.DataFrame:
 
         score += contribution
 
-    df["injury_proxy_score"]  = score.clip(0, 100).round(1)
-    df["injury_proxy_flag"]   = (df["injury_proxy_score"] > 50).astype(int)
+    df["injury_proxy_score"] = score.clip(0, 100).round(1)
+    df["injury_proxy_flag"] = (df["injury_proxy_score"] > 50).astype(int)
     df["injury_proxy_severe"] = (df["injury_proxy_score"] > 75).astype(int)
 
     return df
@@ -367,14 +381,25 @@ def compute_team_injury_impact(player_proxy_df: pd.DataFrame,
     if player_proxy_df.empty or team_logs_df.empty:
         return pd.DataFrame()
 
-    df  = player_proxy_df.copy()
+    df = player_proxy_df.copy()
     tdf = team_logs_df[["event_id", "team_id", "game_datetime_utc"]].drop_duplicates()
+
+    # ✅ Normalize key dtypes to prevent merge errors (str vs int)
+    df = _normalize_key_cols_to_string(df, ["event_id", "team_id"])
+    tdf = _normalize_key_cols_to_string(tdf, ["event_id", "team_id"])
 
     # Ensure numeric minutes exist and are truly numeric
     if "_min_num" not in df.columns:
         min_col = "min" if "min" in df.columns else ("minutes" if "minutes" in df.columns else None)
         df["_min_num"] = _minutes_to_float(df[min_col]) if min_col else 0.0
     df["_min_num"] = pd.to_numeric(df["_min_num"], errors="coerce").fillna(0.0)
+
+    # Ensure injury score exists and is numeric
+    df["injury_proxy_score"] = pd.to_numeric(df.get("injury_proxy_score", 0), errors="coerce").fillna(0.0)
+
+    # Ensure flag cols are numeric
+    df["injury_proxy_flag"] = pd.to_numeric(df.get("injury_proxy_flag", 0), errors="coerce").fillna(0).astype(int)
+    df["injury_proxy_severe"] = pd.to_numeric(df.get("injury_proxy_severe", 0), errors="coerce").fillna(0).astype(int)
 
     # Get player's share of team minutes
     total_min = (
@@ -385,11 +410,7 @@ def compute_team_injury_impact(player_proxy_df: pd.DataFrame,
     df["min_share"] = (df["_min_num"] / total_min).replace([np.inf, -np.inf], np.nan).fillna(0.0)
 
     # Weighted injury load
-    df["_weighted_score"] = pd.to_numeric(df.get("injury_proxy_score", 0), errors="coerce").fillna(0.0) * df["min_share"]
-
-    # Ensure flag cols are numeric
-    df["injury_proxy_flag"] = pd.to_numeric(df.get("injury_proxy_flag", 0), errors="coerce").fillna(0).astype(int)
-    df["injury_proxy_severe"] = pd.to_numeric(df.get("injury_proxy_severe", 0), errors="coerce").fillna(0).astype(int)
+    df["_weighted_score"] = df["injury_proxy_score"] * df["min_share"]
 
     flagged = df[df["injury_proxy_flag"] == 1]
 
@@ -403,11 +424,11 @@ def compute_team_injury_impact(player_proxy_df: pd.DataFrame,
         starters_flagged_agg = pd.NamedAgg(column="injury_proxy_flag", aggfunc=lambda x: 0)
 
     agg = df.groupby(["event_id", "team_id"]).agg(
-        players_flagged      = ("injury_proxy_flag", "sum"),
-        players_severe       = ("injury_proxy_severe", "sum"),
-        starters_flagged     = starters_flagged_agg,
-        team_injury_load     = ("_weighted_score", "sum"),
-        minutes_at_risk_pct  = pd.NamedAgg(
+        players_flagged=("injury_proxy_flag", "sum"),
+        players_severe=("injury_proxy_severe", "sum"),
+        starters_flagged=starters_flagged_agg,
+        team_injury_load=("_weighted_score", "sum"),
+        minutes_at_risk_pct=pd.NamedAgg(
             column="min_share",
             aggfunc=lambda x: x[df.loc[x.index, "injury_proxy_flag"] == 1].sum() * 100
         ),
