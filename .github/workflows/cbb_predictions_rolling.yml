@@ -1,0 +1,606 @@
+name: CBB Predictions — Rolling 40 Hours Ahead
+
+# ── PURPOSE ────────────────────────────────────────────────────────────────────
+# Standalone predictions workflow. Covers all games starting in the next 40
+# hours from run time (PST). Runs BOTH the primary model (espn_prediction_runner)
+# AND the 7-model ensemble (cbb_ensemble), then merges outputs.
+#
+# Trigger priority:
+#   1. Auto: fires after "Update ESPN CBB Data" pipeline completes successfully
+#   2. Manual: workflow_dispatch with optional date override and model controls
+#
+# This file REPLACES predict_tomorrow.yml.
+# The "predictions" job inside update_espn_cbb_data.yml handles the immediate
+# post-pipeline run. This workflow handles the scheduled / on-demand / rolling case.
+# ──────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_run:
+    workflows: ["Update ESPN CBB Data"]
+    types: [completed]
+
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Target date YYYYMMDD (optional). Blank = rolling 40h from now (PST)."
+        required: false
+        default: ""
+      game_type:
+        description: "Game type (affects UWS context and tournament total multipliers)"
+        required: false
+        default: "regular"
+        type: choice
+        options:
+          - regular
+          - conf_tournament
+          - ncaa_r1
+          - ncaa_r2
+      decay:
+        description: "Game weight decay function for primary model"
+        required: false
+        default: "smooth"
+        type: choice
+        options:
+          - smooth
+          - plateau
+          - simple
+      run_ensemble:
+        description: "Also run 7-model ensemble (cbb_ensemble.py)"
+        required: false
+        default: "true"
+        type: choice
+        options: ["true", "false"]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  predict:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────────────
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # ── 2. Download CSVs ────────────────────────────────────────────────────
+      - name: Download ESPN CSVs (from triggering pipeline run)
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: espn-cbb-csvs
+          path: data/
+          run-id: ${{ github.event.workflow_run.id }}
+        continue-on-error: false
+
+      - name: Download ESPN CSVs (manual trigger — latest available)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/download-artifact@v4
+        with:
+          name: espn-cbb-csvs
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      # ── 3. Verify required data ─────────────────────────────────────────────
+      - name: Verify data files exist
+        run: |
+          python - <<'PY'
+          import pathlib, sys, pandas as pd
+
+          required = {
+              "data/team_game_weighted.csv": "weighted metrics (primary model input)",
+              "data/games.csv":              "schedule (game discovery)",
+          }
+          optional = {
+              "data/cbb_rankings.csv":                "CAGE rankings (ensemble M2/M3/M6/M7)",
+              "data/team_pretournament_snapshot.csv": "tournament snapshot (UWS)",
+              "data/team_game_metrics.csv":           "metrics fallback",
+          }
+          ok = True
+          for path, label in required.items():
+              p = pathlib.Path(path)
+              if p.exists() and p.stat().st_size > 100:
+                  rows = len(pd.read_csv(p))
+                  print(f"[OK]   {path}: {rows:,} rows — {label}")
+              else:
+                  # Accept fallback for weighted
+                  if "weighted" in path and pathlib.Path("data/team_game_metrics.csv").exists():
+                      print(f"[WARN] {path} missing — will use metrics fallback")
+                  else:
+                      print(f"[FAIL] {path} missing — {label}")
+                      ok = False
+
+          for path, label in optional.items():
+              p = pathlib.Path(path)
+              if p.exists():
+                  rows = len(pd.read_csv(p))
+                  print(f"[OK]   {path}: {rows:,} rows — {label}")
+              else:
+                  print(f"[WARN] {path} not found — {label} unavailable")
+
+          if not ok:
+              sys.exit(1)
+          PY
+
+      # ── 4. Python setup ─────────────────────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # ── 5. Primary model: espn_prediction_runner.py ─────────────────────────
+      # Rolling window behavior:
+      #   - input.date provided → exactly that YYYYMMDD
+      #   - blank → all PST dates in [now, now+40h], merged and filtered
+      - name: Run primary model predictions (rolling 40h)
+        id: primary_predictions
+        env:
+          TZ: "America/Los_Angeles"
+          INPUT_DATE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.date || '' }}
+          GAME_TYPE:  ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.game_type || 'regular' }}
+          DECAY:      ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.decay || 'smooth' }}
+        run: |
+          python - <<'PY'
+          import os, sys, subprocess, pathlib
+          import pandas as pd
+          from datetime import datetime, timedelta
+          from zoneinfo import ZoneInfo
+
+          tz         = ZoneInfo("America/Los_Angeles")
+          input_date = (os.getenv("INPUT_DATE") or "").strip()
+          game_type  = (os.getenv("GAME_TYPE")  or "regular").strip()
+          decay      = (os.getenv("DECAY")       or "smooth").strip()
+          data_dir   = pathlib.Path("data")
+
+          def run_for_date(yyyymmdd: str) -> None:
+              cmd = [
+                  sys.executable, "espn_prediction_runner.py",
+                  "--date",      yyyymmdd,
+                  "--game-type", game_type,
+                  "--decay",     decay,
+              ]
+              print(f"\n[RUN] {' '.join(cmd)}")
+              subprocess.run(cmd, check=True)
+
+          if input_date:
+              run_for_date(input_date)
+              print("\n[OK] Single-date primary predictions complete")
+              raise SystemExit(0)
+
+          # ── Rolling 40h window ─────────────────────────────────────────────
+          start_pst = datetime.now(tz=tz)
+          end_pst   = start_pst + timedelta(hours=40)
+
+          dates = []
+          d = start_pst.date()
+          while d <= end_pst.date():
+              dates.append(d.strftime("%Y%m%d"))
+              d += timedelta(days=1)
+
+          print(f"[INFO] Rolling window: {start_pst.strftime('%Y-%m-%d %H:%M %Z')} → {end_pst.strftime('%Y-%m-%d %H:%M %Z')}")
+          print(f"[INFO] Dates: {dates}")
+
+          for yyyymmdd in dates:
+              run_for_date(yyyymmdd)
+
+          # ── Merge per-date files ───────────────────────────────────────────
+          dfs = []
+          for yyyymmdd in dates:
+              p = data_dir / f"predictions_{yyyymmdd}.csv"
+              if p.exists():
+                  try:
+                      df = pd.read_csv(p)
+                      if not df.empty:
+                          df["_source_date"] = yyyymmdd
+                          dfs.append(df)
+                  except Exception as e:
+                      print(f"[WARN] Could not read {p}: {e}")
+
+          if not dfs:
+              latest = data_dir / "predictions_latest.csv"
+              if latest.exists() and pathlib.Path(latest).stat().st_size > 10:
+                  print("[WARN] No per-date files — using existing predictions_latest.csv")
+                  raise SystemExit(0)
+              print("[WARN] No predictions generated — no scheduled games in window?")
+              pd.DataFrame().to_csv(data_dir / "predictions_latest.csv", index=False)
+              raise SystemExit(0)
+
+          merged = pd.concat(dfs, ignore_index=True)
+
+          # De-dupe
+          if "game_id" in merged.columns:
+              merged = merged.drop_duplicates(subset=["game_id"], keep="last")
+          else:
+              key_cols = [c for c in ["game_datetime_utc","home_team","away_team"] if c in merged.columns]
+              if key_cols:
+                  merged = merged.drop_duplicates(subset=key_cols, keep="last")
+
+          # ── Filter to true 40h window ──────────────────────────────────────
+          if "game_datetime_utc" in merged.columns:
+              dt_utc = pd.to_datetime(merged["game_datetime_utc"], utc=True, errors="coerce")
+              dt_pst = dt_utc.dt.tz_convert(tz)
+              mask   = (dt_pst >= start_pst) & (dt_pst <= end_pst)
+              before = len(merged)
+              merged = merged[mask].copy()
+              print(f"[INFO] Window filter: {before} → {len(merged)} rows within 40h")
+
+          # Sort
+          sort_cols = [c for c in ["game_datetime_utc","home_team"] if c in merged.columns]
+          if sort_cols:
+              merged = merged.sort_values(sort_cols)
+
+          out = data_dir / "predictions_primary.csv"
+          merged.to_csv(out, index=False)
+          (data_dir / "predictions_latest.csv").write_bytes(out.read_bytes())
+          print(f"[OK] Primary model: {len(merged)} predictions → {out}")
+          PY
+
+      # ── 6. Ensemble model: cbb_ensemble.py ──────────────────────────────────
+      # Runs all 7 sub-models independently per game and produces a weighted
+      # ensemble spread + total. Requires cbb_rankings.csv for full CAGE profile.
+      # Falls back gracefully to snapshot data if rankings haven't been built yet.
+      - name: Run ensemble model predictions
+        id: ensemble_predictions
+        if: >
+          github.event_name == 'workflow_run' ||
+          github.event.inputs.run_ensemble == 'true'
+        env:
+          TZ: "America/Los_Angeles"
+          GAME_TYPE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.game_type || 'regular' }}
+        run: |
+          python - <<'PY'
+          import os, sys, pathlib, warnings
+          import pandas as pd
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+
+          warnings.filterwarnings("ignore")
+          tz       = ZoneInfo("America/Los_Angeles")
+          data_dir = pathlib.Path("data")
+
+          # ── Load ensemble module ───────────────────────────────────────────
+          try:
+              from cbb_ensemble import (
+                  EnsemblePredictor, EnsembleConfig,
+                  load_team_profiles, results_to_csv,
+              )
+          except ImportError as e:
+              print(f"[SKIP] cbb_ensemble.py not importable: {e}")
+              raise SystemExit(0)
+
+          # ── Load team profiles from CAGE rankings (fallback: snapshot) ─────
+          profiles = load_team_profiles()
+          if not profiles:
+              print("[SKIP] No team profiles loaded — run espn_rankings.py first")
+              raise SystemExit(0)
+          print(f"[INFO] {len(profiles)} team profiles loaded")
+
+          # ── Load today's scheduled games from primary predictions output ───
+          # We re-use the game list already discovered by the primary runner
+          # rather than hitting the ESPN API again.
+          primary_csv = data_dir / "predictions_primary.csv"
+          latest_csv  = data_dir / "predictions_latest.csv"
+
+          games_src = primary_csv if primary_csv.exists() else latest_csv
+          if not games_src.exists() or games_src.stat().st_size < 10:
+              print("[SKIP] No primary predictions to drive ensemble matchup list")
+              raise SystemExit(0)
+
+          games_df = pd.read_csv(games_src)
+          if games_df.empty:
+              print("[SKIP] Primary predictions CSV is empty — no games in window")
+              raise SystemExit(0)
+
+          print(f"[INFO] Building ensemble for {len(games_df)} scheduled games")
+
+          predictor = EnsemblePredictor()
+          ensemble_rows = []
+          skipped = 0
+
+          for _, row in games_df.iterrows():
+              home_id = str(row.get("home_team_id", ""))
+              away_id = str(row.get("away_team_id", ""))
+              neutral = bool(row.get("neutral_site", False))
+
+              # Resolve profiles — try by ID first, then fuzzy name match
+              home_profile = profiles.get(home_id)
+              away_profile = profiles.get(away_id)
+
+              if home_profile is None:
+                  home_name = str(row.get("home_team", "")).lower()
+                  home_profile = next(
+                      (p for p in profiles.values() if home_name in p.team_name.lower()),
+                      None
+                  )
+              if away_profile is None:
+                  away_name = str(row.get("away_team", "")).lower()
+                  away_profile = next(
+                      (p for p in profiles.values() if away_name in p.team_name.lower()),
+                      None
+                  )
+
+              if not home_profile or not away_profile:
+                  skipped += 1
+                  continue
+
+              # Inject situational data from games schedule if available
+              if "rest_days_home" in row:
+                  home_profile.rest_days = float(row.get("rest_days_home", 3.0))
+              if "rest_days_away" in row:
+                  away_profile.rest_days = float(row.get("rest_days_away", 3.0))
+
+              # Market lines (for line_value comparison in output)
+              spread_line = None
+              total_line  = None
+              try:
+                  sl = row.get("spread_line")
+                  if sl is not None and str(sl).strip() not in ("", "nan"):
+                      spread_line = float(sl)
+              except (ValueError, TypeError):
+                  pass
+              try:
+                  tl = row.get("total_line")
+                  if tl is not None and str(tl).strip() not in ("", "nan"):
+                      total_line = float(tl)
+              except (ValueError, TypeError):
+                  pass
+
+              try:
+                  result = predictor.predict(
+                      home_profile, away_profile,
+                      neutral=neutral,
+                      spread_line=spread_line,
+                      total_line=total_line,
+                  )
+                  flat = result.to_flat_dict()
+                  # Carry forward key fields from primary predictions for joining
+                  flat["game_id"]            = row.get("game_id", "")
+                  flat["game_datetime_utc"]  = row.get("game_datetime_utc", "")
+                  flat["home_team_id"]       = home_id
+                  flat["away_team_id"]       = away_id
+                  ensemble_rows.append(flat)
+
+              except Exception as exc:
+                  print(f"[WARN] Ensemble failed for {row.get('home_team')} vs {row.get('away_team')}: {exc}")
+                  skipped += 1
+
+          print(f"[INFO] Ensemble complete: {len(ensemble_rows)} predictions, {skipped} skipped")
+
+          if not ensemble_rows:
+              print("[WARN] No ensemble predictions generated")
+              raise SystemExit(0)
+
+          ens_df = pd.DataFrame(ensemble_rows)
+          today  = datetime.now(tz=tz).strftime("%Y%m%d")
+          out    = data_dir / f"ensemble_predictions_{today}.csv"
+          ens_df.to_csv(out, index=False)
+
+          # Also write rolling latest
+          ens_latest = data_dir / "ensemble_predictions_latest.csv"
+          ens_df.to_csv(ens_latest, index=False)
+
+          print(f"[OK] Ensemble predictions: {len(ens_df)} games → {out}")
+          PY
+
+      # ── 7. Merge primary + ensemble into unified output ──────────────────────
+      # Produces predictions_combined_latest.csv — one row per game with
+      # both primary model and all 7 ensemble model columns for easy comparison.
+      - name: Merge primary and ensemble outputs
+        if: always()
+        run: |
+          python - <<'PY'
+          import pathlib, sys
+          import pandas as pd
+
+          data_dir = pathlib.Path("data")
+          primary  = data_dir / "predictions_primary.csv"
+          ensemble = data_dir / "ensemble_predictions_latest.csv"
+          out      = data_dir / "predictions_combined_latest.csv"
+
+          if not primary.exists() or primary.stat().st_size < 10:
+              print("[SKIP] No primary predictions to merge")
+              raise SystemExit(0)
+
+          p_df = pd.read_csv(primary)
+          if p_df.empty:
+              print("[SKIP] Primary predictions empty")
+              raise SystemExit(0)
+
+          if not ensemble.exists() or ensemble.stat().st_size < 10:
+              # No ensemble — just copy primary as combined
+              p_df.to_csv(out, index=False)
+              print(f"[WARN] No ensemble output — combined = primary only ({len(p_df)} rows)")
+              raise SystemExit(0)
+
+          e_df = pd.read_csv(ensemble)
+
+          # Join on game_id if available, else home_team + away_team
+          if "game_id" in p_df.columns and "game_id" in e_df.columns:
+              # Prefix ensemble columns to avoid collision (except join key)
+              e_cols = {c: f"ens_{c}" for c in e_df.columns
+                        if c not in ("game_id","home_team","away_team","game_datetime_utc",
+                                     "home_team_id","away_team_id","neutral_site")}
+              e_df = e_df.rename(columns=e_cols)
+              combined = p_df.merge(e_df, on="game_id", how="left", suffixes=("", "_ens_dup"))
+              # Drop accidental duplicate columns
+              combined = combined[[c for c in combined.columns if not c.endswith("_ens_dup")]]
+          else:
+              join_cols = [c for c in ["home_team","away_team"] if c in p_df.columns and c in e_df.columns]
+              if join_cols:
+                  e_cols = {c: f"ens_{c}" for c in e_df.columns
+                            if c not in join_cols + ["game_datetime_utc","home_team_id","away_team_id"]}
+                  e_df = e_df.rename(columns=e_cols)
+                  combined = p_df.merge(e_df, on=join_cols, how="left", suffixes=("", "_ens_dup"))
+                  combined = combined[[c for c in combined.columns if not c.endswith("_ens_dup")]]
+              else:
+                  combined = p_df
+                  print("[WARN] No join key found — combined = primary only")
+
+          combined.to_csv(out, index=False)
+          print(f"[OK] Combined output: {len(combined)} rows, {len(combined.columns)} cols → {out}")
+
+          # Surface quick comparison: primary spread vs ensemble spread
+          if "pred_spread" in combined.columns and "ens_ensemble_spread" in combined.columns:
+              combined["spread_model_gap"] = (
+                  pd.to_numeric(combined["pred_spread"], errors="coerce") -
+                  pd.to_numeric(combined["ens_ensemble_spread"], errors="coerce")
+              ).round(1)
+              diverged = combined[combined["spread_model_gap"].abs() >= 3.0]
+              if not diverged.empty:
+                  print(f"\n⚡ PRIMARY vs ENSEMBLE DIVERGENCE (≥3 pts) — {len(diverged)} game(s):")
+                  for _, row in diverged.iterrows():
+                      print(f"   {row.get('home_team','?')} vs {row.get('away_team','?')}: "
+                            f"Primary {row.get('pred_spread',float('nan')):+.1f} | "
+                            f"Ensemble {row.get('ens_ensemble_spread',float('nan')):+.1f} | "
+                            f"Gap {row.get('spread_model_gap',float('nan')):+.1f}")
+                  combined.to_csv(out, index=False)   # Re-save with gap column
+          PY
+
+      # ── 8. Validate ─────────────────────────────────────────────────────────
+      - name: Validate prediction outputs
+        run: |
+          python - <<'PY'
+          import pandas as pd, pathlib, sys
+
+          errors = []
+
+          for fname, label in [
+              ("predictions_latest.csv",          "primary"),
+              ("predictions_combined_latest.csv",  "combined"),
+          ]:
+              p = pathlib.Path("data") / fname
+              if not p.exists():
+                  print(f"[WARN] {fname} not found")
+                  continue
+
+              df = pd.read_csv(p)
+              if df.empty:
+                  print(f"[WARN] {fname} is empty — no games in window?")
+                  continue
+
+              print(f"[OK]   {fname}: {len(df)} games, {len(df.columns)} columns ({label})")
+
+              # Spread sanity
+              spread_col = "pred_spread" if "pred_spread" in df.columns else "ensemble_spread"
+              if spread_col in df.columns:
+                  spreads = pd.to_numeric(df[spread_col], errors="coerce").dropna()
+                  if (spreads.abs() > 40).any():
+                      print(f"[WARN] Outlier spreads in {fname}: {spreads[spreads.abs()>40].values}")
+
+              # Confidence check
+              conf_col = "model_confidence" if "model_confidence" in df.columns else "ens_confidence"
+              if conf_col in df.columns:
+                  confs = pd.to_numeric(df[conf_col], errors="coerce").dropna()
+                  if not confs.empty:
+                      print(f"       Confidence: {confs.min():.0%} – {confs.max():.0%}")
+
+          # Edge alerts from combined
+          combined = pathlib.Path("data/predictions_combined_latest.csv")
+          if combined.exists():
+              df = pd.read_csv(combined)
+              if not df.empty:
+                  if "edge_flag" in df.columns:
+                      edges = df[df["edge_flag"] == 1]
+                      if not edges.empty:
+                          print(f"\n⚡ {len(edges)} PRIMARY MODEL EDGE ALERT(s):")
+                          for _, row in edges.iterrows():
+                              print(f"   {row.get('home_team','?')} vs {row.get('away_team','?')}: "
+                                    f"Primary {row.get('pred_spread',float('nan')):+.1f} "
+                                    f"vs Line {row.get('spread_line','N/A')}")
+
+                  if "ens_model_agreement" in df.columns:
+                      splits = df[df["ens_model_agreement"] == "SPLIT"]
+                      if not splits.empty:
+                          print(f"\n🔀 {len(splits)} ENSEMBLE SPLIT game(s) (model disagreement ≥4 pts std):")
+                          for _, row in splits.iterrows():
+                              print(f"   {row.get('home_team','?')} vs {row.get('away_team','?')}: "
+                                    f"spread std = {row.get('ens_spread_std','?')}")
+
+                  if "uws_uws_total" in df.columns:
+                      uws = pd.to_numeric(df["uws_uws_total"], errors="coerce")
+                      alerts = df[uws >= 55]
+                      if not alerts.empty:
+                          print(f"\n🚨 {len(alerts)} STRONG UPSET ALERT(s) (UWS ≥55):")
+                          for _, row in alerts.iterrows():
+                              print(f"   {row.get('home_team','?')} vs {row.get('away_team','?')}: "
+                                    f"UWS {row.get('uws_uws_total',float('nan')):.0f}/70")
+
+          print("\n[OK] Validation complete")
+          PY
+
+      # ── 9. Display summary ───────────────────────────────────────────────────
+      - name: Display prediction summary
+        if: always()
+        run: |
+          python - <<'PY'
+          import pandas as pd, pathlib
+
+          for fname, label in [
+              ("predictions_combined_latest.csv", "COMBINED (Primary + Ensemble)"),
+              ("predictions_latest.csv",          "PRIMARY MODEL"),
+          ]:
+              p = pathlib.Path("data") / fname
+              if not p.exists() or p.stat().st_size < 10:
+                  continue
+
+              df = pd.read_csv(p)
+              if df.empty:
+                  continue
+
+              print(f"\n{'='*80}")
+              print(f"  {label}  ({len(df)} games)")
+              print(f"{'='*80}")
+
+              # Show most informative available columns
+              want = [
+                  "game_datetime_utc", "home_team", "away_team",
+                  "pred_spread", "pred_total",
+                  "ens_ensemble_spread", "ens_ensemble_total",
+                  "ens_model_agreement",
+                  "spread_line", "spread_diff_vs_line",
+                  "model_confidence", "edge_flag",
+              ]
+              avail = [c for c in want if c in df.columns]
+              pd.set_option("display.max_rows",    200)
+              pd.set_option("display.max_columns",  25)
+              pd.set_option("display.width",        160)
+              print(df[avail].to_string(index=False))
+              break   # Only print combined if available, else primary
+          PY
+
+      # ── 10. Upload artifacts ─────────────────────────────────────────────────
+      - name: Upload prediction artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-predictions-rolling-${{ github.run_id }}
+          path: |
+            data/predictions_*.csv
+            data/ensemble_predictions_*.csv
+            data/predictions_combined_latest.csv
+          retention-days: 30
+          if-no-files-found: warn
+
+      # ── 11. (Optional) Commit predictions back to repo ───────────────────────
+      # Uncomment to make predictions browsable in GitHub without downloading artifacts.
+      # Requires contents: write permission (already set above).
+      #
+      # - name: Commit predictions to repo
+      #   run: |
+      #     git config user.name  "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add data/predictions_*.csv data/ensemble_predictions_*.csv \
+      #             data/predictions_combined_latest.csv
+      #     git diff --staged --quiet || \
+      #       git commit -m "predictions: $(date +'%Y-%m-%d %H:%M') [rolling 40h]"
+      #     git push
