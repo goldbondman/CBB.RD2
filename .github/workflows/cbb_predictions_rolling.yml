@@ -10,8 +10,6 @@ name: CBB Predictions — Rolling 40 Hours Ahead
 #   2. Manual: workflow_dispatch with optional date override and model controls
 #
 # This file REPLACES predict_tomorrow.yml.
-# The "predictions" job inside update_espn_cbb_data.yml handles the immediate
-# post-pipeline run. This workflow handles the scheduled / on-demand / rolling case.
 # ──────────────────────────────────────────────────────────────────────────────
 
 on:
@@ -109,7 +107,6 @@ jobs:
                   rows = len(pd.read_csv(p))
                   print(f"[OK]   {path}: {rows:,} rows — {label}")
               else:
-                  # Accept fallback for weighted
                   if "weighted" in path and pathlib.Path("data/team_game_metrics.csv").exists():
                       print(f"[WARN] {path} missing — will use metrics fallback")
                   else:
@@ -139,9 +136,6 @@ jobs:
         run: pip install -r requirements.txt
 
       # ── 5. Primary model: espn_prediction_runner.py ─────────────────────────
-      # Rolling window behavior:
-      #   - input.date provided → exactly that YYYYMMDD
-      #   - blank → all PST dates in [now, now+40h], merged and filtered
       - name: Run primary model predictions (rolling 40h)
         id: primary_predictions
         env:
@@ -177,7 +171,6 @@ jobs:
               print("\n[OK] Single-date primary predictions complete")
               raise SystemExit(0)
 
-          # ── Rolling 40h window ─────────────────────────────────────────────
           start_pst = datetime.now(tz=tz)
           end_pst   = start_pst + timedelta(hours=40)
 
@@ -193,7 +186,6 @@ jobs:
           for yyyymmdd in dates:
               run_for_date(yyyymmdd)
 
-          # ── Merge per-date files ───────────────────────────────────────────
           dfs = []
           for yyyymmdd in dates:
               p = data_dir / f"predictions_{yyyymmdd}.csv"
@@ -217,7 +209,6 @@ jobs:
 
           merged = pd.concat(dfs, ignore_index=True)
 
-          # De-dupe
           if "game_id" in merged.columns:
               merged = merged.drop_duplicates(subset=["game_id"], keep="last")
           else:
@@ -225,7 +216,6 @@ jobs:
               if key_cols:
                   merged = merged.drop_duplicates(subset=key_cols, keep="last")
 
-          # ── Filter to true 40h window ──────────────────────────────────────
           if "game_datetime_utc" in merged.columns:
               dt_utc = pd.to_datetime(merged["game_datetime_utc"], utc=True, errors="coerce")
               dt_pst = dt_utc.dt.tz_convert(tz)
@@ -234,7 +224,6 @@ jobs:
               merged = merged[mask].copy()
               print(f"[INFO] Window filter: {before} → {len(merged)} rows within 40h")
 
-          # Sort
           sort_cols = [c for c in ["game_datetime_utc","home_team"] if c in merged.columns]
           if sort_cols:
               merged = merged.sort_values(sort_cols)
@@ -248,7 +237,6 @@ jobs:
       # ── 6. Ensemble model: cbb_ensemble.py ──────────────────────────────────
       # Runs all 7 sub-models independently per game and produces a weighted
       # ensemble spread + total. Requires cbb_rankings.csv for full CAGE profile.
-      # Falls back gracefully to snapshot data if rankings haven't been built yet.
       - name: Run ensemble model predictions
         id: ensemble_predictions
         if: >
@@ -268,7 +256,6 @@ jobs:
           tz       = ZoneInfo("America/Los_Angeles")
           data_dir = pathlib.Path("data")
 
-          # ── Load ensemble module ───────────────────────────────────────────
           try:
               from cbb_ensemble import (
                   EnsemblePredictor, EnsembleConfig,
@@ -278,20 +265,16 @@ jobs:
               print(f"[SKIP] cbb_ensemble.py not importable: {e}")
               raise SystemExit(0)
 
-          # ── Load team profiles from CAGE rankings (fallback: snapshot) ─────
           profiles = load_team_profiles()
           if not profiles:
               print("[SKIP] No team profiles loaded — run espn_rankings.py first")
               raise SystemExit(0)
           print(f"[INFO] {len(profiles)} team profiles loaded")
 
-          # ── Load today's scheduled games from primary predictions output ───
-          # We re-use the game list already discovered by the primary runner
-          # rather than hitting the ESPN API again.
           primary_csv = data_dir / "predictions_primary.csv"
           latest_csv  = data_dir / "predictions_latest.csv"
+          games_src   = primary_csv if primary_csv.exists() else latest_csv
 
-          games_src = primary_csv if primary_csv.exists() else latest_csv
           if not games_src.exists() or games_src.stat().st_size < 10:
               print("[SKIP] No primary predictions to drive ensemble matchup list")
               raise SystemExit(0)
@@ -312,34 +295,50 @@ jobs:
               away_id = str(row.get("away_team_id", ""))
               neutral = bool(row.get("neutral_site", False))
 
-              # Resolve profiles — try by ID first, then fuzzy name match
               home_profile = profiles.get(home_id)
               away_profile = profiles.get(away_id)
 
+              # P6 FIX: improved fuzzy name match with ambiguity detection
+              import re
+              def _fuzzy_find(team_id: str, team_name: str):
+                  if team_id and team_id in profiles:
+                      return profiles[team_id]
+                  if not team_name:
+                      return None
+                  name_lower = team_name.lower().strip()
+                  # Pass 1: exact full-name match
+                  for p in profiles.values():
+                      if p.team_name.lower().strip() == name_lower:
+                          return p
+                  # Pass 2: whole-word boundary match
+                  pattern = r'\b' + re.escape(name_lower) + r'\b'
+                  for p in profiles.values():
+                      if re.search(pattern, p.team_name.lower()):
+                          return p
+                  # Pass 3: substring — warn on multiple matches
+                  matches = [p for p in profiles.values() if name_lower in p.team_name.lower()]
+                  if len(matches) == 1:
+                      return matches[0]
+                  elif len(matches) > 1:
+                      print(f"[WARN] Ambiguous team name '{team_name}' matches "
+                            f"{len(matches)} teams — using '{matches[0].team_name}'")
+                      return matches[0]
+                  return None
+
               if home_profile is None:
-                  home_name = str(row.get("home_team", "")).lower()
-                  home_profile = next(
-                      (p for p in profiles.values() if home_name in p.team_name.lower()),
-                      None
-                  )
+                  home_profile = _fuzzy_find(home_id, str(row.get("home_team", "")))
               if away_profile is None:
-                  away_name = str(row.get("away_team", "")).lower()
-                  away_profile = next(
-                      (p for p in profiles.values() if away_name in p.team_name.lower()),
-                      None
-                  )
+                  away_profile = _fuzzy_find(away_id, str(row.get("away_team", "")))
 
               if not home_profile or not away_profile:
                   skipped += 1
                   continue
 
-              # Inject situational data from games schedule if available
               if "rest_days_home" in row:
                   home_profile.rest_days = float(row.get("rest_days_home", 3.0))
               if "rest_days_away" in row:
                   away_profile.rest_days = float(row.get("rest_days_away", 3.0))
 
-              # Market lines (for line_value comparison in output)
               spread_line = None
               total_line  = None
               try:
@@ -363,7 +362,6 @@ jobs:
                       total_line=total_line,
                   )
                   flat = result.to_flat_dict()
-                  # Carry forward key fields from primary predictions for joining
                   flat["game_id"]            = row.get("game_id", "")
                   flat["game_datetime_utc"]  = row.get("game_datetime_utc", "")
                   flat["home_team_id"]       = home_id
@@ -384,17 +382,11 @@ jobs:
           today  = datetime.now(tz=tz).strftime("%Y%m%d")
           out    = data_dir / f"ensemble_predictions_{today}.csv"
           ens_df.to_csv(out, index=False)
-
-          # Also write rolling latest
-          ens_latest = data_dir / "ensemble_predictions_latest.csv"
-          ens_df.to_csv(ens_latest, index=False)
-
+          (data_dir / "ensemble_predictions_latest.csv").write_bytes(out.read_bytes())
           print(f"[OK] Ensemble predictions: {len(ens_df)} games → {out}")
           PY
 
       # ── 7. Merge primary + ensemble into unified output ──────────────────────
-      # Produces predictions_combined_latest.csv — one row per game with
-      # both primary model and all 7 ensemble model columns for easy comparison.
       - name: Merge primary and ensemble outputs
         if: always()
         run: |
@@ -417,22 +409,18 @@ jobs:
               raise SystemExit(0)
 
           if not ensemble.exists() or ensemble.stat().st_size < 10:
-              # No ensemble — just copy primary as combined
               p_df.to_csv(out, index=False)
               print(f"[WARN] No ensemble output — combined = primary only ({len(p_df)} rows)")
               raise SystemExit(0)
 
           e_df = pd.read_csv(ensemble)
 
-          # Join on game_id if available, else home_team + away_team
           if "game_id" in p_df.columns and "game_id" in e_df.columns:
-              # Prefix ensemble columns to avoid collision (except join key)
               e_cols = {c: f"ens_{c}" for c in e_df.columns
                         if c not in ("game_id","home_team","away_team","game_datetime_utc",
                                      "home_team_id","away_team_id","neutral_site")}
               e_df = e_df.rename(columns=e_cols)
               combined = p_df.merge(e_df, on="game_id", how="left", suffixes=("", "_ens_dup"))
-              # Drop accidental duplicate columns
               combined = combined[[c for c in combined.columns if not c.endswith("_ens_dup")]]
           else:
               join_cols = [c for c in ["home_team","away_team"] if c in p_df.columns and c in e_df.columns]
@@ -449,7 +437,6 @@ jobs:
           combined.to_csv(out, index=False)
           print(f"[OK] Combined output: {len(combined)} rows, {len(combined.columns)} cols → {out}")
 
-          # Surface quick comparison: primary spread vs ensemble spread
           if "pred_spread" in combined.columns and "ens_ensemble_spread" in combined.columns:
               combined["spread_model_gap"] = (
                   pd.to_numeric(combined["pred_spread"], errors="coerce") -
@@ -463,7 +450,7 @@ jobs:
                             f"Primary {row.get('pred_spread',float('nan')):+.1f} | "
                             f"Ensemble {row.get('ens_ensemble_spread',float('nan')):+.1f} | "
                             f"Gap {row.get('spread_model_gap',float('nan')):+.1f}")
-                  combined.to_csv(out, index=False)   # Re-save with gap column
+                  combined.to_csv(out, index=False)
           PY
 
       # ── 8. Validate ─────────────────────────────────────────────────────────
@@ -471,8 +458,6 @@ jobs:
         run: |
           python - <<'PY'
           import pandas as pd, pathlib, sys
-
-          errors = []
 
           for fname, label in [
               ("predictions_latest.csv",          "primary"),
@@ -490,27 +475,24 @@ jobs:
 
               print(f"[OK]   {fname}: {len(df)} games, {len(df.columns)} columns ({label})")
 
-              # Spread sanity
               spread_col = "pred_spread" if "pred_spread" in df.columns else "ensemble_spread"
               if spread_col in df.columns:
                   spreads = pd.to_numeric(df[spread_col], errors="coerce").dropna()
                   if (spreads.abs() > 40).any():
                       print(f"[WARN] Outlier spreads in {fname}: {spreads[spreads.abs()>40].values}")
 
-              # Confidence check
               conf_col = "model_confidence" if "model_confidence" in df.columns else "ens_confidence"
               if conf_col in df.columns:
                   confs = pd.to_numeric(df[conf_col], errors="coerce").dropna()
                   if not confs.empty:
                       print(f"       Confidence: {confs.min():.0%} – {confs.max():.0%}")
 
-          # Edge alerts from combined
           combined = pathlib.Path("data/predictions_combined_latest.csv")
           if combined.exists():
               df = pd.read_csv(combined)
               if not df.empty:
                   if "edge_flag" in df.columns:
-                      edges = df[df["edge_flag"] == 1]
+                      edges = df[pd.to_numeric(df["edge_flag"], errors="coerce") == 1]
                       if not edges.empty:
                           print(f"\n⚡ {len(edges)} PRIMARY MODEL EDGE ALERT(s):")
                           for _, row in edges.iterrows():
@@ -526,14 +508,21 @@ jobs:
                               print(f"   {row.get('home_team','?')} vs {row.get('away_team','?')}: "
                                     f"spread std = {row.get('ens_spread_std','?')}")
 
-                  if "uws_uws_total" in df.columns:
-                      uws = pd.to_numeric(df["uws_uws_total"], errors="coerce")
+                  # P3 FIX: handle both UWS column naming conventions
+                  # runner writes uws_total; _compute_uws_for_matchup prefixes to uws_uws_total
+                  uws_col = next(
+                      (c for c in ["uws_total", "uws_uws_total", "ens_uws_total"]
+                       if c in df.columns),
+                      None
+                  )
+                  if uws_col:
+                      uws = pd.to_numeric(df[uws_col], errors="coerce")
                       alerts = df[uws >= 55]
                       if not alerts.empty:
                           print(f"\n🚨 {len(alerts)} STRONG UPSET ALERT(s) (UWS ≥55):")
                           for _, row in alerts.iterrows():
                               print(f"   {row.get('home_team','?')} vs {row.get('away_team','?')}: "
-                                    f"UWS {row.get('uws_uws_total',float('nan')):.0f}/70")
+                                    f"UWS {row.get(uws_col,float('nan')):.0f}/70")
 
           print("\n[OK] Validation complete")
           PY
@@ -561,7 +550,6 @@ jobs:
               print(f"  {label}  ({len(df)} games)")
               print(f"{'='*80}")
 
-              # Show most informative available columns
               want = [
                   "game_datetime_utc", "home_team", "away_team",
                   "pred_spread", "pred_total",
@@ -575,7 +563,7 @@ jobs:
               pd.set_option("display.max_columns",  25)
               pd.set_option("display.width",        160)
               print(df[avail].to_string(index=False))
-              break   # Only print combined if available, else primary
+              break
           PY
 
       # ── 10. Upload artifacts ─────────────────────────────────────────────────
@@ -593,7 +581,6 @@ jobs:
 
       # ── 11. (Optional) Commit predictions back to repo ───────────────────────
       # Uncomment to make predictions browsable in GitHub without downloading artifacts.
-      # Requires contents: write permission (already set above).
       #
       # - name: Commit predictions to repo
       #   run: |
