@@ -286,6 +286,15 @@ def compute_quad_records(game_log: pd.DataFrame) -> pd.DataFrame:
 
         records.append(row)
 
+    if not records:
+        return pd.DataFrame(
+            columns=[
+                "q1_w", "q1_l", "q2_w", "q2_l", "q3_w", "q3_l", "q4_w", "q4_l",
+                "q1_wpct", "best_win_net", "bad_loss_count",
+            ],
+            index=pd.Index([], name="team_id"),
+        )
+
     return pd.DataFrame(records).set_index("team_id")
 
 
@@ -311,6 +320,11 @@ def compute_resume_score(df: pd.DataFrame, quad_df: pd.DataFrame) -> pd.Series:
         return pd.Series(np.nan, index=df.index, name="resume_score")
 
     snap = df.set_index("team_id") if "team_id" in df.columns else df
+    # Snapshot may already carry quad columns from prior runs; drop overlaps so
+    # fresh quad_df values always win and join stays deterministic.
+    overlap_cols = [c for c in quad_df.columns if c in snap.columns]
+    if overlap_cols:
+        snap = snap.drop(columns=overlap_cols, errors="ignore")
     merged = snap.join(quad_df, how="left")
 
     # Raw components
@@ -593,7 +607,7 @@ def compute_conference_ranks(df: pd.DataFrame) -> pd.Series:
     df["conf_rank"] = (
         df.groupby("conference")["adj_net_rtg"]
         .rank(ascending=False, method="min")
-        .astype(int)
+        .astype("Int64")
     )
     return df["conf_rank"]
 
@@ -813,7 +827,8 @@ def build_rankings(
 
     # ── 13. Rank by CAGE_EM (primary), BARTHAG (tiebreak) ────────────────────
     df = df.sort_values(["cage_em", "barthag"], ascending=[False, False])
-    df.insert(0, "rank", range(1, len(df) + 1))
+    df["rank"] = range(1, len(df) + 1)
+    df = df[["rank", *[c for c in df.columns if c != "rank"]]]
 
     # ── 14. Metadata ──────────────────────────────────────────────────────────
     df["updated_at"] = datetime.now(TZ).strftime("%Y-%m-%d %H:%M %Z")

@@ -214,11 +214,20 @@ def add_availability_flags(df: pd.DataFrame) -> pd.DataFrame:
 
     # Starter → bench flag
     if "starter" in df.columns:
+        starter_num = (
+            pd.to_numeric(df["starter"], errors="coerce")
+            .where(pd.to_numeric(df["starter"], errors="coerce").notna(),
+                   df["starter"].astype("string").str.strip().str.lower().map({
+                       "true": 1.0, "false": 0.0, "t": 1.0, "f": 0.0,
+                       "yes": 1.0, "no": 0.0, "1": 1.0, "0": 0.0,
+                   }))
+            .fillna(0.0)
+        )
         df["starter_to_bench"] = (
-            (df.groupby("athlete_id")["starter"].transform(
+            (starter_num.groupby(df["athlete_id"]).transform(
                 lambda s: s.shift(1).rolling(3, min_periods=2).mean()
             ) >= 0.67) &
-            (~df["starter"].astype(bool))
+            (starter_num < 0.5)
         ).astype(int)
     else:
         df["starter_to_bench"] = 0

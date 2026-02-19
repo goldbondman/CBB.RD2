@@ -133,7 +133,9 @@ def add_tournament_dna(df: pd.DataFrame) -> pd.DataFrame:
     # ── Z-score each component within this dataset population ──
     def _zscore(s: pd.Series) -> pd.Series:
         mu, sigma = s.mean(), s.std()
-        return (s - mu) / sigma.replace(0, np.nan) if sigma else s * 0
+        if pd.isna(sigma) or sigma == 0:
+            return pd.Series(0.0, index=s.index)
+        return (s - mu) / sigma
 
     z_efg   = _zscore(efg_diff)
     z_tov   = _zscore(tov_diff)
@@ -202,7 +204,10 @@ def add_suffocation_rating(df: pd.DataFrame) -> pd.DataFrame:
     # Z-score (flip sign for defensive stats where lower = better)
     def _zscore(s: pd.Series, flip: bool = False) -> pd.Series:
         mu, sigma = s.mean(), s.std()
-        z = (s - mu) / sigma.replace(0, np.nan) if sigma else s * 0
+        if pd.isna(sigma) or sigma == 0:
+            z = pd.Series(0.0, index=s.index)
+        else:
+            z = (s - mu) / sigma
         return -z if flip else z
 
     z_opp_efg     = _zscore(opp_efg,        flip=True)   # lower opp eFG = better
@@ -280,7 +285,9 @@ def add_momentum_quality_rating(df: pd.DataFrame) -> pd.DataFrame:
 
     def _zscore(s: pd.Series) -> pd.Series:
         mu, sigma = s.mean(), s.std()
-        return (s - mu) / sigma.replace(0, np.nan) if sigma else s * 0
+        if pd.isna(sigma) or sigma == 0:
+            return pd.Series(0.0, index=s.index)
+        return (s - mu) / sigma
 
     z_three  = _zscore(three_sustainability)
     z_opp    = _zscore(opp_quality_trend)
@@ -343,7 +350,10 @@ def add_offensive_identity_score(df: pd.DataFrame) -> pd.DataFrame:
 
     def _zscore(s: pd.Series, flip: bool = False) -> pd.Series:
         mu, sigma = s.mean(), s.std()
-        z = (s - mu) / sigma.replace(0, np.nan) if sigma else s * 0
+        if pd.isna(sigma) or sigma == 0:
+            z = pd.Series(0.0, index=s.index)
+        else:
+            z = (s - mu) / sigma
         return -z if flip else z
 
     z_adj_ortg   = _zscore(adj_ortg)
@@ -496,7 +506,10 @@ def _star_reliance_from_players(
 
     def _zscore(s: pd.Series, flip: bool = False) -> pd.Series:
         mu, sigma = s.mean(), s.std()
-        z = (s - mu) / sigma.replace(0, np.nan) if sigma else s * 0
+        if pd.isna(sigma) or sigma == 0:
+            z = pd.Series(0.0, index=s.index)
+        else:
+            z = (s - mu) / sigma
         return -z if flip else z
 
     # High top_share and top_usage = high risk; high entropy and 2nd_3rd_share = low risk
@@ -541,7 +554,10 @@ def _star_reliance_from_box(df: pd.DataFrame) -> pd.DataFrame:
 
     def _zscore(s: pd.Series, flip: bool = False) -> pd.Series:
         mu, sigma = s.mean(), s.std()
-        z = (s - mu) / sigma.replace(0, np.nan) if sigma else s * 0
+        if pd.isna(sigma) or sigma == 0:
+            z = pd.Series(0.0, index=s.index)
+        else:
+            z = (s - mu) / sigma
         return -z if flip else z
 
     z_ast    = _zscore(ast_l10,   flip=True)    # low AST = more risky → flip
