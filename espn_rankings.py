@@ -602,7 +602,7 @@ def compute_conference_ranks(df: pd.DataFrame) -> pd.Series:
     df["conf_rank"] = (
         df.groupby("conference")["adj_net_rtg"]
         .rank(ascending=False, method="min")
-        .astype(int)
+        .astype("Int64")
     )
     return df["conf_rank"]
 
