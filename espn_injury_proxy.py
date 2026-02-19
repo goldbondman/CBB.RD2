@@ -37,7 +37,6 @@ COMPOSITE SCORES
 """
 
 import logging
-from typing import List
 
 import numpy as np
 import pandas as pd
@@ -112,15 +111,13 @@ def _minutes_to_float(s: pd.Series) -> pd.Series:
 # ── Step 1: Build full player appearance history ──────────────────────────────
 
 def _build_appearance_history(df: pd.DataFrame,
-                               games_df: pd.DataFrame) -> pd.DataFrame:
+                             games_df: pd.DataFrame) -> pd.DataFrame:
     """
     For each player-game in player_game_logs, determine whether the player
-    appeared or was absent. Uses games_df (team_game_logs or games.csv) to
-    know which games each team played so we can detect silent absences
-    (player not listed at all, vs. listed as DNP).
+    appeared or was absent.
 
     Returns player_df with added columns:
-      appeared, game_number (per player), games_since_last_appearance
+      appeared, game_number (per player), games_since_last_appearance, _min_num
     """
     if df.empty:
         return df
@@ -140,12 +137,9 @@ def _build_appearance_history(df: pd.DataFrame,
     dnp = df.get("did_not_play", False)
     dnp = dnp.astype(bool) if isinstance(dnp, pd.Series) else pd.Series(False, index=df.index)
 
-    df["appeared"] = (
-        (~dnp) &
-        (df["_min_num"] > 0)
-    ).astype(int)
+    df["appeared"] = ((~dnp) & (df["_min_num"] > 0)).astype(int)
 
-    # Game number per player (1 = first game they appear in data)
+    # Game number per player
     df["game_number"] = df.groupby("athlete_id").cumcount() + 1
 
     # Games since last actual appearance (for silent absence detection)
@@ -161,9 +155,7 @@ def _build_appearance_history(df: pd.DataFrame,
                 last_idx = i
         return pd.Series(result, index=group.index)
 
-    df["games_since_appearance"] = df.groupby("athlete_id")["appeared"].transform(
-        _games_since_last
-    )
+    df["games_since_appearance"] = df.groupby("athlete_id")["appeared"].transform(_games_since_last)
 
     return df
 
@@ -190,20 +182,17 @@ def add_availability_flags(df: pd.DataFrame) -> pd.DataFrame:
     # Games missed in last 14 calendar days
     def _missed_l14(group: pd.DataFrame) -> pd.Series:
         result = []
-        dts   = group["_sort_dt"].values
-        dnps  = group["dnp_flag"].values
+        dts = group["_sort_dt"].values
+        dnps = group["dnp_flag"].values
         for i in range(len(dts)):
             cutoff = dts[i] - pd.Timedelta(days=14)
             missed = sum(1 for j in range(i) if dts[j] >= cutoff and dnps[j] == 1)
             result.append(missed)
         return pd.Series(result, index=group.index)
 
-    df["games_missed_l14"] = df.groupby("athlete_id", group_keys=False).apply(
-        _missed_l14
-    )
+    df["games_missed_l14"] = df.groupby("athlete_id", group_keys=False).apply(_missed_l14)
 
-    # Sudden absence — player had 3+ consecutive appearances, then went missing
-    # (games_since_appearance > 1 after being active)
+    # Sudden absence
     df["sudden_absence"] = (
         (df.get("games_since_appearance", pd.Series(np.nan, index=df.index)) > 1) &
         (df.get("game_number", pd.Series(0, index=df.index)) > 3)
@@ -213,7 +202,8 @@ def add_availability_flags(df: pd.DataFrame) -> pd.DataFrame:
     if "starter" in df.columns:
         df["starter_to_bench"] = (
             (df.groupby("athlete_id")["starter"].transform(
-                lambda s: s.shift(1).rolling(3, min_periods=2).mean()) >= 0.67) &
+                lambda s: s.shift(1).rolling(3, min_periods=2).mean()
+            ) >= 0.67) &
             (~df["starter"].astype(bool))
         ).astype(int)
     else:
@@ -283,9 +273,11 @@ def add_performance_signals(df: pd.DataFrame) -> pd.DataFrame:
         df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
     df = df.sort_values(["athlete_id", "_sort_dt"])
 
-    has_baseline = (df["game_number"].ge(MIN_GAMES_FOR_BASELINE + 1)
-                    if "game_number" in df.columns
-                    else pd.Series(True, index=df.index))
+    has_baseline = (
+        df["game_number"].ge(MIN_GAMES_FOR_BASELINE + 1)
+        if "game_number" in df.columns
+        else pd.Series(True, index=df.index)
+    )
 
     # Points z-score
     if "pts" in df.columns:
@@ -293,7 +285,7 @@ def add_performance_signals(df: pd.DataFrame) -> pd.DataFrame:
             lambda s: _z_score(pd.to_numeric(s, errors="coerce"), 10)
         ).where(has_baseline)
 
-    # eFG% z-score (only for players who attempt shots)
+    # eFG% z-score
     if "fgm" in df.columns and "fga" in df.columns:
         fga = pd.to_numeric(df["fga"], errors="coerce")
         fgm = pd.to_numeric(df["fgm"], errors="coerce")
@@ -305,7 +297,7 @@ def add_performance_signals(df: pd.DataFrame) -> pd.DataFrame:
         df = df.drop(columns=["_efg"], errors="ignore")
 
     # Usage proxy z-score: FGA + 0.44*FTA + TOV
-    def _safe_col(name):
+    def _safe_col(name: str) -> pd.Series:
         if name in df.columns:
             return pd.to_numeric(df[name], errors="coerce").fillna(0)
         return pd.Series(0.0, index=df.index)
@@ -322,12 +314,9 @@ def add_performance_signals(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop(columns=["_usage"], errors="ignore")
 
     # Multi-stat simultaneous decline — 3+ stats below L10 mean by >1 SD
-    stat_z_cols = [c for c in ["pts_z_l10", "efg_z_l10", "usage_z_l10",
-                                "min_z_l5"] if c in df.columns]
+    stat_z_cols = [c for c in ["pts_z_l10", "efg_z_l10", "usage_z_l10", "min_z_l5"] if c in df.columns]
     if len(stat_z_cols) >= 3:
-        below_threshold = sum(
-            (df[c] < -1).astype(int) for c in stat_z_cols
-        )
+        below_threshold = sum((df[c] < -1).astype(int) for c in stat_z_cols)
         df["multi_stat_down"] = (below_threshold >= 3).astype(int).where(has_baseline, 0)
     else:
         df["multi_stat_down"] = 0
@@ -349,8 +338,8 @@ def add_injury_proxy_score(df: pd.DataFrame) -> pd.DataFrame:
     for col, weight in SCORE_WEIGHTS.items():
         if col not in df.columns:
             continue
+
         if col == "usage_z_l10":
-            # Scale by z-score magnitude (more negative = higher signal)
             z = pd.to_numeric(df[col], errors="coerce").fillna(0)
             contribution = (z.clip(-3, 0) / -3 * weight).clip(0, weight)
         else:
@@ -368,19 +357,12 @@ def add_injury_proxy_score(df: pd.DataFrame) -> pd.DataFrame:
 # ── Team-level injury impact ──────────────────────────────────────────────────
 
 def compute_team_injury_impact(player_proxy_df: pd.DataFrame,
-                                team_logs_df: pd.DataFrame) -> pd.DataFrame:
+                               team_logs_df: pd.DataFrame) -> pd.DataFrame:
     """
     Aggregate player injury signals to the team level.
     Produces one row per team per game with:
-
-      players_flagged       Count of players with injury_proxy_flag = 1
-      players_severe        Count of players with injury_proxy_severe = 1
-      starters_flagged      Flagged players who are/were starters
-      bench_flagged         Flagged players who are bench players
-      team_injury_load      Weighted sum: (flagged_score * min_share)
-                            Accounts for how much a flagged player contributes
-      key_player_flag       1 if a player in the team's top-3 scorers is flagged
-      minutes_at_risk_pct   % of prior-game team minutes played by flagged players
+      players_flagged, players_severe, starters_flagged,
+      team_injury_load, minutes_at_risk_pct, key_player_flag
     """
     if player_proxy_df.empty or team_logs_df.empty:
         return pd.DataFrame()
@@ -388,32 +370,44 @@ def compute_team_injury_impact(player_proxy_df: pd.DataFrame,
     df  = player_proxy_df.copy()
     tdf = team_logs_df[["event_id", "team_id", "game_datetime_utc"]].drop_duplicates()
 
-    # Ensure numeric minutes exist
+    # Ensure numeric minutes exist and are truly numeric
     if "_min_num" not in df.columns:
         min_col = "min" if "min" in df.columns else ("minutes" if "minutes" in df.columns else None)
         df["_min_num"] = _minutes_to_float(df[min_col]) if min_col else 0.0
+    df["_min_num"] = pd.to_numeric(df["_min_num"], errors="coerce").fillna(0.0)
 
     # Get player's share of team minutes
-    total_min = (df.groupby(["event_id", "team_id"])["_min_num"]
-                 .transform("sum")
-                 .replace(0, np.nan))
-    df["min_share"] = pd.to_numeric(df["_min_num"], errors="coerce").fillna(0) / total_min
+    total_min = (
+        df.groupby(["event_id", "team_id"])["_min_num"]
+        .transform("sum")
+        .replace(0, np.nan)
+    )
+    df["min_share"] = (df["_min_num"] / total_min).replace([np.inf, -np.inf], np.nan).fillna(0.0)
 
     # Weighted injury load
-    df["_weighted_score"] = df["injury_proxy_score"] * df["min_share"].fillna(0)
+    df["_weighted_score"] = pd.to_numeric(df.get("injury_proxy_score", 0), errors="coerce").fillna(0.0) * df["min_share"]
+
+    # Ensure flag cols are numeric
+    df["injury_proxy_flag"] = pd.to_numeric(df.get("injury_proxy_flag", 0), errors="coerce").fillna(0).astype(int)
+    df["injury_proxy_severe"] = pd.to_numeric(df.get("injury_proxy_severe", 0), errors="coerce").fillna(0).astype(int)
 
     flagged = df[df["injury_proxy_flag"] == 1]
 
     # Per-team per-game aggregation
-    agg = df.groupby(["event_id", "team_id"]).agg(
-        players_flagged   = ("injury_proxy_flag",  "sum"),
-        players_severe    = ("injury_proxy_severe", "sum"),
-        starters_flagged  = pd.NamedAgg(
+    if "starter" in df.columns:
+        starters_flagged_agg = pd.NamedAgg(
             column="injury_proxy_flag",
-            aggfunc=lambda x: (x & df.loc[x.index, "starter"].astype(bool)).sum()
-        ) if "starter" in df.columns else pd.NamedAgg(column="injury_proxy_flag", aggfunc=lambda x: 0),
-        team_injury_load  = ("_weighted_score", "sum"),
-        minutes_at_risk_pct = pd.NamedAgg(
+            aggfunc=lambda x: (x.astype(bool) & df.loc[x.index, "starter"].astype(bool)).sum()
+        )
+    else:
+        starters_flagged_agg = pd.NamedAgg(column="injury_proxy_flag", aggfunc=lambda x: 0)
+
+    agg = df.groupby(["event_id", "team_id"]).agg(
+        players_flagged      = ("injury_proxy_flag", "sum"),
+        players_severe       = ("injury_proxy_severe", "sum"),
+        starters_flagged     = starters_flagged_agg,
+        team_injury_load     = ("_weighted_score", "sum"),
+        minutes_at_risk_pct  = pd.NamedAgg(
             column="min_share",
             aggfunc=lambda x: x[df.loc[x.index, "injury_proxy_flag"] == 1].sum() * 100
         ),
@@ -447,8 +441,8 @@ def compute_team_injury_impact(player_proxy_df: pd.DataFrame,
     else:
         agg["key_player_flag"] = 0
 
-    agg["team_injury_load"] = agg["team_injury_load"].round(2)
-    agg["minutes_at_risk_pct"] = agg["minutes_at_risk_pct"].round(1)
+    agg["team_injury_load"] = pd.to_numeric(agg["team_injury_load"], errors="coerce").fillna(0.0).round(2)
+    agg["minutes_at_risk_pct"] = pd.to_numeric(agg["minutes_at_risk_pct"], errors="coerce").fillna(0.0).round(1)
 
     # Join game datetime for sorting
     agg = agg.merge(tdf, on=["event_id", "team_id"], how="left")
@@ -459,19 +453,21 @@ def compute_team_injury_impact(player_proxy_df: pd.DataFrame,
 # ── Main entry point ──────────────────────────────────────────────────────────
 
 def compute_injury_proxy(player_df: pd.DataFrame,
-                          team_logs_df: pd.DataFrame) -> pd.DataFrame:
+                         team_logs_df: pd.DataFrame) -> pd.DataFrame:
     """
     Full injury proxy pipeline.
     Input:  player_game_logs DataFrame (full history)
     Output: player-level proxy df (for player_injury_proxy.csv)
-    Also returns team-level impact separately via compute_team_injury_impact().
+    Team-level impact returned separately via compute_team_injury_impact().
     """
     if player_df.empty:
         log.warning("compute_injury_proxy: empty player DataFrame")
         return player_df
 
-    log.info(f"Computing injury proxy for {len(player_df)} player-game rows "
-             f"({player_df['athlete_id'].nunique()} unique players)")
+    log.info(
+        f"Computing injury proxy for {len(player_df)} player-game rows "
+        f"({player_df['athlete_id'].nunique()} unique players)"
+    )
 
     df = _build_appearance_history(player_df, team_logs_df)
     df = add_availability_flags(df)
@@ -479,9 +475,11 @@ def compute_injury_proxy(player_df: pd.DataFrame,
     df = add_performance_signals(df)
     df = add_injury_proxy_score(df)
 
-    # Drop internal columns
+    # Drop internal sort col (keep _min_num for team impact step)
     df = df.drop(columns=["_sort_dt"], errors="ignore")
 
-    log.info(f"  Flagged: {df['injury_proxy_flag'].sum():.0f} player-games "
-             f"({df['injury_proxy_severe'].sum():.0f} severe)")
+    log.info(
+        f"  Flagged: {df['injury_proxy_flag'].sum():.0f} player-games "
+        f"({df['injury_proxy_severe'].sum():.0f} severe)"
+    )
     return df
