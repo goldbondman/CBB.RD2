@@ -23,6 +23,8 @@ OUT_METRICS     = CSV_DIR / "team_game_metrics.csv"
 OUT_SOS              = CSV_DIR / "team_game_sos.csv"
 OUT_PLAYER_PROXY     = CSV_DIR / "player_injury_proxy.csv"
 OUT_TEAM_INJURY      = CSV_DIR / "team_injury_impact.csv"
+OUT_WEIGHTED         = CSV_DIR / "team_game_weighted.csv"
+OUT_PLAYER_METRICS   = CSV_DIR / "player_game_metrics.csv"
 
 # ── ESPN API ─────────────────────────────────────────────────────────────────
 ESPN_SCOREBOARD_URL = (
