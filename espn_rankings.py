@@ -286,15 +286,6 @@ def compute_quad_records(game_log: pd.DataFrame) -> pd.DataFrame:
 
         records.append(row)
 
-    if not records:
-        return pd.DataFrame(
-            columns=[
-                "q1_w", "q1_l", "q2_w", "q2_l", "q3_w", "q3_l", "q4_w", "q4_l",
-                "q1_wpct", "best_win_net", "bad_loss_count",
-            ],
-            index=pd.Index([], name="team_id"),
-        )
-
     return pd.DataFrame(records).set_index("team_id")
 
 
@@ -320,11 +311,6 @@ def compute_resume_score(df: pd.DataFrame, quad_df: pd.DataFrame) -> pd.Series:
         return pd.Series(np.nan, index=df.index, name="resume_score")
 
     snap = df.set_index("team_id") if "team_id" in df.columns else df
-    # Snapshot may already carry quad columns from prior runs; drop overlaps so
-    # fresh quad_df values always win and join stays deterministic.
-    overlap_cols = [c for c in quad_df.columns if c in snap.columns]
-    if overlap_cols:
-        snap = snap.drop(columns=overlap_cols, errors="ignore")
     merged = snap.join(quad_df, how="left")
 
     # Raw components
@@ -599,17 +585,28 @@ def compute_conference_ranks(df: pd.DataFrame) -> pd.Series:
     """
     CONF_RANK — Rank within conference by CAGE_EM.
     Returns series indexed same as df.
-    """
-    if "conference" not in df.columns or "adj_net_rtg" not in df.columns:
-        return pd.Series(np.nan, index=df.index, name="conf_rank")
 
-    df = df.copy()
-    df["conf_rank"] = (
-        df.groupby("conference")["adj_net_rtg"]
-        .rank(ascending=False, method="min")
-        .astype("Int64")
-    )
-    return df["conf_rank"]
+    Uses nullable Int64 so teams with no conference (independents, NaN) get
+    <NA> rather than crashing astype(int) — which was the original bug causing
+    conf_rank to be missing for ALL teams whenever any team had a NaN conference.
+    """
+    # Need both columns; fall back gracefully if either missing
+    rank_col = "cage_em" if "cage_em" in df.columns else "adj_net_rtg"
+    if "conference" not in df.columns or rank_col not in df.columns:
+        return pd.Series(pd.NA, index=df.index, dtype="Int64", name="conf_rank")
+
+    # Drop rows with NaN conference from the ranking, then re-index back
+    # so independents get <NA> rather than throwing ValueError
+    try:
+        ranks = (
+            df.groupby("conference", dropna=True)[rank_col]
+            .rank(ascending=False, method="min")
+            .astype("Int64")   # nullable — NaN-conference rows stay <NA>
+        )
+        return ranks.rename("conf_rank")
+    except Exception as exc:
+        log.warning(f"compute_conference_ranks failed: {exc} — returning NaN")
+        return pd.Series(pd.NA, index=df.index, dtype="Int64", name="conf_rank")
 
 
 def compute_conference_strength(df: pd.DataFrame) -> pd.DataFrame:
@@ -800,6 +797,8 @@ def build_rankings(
     df["eff_grade"] = assign_efficiency_grade(df["cage_em"])
 
     # ── 9. Conference rank ────────────────────────────────────────────────────
+    # Called after cage_em is set (step 1) so compute_conference_ranks uses cage_em.
+    # conference column must survive the quad join — confirmed it does via reset_index.
     df["conf_rank"] = compute_conference_ranks(df)
 
     # ── 10. Record string ─────────────────────────────────────────────────────
@@ -827,8 +826,7 @@ def build_rankings(
 
     # ── 13. Rank by CAGE_EM (primary), BARTHAG (tiebreak) ────────────────────
     df = df.sort_values(["cage_em", "barthag"], ascending=[False, False])
-    df["rank"] = range(1, len(df) + 1)
-    df = df[["rank", *[c for c in df.columns if c != "rank"]]]
+    df.insert(0, "rank", range(1, len(df) + 1))
 
     # ── 14. Metadata ──────────────────────────────────────────────────────────
     df["updated_at"] = datetime.now(TZ).strftime("%Y-%m-%d %H:%M %Z")
@@ -1002,6 +1000,177 @@ def print_top_n(df: pd.DataFrame, n: int = 25) -> None:
 # ENTRY POINT
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def write_data_dictionary(output_dir: Path = DATA_DIR) -> Path:
+    """
+    Write cbb_rankings_data_dictionary.csv alongside the rankings files.
+
+    Two formats:
+    - CSV: machine-readable, one row per column with name / category /
+           description / range / source / notes
+    - TXT: human-readable formatted version for quick reference
+
+    Both are written every time rankings are generated so they stay in sync.
+    """
+
+    # ── Column definitions ────────────────────────────────────────────────────
+    # Format: (column_name, category, description, typical_range, source, notes)
+    COLUMNS = [
+        # ── Identity ──────────────────────────────────────────────────────────
+        ("rank",           "Identity", "Overall CAGE ranking, sorted by CAGE_EM then BARTHAG as tiebreaker.", "1 – 364", "Computed", "1 = best team in D1."),
+        ("team",           "Identity", "Team name.", "—", "ESPN API", ""),
+        ("team_id",        "Identity", "ESPN internal team identifier.", "—", "ESPN API", "Use for joins with other pipeline CSVs."),
+        ("conference",     "Identity", "Athletic conference affiliation.", "—", "ESPN API", ""),
+        ("conf_rank",      "Identity", "Rank within conference by CAGE_EM. 1 = best team in that conference.", "1 – ~18", "Computed", "NaN for independents with no conference."),
+        ("record",         "Identity", "Overall win-loss record (season).", "e.g. 24-8", "Computed", ""),
+        ("home_record",    "Identity", "Home win-loss record.", "e.g. 14-2", "Computed", ""),
+        ("away_record",    "Identity", "Away win-loss record.", "e.g. 7-5", "Computed", ""),
+
+        # ── Core Efficiency (KenPom equivalents) ──────────────────────────────
+        ("cage_em",        "Core Efficiency", "CAGE Efficiency Margin — our AdjEM equivalent. Points per 100 possessions better than an average D1 team, adjusted for opponent quality and pace. Primary sort column.", "-25 to +30", "Computed from adj_net_rtg", "KenPom equivalent: AdjEM. Higher is better. A+: ≥25, A: 18–25, B+: 7–12, Bubble: 0–2."),
+        ("cage_o",         "Core Efficiency", "CAGE Adjusted Offensive Rating — points scored per 100 possessions, adjusted for opponent defensive quality.", "95 – 125", "Computed from adj_ortg", "KenPom equivalent: AdjO. League average ≈ 103."),
+        ("cage_d",         "Core Efficiency", "CAGE Adjusted Defensive Rating — points allowed per 100 possessions, adjusted for opponent offensive quality. Lower is better.", "85 – 115", "Computed from adj_drtg", "KenPom equivalent: AdjD. League average ≈ 103. Elite defenses: <92."),
+        ("cage_t",         "Core Efficiency", "CAGE Adjusted Tempo — possessions per 40 minutes, pace-adjusted. Neither fast nor slow is inherently better.", "60 – 80", "Computed from adj_pace", "KenPom equivalent: AdjT. High = up-tempo, Low = slow and deliberate."),
+
+        # ── Win Probability (Torvik equivalents) ──────────────────────────────
+        ("barthag",        "Win Probability", "Probability of beating an average D1 team on a neutral court. Torvik's signature metric. Computed via Pythagorean expectation: AdjO^11.5 / (AdjO^11.5 + AdjD^11.5).", "0.000 – 1.000", "Computed from cage_o / cage_d", "Torvik equivalent: BARTHAG. Elite ≥0.90, Bubble ≈0.50, Bottom <0.20."),
+        ("wab",            "Win Probability", "Wins Above Bubble — how many more wins this team earned vs what a bubble team (AdjEM=0) would have earned against the identical schedule.", "-5 to +12", "Computed from game log", "Torvik equivalent: WAB. Accounts for schedule difficulty. A 25-5 record vs cupcakes may have lower WAB than 20-10 vs elite schedule."),
+        ("expected_win_pct","Win Probability","Pythagorean win percentage — expected win rate based on scoring efficiency, independent of actual results.", "0.000 – 1.000", "Pipeline", "High expected_win_pct with low actual_win_pct = unlucky team due for regression upward."),
+        ("actual_win_pct", "Win Probability", "Actual season win percentage.", "0.000 – 1.000", "Computed", ""),
+
+        # ── Schedule ──────────────────────────────────────────────────────────
+        ("luck",           "Schedule", "Luck score — actual win% minus Pythagorean win%. Positive = winning more games than efficiency predicts (lucky). Negative = unlucky.", "-0.15 to +0.15", "Pipeline", "KenPom equivalent: Luck. Teams with high luck tend to regress toward their Pythagorean expectation. Used in RegressedEff ensemble model."),
+        ("sos",            "Schedule", "Strength of Schedule — average opponent adjusted net rating this team has faced. Positive = tougher than average schedule.", "-10 to +10", "Pipeline (opp_avg_net_rtg_season)", "KenPom equivalent: SOS. Contextualizes record and efficiency ratings."),
+
+        # ── Quad Records ──────────────────────────────────────────────────────
+        ("q1_record",      "Quad Records", "Record vs Quad 1 opponents (opp net rating ≥ +8.0 — elite, top ~25% of D1).", "e.g. 4-3", "Computed from game log", "Most important quad for NCAA tournament seeding. Q1 wins are the gold standard."),
+        ("q2_record",      "Quad Records", "Record vs Quad 2 opponents (opp net rating 0 to +8.0 — above average).", "e.g. 8-2", "Computed from game log", ""),
+        ("q3_record",      "Quad Records", "Record vs Quad 3 opponents (opp net rating -8 to 0 — below average).", "e.g. 10-1", "Computed from game log", "Losses here are mildly concerning. Expected wins for tournament-caliber teams."),
+        ("q4_record",      "Quad Records", "Record vs Quad 4 opponents (opp net rating < -8.0 — weak bottom tier).", "e.g. 6-0", "Computed from game log", "Losses to Q4 opponents are bad losses and damage tournament resume significantly."),
+        ("q1_wpct",        "Quad Records", "Win percentage in Quad 1 games specifically.", "0.000 – 1.000", "Computed", "Most predictive single quad stat for NCAA seeding. Elite teams maintain >0.50 Q1 record."),
+        ("best_win_net",   "Quad Records", "Best win quality — highest opponent adjusted net rating in a game this team won.", "-5 to +25", "Computed from game log", "Higher = better marquee win. Elite resume: best win net >15."),
+        ("bad_loss_count", "Quad Records", "Number of losses to Quad 4 opponents (embarrassing losses).", "0 – 5+", "Computed", "Each bad loss significantly hurts tournament seeding and resume score."),
+
+        # ── CAGE Proprietary Composites ───────────────────────────────────────
+        ("cage_power_index","CAGE Composite", "Master composite ranking score combining efficiency, win probability, defense, momentum, resume, and clutch performance. Our single best overall team quality number.", "0 – 100", "Computed (weighted blend)", "100 = historically elite (2012 Kentucky tier). 85+ = title contender. 70–85 = top-5 seed. 55–70 = tournament team. 40–55 = bubble. <40 = NIT."),
+        ("eff_grade",      "CAGE Composite", "Letter grade for adjusted efficiency margin. Calibrated to actual D1 distribution.", "A+ through F", "Computed from cage_em", "A+: ≥25. A: 18–25. A-: 12–18. B+: 7–12. B: 2–7. B-: 0–2. C+: -3–0. C: -7–-3. D: -18–-12. F: <-18."),
+        ("resume_score",   "CAGE Composite", "Quality-wins composite on 0–100 scale. Rewards Q1 wins, win rate vs good teams, road success. Penalizes bad losses. Our version of Torvik's resume metric.", "0 – 100", "Computed", "50 = bubble-quality resume. >60 = comfortable. >75 = top-10 resume. Useful for committee-style seeding analysis."),
+        ("suffocation",    "CAGE Composite", "Defensive composite — how completely this defense shuts down opponents. Combines opponent eFG%, defensive rebounding, and adjusted defensive rating.", "0 – 100", "Tournament module / fallback computed", "50 = average. >75 = elite shutdown defense. Low-scoring game predictor."),
+        ("momentum",       "CAGE Composite", "Momentum Quality Rating — recent form weighted by opponent quality. Not just win streak: a 5-game win streak vs weak opponents scores lower than 3 wins vs top-25.", "0 – 100", "Tournament module", "50 = neutral. >65 = meaningfully hot. >80 = surging through elite competition."),
+        ("clutch_rating",  "CAGE Composite", "Close-game excellence — performance in games decided by ≤5 points, adjusted for luck in those games.", "0 – 100", "Computed", "50 = average. >70 = consistently closes games. Important for single-elimination tournament prediction."),
+        ("consistency_score","CAGE Composite","How predictable/reliable this team is game-to-game. Inverse of net efficiency and shooting variance.", "0 – 100", "Computed from std dev", "100 = machine-like (Virginia under Bennett). 50 = average. <35 = boom-or-bust — dangerous to pick in tournament."),
+        ("off_identity",   "CAGE Composite", "Offensive Identity Score — how cohesive and defined the offensive system is. High = team executes a clear, repeatable offensive scheme.", "0 – 100", "Tournament module", "High identity teams are more consistent under tournament pressure."),
+        ("tourney_readiness","CAGE Composite","Overall tournament readiness composite — aggregates schedule toughness, recent form, neutral-court performance, and defensive profile.", "0 – 100", "Tournament module", "Specifically calibrated for single-elimination. Best single number for tournament bracket analysis."),
+        ("star_risk",      "CAGE Composite", "Star Reliance Risk — how dependent this team is on a single player's performance. High = fragile if the star has an off night.", "0 – 100", "Tournament module", "50 = balanced team. >70 = one player carries them — high variance in tournament. Best paired with consistency_score."),
+        ("dna_score",      "CAGE Composite", "Tournament DNA Index — composite capturing historical behavioral markers that predict tournament success: road wins, close wins, elite opponent wins.", "0 – 100", "Tournament module", "The 'proven it matters' metric. A team with dna_score >70 has demonstrated performance specifically in tournament-like conditions."),
+
+        # ── Floor / Ceiling ───────────────────────────────────────────────────
+        ("floor_em",       "Range", "Downside performance estimate — team's CAGE_EM minus 1.5 standard deviations. What they look like on a bad night (captures ~87% of outcomes).", "-35 to +20", "Computed from cage_em ± 1.5σ", "In AdjEM units. Negative floor_em means on a bad night this team plays below average D1 level. Critical tournament risk metric."),
+        ("ceiling_em",     "Range", "Upside performance estimate — team's CAGE_EM plus 1.5 standard deviations. Peak performance potential.", "-10 to +45", "Computed from cage_em ± 1.5σ", "The gap between floor_em and ceiling_em reflects variance/unpredictability. Wide gap = boom-or-bust team."),
+
+        # ── Trend ─────────────────────────────────────────────────────────────
+        ("trend_arrow",    "Trend", "Directional momentum indicator comparing last 5 games vs last 10 games net efficiency.", "↑↑ SURGE / ↑ UP / → FLAT / ↓ DOWN / ↓↓ SLIDE", "Computed from net_rtg_l5 vs net_rtg_l10", "↑↑ SURGE: L5 better by 5+ pts. ↑ UP: 2–5 pts. → FLAT: within ±2. ↓ DOWN: 2–5 worse. ↓↓ SLIDE: 5+ worse."),
+        ("trend_numeric",  "Trend", "Numeric encoding of trend_arrow for sorting. +2=SURGE, +1=UP, 0=FLAT, -1=DOWN, -2=SLIDE.", "-2 to +2", "Computed", "Use for sorting/filtering. trend_arrow is for display."),
+
+        # ── Style ─────────────────────────────────────────────────────────────
+        ("offensive_archetype","Style","Offensive system classification based on pace, 3-point rate, and free throw generation.", "e.g. PACE-AND-SPACE, GRIND-IT-OUT, DRIBBLE-DRIVE", "Tournament module", "Useful for matchup analysis — some archetypes systematically exploit others."),
+        ("home_road_delta_pct","Style","Percentage point gap between home and road win rates. Large positive = crowd-dependent, vulnerable on neutral courts.", "-20 to +40", "Computed from home/away records", "Tournament teams play on neutral courts. High home_road_delta = red flag. Negative or near-zero = road warrior, tournament-ready."),
+
+        # ── Flags ─────────────────────────────────────────────────────────────
+        ("regression_risk","Flags", "Binary flag: 1 = this team is shooting unsustainably well from 3-point range and is statistically due for a shooting correction.", "0 or 1", "Tournament module", "Teams with regression_risk=1 should be faded slightly in ensemble models. Three-point shooting is the most volatile CBB stat."),
+        ("star_danger",    "Flags", "Binary flag: 1 = star player reliance is at a dangerous level AND team has shown fragility when the star underperforms.", "0 or 1", "Tournament module", "Combined star_risk + fragility indicator. More aggressive flag than star_risk alone."),
+        ("three_pct_gap",  "Flags", "Recent 3-point percentage (L5) minus season 3-point percentage. Positive = currently running hot from three.", "-8 to +8 pct pts", "Tournament module", ">5 = potential regression candidate. Pairs with regression_risk flag."),
+
+        # ── Four Factors (reference) ──────────────────────────────────────────
+        ("efg_pct",        "Four Factors", "Effective Field Goal percentage — accounts for 3-pointers being worth 50% more than 2-pointers. (FGM + 0.5*3PM) / FGA.", "40 – 62%", "Pipeline", "Dean Oliver's #1 factor (weight: 40%). League average ≈ 50.5%. Elite offense: >55%."),
+        ("opp_efg_pct",    "Four Factors", "Opponent Effective Field Goal percentage allowed — defensive eFG% suppression.", "40 – 62%", "Pipeline (season opponent avg)", "Lower is better. Elite defense: <46%. Combine with suffocation score for full defensive picture."),
+        ("tov_pct",        "Four Factors", "Turnover percentage — turnovers per 100 possessions. Lower is better.", "12 – 25%", "Pipeline", "Oliver's factor #2 (weight: 25%). League average ≈ 18%. Elite: <15%."),
+        ("orb_pct",        "Four Factors", "Offensive rebound percentage — share of available offensive rebounds captured.", "20 – 45%", "Pipeline", "Oliver's factor #3 (weight: 20%). High orb_pct = second-chance points machine."),
+        ("drb_pct",        "Four Factors", "Defensive rebound percentage — share of available defensive rebounds captured.", "55 – 85%", "Pipeline", "Complement to orb_pct. Elite defense: drb_pct >75%."),
+        ("ftr",            "Four Factors", "Free Throw Rate — free throw attempts per field goal attempt. Measures ability to get to the line.", "15 – 50%", "Pipeline", "Oliver's factor #4 (weight: 15%). High ftr + high ft_pct = free point machine."),
+        ("three_par",      "Four Factors", "Three-Point Attempt Rate — share of field goal attempts from behind the arc.", "20 – 55%", "Pipeline", "High three_par teams live and die by 3-point shooting variance."),
+        ("three_pct",      "Four Factors", "Three-point field goal percentage (season).", "28 – 42%", "Pipeline", "Most volatile major shooting stat. Use three_pct_gap to flag hot-shooting teams."),
+        ("ft_pct",         "Four Factors", "Free throw percentage.", "62 – 82%", "Pipeline", "Matters most in close games and tournament play when fouls are more common."),
+        ("close_wpct",     "Four Factors", "Win percentage in games decided by ≤5 points.", "0.000 – 1.000", "Pipeline", "Core input to clutch_rating. High close_wpct teams overperform in tournament settings."),
+
+        # ── Rolling Windows ───────────────────────────────────────────────────
+        ("net_rtg_l5",     "Rolling Windows", "Net efficiency rating (ortg minus drtg) averaged over last 5 games. Best indicator of current form.", "-20 to +30", "Pipeline", "Primary input to Momentum ensemble model. Recency-weighted."),
+        ("net_rtg_l10",    "Rolling Windows", "Net efficiency rating averaged over last 10 games. Medium-term form baseline.", "-15 to +25", "Pipeline", "Used with net_rtg_l5 to compute trend_arrow. More stable than L5, less stable than season avg."),
+
+        # ── Meta ─────────────────────────────────────────────────────────────
+        ("updated_at",     "Meta", "Timestamp when this row was last computed.", "ISO datetime", "Computed", ""),
+    ]
+
+    # ── Write CSV version ─────────────────────────────────────────────────────
+    dict_df = pd.DataFrame(
+        COLUMNS,
+        columns=["column", "category", "description", "typical_range", "source", "notes"]
+    )
+    csv_path = output_dir / "cbb_rankings_data_dictionary.csv"
+    dict_df.to_csv(csv_path, index=False)
+    log.info(f"Data dictionary (CSV) → {csv_path}")
+
+    # ── Write TXT version (formatted for quick human reading) ─────────────────
+    txt_lines = [
+        "CAGE RANKINGS — DATA DICTIONARY",
+        "Composite Adjusted Grade Engine | ESPN CBB Pipeline",
+        "=" * 80,
+        "",
+        "This file describes every column in cbb_rankings.csv.",
+        "Generated automatically alongside each rankings run.",
+        "",
+    ]
+
+    current_cat = None
+    for col, cat, desc, rng, src, notes in COLUMNS:
+        if cat != current_cat:
+            txt_lines += ["", f"{'─' * 80}", f"  {cat.upper()}", f"{'─' * 80}"]
+            current_cat = cat
+        txt_lines.append(f"\n  {col}")
+        txt_lines.append(f"    {desc}")
+        txt_lines.append(f"    Range : {rng}")
+        txt_lines.append(f"    Source: {src}")
+        if notes:
+            txt_lines.append(f"    Notes : {notes}")
+
+    txt_lines += [
+        "",
+        "=" * 80,
+        "EQUIVALENCY GUIDE",
+        "─" * 80,
+        "  CAGE_EM       ↔  KenPom AdjEM  ↔  Torvik's NET-equivalent",
+        "  CAGE_O        ↔  KenPom AdjO",
+        "  CAGE_D        ↔  KenPom AdjD",
+        "  CAGE_T        ↔  KenPom AdjT",
+        "  BARTHAG       ↔  Torvik BARTHAG (direct replication)",
+        "  WAB           ↔  Torvik WAB (direct replication)",
+        "  RESUME_SCORE  ↔  Torvik Resume Composite",
+        "  Quad Records  ↔  NCAA/Torvik Quad definitions (our quads use",
+        "                    opponent net rating as proxy for NET rank tiers)",
+        "",
+        "CAGE-ONLY METRICS (no KenPom/Torvik equivalent):",
+        "  CAGE_POWER_INDEX, SUFFOCATION, MOMENTUM, CLUTCH_RATING,",
+        "  CONSISTENCY_SCORE, FLOOR_EM, CEILING_EM, DNA_SCORE,",
+        "  TOURNEY_READINESS, OFF_IDENTITY, STAR_RISK, TREND_ARROW",
+        "",
+        "QUAD THRESHOLDS (opponent adjusted net rating):",
+        "  Quad 1: opp_net ≥ +8.0   (elite — roughly top 75 teams by NET)",
+        "  Quad 2: opp_net  0 – 8.0  (above average)",
+        "  Quad 3: opp_net -8 – 0    (below average)",
+        "  Quad 4: opp_net < -8.0   (weak — bottom tier)",
+        "  Note: Official NCAA Quads also factor game location (home/road/neutral).",
+        "  Our quads use opponent quality only as a location-agnostic equivalent.",
+        "",
+        f"Generated: {datetime.now(TZ).strftime('%Y-%m-%d %H:%M %Z')}",
+        "=" * 80,
+    ]
+
+    txt_path = output_dir / "cbb_rankings_data_dictionary.txt"
+    txt_path.write_text("\n".join(txt_lines))
+    log.info(f"Data dictionary (TXT) → {txt_path}")
+
+    return csv_path
+
+
 def run(output_dir: Path = DATA_DIR, top_n: int = 25) -> Path:
     """Full rankings pipeline."""
     log.info("=" * 60)
@@ -1036,6 +1205,9 @@ def run(output_dir: Path = DATA_DIR, top_n: int = 25) -> Path:
         out_conf = output_dir / "cbb_rankings_by_conference.csv"
         conf_table.to_csv(out_conf, index=False)
         log.info(f"Conference table → {out_conf}")
+
+    # Data dictionary — human-readable metric descriptions alongside every output
+    write_data_dictionary(output_dir)
 
     return out_latest
 
