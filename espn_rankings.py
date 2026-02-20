@@ -839,6 +839,7 @@ def build_rankings(
 
     # ── 13. Rank by CAGE_EM (primary), BARTHAG (tiebreak) ────────────────────
     df = df.sort_values(["cage_em", "barthag"], ascending=[False, False])
+    df = df.drop(columns=["rank"], errors="ignore")
     df.insert(0, "rank", range(1, len(df) + 1))
 
     # ── 14. Metadata ──────────────────────────────────────────────────────────
