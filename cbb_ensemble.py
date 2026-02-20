@@ -31,7 +31,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from espn_config import (
-    OUT_RANKINGS, OUT_TOURNAMENT_SNAPSHOT, OUT_WEIGHTED,
+    CSV_DIR, OUT_RANKINGS, OUT_TOURNAMENT_SNAPSHOT, OUT_WEIGHTED,
     LEAGUE_AVG_ORTG, LEAGUE_AVG_DRTG, LEAGUE_AVG_PACE,
     LEAGUE_AVG_EFG, LEAGUE_AVG_TOV, LEAGUE_AVG_FTR,
     LEAGUE_AVG_ORB, LEAGUE_AVG_DRB, PYTHAGOREAN_EXP, DEFAULT_HCA,
@@ -1220,8 +1220,8 @@ def main():
     if args.output:
         results_to_csv([result], args.output)
     else:
-        dated = DATA_DIR / f"ensemble_predictions_{datetime.now(TZ).strftime('%Y%m%d')}.csv"
-        DATA_DIR.mkdir(exist_ok=True)
+        dated = CSV_DIR / f"ensemble_predictions_{datetime.now(TZ).strftime('%Y%m%d')}.csv"
+        CSV_DIR.mkdir(parents=True, exist_ok=True)
         results_to_csv([result], dated)
 
 
