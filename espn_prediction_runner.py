@@ -646,7 +646,7 @@ def _compute_uws_for_matchup(matchup: Dict, snapshot: pd.DataFrame, game_type: s
             underdog_stats=dog_snap,
             game_type=game_type,
         )
-        return {f"uws_{k}": v for k, v in uws.items()}
+        return dict(uws.items())
     except Exception as exc:
         log.warning(f"UWS computation failed: {exc}")
         return {}
@@ -741,14 +741,14 @@ def print_summary(df: pd.DataFrame) -> None:
                 f"-> {row.get('spread_pick','')}"
             )
 
-    if "uws_uws_total" in df.columns:
-        strong = df[pd.to_numeric(df["uws_uws_total"], errors="coerce") >= 55]
+    if "uws_total" in df.columns:
+        strong = df[pd.to_numeric(df["uws_total"], errors="coerce") >= 55]
         if not strong.empty:
             print(f"\n🚨 STRONG UPSET ALERTS ({len(strong)} games UWS >= 55):")
             for _, row in strong.iterrows():
                 print(
                     f"   {row.get('home_team','')} vs {row.get('away_team','')}: "
-                    f"UWS {row.get('uws_uws_total', 0):.0f}/70"
+                    f"UWS {row.get('uws_total', 0):.0f}/70"
                 )
 
     print()

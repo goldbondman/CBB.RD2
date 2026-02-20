@@ -40,6 +40,19 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pandas as pd
 
+from cbb_config import (
+    LEAGUE_AVG_ORTG, LEAGUE_AVG_DRTG, LEAGUE_AVG_EFG, PYTH_EXP,
+    QUAD_1_MIN_NET, QUAD_2_MIN_NET, QUAD_3_MIN_NET,
+)
+from espn_config import (
+    OUT_TOURNAMENT_SNAPSHOT  as CSV_SNAPSHOT,
+    OUT_WEIGHTED             as CSV_WEIGHTED,
+    OUT_METRICS              as CSV_METRICS,
+    OUT_TEAM_LOGS            as CSV_LOGS,
+    OUT_RANKINGS,
+    OUT_RANKINGS_CONF,
+)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)-8s  %(message)s",
@@ -48,26 +61,8 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 TZ = ZoneInfo("America/Los_Angeles")
 
-# ── Paths ────────────────────────────────────────────────────────────────────
-DATA_DIR          = Path("data")
-CSV_SNAPSHOT      = DATA_DIR / "team_pretournament_snapshot.csv"
-CSV_WEIGHTED      = DATA_DIR / "team_game_weighted.csv"
-CSV_METRICS       = DATA_DIR / "team_game_metrics.csv"
-CSV_LOGS          = DATA_DIR / "team_game_logs.csv"
-
-OUT_RANKINGS      = DATA_DIR / "cbb_rankings.csv"
-OUT_RANKINGS_CONF = DATA_DIR / "cbb_rankings_by_conference.csv"
-
 # ── Constants ─────────────────────────────────────────────────────────────────
-LEAGUE_AVG_ORTG   = 103.0
-LEAGUE_AVG_DRTG   = 103.0
-PYTH_EXP          = 11.5      # Pythagorean exponent for CBB
 BUBBLE_NET_RTG    = 0.0       # Bubble team definition (NET rating = 0)
-
-# Quad thresholds (based on opponent adj_net_rtg, a proxy for NET ranking tiers)
-QUAD_1_MIN_NET    =  8.0      # Top ~25% of D1 (elite opponents)
-QUAD_2_MIN_NET    =  0.0      # Above average
-QUAD_3_MIN_NET    = -8.0      # Below average
 # Quad 4: < -8.0              # Bottom tier
 
 # CAGE Power Index weights — tuned by quant team
@@ -791,7 +786,7 @@ def build_rankings(
 
     # Fallback: compute basic suffocation from raw stats if tournament module hasn't run
     if df["suffocation"].isna().all():
-        opp_efg  = _to_num(df, "opp_avg_efg_season", LEAGUE_AVG_EFG := 50.5)
+        opp_efg  = _to_num(df, "opp_avg_efg_season", LEAGUE_AVG_EFG)
         drb_pct  = _to_num(df, "drb_pct",             72.0)
         cage_d_s = df["cage_d"]
         raw_suf = (100 - opp_efg) * 0.4 + drb_pct * 0.3 + (120 - cage_d_s) * 0.3
@@ -1014,7 +1009,7 @@ def print_top_n(df: pd.DataFrame, n: int = 25) -> None:
 # ENTRY POINT
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def write_data_dictionary(output_dir: Path = DATA_DIR) -> Path:
+def write_data_dictionary(output_dir: Path = OUT_RANKINGS.parent) -> Path:
     """
     Write cbb_rankings_data_dictionary.csv alongside the rankings files.
 
@@ -1185,7 +1180,7 @@ def write_data_dictionary(output_dir: Path = DATA_DIR) -> Path:
     return csv_path
 
 
-def run(output_dir: Path = DATA_DIR, top_n: int = 25) -> Path:
+def run(output_dir: Path = OUT_RANKINGS.parent, top_n: int = 25) -> Path:
     """Full rankings pipeline."""
     log.info("=" * 60)
     log.info("CAGE Rankings Engine — Building D1 Team Rankings")
@@ -1228,7 +1223,7 @@ def run(output_dir: Path = DATA_DIR, top_n: int = 25) -> Path:
 
 def main():
     parser = argparse.ArgumentParser(description="Build CAGE CBB team rankings")
-    parser.add_argument("--output-dir", type=Path, default=DATA_DIR)
+    parser.add_argument("--output-dir", type=Path, default=OUT_RANKINGS.parent)
     parser.add_argument("--top",        type=int,  default=25,
                         help="Print top-N teams to stdout")
     args = parser.parse_args()

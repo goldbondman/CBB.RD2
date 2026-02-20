@@ -109,6 +109,7 @@ def test_validation_passes_when_columns_populated():
     ])
 
     _validate_team_log_enrichment(df)
+<<<<<<< codex/fix-population-logic-for-team_game_logs.csv-53u2m2
 
 
 def test_validation_treats_string_placeholders_as_nulls():
@@ -152,3 +153,5 @@ def test_append_dedupe_write_persist_false_does_not_touch_disk(tmp_path):
     on_disk = pd.read_csv(path, dtype=str)
     assert on_disk.iloc[0]["value"] == "A"
     assert combined.iloc[0]["value"] == "B"
+=======
+>>>>>>> main

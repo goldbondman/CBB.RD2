@@ -34,15 +34,24 @@ from typing import Optional, Tuple
 import numpy as np
 import pandas as pd
 
-log = logging.getLogger(__name__)
+try:
+    from cbb_config import (
+        LEAGUE_AVG_ORTG, LEAGUE_AVG_DRTG, LEAGUE_AVG_PACE,
+        LEAGUE_AVG_EFG, LEAGUE_AVG_TOV, LEAGUE_AVG_FTR,
+        LEAGUE_AVG_ORB, LEAGUE_AVG_DRB,
+    )
+except ImportError:
+    # Standalone fallback — cbb_config unavailable
+    LEAGUE_AVG_ORTG = 103.0
+    LEAGUE_AVG_DRTG = 103.0
+    LEAGUE_AVG_PACE = 70.0
+    LEAGUE_AVG_EFG  = 50.5
+    LEAGUE_AVG_TOV  = 18.0
+    LEAGUE_AVG_FTR  = 28.0
+    LEAGUE_AVG_ORB  = 30.0
+    LEAGUE_AVG_DRB  = 70.0
 
-# ── Constants ─────────────────────────────────────────────────────────────────
-LEAGUE_AVG_ORTG       = 103.0
-LEAGUE_AVG_DRTG       = 103.0
-LEAGUE_AVG_PACE       = 70.0
-LEAGUE_AVG_EFG        = 50.5
-LEAGUE_AVG_TOV        = 18.0
-LEAGUE_AVG_FTR        = 28.0
+log = logging.getLogger(__name__)
 
 # Tournament environment multipliers (applied to raw pace×efficiency projection)
 TOURN_MULTIPLIER = {
@@ -72,6 +81,20 @@ def _col(df: pd.DataFrame, name: str, fill: float = np.nan) -> pd.Series:
 def _pct_rank(series: pd.Series, ascending: bool = True) -> pd.Series:
     """Percentile rank 0–100, higher = better unless ascending=False."""
     return series.rank(pct=True, ascending=ascending).mul(100).round(1)
+
+
+def _zscore(s: pd.Series, flip: bool = False) -> pd.Series:
+    """
+    Z-score normalize a Series. flip=True negates first — used for defensive
+    metrics where lower raw values should rank higher (e.g. opp_efg_pct).
+    Returns zeros if std is zero or NaN (all teams identical on this metric).
+    """
+    if flip:
+        s = -s
+    std = s.std(ddof=0)
+    if std == 0 or pd.isna(std):
+        return pd.Series(0.0, index=s.index)
+    return (s - s.mean()) / std
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -131,12 +154,6 @@ def add_tournament_dna(df: pd.DataFrame) -> pd.DataFrame:
     close_margin = _col(df, "margin_capped_l10")
 
     # ── Z-score each component within this dataset population ──
-    def _zscore(s: pd.Series) -> pd.Series:
-        mu, sigma = s.mean(), s.std()
-        if pd.isna(sigma) or sigma == 0:
-            return pd.Series(0.0, index=s.index)
-        return (s - mu) / sigma
-
     z_efg   = _zscore(efg_diff)
     z_tov   = _zscore(tov_diff)
     z_ftr   = _zscore(ftr_diff)
@@ -202,14 +219,6 @@ def add_suffocation_rating(df: pd.DataFrame) -> pd.DataFrame:
     drtg_component  = adj_drtg_series if not adj_drtg_series.isna().all() else _col(df, "drtg")
 
     # Z-score (flip sign for defensive stats where lower = better)
-    def _zscore(s: pd.Series, flip: bool = False) -> pd.Series:
-        mu, sigma = s.mean(), s.std()
-        if pd.isna(sigma) or sigma == 0:
-            z = pd.Series(0.0, index=s.index)
-        else:
-            z = (s - mu) / sigma
-        return -z if flip else z
-
     z_opp_efg     = _zscore(opp_efg,        flip=True)   # lower opp eFG = better
     z_tov_forced  = _zscore(tov_component,  flip=False)  # higher forced TOV = better
     z_drb         = _zscore(drb,            flip=False)  # higher DRB = better
@@ -283,12 +292,6 @@ def add_momentum_quality_rating(df: pd.DataFrame) -> pd.DataFrame:
     margin_l10 = _col(df, "margin_capped_l10")
     margin_trend = margin_l5 - margin_l10
 
-    def _zscore(s: pd.Series) -> pd.Series:
-        mu, sigma = s.mean(), s.std()
-        if pd.isna(sigma) or sigma == 0:
-            return pd.Series(0.0, index=s.index)
-        return (s - mu) / sigma
-
     z_three  = _zscore(three_sustainability)
     z_opp    = _zscore(opp_quality_trend)
     z_def    = _zscore(def_trend)
@@ -347,14 +350,6 @@ def add_offensive_identity_score(df: pd.DataFrame) -> pd.DataFrame:
     ftr         = _col(df, "ftr")
     efg_std     = _col(df, "efg_std_l10")           # lower = more consistent
     three_par   = _col(df, "three_par")             # 3PA rate — archetype signal
-
-    def _zscore(s: pd.Series, flip: bool = False) -> pd.Series:
-        mu, sigma = s.mean(), s.std()
-        if pd.isna(sigma) or sigma == 0:
-            z = pd.Series(0.0, index=s.index)
-        else:
-            z = (s - mu) / sigma
-        return -z if flip else z
 
     z_adj_ortg   = _zscore(adj_ortg)
     z_efg_vs_opp = _zscore(efg_vs_opp)
@@ -504,14 +499,6 @@ def _star_reliance_from_players(
     entropy = _col(df, "_scoring_entropy")
     top_usage = _col(df, "_top_usage")
 
-    def _zscore(s: pd.Series, flip: bool = False) -> pd.Series:
-        mu, sigma = s.mean(), s.std()
-        if pd.isna(sigma) or sigma == 0:
-            z = pd.Series(0.0, index=s.index)
-        else:
-            z = (s - mu) / sigma
-        return -z if flip else z
-
     # High top_share and top_usage = high risk; high entropy and 2nd_3rd_share = low risk
     z_share   = _zscore(top_share,    flip=False)   # high = risky
     z_second  = _zscore(second_third, flip=True)    # high 2nd/3rd share = safer → flip
@@ -551,14 +538,6 @@ def _star_reliance_from_box(df: pd.DataFrame) -> pd.DataFrame:
     efg_std = _col(df, "efg_std_l10")
     # h2 margin trend: teams that fade in 2nd half often lack depth
     h2_margin = _col(df, "h2_margin_l10")
-
-    def _zscore(s: pd.Series, flip: bool = False) -> pd.Series:
-        mu, sigma = s.mean(), s.std()
-        if pd.isna(sigma) or sigma == 0:
-            z = pd.Series(0.0, index=s.index)
-        else:
-            z = (s - mu) / sigma
-        return -z if flip else z
 
     z_ast    = _zscore(ast_l10,   flip=True)    # low AST = more risky → flip
     z_efg    = _zscore(efg_std,   flip=False)   # high variance = more risky

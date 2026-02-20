@@ -24,6 +24,7 @@ Outputs: data/ensemble_predictions_YYYYMMDD.csv
 """
 
 import argparse
+import json
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -733,6 +734,21 @@ class EnsembleConfig:
             self.spread_weights = {k: v / s_sum for k, v in self.spread_weights.items()}
         if t_sum > 0:
             self.total_weights  = {k: v / t_sum for k, v in self.total_weights.items()}
+
+    @classmethod
+    def from_optimized(cls, path: Path = Path("data/backtest_optimized_weights.json")):
+        cfg = cls()
+        try:
+            if path.exists() and path.stat().st_size > 10:
+                payload = json.loads(path.read_text())
+                optimized = payload.get("weights") if isinstance(payload, dict) else None
+                if isinstance(optimized, dict) and optimized:
+                    cfg.spread_weights.update(optimized)
+                    cfg.total_weights.update(optimized)
+        except Exception:
+            pass
+        cfg.normalize()
+        return cfg
 
 
 class EnsemblePredictor:
