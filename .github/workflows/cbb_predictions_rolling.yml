@@ -53,6 +53,11 @@ permissions:
   contents: write
   actions: read
 
+# Prevent overlapping runs from clobbering latest outputs/artifacts
+concurrency:
+  group: cbb-predictions-rolling
+  cancel-in-progress: true
+
 jobs:
   predict:
     if: >
@@ -107,7 +112,9 @@ jobs:
           python -m pip install -r requirements.txt
 
       # ── 4. Ensure required data exists (fallback build) ─────────────────────
+      # Only needed for workflow_dispatch. workflow_run already has exact artifact.
       - name: Ensure required pipeline outputs exist (fallback build)
+        if: github.event_name == 'workflow_dispatch'
         run: |
           python - <<'PY'
           import pathlib, subprocess, sys
