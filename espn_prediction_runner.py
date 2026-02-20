@@ -32,6 +32,17 @@ import logging
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+from espn_config import (
+    CSV_DIR as DATA_DIR,
+    OUT_WEIGHTED  as CSV_WEIGHTED,
+    OUT_METRICS   as CSV_METRICS,
+    OUT_GAMES     as CSV_GAMES,
+    OUT_TEAM_LOGS as CSV_LOGS,
+    OUT_TOURNAMENT_SNAPSHOT as CSV_SNAPSHOT,
+    TZ,
+)
+
+OUT_PREDICTIONS_LATEST = DATA_DIR / "predictions_latest.csv"
 from typing import Dict, List, Optional
 from zoneinfo import ZoneInfo
 
@@ -72,19 +83,6 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-TZ = ZoneInfo("America/Los_Angeles")
-
-# ── File paths ────────────────────────────────────────────────────────────────
-DATA_DIR = Path("data")
-
-CSV_WEIGHTED = DATA_DIR / "team_game_weighted.csv"
-CSV_METRICS  = DATA_DIR / "team_game_metrics.csv"
-CSV_GAMES    = DATA_DIR / "games.csv"
-CSV_LOGS     = DATA_DIR / "team_game_logs.csv"
-CSV_SNAPSHOT = DATA_DIR / "team_pretournament_snapshot.csv"
-
-OUT_PREDICTIONS_LATEST = DATA_DIR / "predictions_latest.csv"
-
 # ── Constants ──────────────────────────────────────────────────────────────────
 BOX_COL_MAP = {
     "fgm": "fgm",
@@ -96,6 +94,7 @@ BOX_COL_MAP = {
     "orb": "orb",
     "drb": "drb",
     "tov": "tov",
+    "pf":  "pf",    # v2.1: required for foul-rate confidence adjustment
 }
 
 # Required downstream enrichment fields from latest pre-game team row
@@ -500,6 +499,7 @@ def run_predictions(
                 home_games=home_games,
                 away_games=away_games,
                 neutral_site=neutral,
+                game_type=game_type,
             )
         except Exception as exc:
             log.error(f"    Prediction failed for {game_id}: {exc}")

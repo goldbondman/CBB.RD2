@@ -581,6 +581,14 @@ def summary_to_team_rows(parsed: Dict[str, Any]) -> Tuple[Dict, Dict]:
             "orb": me.get("orb"), "drb": me.get("drb"), "reb": me.get("reb"),
             "ast": me.get("ast"), "stl": me.get("stl"), "blk": me.get("blk"),
             "tov": me.get("tov"), "pf":  me.get("pf"),
+            # Opponent box score — used by espn_prediction_runner to build
+            # accurate GameData objects for the bidirectional prediction model.
+            # These are the OPPONENT'S actual stats from the same game.
+            "opp_fgm": opp.get("fgm"), "opp_fga": opp.get("fga"),
+            "opp_tpm": opp.get("tpm"), "opp_tpa": opp.get("tpa"),
+            "opp_ftm": opp.get("ftm"), "opp_fta": opp.get("fta"),
+            "opp_orb": opp.get("orb"), "opp_drb": opp.get("drb"),
+            "opp_tov": opp.get("tov"), "opp_pf":  opp.get("pf"),
             # Compatibility aliases expected by some downstream consumers
             "FGA": me.get("fga"), "FGM": me.get("fgm"),
             "FTA": me.get("fta"), "FTM": me.get("ftm"),
