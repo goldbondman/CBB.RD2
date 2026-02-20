@@ -92,7 +92,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - name: "Debug: list data directory after artifact restore"
+      - name: Debug list data directory after artifact restore
         if: always()
         run: |
           echo "---- data/ contents ----"
