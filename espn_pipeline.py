@@ -46,6 +46,8 @@ log = logging.getLogger(__name__)
 REQUIRED_TEAM_COLUMNS = [
     "event_id", "team_id", "conference", "wins", "losses",
     "fgm", "fga", "ftm", "fta", "tpm", "tpa", "orb", "drb", "reb", "tov", "ast",
+    "opp_fgm", "opp_fga", "opp_ftm", "opp_fta",
+    "opp_tpm", "opp_tpa", "opp_orb", "opp_drb", "opp_tov",
 ]
 
 REQUIRED_PLAYER_COLUMNS = [

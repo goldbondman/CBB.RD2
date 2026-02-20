@@ -39,12 +39,11 @@ from typing import List
 
 import numpy as np
 import pandas as pd
+from espn_config import LEAGUE_AVG_ORTG, LEAGUE_AVG_DRTG
 
 log = logging.getLogger(__name__)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-LEAGUE_AVG_ORTG  = 103.0
-LEAGUE_AVG_DRTG  = 103.0
 NET_RTG_OFFSET   = 20.0   # shift NetRTG into positive range for weighting
                            # (worst team ~-15, best ~+30; offset keeps all > 0)
 ROLLING_WINDOWS  = [5, 10]

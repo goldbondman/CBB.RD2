@@ -30,6 +30,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from espn_config import (
+    OUT_RANKINGS, OUT_TOURNAMENT_SNAPSHOT, OUT_WEIGHTED,
+    LEAGUE_AVG_ORTG, LEAGUE_AVG_DRTG, LEAGUE_AVG_PACE,
+    LEAGUE_AVG_EFG, LEAGUE_AVG_TOV, LEAGUE_AVG_FTR,
+    LEAGUE_AVG_ORB, LEAGUE_AVG_DRB, PYTHAGOREAN_EXP, DEFAULT_HCA,
+)
 from typing import Dict, List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
@@ -49,24 +55,6 @@ logging.basicConfig(
 )
 
 TZ = ZoneInfo("America/Los_Angeles")
-
-# ── Paths ─────────────────────────────────────────────────────────────────────
-DATA_DIR        = Path("data")
-RANKINGS_CSV    = DATA_DIR / "cbb_rankings.csv"
-SNAPSHOT_CSV    = DATA_DIR / "team_pretournament_snapshot.csv"
-WEIGHTED_CSV    = DATA_DIR / "team_game_weighted.csv"
-
-# ── League constants ──────────────────────────────────────────────────────────
-LEAGUE_AVG_ORTG  = 103.0
-LEAGUE_AVG_DRTG  = 103.0
-LEAGUE_AVG_PACE  = 70.0
-LEAGUE_AVG_EFG   = 50.5
-LEAGUE_AVG_TOV   = 18.0
-LEAGUE_AVG_FTR   = 28.0
-LEAGUE_AVG_ORB   = 30.0
-LEAGUE_AVG_DRB   = 70.0
-PYTHAGOREAN_EXP  = 11.5
-DEFAULT_HCA      = 3.2
 
 EFF_TO_PTS = LEAGUE_AVG_PACE / 100.0
 
@@ -906,7 +894,7 @@ def _parse_record_wpct(record_str: str) -> Tuple[float, float, float]:
         return 0.5, 0.65, 0.40
 
 
-def _load_from_rankings(rankings_path: Path = RANKINGS_CSV) -> Dict[str, "TeamProfile"]:
+def _load_from_rankings(rankings_path: Path = OUT_RANKINGS) -> Dict[str, "TeamProfile"]:
     """
     Load all teams from cbb_rankings.csv into TeamProfile objects.
     Returns dict keyed by team_id (str).
@@ -1053,7 +1041,7 @@ def _load_from_rankings(rankings_path: Path = RANKINGS_CSV) -> Dict[str, "TeamPr
     return profiles
 
 
-def _load_from_snapshot(snapshot_path: Path = SNAPSHOT_CSV) -> Dict[str, "TeamProfile"]:
+def _load_from_snapshot(snapshot_path: Path = OUT_TOURNAMENT_SNAPSHOT) -> Dict[str, "TeamProfile"]:
     """Fallback: load from tournament snapshot (fewer CAGE columns but same shape)."""
     if not snapshot_path.exists():
         log.error("Neither rankings nor snapshot CSV found — cannot load profiles")
@@ -1092,7 +1080,7 @@ def _load_from_snapshot(snapshot_path: Path = SNAPSHOT_CSV) -> Dict[str, "TeamPr
     return profiles
 
 
-def load_team_profiles(rankings_path: Path = RANKINGS_CSV) -> Dict[str, "TeamProfile"]:
+def load_team_profiles(rankings_path: Path = OUT_RANKINGS) -> Dict[str, "TeamProfile"]:
     """Public loader — tries rankings first, falls back to snapshot."""
     if rankings_path.exists():
         return _load_from_rankings(rankings_path)
@@ -1156,7 +1144,7 @@ def main():
     parser.add_argument("--neutral",   action="store_true")
     parser.add_argument("--spread-line", type=float, default=None)
     parser.add_argument("--total-line",  type=float, default=None)
-    parser.add_argument("--rankings-csv", type=Path, default=RANKINGS_CSV)
+    parser.add_argument("--rankings-csv", type=Path, default=OUT_RANKINGS)
     parser.add_argument("--output",    type=Path,   default=None)
     args = parser.parse_args()
 

@@ -72,3 +72,16 @@ DRY_RUN     = os.getenv("DRY_RUN", "0").strip().lower() in ("1", "true", "yes")
 # ── Rate limiting ─────────────────────────────────────────────────────────────
 # Seconds to sleep between summary fetches to avoid hammering ESPN.
 FETCH_SLEEP = float(os.getenv("FETCH_SLEEP", "0.15"))
+
+
+# ── League averages (single source of truth for all modules) ─────────────
+LEAGUE_AVG_ORTG   = 103.0
+LEAGUE_AVG_DRTG   = 103.0
+LEAGUE_AVG_PACE   = 70.0
+LEAGUE_AVG_EFG    = 50.5
+LEAGUE_AVG_TOV    = 18.0
+LEAGUE_AVG_FTR    = 28.0
+LEAGUE_AVG_ORB    = 30.0
+LEAGUE_AVG_DRB    = 70.0
+PYTHAGOREAN_EXP   = 11.5
+DEFAULT_HCA       = 3.2
