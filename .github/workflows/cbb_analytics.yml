@@ -150,6 +150,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
+      - name: Debug data folder (post-download)
+        run: |
+          echo "[INFO] Listing data/ (max depth 3)"
+          find data -maxdepth 3 -type f | sed -n '1,200p' || true
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -444,19 +449,6 @@ jobs:
           retention-days: 90       # Keep longer — this is your performance history
           if-no-files-found: warn
 
-      # ── Optional: commit results log to repo ─────────────────────────────────
-      # Uncomment to make results browsable in GitHub without downloading artifacts.
-      #
-      # - name: Commit results to repo
-      #   run: |
-      #     git config user.name  "github-actions[bot]"
-      #     git config user.email "github-actions[bot]@users.noreply.github.com"
-      #     git add data/results_log.csv data/results_summary.csv \
-      #             data/results_model_split.csv data/results_alerts.csv
-      #     git diff --staged --quiet || \
-      #       git commit -m "results: $(date +'%Y-%m-%d')"
-      #     git push
-
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 2 — BACKTESTER
   # Full historical replay + weight optimization.
@@ -471,14 +463,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Download ESPN CSVs
-        uses: actions/download-artifact@v4
-        with:
-          name: espn-cbb-csvs
-          path: data/
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -487,6 +471,27 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      # ── Generate required game log inputs ───────────────────────────────────
+      # actions/download-artifact can only pull from the *current* workflow run
+      # unless you provide a run-id (workflow_run trigger). For scheduled/dispatch
+      # analytics runs, we generate the inputs directly.
+      - name: Run ESPN pipeline (required for backtester)
+        run: |
+          python espn_pipeline.py --days-back 120
+
+      - name: Preflight backtester inputs
+        run: |
+          echo "[INFO] Checking backtester input files..."
+          ls -lah data || true
+          if [ -s data/team_game_weighted.csv ]; then
+            echo "[OK] data/team_game_weighted.csv present"
+          elif [ -s data/team_game_metrics.csv ]; then
+            echo "[OK] data/team_game_metrics.csv present (fallback)"
+          else
+            echo "[FAIL] Missing game log inputs. Expected data/team_game_weighted.csv or data/team_game_metrics.csv"
+            exit 1
+          fi
 
       # ── Run backtester ───────────────────────────────────────────────────────
       - name: Run backtester
@@ -626,7 +631,7 @@ jobs:
           NOTIFY_EMAIL:       ${{ secrets.NOTIFY_EMAIL }}
         run: |
           python - <<'PY'
-          import smtplib, os, pathlib, glob
+          import smtplib, os, pathlib
           from email.mime.multipart import MIMEMultipart
           from email.mime.text      import MIMEText
           from email.mime.base      import MIMEBase
@@ -660,13 +665,14 @@ jobs:
           static_attachments = [
               ("data/backtest_optimized_weights.json", "optimized_weights.json"),
           ]
-          # Latest dated files
+
+          # Latest dated files (pick newest matching)
           for pattern, label in [
-              (f"backtest_model_report_{date_stamp}.csv",  "model_report.csv"),
-              (f"backtest_results_{date_stamp}.csv",       "backtest_results.csv"),
-              (f"backtest_calibration_{date_stamp}.csv",   "calibration.csv"),
+              ("backtest_model_report_*.csv",  "model_report.csv"),
+              ("backtest_results_*.csv",       "backtest_results.csv"),
+              ("backtest_calibration_*.csv",   "calibration.csv"),
           ]:
-              matches = sorted(data_dir.glob(pattern.replace(date_stamp, "*")))
+              matches = sorted(data_dir.glob(pattern))
               if matches:
                   static_attachments.append((str(matches[-1]), label))
 
