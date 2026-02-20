@@ -98,12 +98,14 @@ def _minutes_to_float(s: pd.Series) -> pd.Series:
         parts = s[mmss].str.split(":", n=1, expand=True)
         mins = pd.to_numeric(parts[0].str.strip(), errors="coerce")
         secs = pd.to_numeric(parts[1].str.strip(), errors="coerce")
-        out.loc[mmss] = mins + (secs / 60.0)
+        out.loc[mmss] = (mins + (secs / 60.0)).astype("float64")
 
     # numeric-ish fallback (including "0", "12.5")
     not_mmss = ~mmss
     if not_mmss.any():
-        out.loc[not_mmss] = pd.to_numeric(s[not_mmss].str.strip(), errors="coerce")
+        out.loc[not_mmss] = pd.to_numeric(
+            s[not_mmss].str.strip(), errors="coerce"
+        ).astype("float64")
 
     return out.fillna(0.0)
 
