@@ -75,6 +75,53 @@ def test_parse_summary_populates_raw_box_from_split_stat_strings():
     assert player["plus_minus"] == 8
 
 
+
+
+def test_parse_summary_populates_stats_for_dict_payload_labels():
+    summary = _summary_fixture_with_split_strings("402")
+    summary["boxscore"]["players"][0]["statistics"][0] = {
+        "labels": [
+            "MIN",
+            "PTS",
+            "Field Goals",
+            "Three Pointers",
+            "Free Throws",
+            "Offensive Rebounds",
+            "Defensive Rebounds",
+            "+/-",
+        ],
+        "athletes": [
+            {
+                "athlete": {"id": "1002", "displayName": "Player B", "position": {"abbreviation": "F"}},
+                "starter": True,
+                "didNotPlay": False,
+                "stats": {
+                    "MIN": "31",
+                    "PTS": "18",
+                    "Field Goals": "6/11",
+                    "Three Pointers": "2/5",
+                    "Free Throws": "4/4",
+                    "Offensive Rebounds": "3",
+                    "Defensive Rebounds": "5",
+                    "+/-": "+6",
+                },
+            }
+        ],
+    }
+
+    parsed = parse_summary(summary, "402")
+    player = parsed["players"][0]
+
+    assert player["fgm"] == 6
+    assert player["fga"] == 11
+    assert player["tpm"] == 2
+    assert player["tpa"] == 5
+    assert player["ftm"] == 4
+    assert player["fta"] == 4
+    assert player["orb"] == 3
+    assert player["drb"] == 5
+
+
 def test_compute_player_metrics_populates_raw_derived_and_last_windows():
     rows = []
     for i in range(1, 7):

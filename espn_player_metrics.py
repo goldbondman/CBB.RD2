@@ -25,7 +25,7 @@ Output: player_game_metrics.csv
 
 import logging
 import os
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
@@ -450,7 +450,8 @@ def _log_null_rates(stage: str, df: pd.DataFrame) -> None:
     log.info(f"{stage}: null_rates(%)={rates}")
 
 
-def _validate_player_metric_integrity(df: pd.DataFrame) -> None:
+def _validate_player_metric_integrity(df: pd.DataFrame,
+                                      raw_df: Optional[pd.DataFrame] = None) -> None:
     if df.empty:
         return
 
@@ -461,13 +462,21 @@ def _validate_player_metric_integrity(df: pd.DataFrame) -> None:
             return
 
     completed_df = df[completed_mask]
+    completed_raw_df = (raw_df[completed_mask]
+                        if raw_df is not None and len(raw_df) == len(df)
+                        else completed_df)
     errors = []
 
     for col, threshold in RAW_GUARDRAIL_THRESHOLDS.items():
         if col not in completed_df.columns:
             errors.append(f"missing required column: {col}")
             continue
-        rate = 1.0 - completed_df[col].isna().mean()
+        if col in completed_raw_df.columns:
+            raw_vals = completed_raw_df[col]
+            token_null = raw_vals.astype(str).str.strip().isin(["", "--", "-"])
+            rate = 1.0 - (raw_vals.isna() | token_null).mean()
+        else:
+            rate = 1.0 - completed_df[col].isna().mean()
         if rate <= 0.0:
             errors.append(f"{col} is 100% null in completed games")
         elif rate < threshold:
@@ -504,9 +513,11 @@ def compute_player_metrics(player_df: pd.DataFrame,
     log.info(f"Computing player metrics for {len(player_df)} player-game rows "
              f"({player_df['athlete_id'].nunique()} unique players)")
 
-    _log_null_rates("player_metrics:input", player_df)
+    normalized_input_df = _normalize_player_box_columns(player_df)
 
-    df = add_player_per_game_metrics(player_df, team_logs_df)
+    _log_null_rates("player_metrics:input", normalized_input_df)
+
+    df = add_player_per_game_metrics(normalized_input_df, team_logs_df)
     _log_null_rates("player_metrics:after_per_game", df)
 
     df = add_player_rolling(df, windows=ROLLING_WINDOWS)
@@ -517,7 +528,7 @@ def compute_player_metrics(player_df: pd.DataFrame,
     _validate_player_metrics_enrichment(df)
 
     _log_null_rates("player_metrics:before_guardrails", df)
-    _validate_player_metric_integrity(df)
+    _validate_player_metric_integrity(df, raw_df=normalized_input_df)
 
     log.info("Player metrics complete")
     return df
