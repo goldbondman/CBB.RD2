@@ -41,6 +41,79 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
+# Required downstream integrity columns
+REQUIRED_TEAM_COLUMNS = [
+    "event_id", "team_id", "conference", "wins", "losses",
+    "fgm", "fga", "ftm", "fta", "tpm", "tpa", "orb", "drb", "reb", "tov", "ast",
+]
+
+REQUIRED_PLAYER_COLUMNS = [
+    "event_id", "team_id", "athlete_id",
+    "fgm", "fga", "ftm", "fta", "tpm", "tpa", "orb", "drb", "reb", "tov", "ast",
+]
+
+
+def _scoreboard_team_context(games_df: pd.DataFrame) -> pd.DataFrame:
+    """Build team-level context rows (wins/losses/conference) from games.csv rows."""
+    if games_df.empty:
+        return pd.DataFrame(columns=["event_id", "team_id", "conference", "wins", "losses"])
+
+    g = games_df.copy()
+    g["event_id"] = g.get("game_id", "").astype(str)
+
+    home = pd.DataFrame({
+        "event_id": g.get("game_id", ""),
+        "team_id": g.get("home_team_id", ""),
+        "conference": g.get("home_conference", ""),
+        "wins": g.get("home_wins", None),
+        "losses": g.get("home_losses", None),
+    })
+    away = pd.DataFrame({
+        "event_id": g.get("game_id", ""),
+        "team_id": g.get("away_team_id", ""),
+        "conference": g.get("away_conference", ""),
+        "wins": g.get("away_wins", None),
+        "losses": g.get("away_losses", None),
+    })
+
+    out = pd.concat([home, away], ignore_index=True)
+    out["event_id"] = out["event_id"].astype(str)
+    out["team_id"] = out["team_id"].astype(str)
+    return out.drop_duplicates(["event_id", "team_id"], keep="last")
+
+
+def _enrich_team_rows_from_scoreboard(df_team: pd.DataFrame, games_df: pd.DataFrame) -> pd.DataFrame:
+    """Fill missing team metadata from scoreboard context to avoid blank wins/losses/conference."""
+    if df_team.empty:
+        return df_team
+
+    df = df_team.copy()
+    ctx = _scoreboard_team_context(games_df)
+    if ctx.empty:
+        return df
+
+    df["event_id"] = df.get("event_id", "").astype(str)
+    df["team_id"] = df.get("team_id", "").astype(str)
+
+    df = df.merge(ctx, on=["event_id", "team_id"], how="left", suffixes=("", "_sb"))
+
+    for col in ["conference", "wins", "losses"]:
+        sb_col = f"{col}_sb"
+        if sb_col in df.columns:
+            if col in df.columns:
+                df[col] = df[col].where(df[col].notna() & (df[col].astype(str) != ""), df[sb_col])
+            else:
+                df[col] = df[sb_col]
+
+    df = df.drop(columns=[c for c in ["conference_sb", "wins_sb", "losses_sb"] if c in df.columns])
+    return df
+
+
+def _assert_required_columns(df: pd.DataFrame, required: List[str], label: str) -> None:
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        raise ValueError(f"{label} missing required columns: {missing}")
+
 
 # ── Checkpoint helpers ────────────────────────────────────────────────────────
 
@@ -298,6 +371,8 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
     # ── Write CSVs ──
     if team_rows:
         df_team = pd.DataFrame(team_rows)
+        df_team = _enrich_team_rows_from_scoreboard(df_team, games_df)
+        _assert_required_columns(df_team, REQUIRED_TEAM_COLUMNS, "team_rows")
         df_all  = _append_dedupe_write(
             OUT_TEAM_LOGS,
             df_team,
@@ -386,6 +461,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
 
     if player_rows:
         df_players = pd.DataFrame(player_rows)
+        _assert_required_columns(df_players, REQUIRED_PLAYER_COLUMNS, "player_rows")
         df_all_p   = _append_dedupe_write(
             OUT_PLAYER_LOGS,
             df_players,
@@ -440,6 +516,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
                 "jersey", "position", "starter", "did_not_play",
                 "min", "pts", "fgm", "fga", "tpm", "tpa", "ftm", "fta",
                 "orb", "drb", "reb", "ast", "stl", "blk", "tov", "pf", "plus_minus",
+                "FGA", "FGM", "FTA", "FTM", "TPA", "TPM", "ORB", "DRB", "RB", "TO", "AST",
             ])
             OUT_PLAYER_LOGS.parent.mkdir(parents=True, exist_ok=True)
             empty_player_logs.to_csv(OUT_PLAYER_LOGS, index=False)
@@ -452,6 +529,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
                 "jersey", "position", "starter", "did_not_play",
                 "min", "pts", "fgm", "fga", "tpm", "tpa", "ftm", "fta",
                 "orb", "drb", "reb", "ast", "stl", "blk", "tov", "pf", "plus_minus",
+                "FGA", "FGM", "FTA", "FTM", "TPA", "TPM", "ORB", "DRB", "RB", "TO", "AST",
             ])
             OUT_PLAYER_METRICS.parent.mkdir(parents=True, exist_ok=True)
             empty_player_metrics.to_csv(OUT_PLAYER_METRICS, index=False)
