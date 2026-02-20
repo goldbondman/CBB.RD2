@@ -62,6 +62,14 @@ TARGET_NULL_GUARD_COLUMNS = [
     "h1_pts", "h2_pts", "h1_pts_against", "h2_pts_against",
 ]
 
+<<<<<<< codex/fix-population-logic-for-team_game_logs.csv-53u2m2
+PLAYER_TARGET_NULL_GUARD_COLUMNS = [
+    "fgm", "fga", "tpm", "tpa", "fta", "orb", "drb", "plus_minus",
+    "efg_pct", "three_pct", "fg_pct", "ft_pct",
+]
+
+=======
+>>>>>>> main
 HALF_SCORE_FINAL_MIN_NON_NULL = float(os.getenv("HALF_SCORE_FINAL_MIN_NON_NULL", "0.80"))
 STANDINGS_MIN_NON_NULL = float(os.getenv("STANDINGS_MIN_NON_NULL", "0.80"))
 
@@ -204,7 +212,16 @@ def _validate_team_log_enrichment(df: pd.DataFrame) -> None:
         subset = df[mask] if mask is not None else df
         if subset.empty:
             return 1.0
+<<<<<<< codex/fix-population-logic-for-team_game_logs.csv-53u2m2
+
+        vals = subset[col]
+        null_like_tokens = {"", "nan", "none", "null", "nat", "<na>"}
+        token_null = vals.astype(str).str.strip().str.lower().isin(null_like_tokens)
+        null_mask = vals.isna() | token_null
+        return 1.0 - float(null_mask.mean())
+=======
         return 1.0 - subset[col].isna().mean()
+>>>>>>> main
 
     errors: List[str] = []
 
@@ -273,6 +290,7 @@ def _append_dedupe_write(
     new_df: pd.DataFrame,
     unique_keys: List[str],
     sort_cols: Optional[List[str]] = None,
+    persist: bool = True,
 ) -> pd.DataFrame:
     """
     Append new_df to existing CSV, deduplicate on unique_keys keeping the
@@ -318,14 +336,15 @@ def _append_dedupe_write(
         if present:
             combined = combined.sort_values(present)
 
-    if not DRY_RUN:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        # Atomic write via temp file
-        tmp = path.with_suffix(".tmp")
-        combined.to_csv(tmp, index=False)
-        tmp.replace(path)
-    else:
-        log.info(f"[DRY RUN] Would write {len(combined)} rows → {path}")
+    if persist:
+        if not DRY_RUN:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            # Atomic write via temp file
+            tmp = path.with_suffix(".tmp")
+            combined.to_csv(tmp, index=False)
+            tmp.replace(path)
+        else:
+            log.info(f"[DRY RUN] Would write {len(combined)} rows → {path}")
 
     return combined
 
@@ -506,9 +525,22 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
             df_team,
             unique_keys=["event_id", "team_id"],
             sort_cols=["game_datetime_utc", "event_id", "team_id"],
+            persist=False,
         )
         _log_stage_null_rates("team_rows_before_validation", df_all, TARGET_NULL_GUARD_COLUMNS)
         _validate_team_log_enrichment(df_all)
+<<<<<<< codex/fix-population-logic-for-team_game_logs.csv-53u2m2
+
+        _append_dedupe_write(
+            OUT_TEAM_LOGS,
+            df_team,
+            unique_keys=["event_id", "team_id"],
+            sort_cols=["game_datetime_utc", "event_id", "team_id"],
+            persist=True,
+        )
+
+=======
+>>>>>>> main
         if OUT_TEAM_LOGS.exists() and OUT_TEAM_LOGS.stat().st_size > 0:
             _log_stage_null_rates(
                 "team_rows_after_reload",
@@ -609,12 +641,14 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         # ── Player rolling metrics ──
         team_logs_for_poss = df_metrics_out if team_rows else pd.DataFrame()
         df_player_metrics = compute_player_metrics(df_all_p, team_logs_for_poss)
+        _log_stage_null_rates("player_metrics_before_write", df_player_metrics, PLAYER_TARGET_NULL_GUARD_COLUMNS)
         df_player_metrics_out = _append_dedupe_write(
             OUT_PLAYER_METRICS,
             df_player_metrics,
             unique_keys=["event_id", "athlete_id"],
             sort_cols=["game_datetime_utc", "event_id", "athlete_id"],
         )
+        _log_stage_null_rates("player_metrics_after_write", df_player_metrics_out, PLAYER_TARGET_NULL_GUARD_COLUMNS)
         log.info(f"player_game_metrics.csv: {len(df_player_metrics_out)} total rows")
 
         # ── Injury proxy ──
