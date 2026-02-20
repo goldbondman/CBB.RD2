@@ -439,6 +439,19 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                         if orb or drb:
                             prow["reb"] = orb + drb
 
+                    # Compatibility aliases expected by some downstream consumers
+                    prow["FGA"] = prow.get("fga")
+                    prow["FGM"] = prow.get("fgm")
+                    prow["FTA"] = prow.get("fta")
+                    prow["FTM"] = prow.get("ftm")
+                    prow["TPA"] = prow.get("tpa")
+                    prow["TPM"] = prow.get("tpm")
+                    prow["ORB"] = prow.get("orb")
+                    prow["DRB"] = prow.get("drb")
+                    prow["RB"] = prow.get("reb")
+                    prow["TO"] = prow.get("tov")
+                    prow["AST"] = prow.get("ast")
+
                     players.append(prow)
 
         return {
@@ -556,6 +569,12 @@ def summary_to_team_rows(parsed: Dict[str, Any]) -> Tuple[Dict, Dict]:
             "orb": me.get("orb"), "drb": me.get("drb"), "reb": me.get("reb"),
             "ast": me.get("ast"), "stl": me.get("stl"), "blk": me.get("blk"),
             "tov": me.get("tov"), "pf":  me.get("pf"),
+            # Compatibility aliases expected by some downstream consumers
+            "FGA": me.get("fga"), "FGM": me.get("fgm"),
+            "FTA": me.get("fta"), "FTM": me.get("ftm"),
+            "TPA": me.get("tpa"), "TPM": me.get("tpm"),
+            "ORB": me.get("orb"), "DRB": me.get("drb"), "RB": me.get("reb"),
+            "TO": me.get("tov"), "AST": me.get("ast"),
         }
 
     return _make_row("home"), _make_row("away")

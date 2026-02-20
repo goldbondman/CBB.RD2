@@ -98,6 +98,13 @@ BOX_COL_MAP = {
     "tov": "tov",
 }
 
+# Required downstream enrichment fields from latest pre-game team row
+REQUIRED_TEAM_CONTEXT_FIELDS = [
+    "fgm", "fga", "ftm", "fta", "tpm", "tpa",
+    "orb", "drb", "reb", "tov", "ast",
+    "wins", "losses", "conference",
+]
+
 OPP_HISTORY_WINDOW = 5
 TEAM_GAMES_WINDOW = 10
 
@@ -525,6 +532,8 @@ def run_predictions(
             uws_result = _compute_uws_for_matchup(matchup, snapshot, game_type=game_type)
 
         bd = prediction.get("breakdown", {})
+        home_ctx = _latest_team_context(all_data, str(home_id), cutoff_dt)
+        away_ctx = _latest_team_context(all_data, str(away_id), cutoff_dt)
         row = {
             "game_id": game_id,
             "game_datetime_utc": matchup.get("game_datetime_utc"),
@@ -571,6 +580,39 @@ def run_predictions(
             "game_type": game_type,
             "predicted_at_utc": pd.Timestamp.now("UTC").isoformat(),
             "history_cutoff_utc": cutoff_dt.isoformat() if cutoff_dt is not None else None,
+
+            # Required downstream team metadata
+            "home_conference": home_ctx.get("conference"),
+            "home_wins": home_ctx.get("wins"),
+            "home_losses": home_ctx.get("losses"),
+            "away_conference": away_ctx.get("conference"),
+            "away_wins": away_ctx.get("wins"),
+            "away_losses": away_ctx.get("losses"),
+
+            # Required downstream box score fields (legacy uppercase contract)
+            "home_FGA": home_ctx.get("fga"),
+            "home_FGM": home_ctx.get("fgm"),
+            "home_FTA": home_ctx.get("fta"),
+            "home_FTM": home_ctx.get("ftm"),
+            "home_TPA": home_ctx.get("tpa"),
+            "home_TPM": home_ctx.get("tpm"),
+            "home_ORB": home_ctx.get("orb"),
+            "home_DRB": home_ctx.get("drb"),
+            "home_RB": home_ctx.get("reb"),
+            "home_TO": home_ctx.get("tov"),
+            "home_AST": home_ctx.get("ast"),
+
+            "away_FGA": away_ctx.get("fga"),
+            "away_FGM": away_ctx.get("fgm"),
+            "away_FTA": away_ctx.get("fta"),
+            "away_FTM": away_ctx.get("ftm"),
+            "away_TPA": away_ctx.get("tpa"),
+            "away_TPM": away_ctx.get("tpm"),
+            "away_ORB": away_ctx.get("orb"),
+            "away_DRB": away_ctx.get("drb"),
+            "away_RB": away_ctx.get("reb"),
+            "away_TO": away_ctx.get("tov"),
+            "away_AST": away_ctx.get("ast"),
         }
 
         row.update(uws_result)
@@ -617,12 +659,47 @@ def _safe_float(val) -> Optional[float]:
         return None
 
 
+def _latest_team_context(
+    all_data: pd.DataFrame,
+    team_id: str,
+    cutoff_dt: Optional[pd.Timestamp],
+) -> Dict[str, Optional[object]]:
+    """Get latest available team row before cutoff for output enrichment."""
+    rows = all_data[all_data["team_id"].astype(str) == str(team_id)].copy()
+    if cutoff_dt is not None:
+        rows = rows[rows["game_datetime_utc"] < cutoff_dt]
+    rows = rows.sort_values("game_datetime_utc")
+
+    if rows.empty:
+        return {k: None for k in REQUIRED_TEAM_CONTEXT_FIELDS}
+
+    latest = rows.iloc[-1]
+    return {k: latest.get(k, None) for k in REQUIRED_TEAM_CONTEXT_FIELDS}
+
+
+def _validate_prediction_output_schema(df: pd.DataFrame) -> None:
+    """Integrity gate: required downstream columns must exist before write."""
+    required = {
+        "home_FGA", "home_FGM", "home_FTA", "home_FTM", "home_TPA", "home_TPM",
+        "home_ORB", "home_DRB", "home_RB", "home_TO", "home_AST",
+        "away_FGA", "away_FGM", "away_FTA", "away_FTM", "away_TPA", "away_TPM",
+        "away_ORB", "away_DRB", "away_RB", "away_TO", "away_AST",
+        "home_wins", "home_losses", "home_conference",
+        "away_wins", "away_losses", "away_conference",
+    }
+    missing = sorted(required - set(df.columns))
+    if missing:
+        raise ValueError(f"Prediction output missing required downstream fields: {missing}")
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # OUTPUT WRITERS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def write_predictions(df: pd.DataFrame, label: str) -> Path:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+    if not df.empty:
+        _validate_prediction_output_schema(df)
     dated_path = DATA_DIR / f"predictions_{label}.csv"
     df.to_csv(dated_path, index=False)
     df.to_csv(OUT_PREDICTIONS_LATEST, index=False)
