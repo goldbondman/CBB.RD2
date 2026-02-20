@@ -93,10 +93,14 @@ jobs:
         continue-on-error: true
 
       - name: Debug list data directory after artifact restore
-        if: always()
+        if: ${{ always() }}
         run: |
           echo "---- data/ contents ----"
-          ls -lah data || true
+          if [ -d data ]; then
+            ls -lah data
+          else
+            echo "data/ directory does not exist yet"
+          fi
           echo "------------------------"
 
       # ── 3. Python setup ─────────────────────────────────────────────────────
