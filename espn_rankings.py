@@ -286,6 +286,9 @@ def compute_quad_records(game_log: pd.DataFrame) -> pd.DataFrame:
 
         records.append(row)
 
+    if not records:
+        return pd.DataFrame()
+
     return pd.DataFrame(records).set_index("team_id")
 
 
