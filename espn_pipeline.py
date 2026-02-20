@@ -6,6 +6,7 @@ Keep this file focused on coordination only; logic lives in other modules.
 
 import json
 import logging
+import os
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -52,34 +53,103 @@ REQUIRED_PLAYER_COLUMNS = [
     "fgm", "fga", "ftm", "fta", "tpm", "tpa", "orb", "drb", "reb", "tov", "ast",
 ]
 
+TARGET_NULL_GUARD_COLUMNS = [
+    "home_conference", "away_conference", "home_rank", "away_rank",
+    "spread", "over_under", "home_ml", "away_ml", "odds_provider", "odds_details",
+    "home_h1", "home_h2", "away_h1", "away_h2",
+    "home_wins", "home_losses", "away_wins", "away_losses",
+    "conf_wins", "conf_losses", "win_pct",
+    "h1_pts", "h2_pts", "h1_pts_against", "h2_pts_against",
+]
+
+HALF_SCORE_FINAL_MIN_NON_NULL = float(os.getenv("HALF_SCORE_FINAL_MIN_NON_NULL", "0.80"))
+STANDINGS_MIN_NON_NULL = float(os.getenv("STANDINGS_MIN_NON_NULL", "0.80"))
+
 
 def _scoreboard_team_context(games_df: pd.DataFrame) -> pd.DataFrame:
     """Build team-level context rows (wins/losses/conference) from games.csv rows."""
     if games_df.empty:
-        return pd.DataFrame(columns=["event_id", "team_id", "conference", "wins", "losses"])
+        return pd.DataFrame(columns=["event_id", "team_id"])
 
     g = games_df.copy()
     g["event_id"] = g.get("game_id", "").astype(str)
 
+    shared = {
+        "spread": g.get("spread", None),
+        "over_under": g.get("over_under", None),
+        "home_ml": g.get("home_ml", None),
+        "away_ml": g.get("away_ml", None),
+        "odds_provider": g.get("odds_provider", None),
+        "odds_details": g.get("odds_details", None),
+        "home_h1": g.get("home_h1", None),
+        "home_h2": g.get("home_h2", None),
+        "away_h1": g.get("away_h1", None),
+        "away_h2": g.get("away_h2", None),
+        "home_conference": g.get("home_conference", None),
+        "away_conference": g.get("away_conference", None),
+        "home_rank": g.get("home_rank", None),
+        "away_rank": g.get("away_rank", None),
+    }
+
     home = pd.DataFrame({
         "event_id": g.get("game_id", ""),
         "team_id": g.get("home_team_id", ""),
+        "home_away": "home",
         "conference": g.get("home_conference", ""),
         "wins": g.get("home_wins", None),
         "losses": g.get("home_losses", None),
+        "home_wins": g.get("home_wins", None),
+        "home_losses": g.get("home_losses", None),
+        "away_wins": g.get("away_wins", None),
+        "away_losses": g.get("away_losses", None),
+        "conf_wins": g.get("home_conf_wins", None),
+        "conf_losses": g.get("home_conf_losses", None),
+        "rank": g.get("home_rank", None),
+        "h1_pts": g.get("home_h1", None),
+        "h2_pts": g.get("home_h2", None),
+        "h1_pts_against": g.get("away_h1", None),
+        "h2_pts_against": g.get("away_h2", None),
+        **shared,
     })
     away = pd.DataFrame({
         "event_id": g.get("game_id", ""),
         "team_id": g.get("away_team_id", ""),
+        "home_away": "away",
         "conference": g.get("away_conference", ""),
         "wins": g.get("away_wins", None),
         "losses": g.get("away_losses", None),
+        "home_wins": g.get("home_wins", None),
+        "home_losses": g.get("home_losses", None),
+        "away_wins": g.get("away_wins", None),
+        "away_losses": g.get("away_losses", None),
+        "conf_wins": g.get("away_conf_wins", None),
+        "conf_losses": g.get("away_conf_losses", None),
+        "rank": g.get("away_rank", None),
+        "h1_pts": g.get("away_h1", None),
+        "h2_pts": g.get("away_h2", None),
+        "h1_pts_against": g.get("home_h1", None),
+        "h2_pts_against": g.get("home_h2", None),
+        **shared,
     })
 
     out = pd.concat([home, away], ignore_index=True)
     out["event_id"] = out["event_id"].astype(str)
     out["team_id"] = out["team_id"].astype(str)
     return out.drop_duplicates(["event_id", "team_id"], keep="last")
+
+
+def _log_stage_null_rates(stage: str, df: pd.DataFrame, columns: List[str]) -> None:
+    if df.empty:
+        log.info(f"{stage}: 0 rows")
+        return
+    present = [c for c in columns if c in df.columns]
+    if not present:
+        log.info(f"{stage}: {len(df)} rows | none of target columns present")
+        return
+    null_rates = (df[present].isna().mean() * 100).round(1).to_dict()
+    key_cols = [k for k in ["event_id", "team_id", "opponent_id", "game_datetime_utc"] if k in df.columns]
+    sample = df[key_cols].head(3).to_dict("records") if key_cols else []
+    log.info(f"{stage}: rows={len(df)} null_rates(%)={null_rates} key_sample={sample}")
 
 
 def _enrich_team_rows_from_scoreboard(df_team: pd.DataFrame, games_df: pd.DataFrame) -> pd.DataFrame:
@@ -97,7 +167,15 @@ def _enrich_team_rows_from_scoreboard(df_team: pd.DataFrame, games_df: pd.DataFr
 
     df = df.merge(ctx, on=["event_id", "team_id"], how="left", suffixes=("", "_sb"))
 
-    for col in ["conference", "wins", "losses"]:
+    fill_cols = [
+        "conference", "wins", "losses", "home_wins", "home_losses", "away_wins", "away_losses",
+        "conf_wins", "conf_losses", "rank", "spread", "over_under", "home_ml", "away_ml",
+        "odds_provider", "odds_details", "home_h1", "home_h2", "away_h1", "away_h2",
+        "home_conference", "away_conference", "home_rank", "away_rank",
+        "h1_pts", "h2_pts", "h1_pts_against", "h2_pts_against",
+    ]
+
+    for col in fill_cols:
         sb_col = f"{col}_sb"
         if sb_col in df.columns:
             if col in df.columns:
@@ -105,8 +183,56 @@ def _enrich_team_rows_from_scoreboard(df_team: pd.DataFrame, games_df: pd.DataFr
             else:
                 df[col] = df[sb_col]
 
-    df = df.drop(columns=[c for c in ["conference_sb", "wins_sb", "losses_sb"] if c in df.columns])
+    if "win_pct" in df.columns and {"wins", "losses"}.issubset(df.columns):
+        wins = pd.to_numeric(df["wins"], errors="coerce")
+        losses = pd.to_numeric(df["losses"], errors="coerce")
+        calc = wins / (wins + losses)
+        df["win_pct"] = df["win_pct"].where(df["win_pct"].notna(), calc.round(3))
+
+    df = df.drop(columns=[c for c in df.columns if c.endswith("_sb")])
     return df
+
+
+def _validate_team_log_enrichment(df: pd.DataFrame) -> None:
+    """Hard guardrail: fail fast when key enrichment groups are completely missing."""
+    if df.empty:
+        return
+
+    def _non_null_rate(col: str, mask: Optional[pd.Series] = None) -> float:
+        if col not in df.columns:
+            return 0.0
+        subset = df[mask] if mask is not None else df
+        if subset.empty:
+            return 1.0
+        return 1.0 - subset[col].isna().mean()
+
+    errors: List[str] = []
+
+    conf_home_rate = _non_null_rate("home_conference")
+    conf_away_rate = _non_null_rate("away_conference")
+    if conf_home_rate <= 0.0 or conf_away_rate <= 0.0:
+        errors.append("conference enrichment failed: home/away conference are 100% null")
+
+    final_mask = df.get("completed", pd.Series(False, index=df.index)).astype(str).str.lower().isin(["true", "1", "yes"])
+    for half_col in ["home_h1", "home_h2", "away_h1", "away_h2"]:
+        if _non_null_rate(half_col, mask=final_mask) < HALF_SCORE_FINAL_MIN_NON_NULL:
+            errors.append(
+                f"half-score enrichment below threshold for finals: {half_col} < {HALF_SCORE_FINAL_MIN_NON_NULL:.0%}"
+            )
+
+    for standings_col in ["home_wins", "home_losses"]:
+        if _non_null_rate(standings_col) < STANDINGS_MIN_NON_NULL:
+            errors.append(
+                f"standings enrichment below threshold: {standings_col} < {STANDINGS_MIN_NON_NULL:.0%}"
+            )
+
+    odds_fields = ["spread", "over_under", "home_ml", "away_ml", "odds_provider", "odds_details"]
+    odds_non_null = max((_non_null_rate(c) for c in odds_fields), default=0.0)
+    if odds_non_null <= 0.0:
+        errors.append("odds enrichment failed: all odds fields are 100% null")
+
+    if errors:
+        raise ValueError(" | ".join(errors))
 
 
 def _assert_required_columns(df: pd.DataFrame, required: List[str], label: str) -> None:
@@ -371,7 +497,9 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
     # ── Write CSVs ──
     if team_rows:
         df_team = pd.DataFrame(team_rows)
+        _log_stage_null_rates("team_rows_raw_parse", df_team, TARGET_NULL_GUARD_COLUMNS)
         df_team = _enrich_team_rows_from_scoreboard(df_team, games_df)
+        _log_stage_null_rates("team_rows_after_scoreboard_merge", df_team, TARGET_NULL_GUARD_COLUMNS)
         _assert_required_columns(df_team, REQUIRED_TEAM_COLUMNS, "team_rows")
         df_all  = _append_dedupe_write(
             OUT_TEAM_LOGS,
@@ -379,6 +507,14 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
             unique_keys=["event_id", "team_id"],
             sort_cols=["game_datetime_utc", "event_id", "team_id"],
         )
+        _log_stage_null_rates("team_rows_before_validation", df_all, TARGET_NULL_GUARD_COLUMNS)
+        _validate_team_log_enrichment(df_all)
+        if OUT_TEAM_LOGS.exists() and OUT_TEAM_LOGS.stat().st_size > 0:
+            _log_stage_null_rates(
+                "team_rows_after_reload",
+                pd.read_csv(OUT_TEAM_LOGS, dtype=str, low_memory=False),
+                TARGET_NULL_GUARD_COLUMNS,
+            )
         log.info(f"team_game_logs.csv: {len(df_all)} total rows")
 
         # ── Compute advanced metrics + rolling windows on full history ──
