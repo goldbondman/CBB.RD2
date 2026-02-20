@@ -41,25 +41,22 @@ def _safe_float(val: Any, default: Optional[float] = None) -> Optional[float]:
 
 
 def _parse_made_attempt(s: Any) -> Tuple[Optional[int], Optional[int]]:
-    """Parse made/attempt strings like '7-13', '7/13', or '7 of 13'."""
-    if s is None:
-        return None, None
-    text = str(s).strip().lower()
+    """Parse ESPN shooting splits like '7-13', '7/13', or '7 of 13'."""
+    text = str(s or "").strip().lower()
     if not text or text in ("--", "-"):
         return None, None
-
+    text = text.replace("of", "-").replace("/", "-").replace(" ", "")
     try:
-        normalized = (
-            text.replace(" of ", "-")
-                .replace("/", "-")
-                .replace("\u2212", "-")
-        )
-        parts = [p.strip() for p in normalized.split("-") if p.strip() != ""]
+        parts = text.split("-")
         if len(parts) == 2:
             return _safe_int(parts[0]), _safe_int(parts[1])
     except Exception:
         pass
     return None, None
+
+
+def _normalize_stat_label(label: Any) -> str:
+    return str(label or "").strip().lower().replace(" ", "").replace("_", "")
 
 
 def _parse_minutes(val: Any) -> Optional[float]:
@@ -364,12 +361,20 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
             ha    = "home" if tid == home_info["team_id"] else "away"
 
             for pg in team_block.get("statistics", []):
-                stat_labels = [k.lower().strip() for k in pg.get("keys", [])]
+                stat_labels = [
+                    _normalize_stat_label(k)
+                    for k in (pg.get("keys") or pg.get("labels") or pg.get("names") or [])
+                ]
 
                 for ae in pg.get("athletes", []):
                     athlete      = ae.get("athlete", {})
-                    vals         = ae.get("stats", [])
+                    vals         = ae.get("stats") or ae.get("statistics") or []
                     did_not_play = bool(ae.get("didNotPlay", False))
+
+                    if isinstance(vals, dict):
+                        if not stat_labels:
+                            stat_labels = [_normalize_stat_label(k) for k in vals.keys()]
+                        vals = [vals.get(k, vals.get(str(k).upper(), "")) for k in stat_labels]
 
                     if did_not_play and not any(
                             v not in ("", "--", "-", "0") for v in vals):
@@ -406,7 +411,7 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                     raw_stats: Dict[str, str] = {}
                     for lbl, val in zip(stat_labels, vals):
                         raw_stats[lbl] = val
-                        mapped = PLAYER_STAT_MAP.get(lbl)
+                        mapped = PLAYER_STAT_MAP.get(lbl) or PLAYER_STAT_MAP.get(lbl.replace("%", ""))
                         if mapped is None:
                             continue
                         if mapped == "min":

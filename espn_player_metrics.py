@@ -58,6 +58,16 @@ DERIVED_METRICS = [
     "usage_rate", "ast_tov_ratio", "pts_per_fga", "floor_pct",
 ]
 
+RAW_GUARDRAIL_THRESHOLDS = {
+    "fga": 0.80,
+    "fgm": 0.80,
+    "tpa": 0.50,
+    "tpm": 0.50,
+    "orb": 0.80,
+    "drb": 0.80,
+    "plus_minus": 0.50,
+}
+
 
 # ── Safe column helper ────────────────────────────────────────────────────────
 
@@ -428,6 +438,55 @@ def add_role_split_metrics(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _log_null_rates(stage: str, df: pd.DataFrame) -> None:
+    cols = [
+        "fgm", "fga", "tpm", "tpa", "fta", "orb", "drb", "plus_minus",
+        "efg_pct", "three_pct", "fg_pct", "ft_pct",
+    ]
+    present = [c for c in cols if c in df.columns]
+    if not present:
+        return
+    rates = (df[present].isna().mean() * 100).round(1).to_dict()
+    log.info(f"{stage}: null_rates(%)={rates}")
+
+
+def _validate_player_metric_integrity(df: pd.DataFrame) -> None:
+    if df.empty:
+        return
+
+    completed_mask = pd.Series(True, index=df.index)
+    if "completed" in df.columns:
+        completed_mask = df["completed"].astype(str).str.lower().isin(["true", "1", "yes"])
+        if not completed_mask.any():
+            return
+
+    completed_df = df[completed_mask]
+    errors = []
+
+    for col, threshold in RAW_GUARDRAIL_THRESHOLDS.items():
+        if col not in completed_df.columns:
+            errors.append(f"missing required column: {col}")
+            continue
+        rate = 1.0 - completed_df[col].isna().mean()
+        if rate <= 0.0:
+            errors.append(f"{col} is 100% null in completed games")
+        elif rate < threshold:
+            errors.append(f"{col} non-null rate {rate:.1%} < threshold {threshold:.0%}")
+
+    l5_cols = [c for c in df.columns if c.endswith("_l5")]
+    l10_cols = [c for c in df.columns if c.endswith("_l10")]
+    if "athlete_id" in df.columns and (l5_cols or l10_cols):
+        eligible_ids = df.groupby("athlete_id").size()
+        eligible = df["athlete_id"].isin(eligible_ids[eligible_ids >= 6].index)
+        if eligible.any() and l5_cols and df.loc[eligible, l5_cols].isna().all().all():
+            errors.append("all last_5 rolling columns are null for players with >=6 games")
+        if eligible.any() and l10_cols and df.loc[eligible, l10_cols].isna().all().all():
+            errors.append("all last_10 rolling columns are null for players with >=6 games")
+
+    if errors:
+        raise ValueError("player metrics integrity check failed: " + "; ".join(errors))
+
+
 # ── Main entry point ──────────────────────────────────────────────────────────
 
 def compute_player_metrics(player_df: pd.DataFrame,
@@ -445,11 +504,10 @@ def compute_player_metrics(player_df: pd.DataFrame,
     log.info(f"Computing player metrics for {len(player_df)} player-game rows "
              f"({player_df['athlete_id'].nunique()} unique players)")
 
-    df = _normalize_player_box_columns(player_df)
-    _log_player_metric_null_rates("player_metrics_after_normalize", df)
+    _log_null_rates("player_metrics:input", player_df)
 
-    df = add_player_per_game_metrics(df, team_logs_df)
-    _log_player_metric_null_rates("player_metrics_after_derived", df)
+    df = add_player_per_game_metrics(player_df, team_logs_df)
+    _log_null_rates("player_metrics:after_per_game", df)
 
     df = add_player_rolling(df, windows=ROLLING_WINDOWS)
     df = add_role_split_metrics(df)
@@ -457,6 +515,9 @@ def compute_player_metrics(player_df: pd.DataFrame,
     _log_player_metric_null_rates("player_metrics_before_validate", df)
 
     _validate_player_metrics_enrichment(df)
+
+    _log_null_rates("player_metrics:before_guardrails", df)
+    _validate_player_metric_integrity(df)
 
     log.info("Player metrics complete")
     return df
