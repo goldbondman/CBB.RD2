@@ -1,0 +1,712 @@
+name: CBB Analytics — Backtester & Results Tracker
+
+# ── SCHEDULES ────────────────────────────────────────────────────────────────
+# Results tracker:  Daily at 8:00 AM UTC (12:00 AM PST / 1:00 AM PDT)
+#                   Runs after all games are final. Processes yesterday's results.
+#
+# Backtester:       Weekly on Mondays at 10:00 AM UTC (2:00 AM PST)
+#                   Full historical replay + weight optimization.
+#                   Also runs on-demand via workflow_dispatch.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  schedule:
+    # Results tracker — every morning after games complete
+    - cron: "0 8 * * *"
+    # Backtester — weekly on Monday mornings
+    - cron: "0 10 * * 1"
+
+  workflow_dispatch:
+    inputs:
+      run_mode:
+        description: "What to run"
+        required: true
+        default: "tracker_only"
+        type: choice
+        options:
+          - tracker_only        # Process yesterday's results + email
+          - backtest_only       # Full backtest + weight optimization + email
+          - both                # Run both sequentially
+          - tracker_summary     # Print season summary, no processing
+      date:
+        description: "Tracker: target date YYYYMMDD (blank = yesterday)"
+        required: false
+        default: ""
+      backtest_start:
+        description: "Backtester: start date YYYYMMDD (blank = full history)"
+        required: false
+        default: ""
+      optimizer_metric:
+        description: "Backtester: optimization target"
+        required: false
+        default: "ats"
+        type: choice
+        options: [ats, mae, brier]
+      min_games:
+        description: "Backtester: minimum games per team before predicting"
+        required: false
+        default: "5"
+      dry_run:
+        description: "Tracker: compute outcomes but don't write to log"
+        required: false
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  TZ: "America/Los_Angeles"
+
+jobs:
+  # ════════════════════════════════════════════════════════════════════════════
+  # STEP 0 — Decide which jobs to run based on trigger
+  # ════════════════════════════════════════════════════════════════════════════
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      run_tracker:  ${{ steps.decide.outputs.run_tracker }}
+      run_backtest: ${{ steps.decide.outputs.run_backtest }}
+
+    steps:
+      - name: Decide which jobs to run
+        id: decide
+        run: |
+          python3 - <<'PY'
+          import os
+
+          event    = os.getenv("GITHUB_EVENT_NAME", "schedule")
+          mode     = os.getenv("INPUT_MODE", "")
+          ref_name = os.getenv("GITHUB_REF_NAME", "")
+
+          # workflow_dispatch: honor explicit mode selection
+          if event == "workflow_dispatch":
+              tracker  = mode in ("tracker_only",  "both", "tracker_summary")
+              backtest = mode in ("backtest_only", "both")
+
+          # Scheduled: determine from cron expression via UTC hour + day
+          elif event == "schedule":
+              from datetime import datetime, timezone
+              now = datetime.now(timezone.utc)
+              # 08:00 UTC = tracker run; 10:00 UTC Monday = backtester
+              tracker  = (now.hour == 8)
+              backtest = (now.hour == 10 and now.weekday() == 0)
+
+              # Fallback: run tracker if nothing else matches (safety net)
+              if not tracker and not backtest:
+                  tracker = True
+
+          else:
+              tracker  = True
+              backtest = False
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"run_tracker={'true' if tracker else 'false'}\n")
+              f.write(f"run_backtest={'true' if backtest else 'false'}\n")
+
+          print(f"run_tracker={tracker}  run_backtest={backtest}")
+          PY
+        env:
+          INPUT_MODE: ${{ github.event.inputs.run_mode || '' }}
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 1 — RESULTS TRACKER
+  # Processes yesterday's predictions vs actual outcomes.
+  # Fires daily at 8AM UTC.
+  # ════════════════════════════════════════════════════════════════════════════
+  results_tracker:
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.run_tracker == 'true'
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # ── Restore latest CSVs (pipeline data + existing results log) ──────────
+      - name: Download ESPN CSVs
+        uses: actions/download-artifact@v4
+        with:
+          name: espn-cbb-csvs
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Download previous results log
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-results-log
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true   # OK on first run
+
+      - name: Download latest predictions
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-predictions-rolling-latest
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # ── Run tracker ──────────────────────────────────────────────────────────
+      - name: Run results tracker
+        id: tracker
+        env:
+          TARGET_DATE: ${{ github.event.inputs.date || '' }}
+          DRY_RUN:     ${{ github.event.inputs.dry_run || 'false' }}
+          RUN_MODE:    ${{ github.event.inputs.run_mode || 'tracker_only' }}
+        run: |
+          python - <<'PY'
+          import os, subprocess, sys
+
+          date     = (os.getenv("TARGET_DATE") or "").strip()
+          dry_run  = os.getenv("DRY_RUN", "false").lower() == "true"
+          run_mode = os.getenv("RUN_MODE", "tracker_only")
+
+          cmd = [sys.executable, "cbb_results_tracker.py"]
+
+          if run_mode == "tracker_summary":
+              cmd.append("--summary")
+          else:
+              if date:
+                  cmd += ["--date", date]
+              if dry_run:
+                  cmd.append("--dry-run")
+
+          print(f"[RUN] {' '.join(cmd)}")
+          result = subprocess.run(cmd, check=False, capture_output=False)
+
+          if result.returncode != 0:
+              print(f"[WARN] Tracker exited {result.returncode} — may be no games yesterday")
+          PY
+
+      # ── Read alert count for email subject line ────────────────────────────
+      - name: Check for alerts
+        id: alerts
+        run: |
+          python - <<'PY'
+          import pandas as pd, pathlib, os
+
+          alerts_path = pathlib.Path("data/results_alerts.csv")
+          n_alerts    = 0
+          critical    = 0
+
+          if alerts_path.exists() and alerts_path.stat().st_size > 10:
+              df = pd.read_csv(alerts_path)
+              if not df.empty:
+                  n_alerts = len(df)
+                  critical = int((df.get("severity", pd.Series()) == "CRITICAL").sum())
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"n_alerts={n_alerts}\n")
+              f.write(f"n_critical={critical}\n")
+              f.write(f"has_alerts={'true' if n_alerts > 0 else 'false'}\n")
+
+          print(f"Alerts: {n_alerts} total, {critical} critical")
+          PY
+
+      # ── Build email body ─────────────────────────────────────────────────────
+      - name: Build tracker email
+        id: tracker_email
+        run: |
+          python - <<'PY'
+          import pandas as pd, pathlib, json, os
+          from datetime import datetime, timedelta
+          from zoneinfo import ZoneInfo
+
+          tz       = ZoneInfo("America/Los_Angeles")
+          today    = datetime.now(tz=tz).strftime("%Y-%m-%d")
+          yesterday= (datetime.now(tz=tz) - timedelta(days=1)).strftime("%B %d, %Y")
+
+          lines = []
+          lines.append(f"CBB Results Tracker — {yesterday}")
+          lines.append("=" * 60)
+
+          # ── Daily results table ────────────────────────────────────────────
+          log_path = pathlib.Path("data/results_log.csv")
+          if log_path.exists():
+              df = pd.read_csv(log_path)
+              df["game_datetime_utc"] = pd.to_datetime(
+                  df["game_datetime_utc"], utc=True, errors="coerce"
+              )
+              cutoff   = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=1)
+              df_today = df[df["game_datetime_utc"] >= cutoff].copy()
+
+              if not df_today.empty:
+                  ats_valid = df_today["primary_ats_correct"].dropna()
+                  ens_valid = df_today["ens_ats_correct"].dropna()
+                  lines.append(f"\nGames processed:   {len(df_today)}")
+                  lines.append(f"Games with lines:  {len(ats_valid)}")
+                  if len(ats_valid):
+                      lines.append(f"Primary ATS:       {ats_valid.sum():.0f}/{len(ats_valid)} ({ats_valid.mean()*100:.1f}%)")
+                  if len(ens_valid):
+                      lines.append(f"Ensemble ATS:      {ens_valid.sum():.0f}/{len(ens_valid)} ({ens_valid.mean()*100:.1f}%)")
+
+                  win_v = df_today["primary_wins_game"].dropna()
+                  if len(win_v):
+                      lines.append(f"Winner picks:      {win_v.sum():.0f}/{len(win_v)} ({win_v.mean()*100:.1f}%)")
+
+                  err_v = pd.to_numeric(df_today["primary_margin_error"], errors="coerce").dropna()
+                  if len(err_v):
+                      lines.append(f"Margin MAE:        {err_v.abs().mean():.1f} pts")
+                      lines.append(f"Margin Bias:       {err_v.mean():+.1f} pts")
+
+                  lines.append("\nGAME RESULTS")
+                  lines.append("-" * 60)
+                  lines.append(f"{'MATCHUP':<34} {'ACTUAL':>6} {'PRED':>6} {'ERR':>6} {'ATS':>4}")
+                  lines.append("-" * 60)
+
+                  for _, row in df_today.sort_values("actual_margin", ascending=False, na_position='last').iterrows():
+                      home = str(row.get("home_team",""))[:14]
+                      away = str(row.get("away_team",""))[:14]
+                      matchup = f"{home} vs {away}"
+                      act = f"{row.get('actual_margin', 0):+.0f}"
+                      pred_s = row.get("pred_spread")
+                      pred = f"{-float(pred_s):+.0f}" if pd.notna(pred_s) else "N/A"
+                      err_s = row.get("primary_margin_error")
+                      err = f"{float(err_s):+.0f}" if pd.notna(err_s) else "N/A"
+                      ats = {1: " ✓", 0: " ✗"}.get(row.get("primary_ats_correct"), " -")
+                      lines.append(f"{matchup:<34} {act:>6} {pred:>6} {err:>6} {ats:>4}")
+              else:
+                  lines.append("\nNo games processed yesterday (off day or no data).")
+          else:
+              lines.append("\nNo results log found yet.")
+
+          # ── Season rolling windows ─────────────────────────────────────────
+          summary_path = pathlib.Path("data/results_summary.csv")
+          if summary_path.exists():
+              sdf = pd.read_csv(summary_path)
+              sdf = sdf[sdf["source"] == "primary"]
+              lines.append("\n\nROLLING PERFORMANCE")
+              lines.append("-" * 60)
+              lines.append(f"{'WINDOW':<10} {'N':>5} {'ATS%':>6} {'O/U%':>6} {'WIN%':>6} {'MAE':>6} {'BIAS':>6}")
+              lines.append("-" * 60)
+              for _, row in sdf.iterrows():
+                  ats_flag = " ⚡" if float(row.get("ats_pct",0)) > 52.38 else "  "
+                  lines.append(
+                      f"{str(row.get('window','')):<10} "
+                      f"{int(row.get('n_games',0)):>5} "
+                      f"{float(row.get('ats_pct',0)):>5.1f}%{ats_flag}"
+                      f"{float(row.get('ou_pct',0)):>5.1f}% "
+                      f"{float(row.get('win_pct',0)):>5.1f}% "
+                      f"{float(row.get('margin_mae',0)):>6.2f} "
+                      f"{float(row.get('margin_bias',0)):>+6.2f}"
+                  )
+
+          # ── Per-model split ────────────────────────────────────────────────
+          split_path = pathlib.Path("data/results_model_split.csv")
+          if split_path.exists():
+              mdf = pd.read_csv(split_path)
+              lines.append("\n\nPER-MODEL ATS% (Season / L30 / L7)")
+              lines.append("-" * 60)
+              lines.append(f"{'MODEL':<18} {'SEASON':>8} {'L30':>8} {'L7':>8}")
+              lines.append("-" * 60)
+              for _, row in mdf.iterrows():
+                  sea = float(row.get("SEASON_ats", 0))
+                  l30 = float(row.get("L30_ats", 0))
+                  l7  = float(row.get("L7_ats", 0))
+                  flag = " ⚡" if sea > 52.38 else "  "
+                  lines.append(f"{str(row.get('model','')):<18} {sea:>7.1f}%{flag} {l30:>7.1f}% {l7:>7.1f}%")
+
+          # ── Alerts ────────────────────────────────────────────────────────
+          alerts_path = pathlib.Path("data/results_alerts.csv")
+          if alerts_path.exists():
+              adf = pd.read_csv(alerts_path)
+              if not adf.empty:
+                  lines.append(f"\n\n⚠️  ACTIVE ALERTS ({len(adf)})")
+                  lines.append("-" * 60)
+                  for _, row in adf.iterrows():
+                      sev  = str(row.get("severity",""))
+                      atype= str(row.get("alert_type",""))
+                      msg  = str(row.get("message",""))
+                      icon = "🚨" if sev == "CRITICAL" else "⚠️ "
+                      lines.append(f"{icon} [{atype}]")
+                      lines.append(f"   {msg}")
+
+          lines.append("\n" + "=" * 60)
+          lines.append("Generated by CBB Analytics Pipeline")
+
+          body = "\n".join(lines)
+
+          # Write to file for the email step to read
+          with open("/tmp/tracker_email_body.txt", "w") as f:
+              f.write(body)
+
+          print(body)
+          PY
+
+      # ── Send tracker email ────────────────────────────────────────────────
+      - name: Email tracker results
+        env:
+          GMAIL_ADDRESS:    ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL:     ${{ secrets.NOTIFY_EMAIL }}
+          N_ALERTS:         ${{ steps.alerts.outputs.n_alerts }}
+          N_CRITICAL:       ${{ steps.alerts.outputs.n_critical }}
+        run: |
+          python - <<'PY'
+          import smtplib, os, pathlib
+          from email.mime.multipart import MIMEMultipart
+          from email.mime.text      import MIMEText
+          from email.mime.base      import MIMEBase
+          from email             import encoders
+          from datetime          import datetime, timedelta
+          from zoneinfo          import ZoneInfo
+
+          tz        = ZoneInfo("America/Los_Angeles")
+          yesterday = (datetime.now(tz=tz) - timedelta(days=1)).strftime("%b %d")
+
+          sender   = os.environ.get("GMAIL_ADDRESS", "")
+          password = os.environ.get("GMAIL_APP_PASSWORD", "")
+          to_addr  = os.environ.get("NOTIFY_EMAIL", "")
+          n_alerts  = int(os.environ.get("N_ALERTS", 0))
+          n_critical= int(os.environ.get("N_CRITICAL", 0))
+
+          if not all([sender, password, to_addr]):
+              print("[SKIP] Email secrets not configured — skipping send")
+              raise SystemExit(0)
+
+          # Build subject
+          if n_critical > 0:
+              subject = f"🚨 CBB Results {yesterday} — {n_critical} CRITICAL alert(s)"
+          elif n_alerts > 0:
+              subject = f"⚠️  CBB Results {yesterday} — {n_alerts} alert(s)"
+          else:
+              subject = f"CBB Results {yesterday}"
+
+          # Read body
+          body_path = pathlib.Path("/tmp/tracker_email_body.txt")
+          body_text = body_path.read_text() if body_path.exists() else "No report generated."
+
+          # Build email
+          msg = MIMEMultipart()
+          msg["From"]    = sender
+          msg["To"]      = to_addr
+          msg["Subject"] = subject
+          msg.attach(MIMEText(body_text, "plain"))
+
+          # Attach CSV files
+          attachments = [
+              ("data/results_log.csv",         "results_log.csv"),
+              ("data/results_summary.csv",      "results_summary.csv"),
+              ("data/results_model_split.csv",  "results_model_split.csv"),
+              ("data/results_alerts.csv",       "results_alerts.csv"),
+          ]
+          attached = 0
+          for file_path, attach_name in attachments:
+              p = pathlib.Path(file_path)
+              if p.exists() and p.stat().st_size > 10:
+                  with open(p, "rb") as f:
+                      part = MIMEBase("application", "octet-stream")
+                      part.set_payload(f.read())
+                  encoders.encode_base64(part)
+                  part.add_header(
+                      "Content-Disposition",
+                      f'attachment; filename="{attach_name}"'
+                  )
+                  msg.attach(part)
+                  attached += 1
+
+          print(f"Sending to {to_addr} with {attached} attachment(s)...")
+
+          try:
+              with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                  server.login(sender, password)
+                  server.sendmail(sender, to_addr, msg.as_string())
+              print(f"[OK] Email sent: {subject}")
+          except Exception as exc:
+              print(f"[ERROR] Failed to send email: {exc}")
+              raise SystemExit(1)
+          PY
+
+      # ── Persist results log as artifact ─────────────────────────────────────
+      - name: Upload results log artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-results-log
+          path: |
+            data/results_log.csv
+            data/results_summary.csv
+            data/results_model_split.csv
+            data/results_alerts.csv
+          retention-days: 90       # Keep longer — this is your performance history
+          if-no-files-found: warn
+
+      # ── Optional: commit results log to repo ─────────────────────────────────
+      # Uncomment to make results browsable in GitHub without downloading artifacts.
+      #
+      # - name: Commit results to repo
+      #   run: |
+      #     git config user.name  "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add data/results_log.csv data/results_summary.csv \
+      #             data/results_model_split.csv data/results_alerts.csv
+      #     git diff --staged --quiet || \
+      #       git commit -m "results: $(date +'%Y-%m-%d')"
+      #     git push
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 2 — BACKTESTER
+  # Full historical replay + weight optimization.
+  # Runs weekly (Monday) or on-demand.
+  # ════════════════════════════════════════════════════════════════════════════
+  backtester:
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.run_backtest == 'true'
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Download ESPN CSVs
+        uses: actions/download-artifact@v4
+        with:
+          name: espn-cbb-csvs
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # ── Run backtester ───────────────────────────────────────────────────────
+      - name: Run backtester
+        id: backtest
+        env:
+          BACKTEST_START:   ${{ github.event.inputs.backtest_start || '' }}
+          OPTIMIZER_METRIC: ${{ github.event.inputs.optimizer_metric || 'ats' }}
+          MIN_GAMES:        ${{ github.event.inputs.min_games || '5' }}
+        run: |
+          python - <<'PY'
+          import os, subprocess, sys
+
+          start   = (os.getenv("BACKTEST_START") or "").strip()
+          metric  = (os.getenv("OPTIMIZER_METRIC") or "ats").strip()
+          min_g   = (os.getenv("MIN_GAMES") or "5").strip()
+
+          cmd = [
+              sys.executable, "cbb_backtester.py",
+              "--optimizer-metric", metric,
+              "--min-games", min_g,
+          ]
+          if start:
+              cmd += ["--start-date", start]
+
+          print(f"[RUN] {' '.join(cmd)}")
+          subprocess.run(cmd, check=True)
+          PY
+
+      # ── Build backtest email ──────────────────────────────────────────────
+      - name: Build backtest email
+        id: backtest_email
+        run: |
+          python - <<'PY'
+          import pandas as pd, json, pathlib, os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+
+          tz    = ZoneInfo("America/Los_Angeles")
+          today = datetime.now(tz=tz).strftime("%Y-%m-%d")
+
+          lines = []
+          lines.append(f"CBB Backtester Report — {today}")
+          lines.append("=" * 72)
+
+          # ── Model accuracy table ───────────────────────────────────────────
+          report_files = sorted(pathlib.Path("data").glob("backtest_model_report_*.csv"))
+          if report_files:
+              rdf = pd.read_csv(report_files[-1])
+
+              lines.append("\nMODEL ACCURACY REPORT")
+              lines.append("-" * 72)
+              lines.append(
+                  f"{'MODEL':<16} {'N':>5} {'MAE':>6} {'RMSE':>6} {'BIAS':>6} "
+                  f"{'WIN%':>6} {'ATS%':>6} {'O/U%':>6} {'BRIER':>7} "
+                  f"{'EDGE_N':>7} {'EDGE_ATS':>8} {'ROI':>6}"
+              )
+              lines.append("-" * 72)
+
+              for _, row in rdf.iterrows():
+                  ats  = float(row.get("ats_pct", 0))
+                  flag = " ⚡" if ats > 52.38 else "  "
+                  lines.append(
+                      f"{str(row.get('model_name','')):<16} "
+                      f"{int(row.get('n_games',0)):>5} "
+                      f"{float(row.get('spread_mae',0)):>6.2f} "
+                      f"{float(row.get('spread_rmse',0)):>6.2f} "
+                      f"{float(row.get('spread_bias',0)):>+6.2f} "
+                      f"{float(row.get('win_pct',0)):>5.1f}% "
+                      f"{ats:>5.1f}%{flag}"
+                      f"{float(row.get('ou_pct',0)):>5.1f}% "
+                      f"{float(row.get('brier_score',0)):>7.4f} "
+                      f"{int(row.get('n_edge_games',0)):>7} "
+                      f"{float(row.get('edge_ats_pct',0)):>7.1f}% "
+                      f"{float(row.get('edge_roi_sim',0)):>+5.1f}%"
+                  )
+          else:
+              lines.append("\nNo model report found.")
+
+          # ── Calibration curve ──────────────────────────────────────────────
+          calib_files = sorted(pathlib.Path("data").glob("backtest_calibration_*.csv"))
+          if calib_files:
+              cdf = pd.read_csv(calib_files[-1])
+              if not cdf.empty:
+                  lines.append("\n\nCONFIDENCE CALIBRATION")
+                  lines.append("(well-calibrated: higher confidence → higher ATS%)")
+                  lines.append("-" * 45)
+                  lines.append(f"{'CONF RANGE':<16} {'N':>5} {'ATS%':>7}")
+                  lines.append("-" * 45)
+                  for _, row in cdf.iterrows():
+                      lo  = float(row.get("conf_bin_lo", 0))
+                      hi  = float(row.get("conf_bin_hi", 0))
+                      n   = int(row.get("n_games", 0))
+                      ats = float(row.get("ats_pct", 0))
+                      bar = "█" * int(ats / 5)   # ASCII bar, each block = 5%
+                      lines.append(f"{lo:.2f} – {hi:.2f}     {n:>5} {ats:>6.1f}%  {bar}")
+
+          # ── Optimized weights ──────────────────────────────────────────────
+          weights_path = pathlib.Path("data/backtest_optimized_weights.json")
+          if weights_path.exists():
+              with open(weights_path) as f:
+                  wdata = json.load(f)
+
+              lines.append("\n\nOPTIMIZED ENSEMBLE WEIGHTS")
+              lines.append(f"(Metric: {wdata.get('metric','ats').upper()} | "
+                           f"Value: {wdata.get('value',0):.4f} | "
+                           f"N games: {wdata.get('n_games_used',0):,})")
+              lines.append("-" * 45)
+              lines.append(f"{'MODEL':<18} {'DEFAULT':>9} {'OPTIMIZED':>10} {'DELTA':>8}")
+              lines.append("-" * 45)
+
+              opt     = wdata.get("weights", {})
+              default = wdata.get("default_weights", {})
+              for model, opt_w in opt.items():
+                  def_w = float(default.get(model, 0))
+                  delta = opt_w - def_w
+                  flag  = " ▲" if delta > 0.02 else (" ▼" if delta < -0.02 else "  ")
+                  lines.append(f"{model:<18} {def_w:>9.4f} {opt_w:>10.4f} {delta:>+7.4f}{flag}")
+
+              lines.append("\nTO APPLY: Copy 'optimized' values into EnsembleConfig in cbb_ensemble.py")
+
+          lines.append("\n" + "=" * 72)
+          lines.append("Generated by CBB Analytics Pipeline")
+
+          body = "\n".join(lines)
+
+          with open("/tmp/backtest_email_body.txt", "w") as f:
+              f.write(body)
+
+          print(body)
+          PY
+
+      # ── Send backtest email with report attachments ──────────────────────
+      - name: Email backtest report
+        env:
+          GMAIL_ADDRESS:      ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL:       ${{ secrets.NOTIFY_EMAIL }}
+        run: |
+          python - <<'PY'
+          import smtplib, os, pathlib, glob
+          from email.mime.multipart import MIMEMultipart
+          from email.mime.text      import MIMEText
+          from email.mime.base      import MIMEBase
+          from email             import encoders
+          from datetime          import datetime
+          from zoneinfo          import ZoneInfo
+
+          tz      = ZoneInfo("America/Los_Angeles")
+          today   = datetime.now(tz=tz).strftime("%b %d, %Y")
+          sender  = os.environ.get("GMAIL_ADDRESS", "")
+          password= os.environ.get("GMAIL_APP_PASSWORD", "")
+          to_addr = os.environ.get("NOTIFY_EMAIL", "")
+
+          if not all([sender, password, to_addr]):
+              print("[SKIP] Email secrets not configured")
+              raise SystemExit(0)
+
+          subject  = f"CBB Backtester Report — {today}"
+          body_text = pathlib.Path("/tmp/backtest_email_body.txt").read_text()
+
+          msg = MIMEMultipart()
+          msg["From"]    = sender
+          msg["To"]      = to_addr
+          msg["Subject"] = subject
+          msg.attach(MIMEText(body_text, "plain"))
+
+          # Attach all backtest outputs
+          data_dir   = pathlib.Path("data")
+          date_stamp = datetime.now(tz=tz).strftime("%Y%m%d")
+
+          static_attachments = [
+              ("data/backtest_optimized_weights.json", "optimized_weights.json"),
+          ]
+          # Latest dated files
+          for pattern, label in [
+              (f"backtest_model_report_{date_stamp}.csv",  "model_report.csv"),
+              (f"backtest_results_{date_stamp}.csv",       "backtest_results.csv"),
+              (f"backtest_calibration_{date_stamp}.csv",   "calibration.csv"),
+          ]:
+              matches = sorted(data_dir.glob(pattern.replace(date_stamp, "*")))
+              if matches:
+                  static_attachments.append((str(matches[-1]), label))
+
+          attached = 0
+          for file_path, attach_name in static_attachments:
+              p = pathlib.Path(file_path)
+              if p.exists() and p.stat().st_size > 10:
+                  with open(p, "rb") as f:
+                      part = MIMEBase("application", "octet-stream")
+                      part.set_payload(f.read())
+                  encoders.encode_base64(part)
+                  part.add_header(
+                      "Content-Disposition",
+                      f'attachment; filename="{attach_name}"'
+                  )
+                  msg.attach(part)
+                  attached += 1
+
+          print(f"Sending backtest report to {to_addr} ({attached} attachments)...")
+
+          try:
+              with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                  server.login(sender, password)
+                  server.sendmail(sender, to_addr, msg.as_string())
+              print(f"[OK] Backtest email sent")
+          except Exception as exc:
+              print(f"[ERROR] {exc}")
+              raise SystemExit(1)
+          PY
+
+      # ── Upload backtest artifacts ────────────────────────────────────────────
+      - name: Upload backtest artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-backtest-${{ github.run_id }}
+          path: |
+            data/backtest_results_*.csv
+            data/backtest_model_report_*.csv
+            data/backtest_calibration_*.csv
+            data/backtest_optimized_weights.json
+          retention-days: 90
+          if-no-files-found: warn
