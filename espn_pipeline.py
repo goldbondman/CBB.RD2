@@ -152,6 +152,18 @@ def _log_stage_null_rates(stage: str, df: pd.DataFrame, columns: List[str]) -> N
     log.info(f"{stage}: rows={len(df)} null_rates(%)={null_rates} key_sample={sample}")
 
 
+def _log_player_stage_diagnostics(stage: str, df: pd.DataFrame) -> None:
+    target_cols = [
+        "fgm", "fga", "tpm", "tpa", "fta", "orb", "drb", "plus_minus",
+        "efg_pct", "three_pct", "fg_pct", "ft_pct",
+    ]
+    _log_stage_null_rates(stage, df, target_cols)
+    dtypes = {k: str(df[k].dtype) for k in ["event_id", "team_id", "athlete_id"] if k in df.columns}
+    key_sample = df[[k for k in ["event_id", "team_id", "athlete_id"] if k in df.columns]].head(3).to_dict("records")
+    suffix_collisions = [c for c in df.columns if c.endswith("_x") or c.endswith("_y")]
+    log.info(f"{stage}: key_dtypes={dtypes} key_sample={key_sample} suffix_collisions={suffix_collisions[:10]}")
+
+
 def _enrich_team_rows_from_scoreboard(df_team: pd.DataFrame, games_df: pd.DataFrame) -> pd.DataFrame:
     """Fill missing team metadata from scoreboard context to avoid blank wins/losses/conference."""
     if df_team.empty:
@@ -597,6 +609,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
 
     if player_rows:
         df_players = pd.DataFrame(player_rows)
+        _log_player_stage_diagnostics("player_rows:parsed", df_players)
         _assert_required_columns(df_players, REQUIRED_PLAYER_COLUMNS, "player_rows")
         df_all_p   = _append_dedupe_write(
             OUT_PLAYER_LOGS,
@@ -604,17 +617,24 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
             unique_keys=["event_id", "team_id", "athlete_id"],
             sort_cols=["game_datetime_utc", "event_id", "team_id", "athlete_id"],
         )
+        _log_player_stage_diagnostics("player_rows:post_dedupe", df_all_p)
         log.info(f"player_game_logs.csv: {len(df_all_p)} total rows")
 
         # ── Player rolling metrics ──
         team_logs_for_poss = df_metrics_out if team_rows else pd.DataFrame()
         df_player_metrics = compute_player_metrics(df_all_p, team_logs_for_poss)
+        _log_player_stage_diagnostics("player_metrics:pre_write", df_player_metrics)
         df_player_metrics_out = _append_dedupe_write(
             OUT_PLAYER_METRICS,
             df_player_metrics,
             unique_keys=["event_id", "athlete_id"],
             sort_cols=["game_datetime_utc", "event_id", "athlete_id"],
         )
+        _log_player_stage_diagnostics("player_metrics:post_write", df_player_metrics_out)
+
+        if OUT_PLAYER_METRICS.exists() and OUT_PLAYER_METRICS.stat().st_size > 0:
+            reloaded = pd.read_csv(OUT_PLAYER_METRICS)
+            _log_player_stage_diagnostics("player_metrics:reload", reloaded)
         log.info(f"player_game_metrics.csv: {len(df_player_metrics_out)} total rows")
 
         # ── Injury proxy ──
