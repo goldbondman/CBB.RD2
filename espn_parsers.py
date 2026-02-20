@@ -59,6 +59,17 @@ def _normalize_stat_label(label: Any) -> str:
     return str(label or "").strip().lower().replace(" ", "").replace("_", "")
 
 
+def _map_player_stat_label(label: Any) -> Optional[str]:
+    raw = str(label or "").strip().lower()
+    normalized = _normalize_stat_label(label)
+    return (
+        PLAYER_STAT_MAP.get(raw)
+        or PLAYER_STAT_MAP.get(raw.replace("%", ""))
+        or PLAYER_STAT_MAP.get(normalized)
+        or PLAYER_STAT_MAP.get(normalized.replace("%", ""))
+    )
+
+
 def _parse_minutes(val: Any) -> Optional[float]:
     if val is None:
         return None
@@ -111,6 +122,9 @@ PLAYER_STAT_MAP = {
     "pf": "pf", "fouls": "pf", "personal fouls": "pf",
     "+/-": "plus_minus", "plusminus": "plus_minus",
 }
+
+for _label, _mapped in list(PLAYER_STAT_MAP.items()):
+    PLAYER_STAT_MAP.setdefault(_normalize_stat_label(_label), _mapped)
 
 
 # ── Scoreboard parser ─────────────────────────────────────────────────────────
@@ -361,10 +375,8 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
             ha    = "home" if tid == home_info["team_id"] else "away"
 
             for pg in team_block.get("statistics", []):
-                stat_labels = [
-                    _normalize_stat_label(k)
-                    for k in (pg.get("keys") or pg.get("labels") or pg.get("names") or [])
-                ]
+                stat_labels_raw = list(pg.get("keys") or pg.get("labels") or pg.get("names") or [])
+                stat_labels = [_normalize_stat_label(k) for k in stat_labels_raw]
 
                 for ae in pg.get("athletes", []):
                     athlete      = ae.get("athlete", {})
@@ -373,8 +385,14 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
 
                     if isinstance(vals, dict):
                         if not stat_labels:
-                            stat_labels = [_normalize_stat_label(k) for k in vals.keys()]
-                        vals = [vals.get(k, vals.get(str(k).upper(), "")) for k in stat_labels]
+                            stat_labels_raw = list(vals.keys())
+                            stat_labels = [_normalize_stat_label(k) for k in stat_labels_raw]
+                        vals = [
+                            vals.get(raw_k,
+                                     vals.get(str(raw_k).upper(),
+                                              vals.get(str(raw_k).lower(), "")))
+                            for raw_k in stat_labels_raw
+                        ]
 
                     if did_not_play and not any(
                             v not in ("", "--", "-", "0") for v in vals):
@@ -411,7 +429,7 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                     raw_stats: Dict[str, str] = {}
                     for lbl, val in zip(stat_labels, vals):
                         raw_stats[lbl] = val
-                        mapped = PLAYER_STAT_MAP.get(lbl) or PLAYER_STAT_MAP.get(lbl.replace("%", ""))
+                        mapped = _map_player_stat_label(lbl)
                         if mapped is None:
                             continue
                         if mapped == "min":
@@ -424,19 +442,19 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                                                  else _safe_float(cleaned)))
 
                     # Shooting splits — independent loops per type
-                    for fg_lbl in ("fg", "fgm-a"):
+                    for fg_lbl in ("fg", "fgm-a", "fieldgoals"):
                         if fg_lbl in raw_stats:
                             m, a = _parse_made_attempt(raw_stats[fg_lbl])
                             if m is not None:
                                 prow["fgm"], prow["fga"] = m, a
                             break
-                    for tp_lbl in ("3pt", "3p", "3-pt", "3pm-a"):
+                    for tp_lbl in ("3pt", "3p", "3-pt", "3pm-a", "threepointers"):
                         if tp_lbl in raw_stats:
                             m, a = _parse_made_attempt(raw_stats[tp_lbl])
                             if m is not None:
                                 prow["tpm"], prow["tpa"] = m, a
                             break
-                    for ft_lbl in ("ft", "ftm-a"):
+                    for ft_lbl in ("ft", "ftm-a", "freethrows"):
                         if ft_lbl in raw_stats:
                             m, a = _parse_made_attempt(raw_stats[ft_lbl])
                             if m is not None:
