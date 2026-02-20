@@ -341,6 +341,7 @@ jobs:
               home_profile = profiles.get(home_id)
               away_profile = profiles.get(away_id)
 
+              # P6 FIX: improved fuzzy name match with ambiguity detection
               import re
               def _fuzzy_find(team_id: str, team_name: str):
                   if team_id and team_id in profiles:
@@ -348,13 +349,16 @@ jobs:
                   if not team_name:
                       return None
                   name_lower = team_name.lower().strip()
+                  # Pass 1: exact full-name match
                   for p in profiles.values():
                       if p.team_name.lower().strip() == name_lower:
                           return p
+                  # Pass 2: whole-word boundary match
                   pattern = r'\b' + re.escape(name_lower) + r'\b'
                   for p in profiles.values():
                       if re.search(pattern, p.team_name.lower()):
                           return p
+                  # Pass 3: substring — warn on multiple matches
                   matches = [p for p in profiles.values() if name_lower in p.team_name.lower()]
                   if len(matches) == 1:
                       return matches[0]
@@ -547,8 +551,11 @@ jobs:
                               print(f"   {row.get('home_team','?')} vs {row.get('away_team','?')}: "
                                     f"spread std = {row.get('ens_spread_std','?')}")
 
+                  # P3 FIX: handle both UWS column naming conventions
+                  # runner writes uws_total; _compute_uws_for_matchup prefixes to uws_uws_total
                   uws_col = next(
-                      (c for c in ["uws_total", "uws_uws_total", "ens_uws_total"] if c in df.columns),
+                      (c for c in ["uws_total", "uws_uws_total", "ens_uws_total"]
+                       if c in df.columns),
                       None
                   )
                   if uws_col:
@@ -615,7 +622,7 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      # Stable artifact name for downstream "latest" downloads (tracker, etc.)
+      # Stable artifact name for downstream "latest" downloads (tracker, Supabase sync, etc.)
       - name: Upload prediction artifacts (latest)
         if: always()
         uses: actions/upload-artifact@v4
