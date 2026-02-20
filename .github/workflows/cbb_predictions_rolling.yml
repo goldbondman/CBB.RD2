@@ -1,6 +1,5 @@
 name: CBB Predictions — Rolling 40 Hours Ahead
 
-
 # ── PURPOSE ────────────────────────────────────────────────────────────────────
 # Standalone predictions workflow. Covers all games starting in the next 40
 # hours from run time (PST). Runs BOTH the primary model (espn_prediction_runner)
@@ -93,7 +92,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - name: Debug: list data directory after artifact restore
+      - name: "Debug: list data directory after artifact restore"
         if: always()
         run: |
           echo "---- data/ contents ----"
