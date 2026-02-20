@@ -286,6 +286,9 @@ def compute_quad_records(game_log: pd.DataFrame) -> pd.DataFrame:
 
         records.append(row)
 
+    if not records:
+        return pd.DataFrame()
+
     return pd.DataFrame(records).set_index("team_id")
 
 
@@ -311,7 +314,12 @@ def compute_resume_score(df: pd.DataFrame, quad_df: pd.DataFrame) -> pd.Series:
         return pd.Series(np.nan, index=df.index, name="resume_score")
 
     snap = df.set_index("team_id") if "team_id" in df.columns else df
-    merged = snap.join(quad_df, how="left")
+    # Build merge deterministically by aligned assignment so quad_df columns
+    # always overwrite stale snapshot columns without pandas overlap errors.
+    merged = snap.copy()
+    quad_aligned = quad_df.reindex(merged.index)
+    for col in quad_aligned.columns:
+        merged[col] = quad_aligned[col]
 
     # Raw components
     q1_w    = merged.get("q1_w",         pd.Series(0, index=merged.index)).fillna(0)
