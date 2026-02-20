@@ -76,7 +76,9 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
         continue-on-error: false
 
-      - name: Download ESPN CSVs (manual trigger — latest available)
+      # NOTE: This does NOT reliably download "latest from another run" by itself.
+      # We'll treat it as a best-effort, and then run pipeline if required files missing.
+      - name: Download ESPN CSVs (manual trigger — best effort)
         if: github.event_name == 'workflow_dispatch'
         uses: actions/download-artifact@v4
         with:
@@ -84,6 +86,13 @@ jobs:
           path: data/
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
+
+      - name: Debug: list data directory after artifact restore
+        if: always()
+        run: |
+          echo "---- data/ contents ----"
+          ls -lah data || true
+          echo "------------------------"
 
       # ── 3. Python setup ─────────────────────────────────────────────────────
       - name: Set up Python
@@ -97,7 +106,30 @@ jobs:
           python -m pip install -U pip
           python -m pip install -r requirements.txt
 
-      # ── 4. Verify required data ─────────────────────────────────────────────
+      # ── 4. Ensure required data exists (fallback build) ─────────────────────
+      - name: Ensure required pipeline outputs exist (fallback build)
+        run: |
+          python - <<'PY'
+          import pathlib, subprocess, sys
+
+          required = [
+              pathlib.Path("data/games.csv"),
+              pathlib.Path("data/team_game_weighted.csv"),
+          ]
+
+          missing = [str(p) for p in required if (not p.exists() or p.stat().st_size < 100)]
+          if missing:
+              print(f"[WARN] Missing required pipeline outputs: {missing}")
+              print("[WARN] Running espn_pipeline.py as fallback to generate data/*.csv ...")
+              subprocess.run([sys.executable, "espn_pipeline.py"], check=True)
+          else:
+              print("[OK] Required pipeline outputs present")
+
+          print("\n[INFO] Post-fallback data/ listing:")
+          subprocess.run(["bash", "-lc", "ls -lah data | sed -e 's/^/  /'"], check=False)
+          PY
+
+      # ── 5. Verify required data ─────────────────────────────────────────────
       - name: Verify data files exist
         run: |
           python - <<'PY'
@@ -112,6 +144,7 @@ jobs:
               "data/team_pretournament_snapshot.csv": "tournament snapshot (UWS)",
               "data/team_game_metrics.csv":           "metrics fallback",
           }
+
           ok = True
           for path, label in required.items():
               p = pathlib.Path(path)
@@ -128,8 +161,11 @@ jobs:
           for path, label in optional.items():
               p = pathlib.Path(path)
               if p.exists():
-                  rows = len(pd.read_csv(p))
-                  print(f"[OK]   {path}: {rows:,} rows — {label}")
+                  try:
+                      rows = len(pd.read_csv(p))
+                      print(f"[OK]   {path}: {rows:,} rows — {label}")
+                  except Exception as e:
+                      print(f"[WARN] {path} present but unreadable: {e} — {label}")
               else:
                   print(f"[WARN] {path} not found — {label} unavailable")
 
@@ -137,7 +173,7 @@ jobs:
               sys.exit(1)
           PY
 
-      # ── 5. Primary model: espn_prediction_runner.py ─────────────────────────
+      # ── 6. Primary model: espn_prediction_runner.py ─────────────────────────
       - name: Run primary model predictions (rolling 40h)
         id: primary_predictions
         env:
@@ -236,9 +272,7 @@ jobs:
           print(f"[OK] Primary model: {len(merged)} predictions → {out}")
           PY
 
-      # ── 6. Ensemble model: cbb_ensemble.py ──────────────────────────────────
-      # Runs all 7 sub-models independently per game and produces a weighted
-      # ensemble spread + total. Requires cbb_rankings.csv for full CAGE profile.
+      # ── 7. Ensemble model: cbb_ensemble.py ──────────────────────────────────
       - name: Run ensemble model predictions
         id: ensemble_predictions
         if: >
@@ -300,7 +334,6 @@ jobs:
               home_profile = profiles.get(home_id)
               away_profile = profiles.get(away_id)
 
-              # P6 FIX: improved fuzzy name match with ambiguity detection
               import re
               def _fuzzy_find(team_id: str, team_name: str):
                   if team_id and team_id in profiles:
@@ -308,16 +341,13 @@ jobs:
                   if not team_name:
                       return None
                   name_lower = team_name.lower().strip()
-                  # Pass 1: exact full-name match
                   for p in profiles.values():
                       if p.team_name.lower().strip() == name_lower:
                           return p
-                  # Pass 2: whole-word boundary match
                   pattern = r'\b' + re.escape(name_lower) + r'\b'
                   for p in profiles.values():
                       if re.search(pattern, p.team_name.lower()):
                           return p
-                  # Pass 3: substring — warn on multiple matches
                   matches = [p for p in profiles.values() if name_lower in p.team_name.lower()]
                   if len(matches) == 1:
                       return matches[0]
@@ -388,7 +418,7 @@ jobs:
           print(f"[OK] Ensemble predictions: {len(ens_df)} games → {out}")
           PY
 
-      # ── 7. Merge primary + ensemble into unified output ──────────────────────
+      # ── 8. Merge primary + ensemble into unified output ──────────────────────
       - name: Merge primary and ensemble outputs
         if: always()
         run: |
@@ -455,14 +485,14 @@ jobs:
                   combined.to_csv(out, index=False)
           PY
 
-      # ── 8. Validate ─────────────────────────────────────────────────────────
+      # ── 9. Validate ─────────────────────────────────────────────────────────
       - name: Validate prediction outputs
         run: |
           python - <<'PY'
           import pandas as pd, pathlib, sys
 
           for fname, label in [
-              ("predictions_latest.csv",          "primary"),
+              ("predictions_latest.csv",           "primary"),
               ("predictions_combined_latest.csv",  "combined"),
           ]:
               p = pathlib.Path("data") / fname
@@ -510,11 +540,8 @@ jobs:
                               print(f"   {row.get('home_team','?')} vs {row.get('away_team','?')}: "
                                     f"spread std = {row.get('ens_spread_std','?')}")
 
-                  # P3 FIX: handle both UWS column naming conventions
-                  # runner writes uws_total; _compute_uws_for_matchup prefixes to uws_uws_total
                   uws_col = next(
-                      (c for c in ["uws_total", "uws_uws_total", "ens_uws_total"]
-                       if c in df.columns),
+                      (c for c in ["uws_total", "uws_uws_total", "ens_uws_total"] if c in df.columns),
                       None
                   )
                   if uws_col:
@@ -529,7 +556,7 @@ jobs:
           print("\n[OK] Validation complete")
           PY
 
-      # ── 9. Display summary ───────────────────────────────────────────────────
+      # ── 10. Display summary ─────────────────────────────────────────────────
       - name: Display prediction summary
         if: always()
         run: |
@@ -568,8 +595,8 @@ jobs:
               break
           PY
 
-      # ── 10. Upload artifacts ─────────────────────────────────────────────────
-      - name: Upload prediction artifacts
+      # ── 11. Upload artifacts ────────────────────────────────────────────────
+      - name: Upload prediction artifacts (run-stamped)
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -581,7 +608,20 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      # ── 11. (Optional) Commit predictions back to repo ───────────────────────
+      # Stable artifact name for downstream "latest" downloads (tracker, etc.)
+      - name: Upload prediction artifacts (latest)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-predictions-rolling-latest
+          path: |
+            data/predictions_*.csv
+            data/ensemble_predictions_*.csv
+            data/predictions_combined_latest.csv
+          retention-days: 30
+          if-no-files-found: warn
+
+      # ── 12. (Optional) Commit predictions back to repo ───────────────────────
       # Uncomment to make predictions browsable in GitHub without downloading artifacts.
       #
       # - name: Commit predictions to repo
