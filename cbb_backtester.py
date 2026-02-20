@@ -408,6 +408,12 @@ def build_team_state_before(
         "win_streak":         g("win_streak",           0.0),
         "sos":                g("opp_avg_net_rtg_season", 0.0),
         "opp_avg_net_rtg":    g("opp_avg_net_rtg_season", 0.0),
+
+        # Opponent context — M6 (CAGERankings) reads wab; M1 (FourFactors) reads opp_orb_pct
+        "wab":          g("wab",                  0.0),
+        "opp_avg_ortg": g("opp_avg_ortg_season",  LEAGUE_AVG_ORTG),
+        "opp_avg_drtg": g("opp_avg_drtg_season",  LEAGUE_AVG_DRTG),
+        "opp_orb_pct":  g("opp_avg_orb_season",   30.0),
     }
 
 
