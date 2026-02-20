@@ -183,9 +183,19 @@ def _row_to_box(row: pd.Series) -> Dict[str, float]:
     return box
 
 
+def _safe_int(value, default: int = 0) -> int:
+    """Convert numeric-like values to int, treating NaN/None/empty as default."""
+    if value is None or pd.isna(value):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def _build_game_data(row: pd.Series, opp_history: List[GameData]) -> GameData:
-    team_score = int(row.get("points_for", 0) or 0)
-    opp_score = int(row.get("points_against", 0) or 0)
+    team_score = _safe_int(row.get("points_for", 0), default=0)
+    opp_score = _safe_int(row.get("points_against", 0), default=0)
     neutral = bool(row.get("neutral_site", False))
 
     dt = row.get("game_datetime_utc")
