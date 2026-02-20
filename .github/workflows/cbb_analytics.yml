@@ -125,30 +125,79 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Check artifact availability
+        id: artifact_check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const names = new Set([
+              'espn-cbb-csvs',
+              'cbb-results-log',
+              'cbb-predictions-rolling-latest',
+            ]);
+            const found = {
+              espnCsvs: false,
+              resultsLog: false,
+              rollingPreds: false,
+            };
+
+            for await (const page of github.paginate.iterator(
+              github.rest.actions.listArtifactsForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100,
+              }
+            )) {
+              for (const artifact of page.data.artifacts || []) {
+                if (artifact.expired || !names.has(artifact.name)) continue;
+                if (artifact.name === 'espn-cbb-csvs') found.espnCsvs = true;
+                if (artifact.name === 'cbb-results-log') found.resultsLog = true;
+                if (artifact.name === 'cbb-predictions-rolling-latest') found.rollingPreds = true;
+              }
+            }
+
+            core.setOutput('espn_csvs', String(found.espnCsvs));
+            core.setOutput('results_log', String(found.resultsLog));
+            core.setOutput('rolling_predictions', String(found.rollingPreds));
+            core.info(`Artifact availability: ${JSON.stringify(found)}`);
+
       # ── Restore latest CSVs (pipeline data + existing results log) ──────────
       - name: Download ESPN CSVs
+        if: steps.artifact_check.outputs.espn_csvs == 'true'
         uses: actions/download-artifact@v4
         with:
           name: espn-cbb-csvs
           path: data/
           github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
+
+      - name: Skip ESPN CSV download (artifact missing)
+        if: steps.artifact_check.outputs.espn_csvs != 'true'
+        run: echo "[INFO] Artifact espn-cbb-csvs not found; continuing without download."
 
       - name: Download previous results log
+        if: steps.artifact_check.outputs.results_log == 'true'
         uses: actions/download-artifact@v4
         with:
           name: cbb-results-log
           path: data/
           github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true   # OK on first run
+
+      - name: Skip previous results log download (artifact missing)
+        if: steps.artifact_check.outputs.results_log != 'true'
+        run: echo "[INFO] Artifact cbb-results-log not found; first run will create fresh outputs."
 
       - name: Download latest predictions
+        if: steps.artifact_check.outputs.rolling_predictions == 'true'
         uses: actions/download-artifact@v4
         with:
           name: cbb-predictions-rolling-latest
           path: data/
           github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
+
+      - name: Skip latest predictions download (artifact missing)
+        if: steps.artifact_check.outputs.rolling_predictions != 'true'
+        run: echo "[INFO] Artifact cbb-predictions-rolling-latest not found; tracker may have no games to process."
 
       - name: Debug data folder (post-download)
         run: |
@@ -436,8 +485,29 @@ jobs:
           PY
 
       # ── Persist results log as artifact ─────────────────────────────────────
-      - name: Upload results log artifact
+      - name: Check results files for artifact upload
+        id: upload_results
         if: always()
+        run: |
+          shopt -s nullglob
+          files=(
+            data/results_log.csv
+            data/results_summary.csv
+            data/results_model_split.csv
+            data/results_alerts.csv
+          )
+
+          existing=0
+          for f in "${files[@]}"; do
+            if [ -s "$f" ]; then
+              existing=1
+            fi
+          done
+
+          echo "has_results_files=${existing}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload results log artifact
+        if: always() && steps.upload_results.outputs.has_results_files == '1'
         uses: actions/upload-artifact@v4
         with:
           name: cbb-results-log
@@ -448,6 +518,10 @@ jobs:
             data/results_alerts.csv
           retention-days: 90       # Keep longer — this is your performance history
           if-no-files-found: warn
+
+      - name: Skip results log upload (no files generated)
+        if: always() && steps.upload_results.outputs.has_results_files != '1'
+        run: echo "[INFO] No results files found; skipping upload for this run."
 
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 2 — BACKTESTER
@@ -704,8 +778,29 @@ jobs:
           PY
 
       # ── Upload backtest artifacts ────────────────────────────────────────────
-      - name: Upload backtest artifacts
+      - name: Check backtest files for artifact upload
+        id: upload_backtest
         if: always()
+        run: |
+          shopt -s nullglob
+          files=(
+            data/backtest_results_*.csv
+            data/backtest_model_report_*.csv
+            data/backtest_calibration_*.csv
+            data/backtest_optimized_weights.json
+          )
+
+          existing=0
+          for f in "${files[@]}"; do
+            if [ -s "$f" ]; then
+              existing=1
+            fi
+          done
+
+          echo "has_backtest_files=${existing}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload backtest artifacts
+        if: always() && steps.upload_backtest.outputs.has_backtest_files == '1'
         uses: actions/upload-artifact@v4
         with:
           name: cbb-backtest-${{ github.run_id }}
@@ -716,3 +811,7 @@ jobs:
             data/backtest_optimized_weights.json
           retention-days: 90
           if-no-files-found: warn
+
+      - name: Skip backtest artifact upload (no files generated)
+        if: always() && steps.upload_backtest.outputs.has_backtest_files != '1'
+        run: echo "[INFO] No backtest artifacts found; skipping upload for this run."
