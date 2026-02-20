@@ -62,6 +62,11 @@ TARGET_NULL_GUARD_COLUMNS = [
     "h1_pts", "h2_pts", "h1_pts_against", "h2_pts_against",
 ]
 
+PLAYER_TARGET_NULL_GUARD_COLUMNS = [
+    "fgm", "fga", "tpm", "tpa", "fta", "orb", "drb", "plus_minus",
+    "efg_pct", "three_pct", "fg_pct", "ft_pct",
+]
+
 HALF_SCORE_FINAL_MIN_NON_NULL = float(os.getenv("HALF_SCORE_FINAL_MIN_NON_NULL", "0.80"))
 STANDINGS_MIN_NON_NULL = float(os.getenv("STANDINGS_MIN_NON_NULL", "0.80"))
 
@@ -626,12 +631,14 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         # ── Player rolling metrics ──
         team_logs_for_poss = df_metrics_out if team_rows else pd.DataFrame()
         df_player_metrics = compute_player_metrics(df_all_p, team_logs_for_poss)
+        _log_stage_null_rates("player_metrics_before_write", df_player_metrics, PLAYER_TARGET_NULL_GUARD_COLUMNS)
         df_player_metrics_out = _append_dedupe_write(
             OUT_PLAYER_METRICS,
             df_player_metrics,
             unique_keys=["event_id", "athlete_id"],
             sort_cols=["game_datetime_utc", "event_id", "athlete_id"],
         )
+        _log_stage_null_rates("player_metrics_after_write", df_player_metrics_out, PLAYER_TARGET_NULL_GUARD_COLUMNS)
         log.info(f"player_game_metrics.csv: {len(df_player_metrics_out)} total rows")
 
         # ── Injury proxy ──

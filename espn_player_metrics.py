@@ -24,6 +24,7 @@ Output: player_game_metrics.csv
 """
 
 import logging
+import os
 from typing import List
 
 import numpy as np
@@ -33,6 +34,14 @@ log = logging.getLogger(__name__)
 
 ROLLING_WINDOWS    = [5, 10]
 MIN_PERIODS        = 3       # minimum games before reporting rolling values
+
+RAW_FGM_MIN_NON_NULL = float(os.getenv("PLAYER_RAW_FGM_MIN_NON_NULL", "0.80"))
+RAW_FGA_MIN_NON_NULL = float(os.getenv("PLAYER_RAW_FGA_MIN_NON_NULL", "0.80"))
+RAW_TPM_MIN_NON_NULL = float(os.getenv("PLAYER_RAW_TPM_MIN_NON_NULL", "0.50"))
+RAW_TPA_MIN_NON_NULL = float(os.getenv("PLAYER_RAW_TPA_MIN_NON_NULL", "0.50"))
+RAW_ORB_MIN_NON_NULL = float(os.getenv("PLAYER_RAW_ORB_MIN_NON_NULL", "0.80"))
+RAW_DRB_MIN_NON_NULL = float(os.getenv("PLAYER_RAW_DRB_MIN_NON_NULL", "0.80"))
+RAW_PLUS_MINUS_MIN_NON_NULL = float(os.getenv("PLAYER_RAW_PLUS_MINUS_MIN_NON_NULL", "0.50"))
 
 # All counting stats to roll
 COUNTING_STATS = [
@@ -56,6 +65,160 @@ def _col(df: pd.DataFrame, name: str, fill: float = np.nan) -> pd.Series:
     if name in df.columns:
         return pd.to_numeric(df[name], errors="coerce").fillna(fill)
     return pd.Series(fill, index=df.index)
+
+
+def _to_bool_series(s: pd.Series) -> pd.Series:
+    """Robust bool parsing for CSV-loaded strings ('False' must stay False)."""
+    true_tokens = {"1", "true", "t", "yes", "y"}
+    return s.astype(str).str.strip().str.lower().isin(true_tokens)
+
+
+def _parse_made_attempt_series(series: pd.Series):
+    made = pd.Series(np.nan, index=series.index, dtype="float64")
+    att = pd.Series(np.nan, index=series.index, dtype="float64")
+    normalized = (
+        series.astype(str)
+        .str.strip()
+        .str.lower()
+        .str.replace(" of ", "-", regex=False)
+        .str.replace("/", "-", regex=False)
+    )
+    split = normalized.str.extract(r"^\s*(-?\d+)\s*-\s*(-?\d+)\s*$")
+    ok = split[0].notna() & split[1].notna()
+    made.loc[ok] = pd.to_numeric(split.loc[ok, 0], errors="coerce")
+    att.loc[ok] = pd.to_numeric(split.loc[ok, 1], errors="coerce")
+    return made, att
+
+
+def _coalesce_numeric(df: pd.DataFrame, target: str, candidates: List[str]) -> None:
+    if target not in df.columns:
+        df[target] = np.nan
+    dst = pd.to_numeric(df[target], errors="coerce")
+    for c in candidates:
+        if c in df.columns:
+            src = pd.to_numeric(df[c], errors="coerce")
+            dst = dst.where(dst.notna(), src)
+    df[target] = dst
+
+
+def _normalize_player_box_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Normalize raw player box-score inputs from ESPN payload variants:
+      - direct numeric cols (fgm/fga/tpm/tpa/ftm/fta/orb/drb/plus_minus)
+      - alias cols (FGM/FGA/TPM/TPA/FTM/FTA/ORB/DRB)
+      - combined split cols like FG/3PT/FT in 'made-attempted' format.
+    """
+    df = df.copy()
+
+    _coalesce_numeric(df, "fgm", ["FGM"]) 
+    _coalesce_numeric(df, "fga", ["FGA"]) 
+    _coalesce_numeric(df, "tpm", ["TPM"]) 
+    _coalesce_numeric(df, "tpa", ["TPA"]) 
+    _coalesce_numeric(df, "ftm", ["FTM"]) 
+    _coalesce_numeric(df, "fta", ["FTA"]) 
+    _coalesce_numeric(df, "orb", ["ORB"]) 
+    _coalesce_numeric(df, "drb", ["DRB"]) 
+    _coalesce_numeric(df, "plus_minus", ["+/-", "plusMinus", "plusminus"]) 
+
+    # Parse made-attempt text fallback from combined stat columns.
+    for src_col, made_col, att_col in [
+        ("FG", "fgm", "fga"),
+        ("3PT", "tpm", "tpa"),
+        ("FT", "ftm", "fta"),
+    ]:
+        if src_col in df.columns:
+            made, att = _parse_made_attempt_series(df[src_col])
+            df[made_col] = pd.to_numeric(df[made_col], errors="coerce").where(df[made_col].notna(), made)
+            df[att_col] = pd.to_numeric(df[att_col], errors="coerce").where(df[att_col].notna(), att)
+
+    for col in ["fgm", "fga", "tpm", "tpa", "ftm", "fta", "orb", "drb", "plus_minus"]:
+        if col not in df.columns:
+            df[col] = np.nan
+
+    return df
+
+
+def _add_last_window_aliases(df: pd.DataFrame) -> pd.DataFrame:
+    """Add explicit last_5_/last_10_ aliases for *_l5/*_l10 rolling cols."""
+    for col in list(df.columns):
+        if col.endswith("_l5"):
+            alias = f"last_5_{col[:-3]}"
+            if alias not in df.columns:
+                df[alias] = df[col]
+        if col.endswith("_l10"):
+            alias = f"last_10_{col[:-4]}"
+            if alias not in df.columns:
+                df[alias] = df[col]
+    return df
+
+
+def _log_player_metric_null_rates(stage: str, df: pd.DataFrame) -> None:
+    target = [
+        "fgm", "fga", "tpm", "tpa", "fta", "orb", "drb", "plus_minus",
+        "efg_pct", "three_pct", "fg_pct", "ft_pct",
+    ]
+    present = [c for c in target if c in df.columns]
+    if not present:
+        log.info(f"{stage}: no target player metric columns present")
+        return
+    rates = (df[present].isna().mean() * 100).round(1).to_dict()
+    key_cols = [c for c in ["event_id", "team_id", "athlete_id", "game_datetime_utc"] if c in df.columns]
+    sample = df[key_cols].head(3).to_dict("records") if key_cols else []
+    log.info(f"{stage}: rows={len(df)} null_rates(%)={rates} key_sample={sample}")
+
+
+def _validate_player_metrics_enrichment(df: pd.DataFrame) -> None:
+    if df.empty:
+        return
+
+    def _non_null_rate(col: str, mask: pd.Series) -> float:
+        if col not in df.columns:
+            return 0.0
+        vals = df.loc[mask, col]
+        if vals.empty:
+            return 1.0
+        token_null = vals.astype(str).str.strip().str.lower().isin({"", "nan", "none", "null", "nat", "<na>"})
+        null_mask = vals.isna() | token_null
+        return 1.0 - float(null_mask.mean())
+
+    played_mask = ~_to_bool_series(df.get("did_not_play", pd.Series(False, index=df.index)))
+    errors = []
+
+    thresholds = {
+        "fgm": RAW_FGM_MIN_NON_NULL,
+        "fga": RAW_FGA_MIN_NON_NULL,
+        "tpm": RAW_TPM_MIN_NON_NULL,
+        "tpa": RAW_TPA_MIN_NON_NULL,
+        "orb": RAW_ORB_MIN_NON_NULL,
+        "drb": RAW_DRB_MIN_NON_NULL,
+        "plus_minus": RAW_PLUS_MINUS_MIN_NON_NULL,
+    }
+    for col, threshold in thresholds.items():
+        rate = _non_null_rate(col, played_mask)
+        if rate <= 0.0:
+            errors.append(f"player metrics enrichment failed: {col} is 100% null")
+        elif rate < threshold:
+            errors.append(f"player metrics enrichment below threshold: {col} < {threshold:.0%}")
+
+    # At least one rolling last_5 and last_10 feature should populate for players with enough history.
+    if "athlete_id" in df.columns:
+        eligible_players = df.groupby("athlete_id").size()
+        has_6_plus = eligible_players[eligible_players >= 6].index
+        if len(has_6_plus) > 0:
+            eligible = df["athlete_id"].isin(has_6_plus)
+            l5_cols = [c for c in df.columns if c.endswith("_l5") or c.startswith("last_5_")]
+            l10_cols = [c for c in df.columns if c.endswith("_l10") or c.startswith("last_10_")]
+            if l5_cols:
+                l5_any = (~df.loc[eligible, l5_cols].isna()).any().any()
+                if not l5_any:
+                    errors.append("player rolling enrichment failed: last_5 columns are 100% null for players with >=6 games")
+            if l10_cols:
+                l10_any = (~df.loc[eligible, l10_cols].isna()).any().any()
+                if not l10_any:
+                    errors.append("player rolling enrichment failed: last_10 columns are 100% null for players with >=6 games")
+
+    if errors:
+        raise ValueError(" | ".join(errors))
 
 
 # ── Per-game derived metrics ──────────────────────────────────────────────────
@@ -124,7 +287,7 @@ def add_player_per_game_metrics(df: pd.DataFrame,
 
     # Null out derived metrics for DNP rows
     if "did_not_play" in df.columns:
-        dnp = df["did_not_play"].astype(bool)
+        dnp = _to_bool_series(df["did_not_play"])
         for col in DERIVED_METRICS:
             if col in df.columns:
                 df.loc[dnp, col] = np.nan
@@ -155,7 +318,7 @@ def add_player_rolling(df: pd.DataFrame,
 
     # Mark active game rows (played meaningful minutes)
     active = (
-        ~df["did_not_play"].astype(bool) &
+        ~_to_bool_series(df["did_not_play"]) &
         pd.to_numeric(df.get("min", 0), errors="coerce").gt(0)
     ) if "did_not_play" in df.columns else pd.Series(True, index=df.index)
 
@@ -282,9 +445,18 @@ def compute_player_metrics(player_df: pd.DataFrame,
     log.info(f"Computing player metrics for {len(player_df)} player-game rows "
              f"({player_df['athlete_id'].nunique()} unique players)")
 
-    df = add_player_per_game_metrics(player_df, team_logs_df)
+    df = _normalize_player_box_columns(player_df)
+    _log_player_metric_null_rates("player_metrics_after_normalize", df)
+
+    df = add_player_per_game_metrics(df, team_logs_df)
+    _log_player_metric_null_rates("player_metrics_after_derived", df)
+
     df = add_player_rolling(df, windows=ROLLING_WINDOWS)
     df = add_role_split_metrics(df)
+    df = _add_last_window_aliases(df)
+    _log_player_metric_null_rates("player_metrics_before_validate", df)
+
+    _validate_player_metrics_enrichment(df)
 
     log.info("Player metrics complete")
     return df

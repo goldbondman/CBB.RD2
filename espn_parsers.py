@@ -41,8 +41,20 @@ def _safe_float(val: Any, default: Optional[float] = None) -> Optional[float]:
 
 
 def _parse_made_attempt(s: Any) -> Tuple[Optional[int], Optional[int]]:
+    """Parse made/attempt strings like '7-13', '7/13', or '7 of 13'."""
+    if s is None:
+        return None, None
+    text = str(s).strip().lower()
+    if not text or text in ("--", "-"):
+        return None, None
+
     try:
-        parts = str(s).split("-")
+        normalized = (
+            text.replace(" of ", "-")
+                .replace("/", "-")
+                .replace("\u2212", "-")
+        )
+        parts = [p.strip() for p in normalized.split("-") if p.strip() != ""]
         if len(parts) == 2:
             return _safe_int(parts[0]), _safe_int(parts[1])
     except Exception:
