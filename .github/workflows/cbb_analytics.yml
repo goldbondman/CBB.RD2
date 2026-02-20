@@ -409,80 +409,15 @@ jobs:
           N_ALERTS:         ${{ steps.alerts.outputs.n_alerts }}
           N_CRITICAL:       ${{ steps.alerts.outputs.n_critical }}
         run: |
-          python - <<'PY'
-          import smtplib, os, pathlib
-          from email.mime.multipart import MIMEMultipart
-          from email.mime.text      import MIMEText
-          from email.mime.base      import MIMEBase
-          from email             import encoders
-          from datetime          import datetime, timedelta
-          from zoneinfo          import ZoneInfo
-
-          tz        = ZoneInfo("America/Los_Angeles")
-          yesterday = (datetime.now(tz=tz) - timedelta(days=1)).strftime("%b %d")
-
-          sender   = os.environ.get("GMAIL_ADDRESS", "")
-          password = os.environ.get("GMAIL_APP_PASSWORD", "")
-          to_addr  = os.environ.get("NOTIFY_EMAIL", "")
-          n_alerts  = int(os.environ.get("N_ALERTS", 0))
-          n_critical= int(os.environ.get("N_CRITICAL", 0))
-
-          if not all([sender, password, to_addr]):
-              print("[SKIP] Email secrets not configured — skipping send")
-              raise SystemExit(0)
-
-          # Build subject
-          if n_critical > 0:
-              subject = f"🚨 CBB Results {yesterday} — {n_critical} CRITICAL alert(s)"
-          elif n_alerts > 0:
-              subject = f"⚠️  CBB Results {yesterday} — {n_alerts} alert(s)"
-          else:
-              subject = f"CBB Results {yesterday}"
-
-          # Read body
-          body_path = pathlib.Path("/tmp/tracker_email_body.txt")
-          body_text = body_path.read_text() if body_path.exists() else "No report generated."
-
-          # Build email
-          msg = MIMEMultipart()
-          msg["From"]    = sender
-          msg["To"]      = to_addr
-          msg["Subject"] = subject
-          msg.attach(MIMEText(body_text, "plain"))
-
-          # Attach CSV files
-          attachments = [
-              ("data/results_log.csv",         "results_log.csv"),
-              ("data/results_summary.csv",      "results_summary.csv"),
-              ("data/results_model_split.csv",  "results_model_split.csv"),
-              ("data/results_alerts.csv",       "results_alerts.csv"),
-          ]
-          attached = 0
-          for file_path, attach_name in attachments:
-              p = pathlib.Path(file_path)
-              if p.exists() and p.stat().st_size > 10:
-                  with open(p, "rb") as f:
-                      part = MIMEBase("application", "octet-stream")
-                      part.set_payload(f.read())
-                  encoders.encode_base64(part)
-                  part.add_header(
-                      "Content-Disposition",
-                      f'attachment; filename="{attach_name}"'
-                  )
-                  msg.attach(part)
-                  attached += 1
-
-          print(f"Sending to {to_addr} with {attached} attachment(s)...")
-
-          try:
-              with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-                  server.login(sender, password)
-                  server.sendmail(sender, to_addr, msg.as_string())
-              print(f"[OK] Email sent: {subject}")
-          except Exception as exc:
-              print(f"[ERROR] Failed to send email: {exc}")
-              raise SystemExit(1)
-          PY
+          python send_email.py \
+            --subject "CBB Results $(date +'%b %d')" \
+            --body-file /tmp/tracker_email_body.txt \
+            --attachments \
+              data/results_log.csv \
+              data/results_summary.csv \
+              data/results_model_split.csv \
+              data/results_alerts.csv \
+            --critical-count ${{ steps.alerts.outputs.n_critical || 0 }}
 
       # ── Persist results log as artifact ─────────────────────────────────────
       - name: Check results files for artifact upload
@@ -704,78 +639,15 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           NOTIFY_EMAIL:       ${{ secrets.NOTIFY_EMAIL }}
         run: |
-          python - <<'PY'
-          import smtplib, os, pathlib
-          from email.mime.multipart import MIMEMultipart
-          from email.mime.text      import MIMEText
-          from email.mime.base      import MIMEBase
-          from email             import encoders
-          from datetime          import datetime
-          from zoneinfo          import ZoneInfo
-
-          tz      = ZoneInfo("America/Los_Angeles")
-          today   = datetime.now(tz=tz).strftime("%b %d, %Y")
-          sender  = os.environ.get("GMAIL_ADDRESS", "")
-          password= os.environ.get("GMAIL_APP_PASSWORD", "")
-          to_addr = os.environ.get("NOTIFY_EMAIL", "")
-
-          if not all([sender, password, to_addr]):
-              print("[SKIP] Email secrets not configured")
-              raise SystemExit(0)
-
-          subject  = f"CBB Backtester Report — {today}"
-          body_text = pathlib.Path("/tmp/backtest_email_body.txt").read_text()
-
-          msg = MIMEMultipart()
-          msg["From"]    = sender
-          msg["To"]      = to_addr
-          msg["Subject"] = subject
-          msg.attach(MIMEText(body_text, "plain"))
-
-          # Attach all backtest outputs
-          data_dir   = pathlib.Path("data")
-          date_stamp = datetime.now(tz=tz).strftime("%Y%m%d")
-
-          static_attachments = [
-              ("data/backtest_optimized_weights.json", "optimized_weights.json"),
-          ]
-
-          # Latest dated files (pick newest matching)
-          for pattern, label in [
-              ("backtest_model_report_*.csv",  "model_report.csv"),
-              ("backtest_results_*.csv",       "backtest_results.csv"),
-              ("backtest_calibration_*.csv",   "calibration.csv"),
-          ]:
-              matches = sorted(data_dir.glob(pattern))
-              if matches:
-                  static_attachments.append((str(matches[-1]), label))
-
-          attached = 0
-          for file_path, attach_name in static_attachments:
-              p = pathlib.Path(file_path)
-              if p.exists() and p.stat().st_size > 10:
-                  with open(p, "rb") as f:
-                      part = MIMEBase("application", "octet-stream")
-                      part.set_payload(f.read())
-                  encoders.encode_base64(part)
-                  part.add_header(
-                      "Content-Disposition",
-                      f'attachment; filename="{attach_name}"'
-                  )
-                  msg.attach(part)
-                  attached += 1
-
-          print(f"Sending backtest report to {to_addr} ({attached} attachments)...")
-
-          try:
-              with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-                  server.login(sender, password)
-                  server.sendmail(sender, to_addr, msg.as_string())
-              print(f"[OK] Backtest email sent")
-          except Exception as exc:
-              print(f"[ERROR] {exc}")
-              raise SystemExit(1)
-          PY
+          python send_email.py \
+            --subject "CBB Backtester $(date +'%b %d, %Y')" \
+            --body-file /tmp/backtest_email_body.txt \
+            --attachments \
+              data/backtest_optimized_weights.json \
+              data/model_report.csv \
+              data/backtest_results.csv \
+              data/calibration.csv \
+            --critical-count 0
 
       # ── Upload backtest artifacts ────────────────────────────────────────────
       - name: Check backtest files for artifact upload

@@ -392,10 +392,9 @@ jobs:
               if not edges.empty:
                   print(f"\n⚡ {len(edges)} EDGE ALERT(s) — spread diff > 3 pts vs line")
 
-          # UWS alerts — handle both column naming conventions:
-          # runner writes uws_total; _compute_uws_for_matchup prefixes to uws_uws_total
+          # UWS alerts
           uws_col = next(
-              (c for c in ["uws_total", "uws_uws_total"] if c in df.columns),
+              (c for c in ["uws_total"] if c in df.columns),
               None
           )
           if uws_col:

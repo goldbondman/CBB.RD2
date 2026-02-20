@@ -333,7 +333,8 @@ jobs:
 
           print(f"[INFO] Building ensemble for {len(games_df)} scheduled games")
 
-          predictor = EnsemblePredictor()
+          config    = EnsembleConfig.from_optimized()  # loads backtest_optimized_weights.json if present
+          predictor = EnsemblePredictor(config)
           ensemble_rows = []
           skipped = 0
 
@@ -555,10 +556,9 @@ jobs:
                               print(f"   {row.get('home_team','?')} vs {row.get('away_team','?')}: "
                                     f"spread std = {row.get('ens_spread_std','?')}")
 
-                  # P3 FIX: handle both UWS column naming conventions
-                  # runner writes uws_total; _compute_uws_for_matchup prefixes to uws_uws_total
+                  # P3 FIX: handle UWS column naming conventions
                   uws_col = next(
-                      (c for c in ["uws_total", "uws_uws_total", "ens_uws_total"]
+                      (c for c in ["uws_total", "ens_uws_total"]
                        if c in df.columns),
                       None
                   )
