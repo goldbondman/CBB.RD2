@@ -718,6 +718,11 @@ def build_rankings(
         quad_df.index = quad_df.index.astype(str)
         df_indexed = df.set_index("team_id")
         df_indexed.index = df_indexed.index.astype(str)
+        # Re-runs can carry stale quad columns from prior snapshots. Remove
+        # overlaps so fresh quad_df values always win and join stays stable.
+        quad_overlap_cols = [c for c in quad_df.columns if c in df_indexed.columns]
+        if quad_overlap_cols:
+            df_indexed = df_indexed.drop(columns=quad_overlap_cols, errors="ignore")
         df = df_indexed.join(quad_df, how="left").reset_index().rename(
             columns={"index": "team_id"}
         )
