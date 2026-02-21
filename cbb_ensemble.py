@@ -32,7 +32,7 @@ Consumed by:
 
 import json
 import logging
-from dataclasses import dataclass, field, fields, asdict
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
