@@ -106,10 +106,10 @@ def _scoreboard_team_context(games_df: pd.DataFrame) -> pd.DataFrame:
         "conference": g.get("home_conference", ""),
         "wins": g.get("home_wins", None),
         "losses": g.get("home_losses", None),
-        "home_wins": g.get("home_wins", None),
-        "home_losses": g.get("home_losses", None),
-        "away_wins": g.get("away_wins", None),
-        "away_losses": g.get("away_losses", None),
+        "home_wins": g.get("home_home_wins", None),
+        "home_losses": g.get("home_home_losses", None),
+        "away_wins": g.get("home_away_wins", None),
+        "away_losses": g.get("home_away_losses", None),
         "conf_wins": g.get("home_conf_wins", None),
         "conf_losses": g.get("home_conf_losses", None),
         "rank": g.get("home_rank", None),
@@ -126,10 +126,10 @@ def _scoreboard_team_context(games_df: pd.DataFrame) -> pd.DataFrame:
         "conference": g.get("away_conference", ""),
         "wins": g.get("away_wins", None),
         "losses": g.get("away_losses", None),
-        "home_wins": g.get("home_wins", None),
-        "home_losses": g.get("home_losses", None),
-        "away_wins": g.get("away_wins", None),
-        "away_losses": g.get("away_losses", None),
+        "home_wins": g.get("away_home_wins", None),
+        "home_losses": g.get("away_home_losses", None),
+        "away_wins": g.get("away_away_wins", None),
+        "away_losses": g.get("away_away_losses", None),
         "conf_wins": g.get("away_conf_wins", None),
         "conf_losses": g.get("away_conf_losses", None),
         "rank": g.get("away_rank", None),
@@ -195,19 +195,30 @@ def _enrich_team_rows_from_scoreboard(df_team: pd.DataFrame, games_df: pd.DataFr
         "h1_pts", "h2_pts", "h1_pts_against", "h2_pts_against",
     ]
 
+    null_tokens = {"", "none", "nan", "null", "nat", "<na>"}
+
+    def _is_null_like(series: pd.Series) -> pd.Series:
+        return series.isna() | series.astype(str).str.strip().str.lower().isin(null_tokens)
+
     for col in fill_cols:
         sb_col = f"{col}_sb"
         if sb_col in df.columns:
             if col in df.columns:
-                df[col] = df[col].where(df[col].notna() & (df[col].astype(str) != ""), df[sb_col])
+                df[col] = df[col].where(~_is_null_like(df[col]), df[sb_col])
             else:
                 df[col] = df[sb_col]
+            # Clear scoreboard values that are themselves null-like strings
+            if col in df.columns:
+                df.loc[_is_null_like(df[col]), col] = None
 
-    if "win_pct" in df.columns and {"wins", "losses"}.issubset(df.columns):
+    if {"wins", "losses"}.issubset(df.columns):
         wins = pd.to_numeric(df["wins"], errors="coerce")
         losses = pd.to_numeric(df["losses"], errors="coerce")
         calc = wins / (wins + losses)
-        df["win_pct"] = df["win_pct"].where(df["win_pct"].notna(), calc.round(3))
+        if "win_pct" in df.columns:
+            df["win_pct"] = df["win_pct"].where(~_is_null_like(df["win_pct"]), calc.round(3))
+        else:
+            df["win_pct"] = calc.round(3)
 
     df = df.drop(columns=[c for c in df.columns if c.endswith("_sb")])
     return df
@@ -315,6 +326,13 @@ def _append_dedupe_write(
         existing = pd.DataFrame()
 
     combined = pd.concat([existing, new_df.astype(str)], ignore_index=True)
+
+    # Sanitize null-like string values produced by .astype(str) on None/NaN
+    _null_str_tokens = {"None", "none", "nan", "NaN", "null", "NaT", "nat", "<NA>", "<na>"}
+    for col in combined.columns:
+        mask = combined[col].isin(_null_str_tokens)
+        if mask.any():
+            combined.loc[mask, col] = pd.NA
 
     if unique_keys:
         # Score rows: prefer completed=True, then newest pulled_at_utc,
