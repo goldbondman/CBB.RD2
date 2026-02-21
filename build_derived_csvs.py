@@ -79,60 +79,81 @@ def _write(df: pd.DataFrame, stem: str, sources: list[str],
         traceback.print_exc()
         _results.append({"file": stem, "rows": 0, "sources": ", ".join(sources), "status": f"FAIL: {exc}"})
 
-# ── MC Integration Helpers ─────────────────────────────────────────────────
+# ── Matchup enrichment ─────────────────────────────────────────────────────
 
-def _mc_columns_available(df: pd.DataFrame) -> bool:
-    """Check if MC enrichment columns are present in the DataFrame."""
-    return "mc_cover_probability" in df.columns
+def enrich_with_matchup_summary(df: pd.DataFrame) -> pd.DataFrame:
+    """Join team_matchup_summary.csv onto a predictions-style DataFrame.
 
+    Adds per-team matchup context columns for both home and away sides.
+    Designed to be called on matchup_preview.csv and bet_recs.csv after
+    they have been built.
 
-def _choose_confidence_source(df: pd.DataFrame) -> pd.DataFrame:
+    Returns the original df with extra columns appended (or untouched if
+    team_matchup_summary.csv is unavailable).
     """
-    For bet_recs: prefer mc_cover_probability over raw model_confidence
-    when MC output is available.  Adds confidence_source column.
-    """
-    df = df.copy()
-    if _mc_columns_available(df):
-        df["confidence_used"] = df["mc_cover_probability"].combine_first(
-            df.get("model_confidence", pd.Series(index=df.index, dtype=float))
-        )
-        df["confidence_source"] = df["mc_cover_probability"].apply(
-            lambda v: "MC" if pd.notna(v) else "ENSEMBLE"
-        )
-    else:
-        df["confidence_used"] = df.get(
-            "model_confidence", pd.Series(index=df.index, dtype=float)
-        )
-        df["confidence_source"] = "ENSEMBLE"
+    tms = _load(CSV_DIR / "team_matchup_summary.csv", "team_matchup_summary")
+    if tms is None:
+        tms = _load(DATA / "team_matchup_summary.csv", "team_matchup_summary")
+    if tms is None:
+        return df
+
+    # Normalise join keys
+    for col in ("event_id", "team_id"):
+        if col in tms.columns:
+            tms[col] = pd.to_numeric(tms[col], errors="coerce")
+
+    pick_cols = [
+        "star_pcs", "expected_pts_impact", "star_underperform_risk",
+        "favorable_conditions", "avg_pcs_starters",
+    ]
+    pick_cols = [c for c in pick_cols if c in tms.columns]
+    if not pick_cols:
+        return df
+
+    # For home side
+    if "home_team_id" in df.columns and "event_id" in df.columns:
+        home_tms = tms.rename(columns={c: f"home_{c}" for c in pick_cols})
+        home_tms["event_id"] = home_tms["event_id"]
+        home_tms = home_tms.rename(columns={"team_id": "home_team_id"})
+        join_cols_h = [f"home_{c}" for c in pick_cols]
+        home_tms = home_tms[["event_id", "home_team_id"] + join_cols_h].copy()
+        for c in ("event_id", "home_team_id"):
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+        df = df.merge(home_tms, on=["event_id", "home_team_id"], how="left")
+
+    if "away_team_id" in df.columns and "event_id" in df.columns:
+        away_tms = tms.rename(columns={c: f"away_{c}" for c in pick_cols})
+        away_tms = away_tms.rename(columns={"team_id": "away_team_id"})
+        join_cols_a = [f"away_{c}" for c in pick_cols]
+        away_tms = away_tms[["event_id", "away_team_id"] + join_cols_a].copy()
+        for c in ("event_id", "away_team_id"):
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+        df = df.merge(away_tms, on=["event_id", "away_team_id"], how="left")
+
+    # Compute matchup_pts_edge (positive = conditions favour home outscoring baseline)
+    if "home_expected_pts_impact" in df.columns and "away_expected_pts_impact" in df.columns:
+        df["matchup_pts_edge"] = (
+            pd.to_numeric(df["home_expected_pts_impact"], errors="coerce") -
+            pd.to_numeric(df["away_expected_pts_impact"], errors="coerce")
+        ).round(2)
+
     return df
 
 
-def _choose_upset_probability(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    For upset_watch: prefer mc_upset_probability over uws_total
-    when MC output is available.
-    """
-    df = df.copy()
-    if "mc_upset_probability" in df.columns:
-        df["upset_probability_display"] = df["mc_upset_probability"]
-        df["upset_source"] = "MC"
-    else:
-        uws_col = next(
-            (c for c in ["uws_total", "ens_uws_total"] if c in df.columns),
-            None,
-        )
-        if uws_col:
-            df["upset_probability_display"] = pd.to_numeric(
-                df[uws_col], errors="coerce"
-            ) / 100.0
-            df["upset_source"] = "UWS"
-        else:
-            df["upset_probability_display"] = None
-            df["upset_source"] = "NONE"
-    return df
+def main() -> None:
+    """Build all derived CSVs, enriching with matchup data when available."""
+    # Enrich matchup_preview.csv and bet_recs.csv if they already exist
+    for stem in ("matchup_preview.csv", "bet_recs.csv"):
+        for src_dir in (CSV_DIR, DATA):
+            p = src_dir / stem
+            df = _load(p, stem)
+            if df is not None:
+                enriched = enrich_with_matchup_summary(df)
+                if len(enriched.columns) > len(df.columns):
+                    _write(enriched, stem, ["team_matchup_summary"])
+                    print(f"[OK]  {stem}: enriched with matchup summary columns")
+                break  # only process once per stem
 
-
-# ... [rest of the script omitted for brevity] ...
 
 if __name__ == "__main__":
     main()

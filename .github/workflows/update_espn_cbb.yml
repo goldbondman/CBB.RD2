@@ -259,11 +259,10 @@ jobs:
               import traceback; traceback.print_exc()
           PY
 
-      # ── Build backtest performance CSVs ──────────────────────────────────
-      - name: Build backtest performance CSVs
-        id: backtest_csvs
+      # ── Rebuild player condition profiles (full history) ──────────────────
+      - name: Rebuild player condition profiles (full history)
         continue-on-error: true
-        run: python build_backtest_csvs.py
+        run: python cbb_player_matchup.py --build-profiles-only
 
       # ── Validate outputs ──────────────────────────────────────────────────
       - name: Validate outputs
@@ -374,6 +373,8 @@ jobs:
             data/player_injury_proxy.csv
             data/team_injury_impact.csv
             data/team_form_snapshot.csv
+            data/player_condition_profiles.csv
+            data/player_archetype_matchup_matrix.csv
             data/espn_api_field_audit.json
             data/field_drift_report.json
             data/field_drift_report.md
