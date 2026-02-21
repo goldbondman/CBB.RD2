@@ -216,6 +216,39 @@ jobs:
         if: steps.artifact_check.outputs.rolling_predictions != 'true'
         run: echo "[INFO] Artifact cbb-predictions-rolling-latest not found; tracker may have no games to process."
 
+      - name: Generate predictions for target date (when artifact missing)
+        if: steps.artifact_check.outputs.rolling_predictions != 'true'
+        env:
+          TARGET_DATE: ${{ github.event.inputs.date || '' }}
+        run: |
+          python - <<'PY'
+          import os, subprocess, sys, pathlib
+          from datetime import datetime, timedelta
+          from zoneinfo import ZoneInfo
+
+          tz   = ZoneInfo("America/Los_Angeles")
+          date = (os.getenv("TARGET_DATE") or "").strip()
+          if not date:
+              date = (datetime.now(tz) - timedelta(days=1)).strftime("%Y%m%d")
+
+          data_dir = pathlib.Path("data")
+          if not data_dir.exists() or not (data_dir / "games.csv").exists():
+              print("[SKIP] data/games.csv not found — cannot generate predictions")
+              raise SystemExit(0)
+
+          print(f"[INFO] Generating predictions for {date}...")
+          result = subprocess.run(
+              [sys.executable, "espn_prediction_runner.py", "--date", date],
+              check=False,
+          )
+          if result.returncode != 0:
+              print(f"[WARN] Primary prediction generation exited {result.returncode}")
+
+          # Attempt ensemble (optional — may fail if profiles/rankings unavailable)
+          subprocess.run([sys.executable, "cbb_ensemble.py"], check=False)
+          print("[OK] Prediction generation step complete")
+          PY
+
       - name: Debug data folder (post-download)
         run: |
           echo "[INFO] Listing data/ (max depth 3)"
