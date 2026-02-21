@@ -141,6 +141,8 @@ jobs:
               rollingPreds: false,
             };
 
+            const now = new Date();
+
             for await (const page of github.paginate.iterator(
               github.rest.actions.listArtifactsForRepo,
               {
@@ -150,15 +152,17 @@ jobs:
               }
             )) {
               for (const artifact of page.data.artifacts || []) {
-                if (artifact.expired || !names.has(artifact.name)) continue;
-                if (artifact.name === 'espn-cbb-csvs') found.espnCsvs = true;
-                if (artifact.name === 'cbb-results-log') found.resultsLog = true;
-                if (artifact.name === 'cbb-predictions-rolling-latest') found.rollingPreds = true;
+                if (!names.has(artifact.name)) continue;
+                // Skip if expired (expires_at is returned by the list API)
+                if (artifact.expires_at && new Date(artifact.expires_at) < now) continue;
+                if (artifact.name === 'espn-cbb-csvs')                        found.espnCsvs     = true;
+                if (artifact.name === 'cbb-results-log')                      found.resultsLog   = true;
+                if (artifact.name === 'cbb-predictions-rolling-latest')       found.rollingPreds = true;
               }
             }
 
-            core.setOutput('espn_csvs', String(found.espnCsvs));
-            core.setOutput('results_log', String(found.resultsLog));
+            core.setOutput('espn_csvs',           String(found.espnCsvs));
+            core.setOutput('results_log',         String(found.resultsLog));
             core.setOutput('rolling_predictions', String(found.rollingPreds));
             core.info(`Artifact availability: ${JSON.stringify(found)}`);
 
@@ -174,6 +178,19 @@ jobs:
       - name: Skip ESPN CSV download (artifact missing)
         if: steps.artifact_check.outputs.espn_csvs != 'true'
         run: echo "[INFO] Artifact espn-cbb-csvs not found; continuing without download."
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run ESPN pipeline (bootstrap data when artifact missing)
+        if: steps.artifact_check.outputs.espn_csvs != 'true'
+        run: python espn_pipeline.py --days-back 7
 
       - name: Download previous results log
         if: steps.artifact_check.outputs.results_log == 'true'
@@ -203,15 +220,6 @@ jobs:
         run: |
           echo "[INFO] Listing data/ (max depth 3)"
           find data -maxdepth 3 -type f | sed -n '1,200p' || true
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install dependencies
-        run: python -m pip install -r requirements.txt
 
       # ── Run tracker ──────────────────────────────────────────────────────────
       - name: Run results tracker
@@ -402,6 +410,7 @@ jobs:
 
       # ── Send tracker email ────────────────────────────────────────────────
       - name: Email tracker results
+        continue-on-error: true
         env:
           GMAIL_ADDRESS:    ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
@@ -634,6 +643,7 @@ jobs:
 
       # ── Send backtest email with report attachments ──────────────────────
       - name: Email backtest report
+        continue-on-error: true
         env:
           GMAIL_ADDRESS:      ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
