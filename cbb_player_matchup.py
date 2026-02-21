@@ -339,7 +339,7 @@ def build_condition_profiles(pm: pd.DataFrame, team_logs: pd.DataFrame,
                 profile[f"efg_delta_{loc}"] = None
 
         # Short rest splits
-        rest_games = grp[grp["short_rest"] == True] if "short_rest" in grp.columns else pd.DataFrame()
+        rest_games = grp[grp["short_rest"]] if "short_rest" in grp.columns else pd.DataFrame()
         profile["n_short_rest"] = len(rest_games)
         if len(rest_games) >= MIN_REST_SPLIT:
             profile["pts_delta_short_rest"] = rest_games["pts"].mean() - row["pts_season_avg"]
@@ -802,9 +802,9 @@ def build_team_matchup_summary(pcs_df: pd.DataFrame,
     rows = []
     for (eid, tid), grp in pcs.groupby(["event_id", "team_id"]):
         min_avg = grp["min_season_avg"].fillna(0) if "min_season_avg" in grp.columns else pd.Series(0, index=grp.index)
-        starters = grp[(grp["is_starter"] == True) & (min_avg >= 20)]
+        starters = grp[grp["is_starter"] & (min_avg >= 20)]
         if starters.empty:
-            starters = grp[grp["is_starter"] == True]
+            starters = grp[grp["is_starter"]]
 
         usage_col = grp["usage_rate_season_avg"].dropna()
         star_row = grp.loc[usage_col.idxmax()] if not usage_col.empty else None
@@ -819,7 +819,7 @@ def build_team_matchup_summary(pcs_df: pd.DataFrame,
 
         exp_pts_impact = starters["expected_pts_delta"].sum() if not starters.empty else 0.0
 
-        bench = grp[grp["is_starter"] == False]
+        bench = grp[~grp["is_starter"]]
         roster_depth = int((bench["pcs"] >= -10).sum()) if not bench.empty else 0
 
         star_underperform = bool(star_pcs is not None and star_pcs < -20 and is_star)
