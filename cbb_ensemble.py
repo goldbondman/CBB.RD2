@@ -670,16 +670,6 @@ class EnsemblePredictor:
         RegressedEfficiencyModel,
     ]
 
-    MODEL_NAME_MAP = {
-        "FourFactors":   0,
-        "AdjEfficiency": 1,
-        "Pythagorean":   2,
-        "Momentum":      3,
-        "Situational":   4,
-        "CAGERankings":  5,
-        "RegressedEff":  6,
-    }
-
     def __init__(self, config: EnsembleConfig = None):
         self.config = config or EnsembleConfig()
         self.models = [cls() for cls in self.MODELS]
