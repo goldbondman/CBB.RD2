@@ -4,8 +4,10 @@ Convert raw ESPN JSON into clean flat dictionaries.
 One function per data shape. No I/O here.
 """
 
+import json
 import logging
 from datetime import datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -105,6 +107,78 @@ def _parse_record(record_obj: Any) -> Tuple[Optional[int], Optional[int]]:
 
 # ── Stat label normalization ──────────────────────────────────────────────────
 
+FALLBACK_MAP = {
+    "min": "min", "pts": "pts",
+    "fgm": "fgm", "fga": "fga",
+    "tpm": "tpm", "tpa": "tpa",
+    "ftm": "ftm", "fta": "fta",
+    "orb": "orb", "drb": "drb",
+    "reb": "reb", "ast": "ast",
+    "stl": "stl", "blk": "blk",
+    "tov": "tov", "pf":  "pf",
+    "+/-": "plus_minus",
+}
+
+
+def load_player_stat_map(
+    map_path: str = "column_map.json",
+    override_path: str = "column_map_overrides.json",
+) -> Dict[str, str]:
+    """
+    Load the column map from JSON. Merge overrides. Return flattened
+    label->pipeline_col dict for use in the parser.
+    Falls back to hardcoded FALLBACK_MAP if JSON files not found.
+    """
+    base_path = Path(map_path)
+    if not base_path.exists():
+        return dict(FALLBACK_MAP)
+
+    try:
+        base = json.loads(base_path.read_text())
+        override_file = Path(override_path)
+        if override_file.exists():
+            overrides = json.loads(override_file.read_text())
+            for section in ("player_stats", "team_stats"):
+                override_labels = overrides.get(section, {})
+                if isinstance(override_labels, dict):
+                    base_section = base.setdefault(section, {})
+                    base_labels = base_section.setdefault("espn_labels", {})
+                    base_labels.update(override_labels)
+
+        result: Dict[str, str] = {}
+        espn_labels = base.get("player_stats", {}).get("espn_labels", {})
+        for label, info in espn_labels.items():
+            pipeline_col = info.get("pipeline_col")
+            if pipeline_col is not None:
+                result[label.lower()] = pipeline_col
+            for alias in info.get("aliases", []):
+                if pipeline_col is not None:
+                    result[alias.lower()] = pipeline_col
+
+        # Merge with fallback to ensure nothing is lost
+        for k, v in FALLBACK_MAP.items():
+            result.setdefault(k, v)
+
+        return result
+    except Exception as exc:
+        log.warning(f"Failed to load column map from {map_path}: {exc}")
+        return dict(FALLBACK_MAP)
+
+
+def _load_split_fields(
+    map_path: str = "column_map.json",
+) -> Dict[str, Dict[str, Any]]:
+    """Load split_fields config from column_map.json."""
+    base_path = Path(map_path)
+    if not base_path.exists():
+        return {}
+    try:
+        base = json.loads(base_path.read_text())
+        return base.get("player_stats", {}).get("split_fields", {})
+    except Exception:
+        return {}
+
+
 PLAYER_STAT_MAP = {
     "min": "min", "minutes": "min",
     "pts": "pts", "points": "pts",
@@ -126,8 +200,52 @@ PLAYER_STAT_MAP = {
     "pm": "plus_minus", "+/-": "plus_minus", "plusminus": "plus_minus",
 }
 
+# Merge column_map.json labels into PLAYER_STAT_MAP at import time
+_json_map = load_player_stat_map()
+for _k, _v in _json_map.items():
+    PLAYER_STAT_MAP.setdefault(_k, _v)
+
 for _label, _mapped in list(PLAYER_STAT_MAP.items()):
     PLAYER_STAT_MAP.setdefault(_normalize_stat_label(_label), _mapped)
+
+
+# ── Team stat label map (loaded from column_map.json with hardcoded fallback) ─
+
+_TEAM_STAT_MAP_FALLBACK = {
+    "oreb": "orb", "offensiverebounds": "orb",
+    "dreb": "drb", "defensiverebounds": "drb",
+    "reb": "reb", "rebounds": "reb", "totalrebounds": "reb",
+    "ast": "ast", "assists": "ast",
+    "to": "tov", "turnovers": "tov",
+    "stl": "stl", "steals": "stl",
+    "blk": "blk", "blocks": "blk",
+    "pf": "pf", "fouls": "pf",
+}
+
+
+def _load_team_stat_map(map_path: str = "column_map.json") -> Dict[str, str]:
+    """Load team stat label map from column_map.json, fallback to hardcoded."""
+    base_path = Path(map_path)
+    if not base_path.exists():
+        return dict(_TEAM_STAT_MAP_FALLBACK)
+    try:
+        base = json.loads(base_path.read_text())
+        result: Dict[str, str] = {}
+        espn_labels = base.get("team_stats", {}).get("espn_labels", {})
+        for label, info in espn_labels.items():
+            pipeline_col = info.get("pipeline_col")
+            if pipeline_col is not None and not info.get("is_made_attempted"):
+                result[label.lower()] = pipeline_col
+                for alias in info.get("aliases", []):
+                    result[alias.lower()] = pipeline_col
+        for k, v in _TEAM_STAT_MAP_FALLBACK.items():
+            result.setdefault(k, v)
+        return result
+    except Exception:
+        return dict(_TEAM_STAT_MAP_FALLBACK)
+
+
+TEAM_STAT_MAP = _load_team_stat_map()
 
 
 # ── Scoreboard parser ─────────────────────────────────────────────────────────
@@ -345,19 +463,8 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                         else:
                             stats["fgm"], stats["fga"] = made, att
                     else:
-                        col_map = {
-                            "oreb": "orb", "offensiverebounds": "orb",
-                            "dreb": "drb", "defensiverebounds": "drb",
-                            "reb": "reb",  "rebounds": "reb",
-                            "totalrebounds": "reb",
-                            "ast": "ast",  "assists": "ast",
-                            "to": "tov",   "turnovers": "tov",
-                            "stl": "stl",  "steals": "stl",
-                            "blk": "blk",  "blocks": "blk",
-                            "pf": "pf",    "fouls": "pf",
-                        }
-                        key = (col_map.get(label) or
-                               col_map.get(name.lower().replace(" ", ""), label))
+                        key = (TEAM_STAT_MAP.get(label) or
+                               TEAM_STAT_MAP.get(name.lower().replace(" ", ""), label))
                         val_p = (_safe_int(dv) if str(dv).isdigit()
                                  else _safe_float(dv))
                         if key == "reb" and ("orb" in stats or "drb" in stats):

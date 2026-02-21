@@ -213,6 +213,10 @@ jobs:
         if: steps.artifact_check.outputs.espn_csvs != 'true'
         run: python espn_pipeline.py --days-back 7
 
+      - name: Verify player metrics completeness
+        continue-on-error: true
+        run: python field_reconciler.py --check-outputs
+
       - name: Download previous results log
         if: steps.artifact_check.outputs.results_log == 'true'
         uses: actions/download-artifact@v4
