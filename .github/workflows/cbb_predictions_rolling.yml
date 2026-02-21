@@ -558,6 +558,13 @@ jobs:
                             f"Ensemble {row.get('ens_ensemble_spread',float('nan')):+.1f} | "
                             f"Gap {row.get('spread_model_gap',float('nan')):+.1f}")
                   combined.to_csv(out, index=False)
+                  from datetime import datetime
+                  from zoneinfo import ZoneInfo
+                  today = datetime.now(tz=ZoneInfo("America/Los_Angeles")).strftime("%Y%m%d")
+                  div_path = data_dir / f"predictions_divergence_{today}.csv"
+                  diverged.to_csv(div_path, index=False)
+                  (data_dir / "predictions_divergence_latest.csv").write_bytes(div_path.read_bytes())
+                  print(f"[OK] Divergence file: {len(diverged)} games → {div_path}")
           PY
 
       # ── 9. Monte Carlo simulations ───────────────────────────────────────

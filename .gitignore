@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 *.pyo
-data/
+data/*
+!data/csv/
 *.egg-info/
 .pytest_cache/

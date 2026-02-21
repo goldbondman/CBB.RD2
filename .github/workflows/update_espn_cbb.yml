@@ -356,6 +356,7 @@ jobs:
             data/team_injury_impact.csv
             data/team_form_snapshot.csv
             data/espn_api_field_audit.json
+            data/pipeline_run_log.csv
           retention-days: 30
           if-no-files-found: warn
 
