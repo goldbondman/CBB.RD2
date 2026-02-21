@@ -55,7 +55,7 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  actions: write
 
 env:
   TZ: "America/Los_Angeles"
@@ -125,6 +125,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Ensure data directory exists
+        run: mkdir -p data
+
       - name: Check artifact availability
         id: artifact_check
         uses: actions/github-script@v7
@@ -166,6 +169,23 @@ jobs:
             core.setOutput('rolling_predictions', String(found.rollingPreds));
             core.info(`Artifact availability: ${JSON.stringify(found)}`);
 
+      - name: Get latest ESPN pipeline run ID
+        id: get_espn_run_id
+        if: steps.artifact_check.outputs.espn_csvs == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'update_espn_cbb.yml',
+              status: 'success',
+              per_page: 1,
+            });
+            const runId = runs.data.workflow_runs[0]?.id;
+            if (!runId) throw new Error('No successful espn pipeline run found');
+            core.setOutput('run_id', runId);
+
       # ── Restore latest CSVs (pipeline data + existing results log) ──────────
       - name: Download ESPN CSVs
         if: steps.artifact_check.outputs.espn_csvs == 'true'
@@ -173,6 +193,7 @@ jobs:
         with:
           name: espn-cbb-csvs
           path: data/
+          run-id: ${{ steps.get_espn_run_id.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Skip ESPN CSV download (artifact missing)
@@ -204,12 +225,30 @@ jobs:
         if: steps.artifact_check.outputs.results_log != 'true'
         run: echo "[INFO] Artifact cbb-results-log not found; first run will create fresh outputs."
 
+      - name: Get latest rolling predictions run ID
+        id: get_predictions_run_id
+        if: steps.artifact_check.outputs.rolling_predictions == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'cbb_predictions_rolling.yml',
+              status: 'success',
+              per_page: 1,
+            });
+            const runId = runs.data.workflow_runs[0]?.id;
+            if (!runId) throw new Error('No successful predictions rolling run found');
+            core.setOutput('run_id', runId);
+
       - name: Download latest predictions
         if: steps.artifact_check.outputs.rolling_predictions == 'true'
         uses: actions/download-artifact@v4
         with:
           name: cbb-predictions-rolling-latest
           path: data/
+          run-id: ${{ steps.get_predictions_run_id.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Skip latest predictions download (artifact missing)
@@ -514,6 +553,9 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Ensure data directory exists
+        run: mkdir -p data
 
       - name: Set up Python
         uses: actions/setup-python@v5
