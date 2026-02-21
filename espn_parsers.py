@@ -109,9 +109,12 @@ PLAYER_STAT_MAP = {
     "min": "min", "minutes": "min",
     "pts": "pts", "points": "pts",
     "fg": "_fg", "fgm-a": "_fg", "field goals": "_fg",
+    "fieldgoals": "_fg", "fieldgoalsmade": "_fg", "fgma": "_fg",
     "3pt": "_3pt", "3p": "_3pt", "3-pt": "_3pt", "3pm-a": "_3pt",
     "three pointers": "_3pt",
+    "threepointers": "_3pt", "threepointsmade": "_3pt", "3ptma": "_3pt", "3fgma": "_3pt",
     "ft": "_ft", "ftm-a": "_ft", "free throws": "_ft",
+    "freethrows": "_ft", "freethrowsmade": "_ft", "ftma": "_ft",
     "oreb": "orb", "or": "orb", "offensive rebounds": "orb",
     "dreb": "drb", "dr": "drb", "defensive rebounds": "drb",
     "reb": "reb", "tr": "reb", "rebounds": "reb", "total rebounds": "reb",
@@ -120,7 +123,7 @@ PLAYER_STAT_MAP = {
     "blk": "blk", "b": "blk", "blocks": "blk",
     "to": "tov", "tov": "tov", "turnovers": "tov",
     "pf": "pf", "fouls": "pf", "personal fouls": "pf",
-    "+/-": "plus_minus", "plusminus": "plus_minus",
+    "pm": "plus_minus", "+/-": "plus_minus", "plusminus": "plus_minus",
 }
 
 for _label, _mapped in list(PLAYER_STAT_MAP.items()):
