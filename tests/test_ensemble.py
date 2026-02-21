@@ -208,7 +208,7 @@ class TestSubModels:
         pred_neutral = model.predict(strong_home, weak_away, neutral=True)
         # On neutral site, HCA removed → margin decreases → spread less
         # negative (closer to zero).  E.g. -10 at home → -6.8 neutral.
-        assert pred_neutral.spread >= pred_home.spread - 0.01
+        assert pred_neutral.spread >= pred_home.spread + 0.01
 
 
 # ── Ensemble Predictor Tests ─────────────────────────────────────────────────
