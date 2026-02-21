@@ -259,6 +259,12 @@ jobs:
               import traceback; traceback.print_exc()
           PY
 
+      # ── Build backtest performance CSVs ──────────────────────────────────
+      - name: Build backtest performance CSVs
+        id: backtest_csvs
+        continue-on-error: true
+        run: python build_backtest_csvs.py
+
       # ── Validate outputs ──────────────────────────────────────────────────
       - name: Validate outputs
         run: |
@@ -372,6 +378,14 @@ jobs:
             data/field_drift_report.json
             data/field_drift_report.md
             data/pipeline_run_log.csv
+            data/csv/backtest_summary.csv
+            data/csv/backtest_by_model.csv
+            data/csv/backtest_weekly.csv
+            data/csv/backtest_by_conference.csv
+            data/csv/backtest_calibration.csv
+            data/csv/backtest_by_edge.csv
+            data/csv/backtest_model_matrix.csv
+            data/results_log_graded.csv
           retention-days: 30
           if-no-files-found: warn
 

@@ -602,6 +602,14 @@ jobs:
             exit 1
           fi
 
+      # ── Ensure graded results log exists ────────────────────────────────────
+      - name: Ensure graded results log exists
+        run: |
+          if [ ! -f data/results_log_graded.csv ]; then
+            echo "[WARN] Graded log not found — building from results_log.csv"
+            python build_backtest_csvs.py --section grade-only
+          fi
+
       # ── Run backtester ───────────────────────────────────────────────────────
       - name: Run backtester
         id: backtest
