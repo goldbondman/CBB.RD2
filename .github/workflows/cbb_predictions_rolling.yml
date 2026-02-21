@@ -567,6 +567,16 @@ jobs:
                   print(f"[OK] Divergence file: {len(diverged)} games → {div_path}")
           PY
 
+      # ── 8b. Player matchup analysis ─────────────────────────────────────────
+      - name: Run player matchup analysis
+        id: player_matchup
+        continue-on-error: true
+        run: |
+          python cbb_player_matchup.py \
+            --games data/predictions_combined_latest.csv \
+            --min-games 5 \
+            --min-minutes 15
+
       # ── 9. Validate ─────────────────────────────────────────────────────────
       - name: Validate prediction outputs
         if: always()
@@ -692,6 +702,10 @@ jobs:
             data/predictions_combined_latest.csv
             data/predictions_divergence_*.csv
             data/predictions_divergence_latest.csv
+            data/csv/player_context_scores.csv
+            data/csv/team_matchup_summary.csv
+            data/player_condition_profiles.csv
+            data/player_archetype_matchup_matrix.csv
           retention-days: 30
           if-no-files-found: warn
 
@@ -707,6 +721,10 @@ jobs:
             data/predictions_combined_latest.csv
             data/predictions_divergence_*.csv
             data/predictions_divergence_latest.csv
+            data/csv/player_context_scores.csv
+            data/csv/team_matchup_summary.csv
+            data/player_condition_profiles.csv
+            data/player_archetype_matchup_matrix.csv
           retention-days: 30
           if-no-files-found: warn
 

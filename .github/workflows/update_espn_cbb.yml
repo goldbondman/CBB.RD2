@@ -252,6 +252,11 @@ jobs:
               import traceback; traceback.print_exc()
           PY
 
+      # ── Rebuild player condition profiles (full history) ──────────────────
+      - name: Rebuild player condition profiles (full history)
+        continue-on-error: true
+        run: python cbb_player_matchup.py --build-profiles-only
+
       # ── Validate outputs ──────────────────────────────────────────────────
       - name: Validate outputs
         run: |
@@ -355,6 +360,8 @@ jobs:
             data/player_injury_proxy.csv
             data/team_injury_impact.csv
             data/team_form_snapshot.csv
+            data/player_condition_profiles.csv
+            data/player_archetype_matchup_matrix.csv
             data/espn_api_field_audit.json
             data/pipeline_run_log.csv
           retention-days: 30
