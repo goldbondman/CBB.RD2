@@ -322,6 +322,7 @@ jobs:
       # ── 7. Ensemble model: cbb_ensemble.py ──────────────────────────────────
       - name: Run ensemble model predictions
         id: ensemble_predictions
+        continue-on-error: true
         if: >
           github.event_name == 'workflow_run' ||
           github.event.inputs.run_ensemble == 'true'
@@ -539,6 +540,7 @@ jobs:
 
       # ── 9. Validate ─────────────────────────────────────────────────────────
       - name: Validate prediction outputs
+        if: always()
         run: |
           python - <<'PY'
           import pandas as pd, pathlib, sys
