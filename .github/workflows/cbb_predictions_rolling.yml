@@ -127,8 +127,8 @@ jobs:
           python -m pip install -U pip
           python -m pip install -r requirements.txt
 
-      - name: Force reinstall pandas
-        run: pip install --force-reinstall pandas
+      - name: Force install pandas
+        run: pip install pandas
 
       - name: Verify runtime Python deps
         run: |
