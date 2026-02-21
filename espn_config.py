@@ -29,6 +29,10 @@ OUT_TOURNAMENT_METRICS   = CSV_DIR / "team_tournament_metrics.csv"
 OUT_TOURNAMENT_SNAPSHOT  = CSV_DIR / "team_pretournament_snapshot.csv"
 OUT_RANKINGS             = CSV_DIR / "cbb_rankings.csv"
 OUT_RANKINGS_CONF        = CSV_DIR / "cbb_rankings_by_conference.csv"
+OUT_PREDICTIONS_PRIMARY  = CSV_DIR / "predictions_primary.csv"
+OUT_PREDICTIONS_LATEST   = CSV_DIR / "predictions_latest.csv"
+OUT_PREDICTIONS_COMBINED = CSV_DIR / "predictions_combined_latest.csv"
+OUT_DIVERGENCE_LATEST    = CSV_DIR / "predictions_divergence_latest.csv"
 
 # ── ESPN API ─────────────────────────────────────────────────────────────────
 ESPN_SCOREBOARD_URL = (
