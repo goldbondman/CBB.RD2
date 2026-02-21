@@ -81,6 +81,18 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
         continue-on-error: false
 
+      # ── 2b. Fallback for workflow_run if artifact files are missing ────────────
+      - name: "Fallback: Ensure required pipeline outputs exist (workflow_run)"
+        if: github.event_name == 'workflow_run'
+        run: |
+          missing=()
+          [ ! -f data/games.csv ] && missing+=("data/games.csv")
+          [ ! -f data/team_game_weighted.csv ] && missing+=("data/team_game_weighted.csv")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "[WARN] Key artifact files missing after download: ${missing[*]}. Running espn_pipeline.py..."
+            python espn_pipeline.py
+          fi
+
       # NOTE: This does NOT reliably download "latest from another run" by itself.
       # We'll treat it as a best-effort, and then run pipeline if required files missing.
       - name: Download ESPN CSVs (manual trigger — best effort)
