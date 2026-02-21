@@ -79,6 +79,7 @@ jobs:
           name: espn-cbb-csvs
           path: data/
           run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: false
 
       # ── 2b. Fallback for workflow_run if artifact files are missing ────────────
