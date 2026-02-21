@@ -79,6 +79,59 @@ def _write(df: pd.DataFrame, stem: str, sources: list[str],
         traceback.print_exc()
         _results.append({"file": stem, "rows": 0, "sources": ", ".join(sources), "status": f"FAIL: {exc}"})
 
+# ── MC Integration Helpers ─────────────────────────────────────────────────
+
+def _mc_columns_available(df: pd.DataFrame) -> bool:
+    """Check if MC enrichment columns are present in the DataFrame."""
+    return "mc_cover_probability" in df.columns
+
+
+def _choose_confidence_source(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    For bet_recs: prefer mc_cover_probability over raw model_confidence
+    when MC output is available.  Adds confidence_source column.
+    """
+    df = df.copy()
+    if _mc_columns_available(df):
+        df["confidence_used"] = df["mc_cover_probability"].combine_first(
+            df.get("model_confidence", pd.Series(index=df.index, dtype=float))
+        )
+        df["confidence_source"] = df["mc_cover_probability"].apply(
+            lambda v: "MC" if pd.notna(v) else "ENSEMBLE"
+        )
+    else:
+        df["confidence_used"] = df.get(
+            "model_confidence", pd.Series(index=df.index, dtype=float)
+        )
+        df["confidence_source"] = "ENSEMBLE"
+    return df
+
+
+def _choose_upset_probability(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    For upset_watch: prefer mc_upset_probability over uws_total
+    when MC output is available.
+    """
+    df = df.copy()
+    if "mc_upset_probability" in df.columns:
+        df["upset_probability_display"] = df["mc_upset_probability"]
+        df["upset_source"] = "MC"
+    else:
+        uws_col = next(
+            (c for c in ["uws_total", "ens_uws_total"] if c in df.columns),
+            None,
+        )
+        if uws_col:
+            df["upset_probability_display"] = pd.to_numeric(
+                df[uws_col], errors="coerce"
+            ) / 100.0
+            df["upset_source"] = "UWS"
+        else:
+            df["upset_probability_display"] = None
+            df["upset_source"] = "NONE"
+    return df
+
+
 # ... [rest of the script omitted for brevity] ...
 
 if __name__ == "__main__":

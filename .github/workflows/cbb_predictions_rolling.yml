@@ -567,7 +567,17 @@ jobs:
                   print(f"[OK] Divergence file: {len(diverged)} games → {div_path}")
           PY
 
-      # ── 9. Validate ─────────────────────────────────────────────────────────
+      # ── 9. Monte Carlo simulations ───────────────────────────────────────
+      - name: Run Monte Carlo simulations
+        id: monte_carlo
+        if: always()
+        continue-on-error: true
+        run: |
+          python cbb_monte_carlo.py \
+            --input data/predictions_combined_latest.csv \
+            --n-sims 5000
+
+      # ── 10. Validate ─────────────────────────────────────────────────────────
       - name: Validate prediction outputs
         if: always()
         run: |
@@ -641,7 +651,7 @@ jobs:
           print("\n[OK] Validation complete")
           PY
 
-      # ── 10. Display summary ─────────────────────────────────────────────────
+      # ── 11. Display summary ─────────────────────────────────────────────────
       - name: Display prediction summary
         if: always()
         run: |
@@ -680,7 +690,7 @@ jobs:
               break
           PY
 
-      # ── 11. Upload artifacts ────────────────────────────────────────────────
+      # ── 12. Upload artifacts ────────────────────────────────────────────────
       - name: Upload prediction artifacts (run-stamped)
         if: always()
         uses: actions/upload-artifact@v4
@@ -690,8 +700,9 @@ jobs:
             data/predictions_*.csv
             data/ensemble_predictions_*.csv
             data/predictions_combined_latest.csv
-            data/predictions_divergence_*.csv
-            data/predictions_divergence_latest.csv
+            data/predictions_mc_latest.csv
+            data/csv/predictions_mc_latest.csv
+            data/csv/mc_game_cards.csv
           retention-days: 30
           if-no-files-found: warn
 
@@ -705,17 +716,18 @@ jobs:
             data/predictions_*.csv
             data/ensemble_predictions_*.csv
             data/predictions_combined_latest.csv
-            data/predictions_divergence_*.csv
-            data/predictions_divergence_latest.csv
+            data/predictions_mc_latest.csv
+            data/csv/predictions_mc_latest.csv
+            data/csv/mc_game_cards.csv
           retention-days: 30
           if-no-files-found: warn
 
-      # ── 12. Copy CSVs to data/csv/ and commit back to repo ────────────────────
+      # ── 13. Copy CSVs to data/csv/ and commit back to repo ────────────────────
       - name: Copy CSVs to data/csv/
         if: success()
         run: |
           mkdir -p data/csv
-          for f in data/predictions_latest.csv data/predictions_combined_latest.csv data/ensemble_predictions_latest.csv; do
+          for f in data/predictions_latest.csv data/predictions_combined_latest.csv data/ensemble_predictions_latest.csv data/predictions_mc_latest.csv; do
             [ -f "$f" ] && cp "$f" data/csv/ && echo "Copied $f" || echo "Skipped $f (not found)"
           done
 
