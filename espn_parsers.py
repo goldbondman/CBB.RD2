@@ -441,6 +441,10 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                                                  if cleaned.isdigit()
                                                  else _safe_float(cleaned)))
 
+                    # TEMP DEBUG — log first unseen stat label per game
+                    if not raw_stats:
+                        log.debug(f"Player stats labels for {athlete_id}: {stat_labels}")
+
                     # Shooting splits — independent loops per type
                     for fg_lbl in ("fg", "fgm-a", "fieldgoals"):
                         if fg_lbl in raw_stats:
