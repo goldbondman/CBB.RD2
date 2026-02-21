@@ -642,7 +642,7 @@ jobs:
               echo "[OK] Push succeeded on attempt ${attempt}"
               break
             else
-              echo "[RETRY] Push failed on attempt ${attempt} — waiting ${attempt}0 seconds"
+              echo "[RETRY] Push failed on attempt ${attempt} — waiting $((attempt * 10)) seconds"
               sleep $((attempt * 10))
               git reset HEAD~1 2>/dev/null || true
             fi
@@ -787,7 +787,7 @@ jobs:
               echo "[OK] Push succeeded on attempt ${attempt}"
               break
             else
-              echo "[RETRY] Push failed on attempt ${attempt} — waiting ${attempt}0 seconds"
+              echo "[RETRY] Push failed on attempt ${attempt} — waiting $((attempt * 10)) seconds"
               sleep $((attempt * 10))
               git reset HEAD~1 2>/dev/null || true
             fi
