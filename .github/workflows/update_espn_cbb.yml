@@ -58,7 +58,7 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: python -m pip install -r requirements.txt
 
       - name: Run ESPN pipeline
         id: run_pipeline
@@ -258,7 +258,7 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: python -m pip install -r requirements.txt
 
       # Guard: rankings require snapshot — verify it exists before running
       - name: Check snapshot dependency
@@ -351,7 +351,7 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: python -m pip install -r requirements.txt
 
       - name: Run predictions for tomorrow's games
         run: |
