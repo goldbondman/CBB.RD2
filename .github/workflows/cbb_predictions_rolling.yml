@@ -115,6 +115,9 @@ jobs:
           python -m pip install -U pip
           python -m pip install -r requirements.txt
 
+      - name: Force install pandas
+        run: pip install pandas
+
       - name: Verify runtime Python deps
         run: |
           python - <<'PY'
