@@ -211,7 +211,7 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: python -m pip install -r requirements.txt
 
       # ── Run tracker ──────────────────────────────────────────────────────────
       - name: Run results tracker
@@ -479,7 +479,7 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: python -m pip install -r requirements.txt
 
       # ── Generate required game log inputs ───────────────────────────────────
       # actions/download-artifact can only pull from the *current* workflow run
