@@ -1103,17 +1103,20 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
 
     results_path = output_dir / f"backtest_results_{today}.csv"
     records.to_csv(results_path, index=False)
+    records.to_csv(output_dir / "backtest_results_latest.csv", index=False)
     outputs["results"] = results_path
     log.info(f"Results → {results_path}  ({len(records):,} rows)")
 
     report_path = output_dir / f"backtest_model_report_{today}.csv"
     report_df.to_csv(report_path, index=False)
+    report_df.to_csv(output_dir / "backtest_model_report_latest.csv", index=False)
     outputs["report"] = report_path
     log.info(f"Report  → {report_path}")
 
     if not calib_df.empty:
         calib_path = output_dir / f"backtest_calibration_{today}.csv"
         calib_df.to_csv(calib_path, index=False)
+        calib_df.to_csv(output_dir / "backtest_calibration_latest.csv", index=False)
         outputs["calibration"] = calib_path
         log.info(f"Calibration → {calib_path}")
 
@@ -1123,6 +1126,22 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
             json.dump(optimized_weights, f, indent=2)
         outputs["weights"] = weights_path
         log.info(f"Weights → {weights_path}")
+
+        # Append to weight history CSV
+        weight_history_path = output_dir / "model_weight_history.csv"
+        history_row = {
+            "run_date": today,
+            "optimizer_metric": config.optimizer_metric,
+            "optimized_value": round(opt_metric, 4),
+            "n_games_used": len(records),
+            **{f"{name}_weight": round(w, 4) for name, w in opt_weights.items()},
+        }
+        history_df = pd.DataFrame([history_row])
+        if weight_history_path.exists() and weight_history_path.stat().st_size > 0:
+            existing = pd.read_csv(weight_history_path)
+            history_df = pd.concat([existing, history_df], ignore_index=True)
+        history_df.to_csv(weight_history_path, index=False)
+        log.info(f"Weight history appended → {weight_history_path}")
 
     return outputs
 

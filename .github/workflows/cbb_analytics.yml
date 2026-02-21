@@ -326,6 +326,11 @@ jobs:
               print(f"[WARN] Tracker exited {result.returncode} — may be no games yesterday")
           PY
 
+      # ── Build season summaries ────────────────────────────────────────────────
+      - name: Build season summaries
+        continue-on-error: true
+        run: python cbb_season_summaries.py
+
       # ── Read alert count for email subject line ────────────────────────────
       - name: Check for alerts
         id: alerts
@@ -499,6 +504,8 @@ jobs:
               data/results_summary.csv \
               data/results_model_split.csv \
               data/results_alerts.csv \
+              data/player_season_summary.csv \
+              data/team_season_summary.csv \
             --critical-count ${{ steps.alerts.outputs.n_critical || 0 }}
 
       # ── Persist results log as artifact ─────────────────────────────────────
@@ -512,6 +519,8 @@ jobs:
             data/results_summary.csv
             data/results_model_split.csv
             data/results_alerts.csv
+            data/player_season_summary.csv
+            data/team_season_summary.csv
           )
 
           existing=0
@@ -533,6 +542,8 @@ jobs:
             data/results_summary.csv
             data/results_model_split.csv
             data/results_alerts.csv
+            data/player_season_summary.csv
+            data/team_season_summary.csv
           retention-days: 90       # Keep longer — this is your performance history
           if-no-files-found: warn
 
@@ -730,9 +741,9 @@ jobs:
             --body-file /tmp/backtest_email_body.txt \
             --attachments \
               data/backtest_optimized_weights.json \
-              data/model_report.csv \
-              data/backtest_results.csv \
-              data/calibration.csv \
+              data/backtest_model_report_latest.csv \
+              data/backtest_results_latest.csv \
+              data/backtest_calibration_latest.csv \
             --critical-count 0
 
       # ── Upload backtest artifacts ────────────────────────────────────────────
@@ -766,6 +777,7 @@ jobs:
             data/backtest_results_*.csv
             data/backtest_model_report_*.csv
             data/backtest_calibration_*.csv
+            data/model_weight_history.csv
           retention-days: 90
           if-no-files-found: warn
 

@@ -441,7 +441,7 @@ def build_games(days_back: int = DAYS_BACK) -> pd.DataFrame:
 
 # ── Summary pass ──────────────────────────────────────────────────────────────
 
-def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BACK) -> None:
+def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BACK) -> dict:
     """
     For each completed game in the run window, fetch the ESPN summary and
     write team + player rows to their respective CSVs.
@@ -749,6 +749,14 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
 
     _clear_checkpoint()
 
+    return {
+        "games_found":       len(game_ids),
+        "games_parsed":      len(processed),
+        "games_failed":      len(failed),
+        "team_rows_written": len(team_rows),
+        "player_rows_written": len(player_rows),
+    }
+
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
@@ -757,9 +765,37 @@ def run(days_back: int = DAYS_BACK) -> None:
     games_df = build_games(days_back=days_back)
     if games_df.empty:
         log.error("No games from scoreboard — aborting")
+        try:
+            from cbb_pipeline_logger import log_pipeline_run
+            log_pipeline_run(
+                trigger=os.getenv("GITHUB_EVENT_NAME", "unknown"),
+                days_back=days_back,
+                parse_version=PARSE_VERSION,
+                dry_run=DRY_RUN,
+                status="error_no_games",
+            )
+        except Exception as exc:
+            log.warning(f"Pipeline logger failed (non-fatal): {exc}")
         return
-    build_team_and_player_logs(games_df, days_back=days_back)
+    stats = build_team_and_player_logs(games_df, days_back=days_back)
     log.info("=== Run complete ===")
+    try:
+        from cbb_pipeline_logger import log_pipeline_run
+        log_pipeline_run(
+            trigger=os.getenv("GITHUB_EVENT_NAME", "unknown"),
+            days_back=days_back,
+            dates_fetched=len(games_df["date"].astype(str).unique()),
+            games_found=stats.get("games_found", 0),
+            games_parsed=stats.get("games_parsed", 0),
+            games_failed=stats.get("games_failed", 0),
+            team_rows_written=stats.get("team_rows_written", 0),
+            player_rows_written=stats.get("player_rows_written", 0),
+            parse_version=PARSE_VERSION,
+            dry_run=DRY_RUN,
+            status="ok",
+        )
+    except Exception as exc:
+        log.warning(f"Pipeline logger failed (non-fatal): {exc}")
 
 
 if __name__ == "__main__":
