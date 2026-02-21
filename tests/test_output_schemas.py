@@ -125,4 +125,4 @@ def test_completeness_report_handles_empty_dataframe():
 
     row = report.iloc[0]
     assert row["rows"] == 0
-    assert row["null_pct"] == 0.0
+    assert row["null_pct"] is None

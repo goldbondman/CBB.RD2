@@ -12,7 +12,7 @@ Usage:
 """
 
 import logging
-from typing import Dict, List, Optional, Set
+from typing import Dict, List
 
 import pandas as pd
 
@@ -154,8 +154,8 @@ def completeness_report(
             null_pct = round(
                 df[present].isnull().mean().mean() * 100, 2
             )
-        else:
-            null_pct = 0.0 if len(df) == 0 else 100.0
+        elif len(df) == 0 or not present:
+            null_pct = None
 
         rows.append({
             "output": name,
