@@ -34,6 +34,7 @@ from espn_weighted_metrics import compute_weighted_metrics
 from espn_player_metrics import compute_player_metrics
 from espn_tournament import compute_tournament_metrics, build_pretournament_snapshot
 from espn_rankings import run as run_rankings
+from cbb_output_schemas import validate_output
 
 logging.basicConfig(
     level=logging.INFO,
@@ -527,6 +528,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         df_team = _enrich_team_rows_from_scoreboard(df_team, games_df)
         _log_stage_null_rates("team_rows_after_scoreboard_merge", df_team, TARGET_NULL_GUARD_COLUMNS)
         _assert_required_columns(df_team, REQUIRED_TEAM_COLUMNS, "team_rows")
+        validate_output(df_team, "team_game_logs")
         df_all  = _append_dedupe_write(
             OUT_TEAM_LOGS,
             df_team,
@@ -635,6 +637,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         df_players = pd.DataFrame(player_rows)
         _log_player_stage_diagnostics("player_rows:parsed", df_players)
         _assert_required_columns(df_players, REQUIRED_PLAYER_COLUMNS, "player_rows")
+        validate_output(df_players, "player_game_logs")
         df_all_p   = _append_dedupe_write(
             OUT_PLAYER_LOGS,
             df_players,
