@@ -690,7 +690,15 @@ jobs:
             data/backtest_results_*.csv
             data/backtest_model_report_*.csv
             data/backtest_calibration_*.csv
-            data/backtest_optimized_weights.json
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Upload backtest weights artifact
+        if: always() && steps.upload_backtest.outputs.has_backtest_files == '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-backtest-weights-${{ github.run_id }}
+          path: data/backtest_optimized_weights.json
           retention-days: 90
           if-no-files-found: warn
 
