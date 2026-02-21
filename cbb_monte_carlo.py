@@ -740,18 +740,20 @@ def build_game_cards(
     cards["mc_cover_probability"] = merged.get("mc_cover_probability")
     cards["mc_confidence_tier"] = merged.get("mc_confidence_tier")
 
-    # Formatted ranges
-    cards["mc_spread_range"] = merged.apply(
-        lambda r: f"{r.get('mc_spread_p25', ''):.0f} to {r.get('mc_spread_p75', ''):.0f}"
-        if pd.notna(r.get("mc_spread_p25")) and pd.notna(r.get("mc_spread_p75"))
-        else "",
-        axis=1,
+    # Formatted ranges (vectorized)
+    has_spread_range = pd.notna(merged.get("mc_spread_p25")) & pd.notna(merged.get("mc_spread_p75"))
+    cards["mc_spread_range"] = np.where(
+        has_spread_range,
+        merged["mc_spread_p25"].round(0).astype(int).astype(str) + " to " +
+        merged["mc_spread_p75"].round(0).astype(int).astype(str),
+        "",
     )
-    cards["mc_total_range"] = merged.apply(
-        lambda r: f"{r.get('mc_total_p10', ''):.0f} to {r.get('mc_total_p90', ''):.0f}"
-        if pd.notna(r.get("mc_total_p10")) and pd.notna(r.get("mc_total_p90"))
-        else "",
-        axis=1,
+    has_total_range = pd.notna(merged.get("mc_total_p10")) & pd.notna(merged.get("mc_total_p90"))
+    cards["mc_total_range"] = np.where(
+        has_total_range,
+        merged["mc_total_p10"].round(0).astype(int).astype(str) + " to " +
+        merged["mc_total_p90"].round(0).astype(int).astype(str),
+        "",
     )
 
     cards["mc_home_win_pct"] = merged.get("mc_home_win_pct")

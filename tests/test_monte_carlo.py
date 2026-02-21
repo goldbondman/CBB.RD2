@@ -113,11 +113,11 @@ def away_favored_input():
 
 class TestVarianceModel:
     def test_base_std_with_league_avg(self, even_game_input):
-        """With all league-average inputs, should be within reasonable range."""
+        """With all league-average inputs, should produce expected value."""
         std = compute_spread_std(even_game_input, base_std=10.5)
         # Avg consistency=50 → adj=1.25, pace=68 → adj=1.0, suff=50 → adj=1.0
-        # So output ≈ 10.5 * 1.25 ≈ 13.1
-        assert 8.0 < std < 16.0
+        # So output ≈ 10.5 * 1.25 = 13.125
+        assert 12.5 < std < 13.8
 
     def test_low_consistency_increases_variance(self):
         """Low consistency teams should produce higher variance."""

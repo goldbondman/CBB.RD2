@@ -94,13 +94,15 @@ def _choose_confidence_source(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     if _mc_columns_available(df):
         df["confidence_used"] = df["mc_cover_probability"].combine_first(
-            df.get("model_confidence", pd.Series(dtype=float))
+            df.get("model_confidence", pd.Series(index=df.index, dtype=float))
         )
         df["confidence_source"] = df["mc_cover_probability"].apply(
             lambda v: "MC" if pd.notna(v) else "ENSEMBLE"
         )
     else:
-        df["confidence_used"] = df.get("model_confidence", pd.Series(dtype=float))
+        df["confidence_used"] = df.get(
+            "model_confidence", pd.Series(index=df.index, dtype=float)
+        )
         df["confidence_source"] = "ENSEMBLE"
     return df
 
