@@ -136,6 +136,42 @@ def test_validation_treats_string_placeholders_as_nulls():
         _validate_team_log_enrichment(df)
 
 
+def test_append_dedupe_prefers_row_with_more_columns(tmp_path):
+    """When pulled_at_utc and completed tie, prefer the row with more non-null columns."""
+    path = tmp_path / "team_game_metrics.csv"
+    # Existing CSV has fewer columns (simulates old pipeline run without new derived cols)
+    existing = pd.DataFrame([{
+        "event_id": "1", "team_id": "10",
+        "completed": "True",
+        "pulled_at_utc": "2026-01-10T00:00:00+00:00",
+        "ortg": "105.0",
+    }])
+    existing.to_csv(path, index=False)
+
+    # New computation adds extra derived columns
+    new = pd.DataFrame([{
+        "event_id": "1", "team_id": "10",
+        "completed": "True",
+        "pulled_at_utc": "2026-01-10T00:00:00+00:00",
+        "ortg": "105.0",
+        "h1_drtg": "98.0",
+        "record": "10-5",
+        "conf_rank": "3",
+    }])
+    combined = _append_dedupe_write(
+        path,
+        new,
+        unique_keys=["event_id", "team_id"],
+        persist=False,
+    )
+
+    assert len(combined) == 1
+    row = combined.iloc[0]
+    assert row["h1_drtg"] == "98.0", "New derived column should be preserved"
+    assert row["record"] == "10-5", "New derived column should be preserved"
+    assert row["conf_rank"] == "3", "New derived column should be preserved"
+
+
 def test_append_dedupe_write_persist_false_does_not_touch_disk(tmp_path):
     path = tmp_path / "team_game_logs.csv"
     existing = pd.DataFrame([{"event_id": "1", "team_id": "10", "value": "A", "pulled_at_utc": "2026-01-01T00:00:00+00:00"}])

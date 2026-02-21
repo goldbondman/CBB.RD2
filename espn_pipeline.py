@@ -317,7 +317,9 @@ def _append_dedupe_write(
     combined = pd.concat([existing, new_df.astype(str)], ignore_index=True)
 
     if unique_keys:
-        # Score rows: prefer completed=True, then newest pulled_at_utc
+        # Score rows: prefer completed=True, then newest pulled_at_utc,
+        # then most non-null columns (so freshly computed rows with new
+        # derived columns beat stale rows from an older CSV).
         if "completed" in combined.columns:
             combined["_completed_int"] = (
                 combined["completed"].str.lower().isin(["true", "1", "yes"])
@@ -332,11 +334,15 @@ def _append_dedupe_write(
         else:
             combined["_pulled_ts"] = 0
 
+        combined["_non_null_count"] = combined.notna().sum(axis=1)
+
         combined = (
             combined
-            .sort_values(["_completed_int", "_pulled_ts"], ascending=[False, False])
+            .sort_values(["_completed_int", "_pulled_ts", "_non_null_count"],
+                         ascending=[False, False, False])
             .drop_duplicates(subset=unique_keys, keep="first")
-            .drop(columns=["_completed_int", "_pulled_ts"], errors="ignore")
+            .drop(columns=["_completed_int", "_pulled_ts", "_non_null_count"],
+                  errors="ignore")
         )
 
     if sort_cols:
