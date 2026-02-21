@@ -836,15 +836,15 @@ class ResultsTracker:
 
         # Ensure all required merge columns exist in results (fill missing
         # with NaN so the column selection never raises KeyError).
-        _merge_cols = ["game_id", "home_score", "away_score", "actual_margin",
-                       "actual_total", "home_won", "spread", "over_under",
-                       "home_ml", "away_ml", "game_datetime_utc", "neutral_site"]
-        for col in _merge_cols:
+        merge_cols = ["game_id", "home_score", "away_score", "actual_margin",
+                     "actual_total", "home_won", "spread", "over_under",
+                     "home_ml", "away_ml", "game_datetime_utc", "neutral_site"]
+        for col in merge_cols:
             if col not in results.columns:
                 results[col] = np.nan
 
         matched = preds.merge(
-            results[_merge_cols],
+            results[merge_cols],
             on="game_id",
             how="inner",
             suffixes=("_pred","_result"),

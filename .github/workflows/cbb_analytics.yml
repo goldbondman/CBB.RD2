@@ -242,7 +242,8 @@ jobs:
               check=False,
           )
           if result.returncode != 0:
-              print(f"[WARN] Primary prediction generation exited {result.returncode}")
+              print(f"[WARN] Primary prediction generation exited {result.returncode} — "
+                    f"check espn_prediction_runner.py logs for details")
 
           # Attempt ensemble (optional — may fail if profiles/rankings unavailable)
           subprocess.run([sys.executable, "cbb_ensemble.py"], check=False)
