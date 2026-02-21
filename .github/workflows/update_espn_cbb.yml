@@ -203,6 +203,13 @@ jobs:
           print(f"\n[OK] Audit saved to {out}")
           PY
 
+      - name: Reconcile ESPN field names
+        if: always()
+        continue-on-error: true
+        run: |
+          python field_reconciler.py \
+            --audit-path data/espn_api_field_audit.json
+
       # ── Tournament metrics ────────────────────────────────────────────────
       # Safety net: espn_pipeline.py now calls this inline, but we run it
       # here too so the YML is self-contained if pipeline is run standalone.
@@ -341,6 +348,12 @@ jobs:
         if: always()
         run: ls -lh data/*.csv 2>/dev/null || echo "No CSVs found"
 
+      - name: Check for silent empty columns
+        if: always()
+        continue-on-error: true
+        run: |
+          python field_reconciler.py --check-outputs --fix-duplicates
+
       - name: Upload ESPN CSVs (for downstream predictions)
         uses: actions/upload-artifact@v4
         with:
@@ -363,7 +376,17 @@ jobs:
             data/player_condition_profiles.csv
             data/player_archetype_matchup_matrix.csv
             data/espn_api_field_audit.json
+            data/field_drift_report.json
+            data/field_drift_report.md
             data/pipeline_run_log.csv
+            data/csv/backtest_summary.csv
+            data/csv/backtest_by_model.csv
+            data/csv/backtest_weekly.csv
+            data/csv/backtest_by_conference.csv
+            data/csv/backtest_calibration.csv
+            data/csv/backtest_by_edge.csv
+            data/csv/backtest_model_matrix.csv
+            data/results_log_graded.csv
           retention-days: 30
           if-no-files-found: warn
 

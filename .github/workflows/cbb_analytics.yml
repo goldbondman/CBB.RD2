@@ -213,6 +213,10 @@ jobs:
         if: steps.artifact_check.outputs.espn_csvs != 'true'
         run: python espn_pipeline.py --days-back 7
 
+      - name: Verify player metrics completeness
+        continue-on-error: true
+        run: python field_reconciler.py --check-outputs
+
       - name: Download previous results log
         if: steps.artifact_check.outputs.results_log == 'true'
         uses: actions/download-artifact@v4
@@ -596,6 +600,14 @@ jobs:
           else
             echo "[FAIL] Missing game log inputs. Expected data/team_game_weighted.csv or data/team_game_metrics.csv"
             exit 1
+          fi
+
+      # ── Ensure graded results log exists ────────────────────────────────────
+      - name: Ensure graded results log exists
+        run: |
+          if [ ! -f data/results_log_graded.csv ]; then
+            echo "[WARN] Graded log not found — building from results_log.csv"
+            python build_backtest_csvs.py --section grade-only
           fi
 
       # ── Run backtester ───────────────────────────────────────────────────────

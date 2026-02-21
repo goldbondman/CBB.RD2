@@ -651,7 +651,7 @@ jobs:
           print("\n[OK] Validation complete")
           PY
 
-      # ── 10. Display summary ─────────────────────────────────────────────────
+      # ── 11. Display summary ─────────────────────────────────────────────────
       - name: Display prediction summary
         if: always()
         run: |
@@ -690,7 +690,7 @@ jobs:
               break
           PY
 
-      # ── 11. Upload artifacts ────────────────────────────────────────────────
+      # ── 12. Upload artifacts ────────────────────────────────────────────────
       - name: Upload prediction artifacts (run-stamped)
         if: always()
         uses: actions/upload-artifact@v4
@@ -728,12 +728,12 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      # ── 12. Copy CSVs to data/csv/ and commit back to repo ────────────────────
+      # ── 13. Copy CSVs to data/csv/ and commit back to repo ────────────────────
       - name: Copy CSVs to data/csv/
         if: success()
         run: |
           mkdir -p data/csv
-          for f in data/predictions_latest.csv data/predictions_combined_latest.csv data/ensemble_predictions_latest.csv; do
+          for f in data/predictions_latest.csv data/predictions_combined_latest.csv data/ensemble_predictions_latest.csv data/predictions_mc_latest.csv; do
             [ -f "$f" ] && cp "$f" data/csv/ && echo "Copied $f" || echo "Skipped $f (not found)"
           done
 

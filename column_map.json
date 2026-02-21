@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-02-21T20:48:00Z",
+  "player_stats": {
+    "espn_labels": {
+      "min":                  {"pipeline_col": "min",        "aliases": ["MIN", "minutes", "Minutes"]},
+      "fg":                   {"pipeline_col": null,         "aliases": ["FG", "fieldgoals"],
+                               "note": "combined FGM-A string, split into fgm+fga"},
+      "fgm-a":                {"pipeline_col": null,         "aliases": ["FGM-A", "fg"],
+                               "note": "split on '-' to get fgm and fga"},
+      "fieldgoalsmade":       {"pipeline_col": "fgm",        "aliases": ["FGM", "fgm"]},
+      "fieldgoalsattempted":  {"pipeline_col": "fga",        "aliases": ["FGA", "fga"]},
+      "3pt":                  {"pipeline_col": null,         "aliases": ["3PT", "3-pt", "threepointers"],
+                               "note": "combined TPM-A string"},
+      "threepointsmade":      {"pipeline_col": "tpm",        "aliases": ["TPM", "3pm"]},
+      "threepointsattempted":  {"pipeline_col": "tpa",       "aliases": ["TPA", "3pa"]},
+      "ft":                   {"pipeline_col": null,         "aliases": ["FT", "freethrows"],
+                               "note": "combined FTM-A string"},
+      "freethrowsmade":       {"pipeline_col": "ftm",        "aliases": ["FTM"]},
+      "freethrowsattempted":  {"pipeline_col": "fta",        "aliases": ["FTA"]},
+      "oreb":                 {"pipeline_col": "orb",        "aliases": ["OR", "ORB", "offensiverebounds", "oreb"]},
+      "dreb":                 {"pipeline_col": "drb",        "aliases": ["DR", "DRB", "defensiverebounds", "dreb"]},
+      "reb":                  {"pipeline_col": "reb",        "aliases": ["REB", "TR", "rebounds", "totalrebounds"]},
+      "ast":                  {"pipeline_col": "ast",        "aliases": ["AST", "A", "assists"]},
+      "stl":                  {"pipeline_col": "stl",        "aliases": ["STL", "S", "steals"]},
+      "blk":                  {"pipeline_col": "blk",        "aliases": ["BLK", "B", "blocks"]},
+      "to":                   {"pipeline_col": "tov",        "aliases": ["TOV", "TO", "turnovers"]},
+      "pf":                   {"pipeline_col": "pf",         "aliases": ["PF", "fouls", "personalfouls"]},
+      "pts":                  {"pipeline_col": "pts",        "aliases": ["PTS", "points"]},
+      "+/-":                  {"pipeline_col": "plus_minus", "aliases": ["PM", "plusminus", "+/-"]}
+    },
+    "split_fields": {
+      "fg":    {"delimiter": "-", "output_cols": ["fgm", "fga"]},
+      "fgm-a": {"delimiter": "-", "output_cols": ["fgm", "fga"]},
+      "3pt":   {"delimiter": "-", "output_cols": ["tpm", "tpa"]},
+      "3pm-a": {"delimiter": "-", "output_cols": ["tpm", "tpa"]},
+      "ft":    {"delimiter": "-", "output_cols": ["ftm", "fta"]},
+      "ftm-a": {"delimiter": "-", "output_cols": ["ftm", "fta"]}
+    }
+  },
+  "team_stats": {
+    "espn_labels": {
+      "fieldgoals":          {"pipeline_col": "fgm",  "is_made_attempted": true},
+      "threepointers":       {"pipeline_col": "tpm",  "is_made_attempted": true},
+      "freethrows":          {"pipeline_col": "ftm",  "is_made_attempted": true},
+      "offensiverebounds":   {"pipeline_col": "orb",  "aliases": ["OREB", "oreb"]},
+      "defensiverebounds":   {"pipeline_col": "drb",  "aliases": ["DREB", "dreb"]},
+      "totalrebounds":       {"pipeline_col": "reb",  "aliases": ["REB"]},
+      "assists":             {"pipeline_col": "ast",  "aliases": ["AST"]},
+      "steals":              {"pipeline_col": "stl",  "aliases": ["STL"]},
+      "blocks":              {"pipeline_col": "blk",  "aliases": ["BLK"]},
+      "turnovers":           {"pipeline_col": "tov",  "aliases": ["TO", "TOV"]},
+      "fouls":               {"pipeline_col": "pf",   "aliases": ["PF"]},
+      "points":              {"pipeline_col": "pts",  "aliases": ["PTS"]}
+    }
+  },
+  "pipeline_required_cols": {
+    "player": ["min", "pts", "fgm", "fga", "tpm", "tpa", "ftm", "fta", "orb", "drb", "reb", "ast", "stl", "blk", "tov", "pf", "plus_minus"],
+    "team":   ["pts", "fgm", "fga", "tpm", "tpa", "ftm", "fta", "orb", "drb", "reb", "ast", "stl", "blk", "tov", "pf"]
+  }
+}
