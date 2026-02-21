@@ -115,6 +115,27 @@ jobs:
           python -m pip install -U pip
           python -m pip install -r requirements.txt
 
+      - name: Verify runtime Python deps
+        run: |
+          python - <<'PY'
+          import importlib.util
+          import subprocess
+          import sys
+
+          required = ["pandas", "numpy", "scipy", "requests"]
+          missing = [pkg for pkg in required if importlib.util.find_spec(pkg) is None]
+
+          if missing:
+              print(f"[WARN] Missing packages after requirements install: {missing}")
+              subprocess.run([sys.executable, "-m", "pip", "install", *missing], check=True)
+
+          for pkg in required:
+              if importlib.util.find_spec(pkg) is None:
+                  raise SystemExit(f"[FAIL] Required package still missing: {pkg}")
+
+          print("[OK] Runtime dependencies available")
+          PY
+
       # ── 4. Ensure required data exists (fallback build) ─────────────────────
       # Only needed for workflow_dispatch. workflow_run already has exact artifact.
       - name: Ensure required pipeline outputs exist (fallback build)
