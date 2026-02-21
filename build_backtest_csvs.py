@@ -88,6 +88,10 @@ MIN_SAMPLE_MODEL   = 15
 MIN_SAMPLE_CONF    = 10
 MIN_SAMPLE_WEEKLY  = 5
 MIN_SAMPLE_MATRIX  = 10
+PUSH_THRESHOLD     = 0.1
+CALIBRATION_TOLERANCE = 0.03
+MODEL_COMPARISON_EVEN_THRESHOLD = 0.02
+MIN_NUMERIC_RATIO  = 0.5
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -204,7 +208,7 @@ def grade_prediction(row: pd.Series) -> dict:
         ats_result  = "NO_LINE"
     else:
         diff = row["actual_spread"] - row["spread_line"]
-        if abs(diff) < 0.1:
+        if abs(diff) < PUSH_THRESHOLD:
             ats_correct = None
             ats_result  = "PUSH"
         elif row["pred_spread"] < row["spread_line"]:
@@ -224,7 +228,7 @@ def grade_prediction(row: pd.Series) -> dict:
     else:
         total_pick = "OVER" if row["pred_total"] > row["total_line"] else "UNDER"
         total_diff = row["actual_total"] - row["total_line"]
-        if abs(total_diff) < 0.1:
+        if abs(total_diff) < PUSH_THRESHOLD:
             ou_correct = None
             ou_result  = "PUSH"
         elif total_pick == "OVER":
@@ -721,7 +725,7 @@ def build_calibration(df: pd.DataFrame) -> pd.DataFrame:
         ats_pct = float((ats_g["ats_result"] == "WIN").mean())
         cal_error = round(ats_pct - midpoint, 4)
 
-        if abs(cal_error) <= 0.03:
+        if abs(cal_error) <= CALIBRATION_TOLERANCE:
             cal_status = "WELL_CALIBRATED"
         elif cal_error < 0:
             cal_status = "OVERCONFIDENT"
@@ -849,7 +853,7 @@ def build_model_matrix(df: pd.DataFrame) -> pd.DataFrame:
             if n_disagree >= MIN_SAMPLE_MATRIX:
                 a_wins = round(float((ma_picks[disagree_mask] == "WIN").mean()), 4)
                 b_wins = round(float((mb_picks[disagree_mask] == "WIN").mean()), 4)
-                if abs(a_wins - b_wins) < 0.02:
+                if abs(a_wins - b_wins) < MODEL_COMPARISON_EVEN_THRESHOLD:
                     better = "EVEN"
                 elif a_wins > b_wins:
                     better = "A"
@@ -903,7 +907,7 @@ def validate_results_log(df: pd.DataFrame) -> bool:
     for col in ["pred_spread", "actual_spread"]:
         if col in df.columns:
             nonnull = pd.to_numeric(df[col], errors="coerce").notna().sum()
-            if nonnull < len(df) * 0.5:
+            if nonnull < len(df) * MIN_NUMERIC_RATIO:
                 print(f"[WARN] {col}: only {nonnull}/{len(df)} numeric values")
 
     if ok:
