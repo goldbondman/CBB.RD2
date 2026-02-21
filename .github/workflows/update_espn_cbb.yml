@@ -82,6 +82,127 @@ jobs:
         env:
           DAYS_BACK: ${{ github.event.inputs.days_back || '3' }}
 
+      # ── Audit ESPN API field names ────────────────────────────────────────────
+      - name: Audit ESPN API stat headers
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+
+          KNOWN_TEAM_LABELS = {
+              "oreb", "offensiverebounds", "dreb", "defensiverebounds",
+              "reb", "rebounds", "totalrebounds",
+              "ast", "assists", "to", "turnovers",
+              "stl", "steals", "blk", "blocks",
+              "pf", "fouls",
+          }
+          KNOWN_SHOOTING_KEYWORDS = ["goal", "throw", "three"]
+
+          KNOWN_PLAYER_LABELS = {
+              "min", "minutes", "pts", "points",
+              "fg", "fgm-a", "field goals", "fieldgoals", "fieldgoalsmade", "fgma",
+              "3pt", "3p", "3-pt", "3pm-a", "three pointers",
+              "threepointers", "threepointsmade", "3ptma", "3fgma",
+              "ft", "ftm-a", "free throws", "freethrows", "freethrowsmade", "ftma",
+              "oreb", "or", "offensive rebounds",
+              "dreb", "dr", "defensive rebounds",
+              "reb", "tr", "rebounds", "total rebounds",
+              "ast", "a", "assists",
+              "stl", "s", "steals",
+              "blk", "b", "blocks",
+              "to", "tov", "turnovers",
+              "pf", "fouls", "personal fouls",
+              "pm", "+/-", "plusminus",
+          }
+
+          raw_dir = pathlib.Path("data/raw_json")
+          json_files = sorted(raw_dir.glob("*.json")) if raw_dir.exists() else []
+
+          if not json_files:
+              print("[SKIP] No raw JSON files found in data/raw_json/ — skipping audit")
+              sys.exit(0)
+
+          # Use the most recent JSON file
+          sample_file = json_files[-1]
+          print(f"[INFO] Auditing: {sample_file.name}")
+          raw = json.loads(sample_file.read_text())
+
+          audit = {
+              "source_file": sample_file.name,
+              "team_stat_labels": [],
+              "player_stat_labels": [],
+              "unmapped_team_labels": [],
+              "unmapped_player_labels": [],
+          }
+
+          boxscore = raw.get("boxscore", {})
+
+          # ── Team stat labels ──
+          seen_team = {}
+          for t in boxscore.get("teams", []):
+              team_name = t.get("team", {}).get("displayName", "?")
+              for s in t.get("statistics", []):
+                  name  = s.get("name", "")
+                  abbr  = s.get("abbreviation", "")
+                  dv    = s.get("displayValue", "")
+                  label = abbr.lower().replace(" ", "_") if abbr else name.lower().replace(" ", "_")
+                  entry = {"name": name, "abbreviation": abbr, "displayValue": dv, "team": team_name}
+                  seen_team[label] = entry
+
+          audit["team_stat_labels"] = list(seen_team.values())
+
+          for label, entry in seen_team.items():
+              name_lc = entry["name"].lower()
+              is_shooting = any(x in name_lc for x in KNOWN_SHOOTING_KEYWORDS)
+              if not is_shooting and label not in KNOWN_TEAM_LABELS:
+                  audit["unmapped_team_labels"].append(entry)
+
+          # ── Player stat labels ──
+          seen_player = {}
+          for team_block in boxscore.get("players", []):
+              for pg in team_block.get("statistics", []):
+                  raw_keys = list(pg.get("keys") or pg.get("labels") or pg.get("names") or [])
+                  for k in raw_keys:
+                      k_lower = str(k).strip().lower()
+                      seen_player[k_lower] = k  # raw label → original casing
+
+          audit["player_stat_labels"] = [
+              {"raw": orig, "lower": k_lower}
+              for k_lower, orig in seen_player.items()
+          ]
+
+          for k_lower, orig in seen_player.items():
+              if k_lower not in KNOWN_PLAYER_LABELS:
+                  audit["unmapped_player_labels"].append({"raw": orig, "lower": k_lower})
+
+          # ── Print results ──
+          print("\n═══ TEAM STAT LABELS FROM ESPN ════════════════════════")
+          for e in audit["team_stat_labels"]:
+              print(f"  name={e['name']!r:45s}  abbreviation={e['abbreviation']!r:10s}  sample={e['displayValue']!r}")
+
+          print("\n═══ PLAYER STAT LABELS FROM ESPN ══════════════════════")
+          for e in audit["player_stat_labels"]:
+              print(f"  raw={e['raw']!r}")
+
+          if audit["unmapped_team_labels"]:
+              print("\n⚠️  UNMAPPED TEAM LABELS (not in col_map):")
+              for e in audit["unmapped_team_labels"]:
+                  print(f"  name={e['name']!r}  abbreviation={e['abbreviation']!r}")
+          else:
+              print("\n[OK] All team stat labels are accounted for.")
+
+          if audit["unmapped_player_labels"]:
+              print("\n⚠️  UNMAPPED PLAYER LABELS (not in PLAYER_STAT_MAP):")
+              for e in audit["unmapped_player_labels"]:
+                  print(f"  {e['raw']!r}")
+          else:
+              print("[OK] All player stat labels are accounted for.")
+
+          out = pathlib.Path("data/espn_api_field_audit.json")
+          out.write_text(json.dumps(audit, indent=2))
+          print(f"\n[OK] Audit saved to {out}")
+          PY
+
       # ── Tournament metrics ────────────────────────────────────────────────
       # Safety net: espn_pipeline.py now calls this inline, but we run it
       # here too so the YML is self-contained if pipeline is run standalone.
@@ -234,6 +355,7 @@ jobs:
             data/player_injury_proxy.csv
             data/team_injury_impact.csv
             data/team_form_snapshot.csv
+            data/espn_api_field_audit.json
           retention-days: 30
           if-no-files-found: warn
 
