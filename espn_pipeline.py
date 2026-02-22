@@ -375,6 +375,21 @@ def _append_dedupe_write(
             combined.loc[mask, col] = pd.NA
 
     if unique_keys:
+        odds_cols = [
+            c for c in ["spread", "over_under", "home_ml", "away_ml", "odds_provider", "odds_details"]
+            if c in combined.columns
+        ]
+
+        # Preserve best-known odds across state transitions (pre -> in/final).
+        # ESPN often removes odds once games go live/final, so we must not
+        # overwrite previously captured lines with nulls.
+        if odds_cols:
+            for col in odds_cols:
+                grp_non_null = combined.groupby(unique_keys, dropna=False)[col].transform(
+                    lambda s: s.dropna().iloc[0] if not s.dropna().empty else pd.NA
+                )
+                combined[col] = combined[col].fillna(grp_non_null)
+
         # Score rows: prefer completed=True, then newest pulled_at_utc
         if "completed" in combined.columns:
             combined["_completed_int"] = (
