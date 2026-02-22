@@ -68,6 +68,7 @@ TZ = ZoneInfo("America/Los_Angeles")
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 DATA_DIR         = Path("data")
+DATA_CSV_DIR     = DATA_DIR / "csv"
 PREDICTIONS_CSV  = DATA_DIR / "predictions_combined_latest.csv"
 ENSEMBLE_CSV     = DATA_DIR / "ensemble_predictions_latest.csv"
 PRIMARY_CSV      = DATA_DIR / "predictions_latest.csv"
@@ -76,6 +77,19 @@ RESULTS_LOG      = DATA_DIR / "results_log.csv"
 RESULTS_SUMMARY  = DATA_DIR / "results_summary.csv"
 RESULTS_ALERTS   = DATA_DIR / "results_alerts.csv"
 MODEL_SPLIT_CSV  = DATA_DIR / "results_model_split.csv"
+
+
+def _resolve_data_path(primary: Path) -> Path:
+    """Resolve files that may live under data/ or data/csv/."""
+    if primary.exists():
+        return primary
+
+    fallback = DATA_CSV_DIR / primary.name
+    if fallback.exists():
+        log.info(f"Using fallback data path: {fallback}")
+        return fallback
+
+    return primary
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 VIG_BREAK_EVEN  = 52.38
@@ -274,11 +288,12 @@ def load_games_results(game_ids: Optional[List[str]] = None) -> pd.DataFrame:
     Load completed game results from games.csv.
     Returns only completed games with final scores.
     """
-    if not GAMES_CSV.exists():
+    games_path = _resolve_data_path(GAMES_CSV)
+    if not games_path.exists():
         log.error("games.csv not found — cannot match results")
         return pd.DataFrame()
 
-    df = pd.read_csv(GAMES_CSV, dtype=str, low_memory=False)
+    df = pd.read_csv(games_path, dtype=str, low_memory=False)
     df["game_datetime_utc"] = pd.to_datetime(
         df.get("game_datetime_utc", pd.NaT), utc=True, errors="coerce"
     )
