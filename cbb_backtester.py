@@ -69,9 +69,23 @@ logging.basicConfig(
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 DATA_DIR     = Path("data")
+DATA_CSV_DIR = DATA_DIR / "csv"
 WEIGHTED_CSV = DATA_DIR / "team_game_weighted.csv"
 METRICS_CSV  = DATA_DIR / "team_game_metrics.csv"
 GAMES_CSV    = DATA_DIR / "games.csv"
+
+
+def _resolve_data_path(primary: Path) -> Path:
+    """Resolve files that may live under data/ or data/csv/."""
+    if primary.exists():
+        return primary
+
+    fallback = DATA_CSV_DIR / primary.name
+    if fallback.exists():
+        log.info(f"Using fallback data path: {fallback}")
+        return fallback
+
+    return primary
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 LEAGUE_AVG_ORTG = 103.0
@@ -228,7 +242,7 @@ def load_game_log() -> pd.DataFrame:
     falls back to team_game_metrics.
     Returns sorted by team_id, game_datetime_utc.
     """
-    for path in [WEIGHTED_CSV, METRICS_CSV]:
+    for path in [_resolve_data_path(WEIGHTED_CSV), _resolve_data_path(METRICS_CSV)]:
         if path.exists() and path.stat().st_size > 100:
             log.info(f"Loading game log: {path.name}")
             df = pd.read_csv(path, dtype=str, low_memory=False)
@@ -924,6 +938,7 @@ class BacktestEngine:
         Join market spread / over-under from games.csv onto backtest records.
         Many historical games won't have lines — that's expected.
         """
+        games_csv_path = _resolve_data_path(games_csv_path)
         if not games_csv_path.exists():
             log.warning("games.csv not found — skipping market line attachment")
             return records
