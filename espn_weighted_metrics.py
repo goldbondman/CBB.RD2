@@ -209,6 +209,7 @@ def add_weighted_rolling(df: pd.DataFrame,
     df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True,
                                     errors="coerce")
     df = df.sort_values(["team_id", "_sort_dt"])
+    df.reset_index(drop=True, inplace=True)
 
     # ── Weight columns ──
     df = _build_weights(df)
@@ -218,6 +219,17 @@ def add_weighted_rolling(df: pd.DataFrame,
         (DEF_METRICS,  "_w_def",  "wtd_def"),
         (QUAL_METRICS, "_w_qual", "wtd_qual"),
     ]
+
+    # Check for missing source columns once (not per window)
+    for metric_list, weight_col, suffix in metric_groups:
+        missing_src = [m for m in metric_list if m not in df.columns]
+        if missing_src:
+            log.warning(f"Weighted rolling source columns missing ({suffix}) — will be skipped: {missing_src}")
+
+    # Ensure perf_vs_exp columns are numeric before rolling
+    for pve_col in ["perf_vs_exp_ortg", "perf_vs_exp_def", "perf_vs_exp_net"]:
+        if pve_col in df.columns:
+            df[pve_col] = pd.to_numeric(df[pve_col], errors="coerce")
 
     for window in windows:
         for metric_list, weight_col, suffix in metric_groups:
@@ -275,6 +287,16 @@ def add_weighted_rolling(df: pd.DataFrame,
     # Drop internal weight columns
     df = df.drop(columns=["_w_off", "_w_def", "_w_qual", "_sort_dt"],
                  errors="ignore")
+
+    # ── Diagnostic logging ──
+    l5_cols = [c for c in df.columns if c.endswith("_l5")]
+    l10_cols = [c for c in df.columns if c.endswith("_l10")]
+    log.info(f"Weighted rolling columns produced: {len(l5_cols)} L5, {len(l10_cols)} L10")
+    if l5_cols:
+        null_pct = df[l5_cols].isna().mean().mean() * 100
+        log.info(f"Weighted rolling columns null rate: {null_pct:.1f}%")
+    else:
+        log.warning("NO L5/L10 WEIGHTED ROLLING COLUMNS WERE PRODUCED — check sort and groupby")
 
     log.info(f"Weighted rolling metrics complete — "
              f"{len([c for c in df.columns if 'wtd' in c])} weighted columns added")
