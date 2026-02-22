@@ -36,6 +36,7 @@ from espn_player_metrics import compute_player_metrics
 from espn_tournament import compute_tournament_metrics, build_pretournament_snapshot
 from espn_rankings import run as run_rankings
 from cbb_output_schemas import validate_output
+from pipeline_csv_utils import safe_write_csv
 
 logging.basicConfig(
     level=logging.INFO,
@@ -406,7 +407,7 @@ def _append_dedupe_write(
             path.parent.mkdir(parents=True, exist_ok=True)
             # Atomic write via temp file
             tmp = path.with_suffix(".tmp")
-            combined.to_csv(tmp, index=False)
+            safe_write_csv(combined, tmp, label=str(path), allow_empty=True)
             tmp.replace(path)
         else:
             log.info(f"[DRY RUN] Would write {len(combined)} rows → {path}")
@@ -759,7 +760,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
                 "FGA", "FGM", "FTA", "FTM", "TPA", "TPM", "ORB", "DRB", "RB", "TO", "AST",
             ])
             OUT_PLAYER_LOGS.parent.mkdir(parents=True, exist_ok=True)
-            empty_player_logs.to_csv(OUT_PLAYER_LOGS, index=False)
+            safe_write_csv(empty_player_logs, OUT_PLAYER_LOGS, label="player_game_logs", allow_empty=True)
             log.info("player_game_logs.csv: 0 total rows")
 
         if not OUT_PLAYER_METRICS.exists():
@@ -772,7 +773,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
                 "FGA", "FGM", "FTA", "FTM", "TPA", "TPM", "ORB", "DRB", "RB", "TO", "AST",
             ])
             OUT_PLAYER_METRICS.parent.mkdir(parents=True, exist_ok=True)
-            empty_player_metrics.to_csv(OUT_PLAYER_METRICS, index=False)
+            safe_write_csv(empty_player_metrics, OUT_PLAYER_METRICS, label="player_game_metrics", allow_empty=True)
             log.info("player_game_metrics.csv: 0 total rows")
 
     # ── Reconciliation report ──

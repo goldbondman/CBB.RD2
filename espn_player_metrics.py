@@ -31,6 +31,7 @@ import numpy as np
 import pandas as pd
 
 from espn_config import OUT_PLAYER_ROLLING_L5, OUT_PLAYER_ROLE_SPLITS
+from pipeline_csv_utils import safe_write_csv
 
 log = logging.getLogger(__name__)
 
@@ -431,7 +432,7 @@ def add_role_split_metrics(df: pd.DataFrame) -> pd.DataFrame:
                                     errors="coerce")
     df = df.sort_values(["athlete_id", "_sort_dt"])
 
-    starter_flag = df["starter"].astype(bool)
+    starter_flag = _to_bool_series(df["starter"])
 
     for metric in ["pts", "min", "efg_pct", "usage_rate"]:
         if metric not in df.columns:
@@ -471,25 +472,21 @@ def _validate_player_metric_integrity(df: pd.DataFrame,
     if df.empty:
         return
 
-    completed_mask_df = (
-        df["completed"].astype(str).str.lower().isin(["true", "1", "yes"])
-        if "completed" in df.columns
-        else pd.Series([False] * len(df), index=df.index)
-    )
-    completed_mask_raw = (
-        raw_df["completed"].astype(str).str.lower().isin(["true", "1", "yes"])
-        if raw_df is not None and "completed" in raw_df.columns
-        else pd.Series([False] * len(raw_df), index=raw_df.index)
-        if raw_df is not None
-        else pd.Series([False] * len(df), index=df.index)
-    )
-    if not completed_mask_df.any():
-            return
+    def _completed_mask(input_df: pd.DataFrame) -> pd.Series:
+        if "completed" not in input_df.columns:
+            return pd.Series(True, index=input_df.index)
+        return input_df["completed"].astype(str).str.lower().isin(["true", "1", "yes"])
 
-    completed_df = df[completed_mask_df]
-    completed_raw_df = (raw_df[completed_mask_raw]
-                        if raw_df is not None and len(raw_df) == len(df)
-                        else completed_df)
+    completed_mask = _completed_mask(df)
+    if not completed_mask.any():
+        return
+
+    completed_df = df[completed_mask]
+    completed_raw_df = completed_df
+    if raw_df is not None:
+        raw_completed_mask = _completed_mask(raw_df)
+        if raw_completed_mask.any():
+            completed_raw_df = raw_df[raw_completed_mask]
     errors = []
 
     for col, threshold in RAW_GUARDRAIL_THRESHOLDS.items():
@@ -540,7 +537,7 @@ def _write_player_splits(df: pd.DataFrame) -> None:
         l5_cols = [c for c in df.columns if c.endswith("_l5")]
         if l5_cols:
             out = df[id_cols + l5_cols].copy()
-            out.to_csv(OUT_PLAYER_ROLLING_L5, index=False)
+            safe_write_csv(out, OUT_PLAYER_ROLLING_L5, label="player_rolling_l5")
             log.info(f"player_rolling_l5.csv: {len(out)} rows, {len(l5_cols)} L5 columns")
     except Exception as exc:
         log.warning(f"player_rolling_l5.csv write failed (non-fatal): {exc}")
@@ -557,7 +554,7 @@ def _write_player_splits(df: pd.DataFrame) -> None:
         present_role = [c for c in role_cols if c in df.columns]
         if present_role:
             out = df[id_cols + present_role].copy()
-            out.to_csv(OUT_PLAYER_ROLE_SPLITS, index=False)
+            safe_write_csv(out, OUT_PLAYER_ROLE_SPLITS, label="player_role_splits")
             log.info(f"player_role_splits.csv: {len(out)} rows")
     except Exception as exc:
         log.warning(f"player_role_splits.csv write failed (non-fatal): {exc}")
