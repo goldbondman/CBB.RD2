@@ -52,6 +52,12 @@ on:
         default: "false"
         type: choice
         options: ["true", "false"]
+      update_schema:
+        description: "Rebuild schema registry from current outputs"
+        required: false
+        default: "false"
+        type: choice
+        options: ["true", "false"]
 
 permissions:
   contents: write
@@ -218,6 +224,10 @@ jobs:
 
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
+
+      - name: Update schema registry
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.update_schema == 'true'
+        run: python build_schema_registry.py
 
       - name: Run ESPN pipeline (bootstrap data when artifact missing)
         if: steps.artifact_check.outputs.espn_csvs != 'true'
@@ -521,6 +531,10 @@ jobs:
               data/player_season_summary.csv \
               data/team_season_summary.csv \
             --critical-count ${{ steps.alerts.outputs.n_critical || 0 }}
+
+      - name: Check schema drift
+        run: python check_schema_drift.py
+        continue-on-error: true
 
       # ── Persist results log as artifact ─────────────────────────────────────
       - name: Check results files for artifact upload
