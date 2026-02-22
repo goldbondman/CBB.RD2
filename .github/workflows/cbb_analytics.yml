@@ -118,6 +118,9 @@ jobs:
   # ════════════════════════════════════════════════════════════════════════════
   results_tracker:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     needs: setup
     if: needs.setup.outputs.run_tracker == 'true'
 
@@ -125,8 +128,17 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Ensure data directory exists
-        run: mkdir -p data
+      - name: Ensure data directories exist and are git-tracked
+        run: |
+          mkdir -p data/csv
+          mkdir -p data/raw_json
+          touch data/csv/.gitkeep
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add data/csv/.gitkeep 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check artifact availability
         id: artifact_check
@@ -555,6 +567,34 @@ jobs:
         if: always() && steps.upload_results.outputs.has_results_files != '1'
         run: echo "[INFO] No results files found; skipping upload for this run."
 
+      - name: Commit results tracker CSVs to repository
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git pull origin main --rebase --autostash || true
+
+          git add \
+            data/results_log.csv \
+            data/results_summary.csv \
+            data/results_model_split.csv \
+            data/results_alerts.csv \
+            data/results_log_graded.csv \
+            data/player_season_summary.csv \
+            data/team_season_summary.csv \
+            2>/dev/null || true
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No results tracker changes to commit"
+          else
+            git commit -m "tracker: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
+            git push origin main
+            echo "[OK] Results tracker CSVs committed to repository"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 2 — BACKTESTER
   # Full historical replay + weight optimization.
@@ -562,6 +602,9 @@ jobs:
   # ════════════════════════════════════════════════════════════════════════════
   backtester:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     needs: setup
     if: needs.setup.outputs.run_backtest == 'true'
 
@@ -569,8 +612,17 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Ensure data directory exists
-        run: mkdir -p data
+      - name: Ensure data directories exist and are git-tracked
+        run: |
+          mkdir -p data/csv
+          mkdir -p data/raw_json
+          touch data/csv/.gitkeep
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add data/csv/.gitkeep 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -805,3 +857,34 @@ jobs:
       - name: Skip backtest artifact upload (no files generated)
         if: always() && steps.upload_backtest.outputs.has_backtest_files != '1'
         run: echo "[INFO] No backtest artifacts found; skipping upload for this run."
+
+      - name: Commit optimized weights to repository
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git pull origin main --rebase --autostash || true
+
+          git add \
+            backtest_optimized_weights.json \
+            backtest_weights_history.csv \
+            data/weight_optimization_report.md \
+            2>/dev/null || true
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] Weights unchanged"
+          else
+            SEASON_PCT=$(python -c "
+          import json, pathlib
+          w = pathlib.Path('backtest_optimized_weights.json')
+          d = json.loads(w.read_text()) if w.exists() else {}
+          pct = d.get('season_ats_pct', 0)
+          print(f'{pct*100:.1f}' if pct < 1 else f'{pct:.1f}')
+          " 2>/dev/null || echo "?")
+            git commit -m "weights: optimized $(date +'%Y-%m-%d') — season ATS ${SEASON_PCT}% [skip ci]"
+            git push origin main
+            echo "[OK] Optimized weights committed to repository"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

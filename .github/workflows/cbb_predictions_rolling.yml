@@ -65,14 +65,26 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
 
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
 
     steps:
       # ── 1. Checkout ─────────────────────────────────────────────────────────
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Ensure data directory exists
-        run: mkdir -p data
+      - name: Ensure data directories exist and are git-tracked
+        run: |
+          mkdir -p data/csv
+          mkdir -p data/raw_json
+          touch data/csv/.gitkeep
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add data/csv/.gitkeep 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # ── 2. Download CSVs ────────────────────────────────────────────────────
       - name: Download ESPN CSVs (from triggering pipeline run)
@@ -737,12 +749,46 @@ jobs:
             [ -f "$f" ] && cp "$f" data/csv/ && echo "Copied $f" || echo "Skipped $f (not found)"
           done
 
-      - name: Commit CSVs back to repo
-        if: success()
+      - name: Commit predictions to repository
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/csv/
-          git diff --staged --quiet || git commit -m "data: pipeline run $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
-          git pull --rebase
-          git push
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git pull origin main --rebase --autostash || true
+
+          git add \
+            data/csv/predictions_latest.csv \
+            data/csv/predictions_mc_latest.csv \
+            data/csv/predictions_combined_latest.csv \
+            data/csv/bet_recs.csv \
+            data/csv/matchup_preview.csv \
+            data/csv/upset_watch.csv \
+            data/csv/mc_game_cards.csv \
+            data/csv/player_context_scores.csv \
+            data/csv/team_matchup_summary.csv \
+            data/predictions_latest.csv \
+            data/predictions_combined_latest.csv \
+            data/predictions_primary.csv \
+            data/predictions_mc_latest.csv \
+            data/ensemble_predictions_latest.csv \
+            2>/dev/null || true
+
+          # Also add any dated prediction files
+          git add data/predictions_*.csv data/ensemble_predictions_*.csv 2>/dev/null || true
+          git add data/bet_recs_$(date +'%Y%m%d').csv 2>/dev/null || true
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No prediction changes to commit"
+          else
+            GAME_COUNT=$(python -c "
+          import pandas as pd, pathlib
+          p = pathlib.Path('data/csv/predictions_latest.csv')
+          print(len(pd.read_csv(p)) if p.exists() else 0)
+          " 2>/dev/null || echo "?")
+            git commit -m "predictions: $(date +'%Y-%m-%d %H:%M UTC') — ${GAME_COUNT} games [skip ci]"
+            git push origin main
+            echo "[OK] CSVs committed to repository"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

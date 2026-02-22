@@ -37,6 +37,9 @@ jobs:
   # ════════════════════════════════════════════════════════════════════════════
   update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     outputs:
       pipeline_success: ${{ steps.run_pipeline.outputs.success }}
       game_count:       ${{ steps.run_pipeline.outputs.game_count }}
@@ -45,8 +48,27 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Ensure data directory exists
-        run: mkdir -p data
+      - name: Ensure data directories exist and are git-tracked
+        run: |
+          mkdir -p data/csv
+          mkdir -p data/raw_json
+          touch data/csv/.gitkeep
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add data/csv/.gitkeep 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify .gitignore is not blocking CSV files
+        run: |
+          if git check-ignore -q data/csv/backtest_summary.csv 2>/dev/null; then
+            echo "[WARN] data/csv/ is being ignored by .gitignore — fix required"
+            echo "       Remove any data/ or *.csv entries from .gitignore"
+            exit 1
+          else
+            echo "[OK] data/csv/ is not ignored"
+          fi
 
       - name: Download previous ESPN CSVs
         uses: actions/download-artifact@v4
@@ -407,15 +429,70 @@ jobs:
             [ -f "$f" ] && cp "$f" data/csv/ && echo "Copied $f" || echo "Skipped $f (not found)"
           done
 
-      - name: Commit CSVs back to repo
-        if: success()
+      - name: Commit pipeline CSVs to repository
+        if: success() || failure()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/csv/
-          git diff --staged --quiet || git commit -m "data: pipeline run $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
-          git pull --rebase
-          git push
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git pull origin main --rebase --autostash || true
+
+          git add \
+            data/csv/tier_classifications.csv \
+            data/csv/team_form_snapshot.csv \
+            data/csv/player_leaders.csv \
+            data/csv/conference_summary.csv \
+            data/csv/backtest_summary.csv \
+            data/csv/backtest_by_model.csv \
+            data/csv/backtest_weekly.csv \
+            data/csv/backtest_by_conference.csv \
+            data/csv/backtest_calibration.csv \
+            data/csv/backtest_by_edge.csv \
+            data/csv/backtest_model_matrix.csv \
+            data/csv/backtest_by_tier.csv \
+            data/player_condition_profiles.csv \
+            data/player_archetype_matchup_matrix.csv \
+            data/field_drift_report.json \
+            data/field_drift_report.md \
+            column_map.json \
+            2>/dev/null || true
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No changes to commit"
+          else
+            git commit -m "pipeline: $(date +'%Y-%m-%d %H:%M UTC') — metrics + backtest [skip ci]"
+            git push origin main
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify CSVs committed successfully
+        if: always()
+        run: |
+          python - <<'PY'
+          import subprocess, sys
+
+          result = subprocess.run(
+              ["git", "log", "--oneline", "-5"],
+              capture_output=True, text=True
+          )
+          print("[GIT LOG - last 5 commits]")
+          print(result.stdout)
+
+          result2 = subprocess.run(
+              ["git", "diff", "HEAD~1", "--name-only"],
+              capture_output=True, text=True
+          )
+          committed_files = result2.stdout.strip().split("\n")
+          csv_files = [f for f in committed_files if "data/csv" in f or ".csv" in f]
+
+          if csv_files:
+              print(f"[OK] {len(csv_files)} CSV file(s) in last commit:")
+              for f in csv_files[:10]:
+                  print(f"  {f}")
+          else:
+              print("[WARN] No CSV files found in last commit — check push steps above")
+          PY
 
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 2 — CAGE RANKINGS
@@ -423,6 +500,9 @@ jobs:
   # ════════════════════════════════════════════════════════════════════════════
   rankings:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     needs: update
     if: >
       always() &&
@@ -433,8 +513,17 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Ensure data directory exists
-        run: mkdir -p data
+      - name: Ensure data directories exist and are git-tracked
+        run: |
+          mkdir -p data/csv
+          mkdir -p data/raw_json
+          touch data/csv/.gitkeep
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add data/csv/.gitkeep 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download ESPN CSVs
         uses: actions/download-artifact@v4
@@ -524,15 +613,42 @@ jobs:
             [ -f "$f" ] && cp "$f" data/csv/ && echo "Copied $f" || echo "Skipped $f (not found)"
           done
 
-      - name: Commit CSVs back to repo
+      - name: Commit rankings CSVs to repository
         if: success()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/csv/
-          git diff --staged --quiet || git commit -m "data: pipeline run $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
-          git pull --rebase
-          git push
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+          for attempt in 1 2 3; do
+            git pull origin main --rebase --autostash || true
+
+            git add \
+              data/csv/cbb_rankings.csv \
+              data/csv/cbb_rankings_by_conference.csv \
+              data/cbb_rankings.csv \
+              data/cbb_rankings_by_conference.csv \
+              data/cbb_rankings_$(date +'%Y%m%d').csv \
+              2>/dev/null || true
+
+            if git diff --staged --quiet; then
+              echo "[SKIP] No ranking changes to commit"
+              break
+            fi
+
+            git commit -m "rankings: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]" || true
+
+            if git push origin main; then
+              echo "[OK] Push succeeded on attempt ${attempt}"
+              break
+            else
+              echo "[RETRY] Push failed on attempt ${attempt} — waiting $((attempt * 10)) seconds"
+              sleep $((attempt * 10))
+              git reset HEAD~1 2>/dev/null || true
+            fi
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 3 — TOMORROW'S PREDICTIONS
@@ -540,6 +656,9 @@ jobs:
   # ════════════════════════════════════════════════════════════════════════════
   predictions:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     needs: update
     if: needs.update.result == 'success'
 
@@ -547,8 +666,17 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Ensure data directory exists
-        run: mkdir -p data
+      - name: Ensure data directories exist and are git-tracked
+        run: |
+          mkdir -p data/csv
+          mkdir -p data/raw_json
+          touch data/csv/.gitkeep
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add data/csv/.gitkeep 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download ESPN CSVs
         uses: actions/download-artifact@v4
@@ -626,3 +754,43 @@ jobs:
           path: data/predictions_*.csv
           retention-days: 30
           if-no-files-found: warn
+
+      - name: Commit predictions CSVs to repository
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+          for attempt in 1 2 3; do
+            git pull origin main --rebase --autostash || true
+
+            git add \
+              data/predictions_latest.csv \
+              data/predictions_combined_latest.csv \
+              data/predictions_primary.csv \
+              data/predictions_mc_latest.csv \
+              data/ensemble_predictions_latest.csv \
+              2>/dev/null || true
+
+            git add data/predictions_*.csv data/ensemble_predictions_*.csv 2>/dev/null || true
+            git add data/bet_recs_$(date +'%Y%m%d').csv 2>/dev/null || true
+
+            if git diff --staged --quiet; then
+              echo "[SKIP] No prediction changes to commit"
+              break
+            fi
+
+            git commit -m "predictions: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]" || true
+
+            if git push origin main; then
+              echo "[OK] Push succeeded on attempt ${attempt}"
+              break
+            else
+              echo "[RETRY] Push failed on attempt ${attempt} — waiting $((attempt * 10)) seconds"
+              sleep $((attempt * 10))
+              git reset HEAD~1 2>/dev/null || true
+            fi
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
