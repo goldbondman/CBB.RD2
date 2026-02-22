@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -22,7 +22,7 @@ from espn_config import (
     OUT_WEIGHTED, OUT_PLAYER_METRICS,
     OUT_TOURNAMENT_METRICS, OUT_TOURNAMENT_SNAPSHOT,
     OUT_RANKINGS, OUT_RANKINGS_CONF,
-    DAYS_BACK, TZ, CHECKPOINT_FILE,
+    DAYS_BACK, CHECKPOINT_FILE,
     SOURCE, PARSE_VERSION,
     FETCH_SLEEP, DRY_RUN,
 )
@@ -447,7 +447,7 @@ def build_games(days_back: int = DAYS_BACK) -> pd.DataFrame:
     Fetch scoreboard for the past `days_back` days + today + tomorrow.
     Returns a DataFrame of all parsed game rows and writes games.csv.
     """
-    now = datetime.now(TZ)
+    now = datetime.now(timezone.utc)
     dates = set()
     for i in range(days_back):
         dates.add((now - timedelta(days=i)).strftime("%Y%m%d"))
@@ -469,7 +469,7 @@ def build_games(days_back: int = DAYS_BACK) -> pd.DataFrame:
             parsed = parse_scoreboard_event(e)
             if parsed:
                 parsed["date"]          = d
-                parsed["pulled_at_utc"] = datetime.now(TZ).isoformat()
+                parsed["pulled_at_utc"] = datetime.now(timezone.utc).isoformat()
                 parsed["source"]        = SOURCE
                 day_rows.append(parsed)
             else:
@@ -501,7 +501,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
     For each completed game in the run window, fetch the ESPN summary and
     write team + player rows to their respective CSVs.
     """
-    now = datetime.now(TZ)
+    now = datetime.now(timezone.utc)
     window = {(now - timedelta(days=i)).strftime("%Y%m%d") for i in range(days_back)}
     window.add(now.strftime("%Y%m%d"))
 
@@ -533,7 +533,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
                 failed.append(gid)
                 continue
 
-            now_iso = datetime.now(TZ).isoformat()
+            now_iso = datetime.now(timezone.utc).isoformat()
             hrow, arow = summary_to_team_rows(parsed)
             for row in (hrow, arow):
                 row["pulled_at_utc"] = now_iso
@@ -572,7 +572,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
                 raw    = fetch_summary(gid)
                 parsed = parse_summary(raw, gid)
                 if parsed:
-                    now_iso = datetime.now(TZ).isoformat()
+                    now_iso = datetime.now(timezone.utc).isoformat()
                     hrow, arow = summary_to_team_rows(parsed)
                     for row in (hrow, arow):
                         row["pulled_at_utc"] = now_iso
