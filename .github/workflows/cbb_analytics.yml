@@ -77,24 +77,21 @@ jobs:
           python3 - <<'PY'
           import os
 
-          event    = os.getenv("GITHUB_EVENT_NAME", "schedule")
-          mode     = os.getenv("INPUT_MODE", "")
-          ref_name = os.getenv("GITHUB_REF_NAME", "")
+          event         = os.getenv("GITHUB_EVENT_NAME", "schedule")
+          mode          = os.getenv("INPUT_MODE", "")
+          event_schedule= os.getenv("INPUT_EVENT_SCHEDULE", "").strip()
 
           # workflow_dispatch: honor explicit mode selection
           if event == "workflow_dispatch":
               tracker  = mode in ("tracker_only",  "both", "tracker_summary")
               backtest = mode in ("backtest_only", "both")
 
-          # Scheduled: determine from cron expression via UTC hour + day
+          # Scheduled: prefer GitHub's triggering cron string (deterministic)
           elif event == "schedule":
-              from datetime import datetime, timezone
-              now = datetime.now(timezone.utc)
-              # 08:00 UTC = tracker run; 10:00 UTC Monday = backtester
-              tracker  = (now.hour == 8)
-              backtest = (now.hour == 10 and now.weekday() == 0)
+              tracker  = (event_schedule == "0 8 * * *")
+              backtest = (event_schedule == "0 10 * * 1")
 
-              # Fallback: run tracker if nothing else matches (safety net)
+              # Safety fallback when schedule string is unavailable
               if not tracker and not backtest:
                   tracker = True
 
@@ -110,6 +107,7 @@ jobs:
           PY
         env:
           INPUT_MODE: ${{ github.event.inputs.run_mode || '' }}
+          INPUT_EVENT_SCHEDULE: ${{ github.event.schedule || '' }}
 
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 1 — RESULTS TRACKER
@@ -122,7 +120,7 @@ jobs:
       contents: write
       actions: write
     needs: setup
-    if: needs.setup.outputs.run_tracker == 'true'
+    if: always() && !cancelled() && needs.setup.outputs.run_tracker == 'true'
 
     steps:
       - name: Checkout repo
@@ -618,6 +616,14 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Download previous results log
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-results-log
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
       - name: Ensure data directories exist and are git-tracked
         run: |
           mkdir -p data/csv
@@ -694,6 +700,14 @@ jobs:
           print(f"[RUN] {' '.join(cmd)}")
           subprocess.run(cmd, check=True)
           PY
+
+      - name: Run build_backtest_csvs
+        run: |
+          if [ -f build_backtest_csvs.py ]; then
+            python build_backtest_csvs.py
+          else
+            echo "[SKIP] build_backtest_csvs.py not found"
+          fi
 
       # ── Build backtest email ──────────────────────────────────────────────
       - name: Build backtest email
@@ -823,6 +837,15 @@ jobs:
         run: |
           shopt -s nullglob
           files=(
+            data/results_log.csv
+            data/results_log_graded.csv
+            data/csv/backtest_summary.csv
+            data/csv/backtest_by_model.csv
+            data/csv/backtest_weekly.csv
+            data/csv/backtest_by_conference.csv
+            data/csv/backtest_calibration.csv
+            data/csv/backtest_by_edge.csv
+            data/csv/backtest_model_matrix.csv
             data/backtest_results_*.csv
             data/backtest_model_report_*.csv
             data/backtest_calibration_*.csv
@@ -844,6 +867,15 @@ jobs:
         with:
           name: cbb-backtest-${{ github.run_id }}
           path: |
+            data/results_log.csv
+            data/results_log_graded.csv
+            data/csv/backtest_summary.csv
+            data/csv/backtest_by_model.csv
+            data/csv/backtest_weekly.csv
+            data/csv/backtest_by_conference.csv
+            data/csv/backtest_calibration.csv
+            data/csv/backtest_by_edge.csv
+            data/csv/backtest_model_matrix.csv
             data/backtest_results_*.csv
             data/backtest_model_report_*.csv
             data/backtest_calibration_*.csv
@@ -873,8 +905,17 @@ jobs:
           git pull origin main --rebase --autostash || true
 
           git add \
-            backtest_optimized_weights.json \
-            backtest_weights_history.csv \
+            data/results_log.csv \
+            data/results_log_graded.csv \
+            data/csv/backtest_summary.csv \
+            data/csv/backtest_by_model.csv \
+            data/csv/backtest_weekly.csv \
+            data/csv/backtest_by_conference.csv \
+            data/csv/backtest_calibration.csv \
+            data/csv/backtest_by_edge.csv \
+            data/csv/backtest_model_matrix.csv \
+            data/backtest_optimized_weights.json \
+            data/backtest_weights_history.csv \
             data/weight_optimization_report.md \
             2>/dev/null || true
 
@@ -883,7 +924,7 @@ jobs:
           else
             SEASON_PCT=$(python -c "
           import json, pathlib
-          w = pathlib.Path('backtest_optimized_weights.json')
+          w = pathlib.Path('data/backtest_optimized_weights.json')
           d = json.loads(w.read_text()) if w.exists() else {}
           pct = d.get('season_ats_pct', 0)
           print(f'{pct*100:.1f}' if pct < 1 else f'{pct:.1f}')
