@@ -312,3 +312,110 @@ def test_append_dedupe_write_persist_false_does_not_touch_disk(tmp_path):
     on_disk = pd.read_csv(path, dtype=str)
     assert on_disk.iloc[0]["value"] == "A"
     assert combined.iloc[0]["value"] == "B"
+
+
+def test_validation_odds_only_null_does_not_raise():
+    """When only odds fields are null but conference/standings are populated,
+    validation should NOT raise (odds are soft-validated by default)."""
+    df = pd.DataFrame([
+        {
+            "completed": "true",
+            "home_conference": "ACC",
+            "away_conference": "SEC",
+            "home_h1": 40,
+            "home_h2": 35,
+            "away_h1": 33,
+            "away_h2": 32,
+            "home_wins": 15,
+            "home_losses": 5,
+            "spread": None,
+            "over_under": None,
+            "home_ml": None,
+            "away_ml": None,
+            "odds_provider": None,
+            "odds_details": None,
+        }
+    ])
+
+    # Default skip_odds_validation=True — should NOT raise
+    _validate_team_log_enrichment(df)
+
+
+def test_validation_odds_null_raises_when_skip_disabled():
+    """When skip_odds_validation=False, all-null odds SHOULD raise."""
+    df = pd.DataFrame([
+        {
+            "completed": "true",
+            "home_conference": "ACC",
+            "away_conference": "SEC",
+            "home_h1": 40,
+            "home_h2": 35,
+            "away_h1": 33,
+            "away_h2": 32,
+            "home_wins": 15,
+            "home_losses": 5,
+            "spread": None,
+            "over_under": None,
+            "home_ml": None,
+            "away_ml": None,
+            "odds_provider": None,
+            "odds_details": None,
+        }
+    ])
+
+    with pytest.raises(ValueError, match="odds"):
+        _validate_team_log_enrichment(df, skip_odds_validation=False)
+
+
+def test_validation_half_scores_null_does_not_raise_with_soft_fields():
+    """Half-score fields are in SOFT_VALIDATION_FIELDS, so null half-scores
+    should produce warnings, not errors, when skip_odds_validation=True."""
+    df = pd.DataFrame([
+        {
+            "completed": "true",
+            "home_conference": "ACC",
+            "away_conference": "SEC",
+            "home_h1": None,
+            "home_h2": None,
+            "away_h1": None,
+            "away_h2": None,
+            "home_wins": 15,
+            "home_losses": 5,
+            "spread": -2.5,
+            "over_under": 140.5,
+            "home_ml": -130,
+            "away_ml": 110,
+            "odds_provider": "Book",
+            "odds_details": "test",
+        }
+    ])
+
+    # Default skip_odds_validation=True — half-scores are soft, should NOT raise
+    _validate_team_log_enrichment(df)
+
+
+def test_validation_conference_null_still_raises_with_soft_fields():
+    """Conference fields are NOT in SOFT_VALIDATION_FIELDS, so null conferences
+    should still raise even when skip_odds_validation=True."""
+    df = pd.DataFrame([
+        {
+            "completed": "true",
+            "home_conference": None,
+            "away_conference": None,
+            "home_h1": 40,
+            "home_h2": 35,
+            "away_h1": 33,
+            "away_h2": 32,
+            "home_wins": 15,
+            "home_losses": 5,
+            "spread": -2.5,
+            "over_under": 140.5,
+            "home_ml": -130,
+            "away_ml": 110,
+            "odds_provider": "Book",
+            "odds_details": "test",
+        }
+    ])
+
+    with pytest.raises(ValueError, match="conference"):
+        _validate_team_log_enrichment(df)
