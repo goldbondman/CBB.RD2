@@ -5,3 +5,7 @@ data/*
 !data/csv/
 *.egg-info/
 .pytest_cache/
+
+# Vercel
+.vercel/
+vercel.json
