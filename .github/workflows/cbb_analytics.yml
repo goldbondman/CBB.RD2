@@ -656,7 +656,6 @@ jobs:
 
       # ── Ensure graded results log exists ────────────────────────────────────
       - name: Ensure graded results log exists
-        continue-on-error: true
         run: |
           if [ ! -f data/results_log_graded.csv ]; then
             echo "[WARN] Graded log not found — building from results_log.csv"
