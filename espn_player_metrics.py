@@ -472,25 +472,21 @@ def _validate_player_metric_integrity(df: pd.DataFrame,
     if df.empty:
         return
 
-    completed_mask_df = (
-        df["completed"].astype(str).str.lower().isin(["true", "1", "yes"])
-        if "completed" in df.columns
-        else pd.Series([False] * len(df), index=df.index)
-    )
-    completed_mask_raw = (
-        raw_df["completed"].astype(str).str.lower().isin(["true", "1", "yes"])
-        if raw_df is not None and "completed" in raw_df.columns
-        else pd.Series([False] * len(raw_df), index=raw_df.index)
-        if raw_df is not None
-        else pd.Series([False] * len(df), index=df.index)
-    )
-    if not completed_mask_df.any():
-            return
+    def _completed_mask(input_df: pd.DataFrame) -> pd.Series:
+        if "completed" not in input_df.columns:
+            return pd.Series(True, index=input_df.index)
+        return input_df["completed"].astype(str).str.lower().isin(["true", "1", "yes"])
 
-    completed_df = df[completed_mask_df]
-    completed_raw_df = (raw_df[completed_mask_raw]
-                        if raw_df is not None and len(raw_df) == len(df)
-                        else completed_df)
+    completed_mask = _completed_mask(df)
+    if not completed_mask.any():
+        return
+
+    completed_df = df[completed_mask]
+    completed_raw_df = completed_df
+    if raw_df is not None:
+        raw_completed_mask = _completed_mask(raw_df)
+        if raw_completed_mask.any():
+            completed_raw_df = raw_df[raw_completed_mask]
     errors = []
 
     for col, threshold in RAW_GUARDRAIL_THRESHOLDS.items():
