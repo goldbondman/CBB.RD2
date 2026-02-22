@@ -1,7 +1,0 @@
-athlete_id,event_id,team_id,game_datetime_utc,starter,pts_starter_l5,pts_bench_l5,min_starter_l5,min_bench_l5,efg_pct_starter_l5,efg_pct_bench_l5,usage_rate_starter_l5,usage_rate_bench_l5
-9001,evt_0,100,2025-01-01T01:00:00Z,True,,,,,,,,
-9001,evt_1,100,2025-01-02T01:00:00Z,True,,,,,,,,
-9001,evt_2,100,2025-01-03T01:00:00Z,True,20.5,,30.0,,61.5,,94.9,
-9001,evt_3,100,2025-01-04T01:00:00Z,True,21.0,,30.0,,61.5,,94.9,
-9001,evt_4,100,2025-01-05T01:00:00Z,True,21.5,,30.0,,61.5,,94.9,
-9001,evt_5,100,2025-01-06T01:00:00Z,True,22.0,,30.0,,61.5,,94.9,
