@@ -43,15 +43,26 @@ def _safe_float(val: Any, default: Optional[float] = None) -> Optional[float]:
 
 
 def _parse_made_attempt(s: Any) -> Tuple[Optional[int], Optional[int]]:
-    """Parse ESPN shooting splits like '7-13', '7/13', or '7 of 13'."""
-    text = str(s or "").strip().lower()
-    if not text or text in ("--", "-"):
+    """
+    Parse ESPN made-attempt strings into (made, attempts).
+    Handles: "8-15", "0-0", "8/15", "7 of 13", "", None, "8", "-", "--", "N/A"
+    """
+    if isinstance(s, str):
+        text = s.strip().lower()
+    else:
+        text = str(s or "").strip().lower()
+    if not text or text in ("--", "-", "n/a"):
         return None, None
     text = text.replace("of", "-").replace("/", "-").replace(" ", "")
     try:
         parts = text.split("-")
         if len(parts) == 2:
             return _safe_int(parts[0]), _safe_int(parts[1])
+        # Single number — treat as made with unknown attempts
+        if len(parts) == 1:
+            val = _safe_int(parts[0])
+            if val is not None:
+                return val, None
     except Exception:
         pass
     return None, None
@@ -180,24 +191,36 @@ def _load_split_fields(
 
 
 PLAYER_STAT_MAP = {
+    # Minutes
     "min": "min", "minutes": "min",
+    # Points
     "pts": "pts", "points": "pts",
-    "fg": "_fg", "fgm-a": "_fg", "field goals": "_fg",
-    "fieldgoals": "_fg", "fieldgoalsmade": "_fg", "fgma": "_fg",
-    "3pt": "_3pt", "3p": "_3pt", "3-pt": "_3pt", "3pm-a": "_3pt",
-    "three pointers": "_3pt",
-    "threepointers": "_3pt", "threepointsmade": "_3pt", "3ptma": "_3pt", "3fgma": "_3pt",
-    "ft": "_ft", "ftm-a": "_ft", "free throws": "_ft",
-    "freethrows": "_ft", "freethrowsmade": "_ft", "ftma": "_ft",
+    # Field goals — all known ESPN label variants
+    "fg": "_fg", "fgm-a": "_fg", "fgma": "_fg",
+    "fieldgoals": "_fg", "field goals": "_fg", "field goal": "_fg",
+    "fieldgoalsmade": "_fg", "fg (ma)": "_fg",
+    # Three pointers
+    "3pt": "_3pt", "3pm-a": "_3pt", "3ptma": "_3pt", "3fgma": "_3pt",
+    "3-pt": "_3pt", "3p": "_3pt", "3fg": "_3pt",
+    "threepointers": "_3pt", "three pointers": "_3pt", "three point": "_3pt",
+    "threepointsmade": "_3pt", "3pt (ma)": "_3pt",
+    # Free throws
+    "ft": "_ft", "ftm-a": "_ft", "ftma": "_ft",
+    "freethrows": "_ft", "free throws": "_ft", "free throw": "_ft",
+    "freethrowsmade": "_ft", "ft (ma)": "_ft",
+    # Rebounds
     "oreb": "orb", "or": "orb", "offensive rebounds": "orb",
     "dreb": "drb", "dr": "drb", "defensive rebounds": "drb",
     "reb": "reb", "tr": "reb", "rebounds": "reb", "total rebounds": "reb",
+    # Other stats
     "ast": "ast", "a": "ast", "assists": "ast",
     "stl": "stl", "s": "stl", "steals": "stl",
     "blk": "blk", "b": "blk", "blocks": "blk",
     "to": "tov", "tov": "tov", "turnovers": "tov",
     "pf": "pf", "fouls": "pf", "personal fouls": "pf",
-    "pm": "plus_minus", "+/-": "plus_minus", "plusminus": "plus_minus",
+    # Plus/minus variants
+    "+/-": "plus_minus", "pm": "plus_minus",
+    "plusminus": "plus_minus", "plus/minus": "plus_minus",
 }
 
 # Merge column_map.json labels into PLAYER_STAT_MAP at import time
@@ -207,6 +230,17 @@ for _k, _v in _json_map.items():
 
 for _label, _mapped in list(PLAYER_STAT_MAP.items()):
     PLAYER_STAT_MAP.setdefault(_normalize_stat_label(_label), _mapped)
+
+# Pre-compute sets of normalized labels for shooting split lookups
+_FG_SPLIT_LABELS = tuple({
+    _normalize_stat_label(k) for k, v in PLAYER_STAT_MAP.items() if v == "_fg"
+})
+_3PT_SPLIT_LABELS = tuple({
+    _normalize_stat_label(k) for k, v in PLAYER_STAT_MAP.items() if v == "_3pt"
+})
+_FT_SPLIT_LABELS = tuple({
+    _normalize_stat_label(k) for k, v in PLAYER_STAT_MAP.items() if v == "_ft"
+})
 
 
 # ── Team stat label map (loaded from column_map.json with hardcoded fallback) ─
@@ -551,24 +585,33 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                                                  if cleaned.isdigit()
                                                  else _safe_float(cleaned)))
 
-                    # TEMP DEBUG — log first unseen stat label per game
+                    # DEBUG — print raw ESPN stat labels when env var set
+                    import os as _os
+                    if _os.environ.get("DEBUG_PLAYER_STATS") == "1":
+                        all_labels = [
+                            f"{raw} | {norm}"
+                            for raw, norm in zip(stat_labels_raw, stat_labels)
+                        ]
+                        print(f"[DEBUG] ESPN player stat labels: {all_labels}", flush=True)
+                        _os.environ["DEBUG_PLAYER_STATS"] = "done"
+
                     if not raw_stats:
                         log.debug(f"Player stats labels for {athlete_id}: {stat_labels}")
 
                     # Shooting splits — independent loops per type
-                    for fg_lbl in ("fg", "fgm-a", "fieldgoals"):
+                    for fg_lbl in _FG_SPLIT_LABELS:
                         if fg_lbl in raw_stats:
                             m, a = _parse_made_attempt(raw_stats[fg_lbl])
                             if m is not None:
                                 prow["fgm"], prow["fga"] = m, a
                             break
-                    for tp_lbl in ("3pt", "3p", "3-pt", "3pm-a", "threepointers"):
+                    for tp_lbl in _3PT_SPLIT_LABELS:
                         if tp_lbl in raw_stats:
                             m, a = _parse_made_attempt(raw_stats[tp_lbl])
                             if m is not None:
                                 prow["tpm"], prow["tpa"] = m, a
                             break
-                    for ft_lbl in ("ft", "ftm-a", "freethrows"):
+                    for ft_lbl in _FT_SPLIT_LABELS:
                         if ft_lbl in raw_stats:
                             m, a = _parse_made_attempt(raw_stats[ft_lbl])
                             if m is not None:
