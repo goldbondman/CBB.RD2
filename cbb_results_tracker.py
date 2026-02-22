@@ -55,6 +55,8 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pandas as pd
 
+from pipeline_csv_utils import safe_write_csv
+
 warnings.filterwarnings("ignore")
 
 log = logging.getLogger(__name__)
@@ -913,7 +915,7 @@ class ResultsTracker:
             updated_log = updated_log.sort_values("game_datetime_utc")
 
         results_log_path = self.output_dir / "results_log.csv"
-        updated_log.to_csv(results_log_path, index=False)
+        safe_write_csv(updated_log, results_log_path, index=False)
         log.info(f"Results log updated: {len(updated_log):,} total records → {results_log_path}")
 
         # ── Detect alerts ─────────────────────────────────────────────────────

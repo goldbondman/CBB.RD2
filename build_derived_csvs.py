@@ -27,6 +27,8 @@ from typing import Optional
 
 import pandas as pd
 
+from pipeline_csv_utils import safe_write_csv
+
 # ── Paths ──────────────────────────────────────────────────────────────────
 DATA        = pathlib.Path("data")
 CSV_DIR     = DATA / "csv"
@@ -65,13 +67,13 @@ def _write(df: pd.DataFrame, stem: str, sources: list[str],
     root_path = DATA / stem
     try:
         df["generated_at"] = NOW_ISO
-        df.to_csv(csv_path,  index=False)
-        df.to_csv(root_path, index=False)
+        safe_write_csv(df, csv_path, index=False)
+        safe_write_csv(df, root_path, index=False)
         n = len(df)
         print(f"[OK]  {stem}: {n} rows")
         if dated_copy:
             dated = DATA / stem.replace(".csv", f"_{TODAY_STAMP}.csv")
-            df.to_csv(dated, index=False)
+            safe_write_csv(df, dated, index=False)
             print(f"[OK]  {dated.name}: archive copy written")
         _results.append({"file": stem, "rows": n, "sources": ", ".join(sources), "status": "OK"})
     except Exception as exc:
