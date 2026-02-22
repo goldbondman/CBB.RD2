@@ -432,7 +432,7 @@ def add_role_split_metrics(df: pd.DataFrame) -> pd.DataFrame:
                                     errors="coerce")
     df = df.sort_values(["athlete_id", "_sort_dt"])
 
-    starter_flag = df["starter"].astype(bool)
+    starter_flag = _to_bool_series(df["starter"])
 
     for metric in ["pts", "min", "efg_pct", "usage_rate"]:
         if metric not in df.columns:

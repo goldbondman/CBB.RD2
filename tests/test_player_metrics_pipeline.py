@@ -7,7 +7,7 @@ import pandas as pd
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from espn_parsers import parse_summary, _parse_made_attempt, _map_player_stat_label
-from espn_player_metrics import compute_player_metrics
+from espn_player_metrics import compute_player_metrics, add_role_split_metrics
 
 
 FIXTURE = Path("tests/fixtures/summary_boxscore_fixture.json")
@@ -119,3 +119,20 @@ def test_stat_map_plus_minus_aliases():
     for label in ("+/-", "pm", "plusminus", "plus/minus"):
         mapped = _map_player_stat_label(label)
         assert mapped == "plus_minus", f"label '{label}' mapped to {mapped!r}"
+
+
+def test_add_role_split_metrics_handles_string_booleans_for_starter_flag():
+    df = pd.DataFrame([
+        {"athlete_id": "1", "game_datetime_utc": "2025-01-01T00:00:00Z", "starter": "false", "pts": 10, "min": 20, "efg_pct": 50, "usage_rate": 20},
+        {"athlete_id": "1", "game_datetime_utc": "2025-01-02T00:00:00Z", "starter": "true",  "pts": 12, "min": 22, "efg_pct": 52, "usage_rate": 22},
+        {"athlete_id": "1", "game_datetime_utc": "2025-01-03T00:00:00Z", "starter": "false", "pts": 14, "min": 24, "efg_pct": 54, "usage_rate": 24},
+        {"athlete_id": "1", "game_datetime_utc": "2025-01-04T00:00:00Z", "starter": "true",  "pts": 16, "min": 26, "efg_pct": 56, "usage_rate": 26},
+    ])
+
+    out = add_role_split_metrics(df).sort_values("game_datetime_utc").reset_index(drop=True)
+
+    # At game 4, starter rolling window should only use prior starter rows (game 2 only).
+    assert pd.isna(out.loc[3, "pts_starter_l5"])
+
+    # At game 4, bench rolling window should average prior bench rows (games 1 and 3 => (10+14)/2).
+    assert out.loc[3, "pts_bench_l5"] == 12.0
