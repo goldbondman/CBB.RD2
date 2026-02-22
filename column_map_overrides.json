@@ -1,0 +1,8 @@
+{
+  "_comment": "Manual overrides for ESPN API field mapping. Edit this file directly. Never auto-overwritten.",
+  "updated_at": "2026-02-21T20:48:00Z",
+  "player_stats": {},
+  "team_stats": {},
+  "force_split_fields": {},
+  "suppress_warnings": []
+}

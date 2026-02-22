@@ -4,6 +4,7 @@ Orchestrates scoreboard fetch → summary fetch → CSV write.
 Keep this file focused on coordination only; logic lives in other modules.
 """
 
+import argparse
 import json
 import logging
 import os
@@ -34,6 +35,8 @@ from espn_weighted_metrics import compute_weighted_metrics
 from espn_player_metrics import compute_player_metrics
 from espn_tournament import compute_tournament_metrics, build_pretournament_snapshot
 from espn_rankings import run as run_rankings
+from cbb_output_schemas import validate_output
+from pipeline_csv_utils import safe_write_csv
 
 logging.basicConfig(
     level=logging.INFO,
@@ -72,6 +75,22 @@ PLAYER_TARGET_NULL_GUARD_COLUMNS = [
 HALF_SCORE_FINAL_MIN_NON_NULL = float(os.getenv("HALF_SCORE_FINAL_MIN_NON_NULL", "0.80"))
 STANDINGS_MIN_NON_NULL = float(os.getenv("STANDINGS_MIN_NON_NULL", "0.80"))
 
+# Fields that ESPN frequently omits — validation failures for these are warnings, not errors.
+SOFT_VALIDATION_FIELDS = {
+    "spread",          # ESPN frequently omits odds
+    "over_under",      # ESPN frequently omits odds
+    "home_ml",         # ESPN frequently omits odds
+    "away_ml",         # ESPN frequently omits odds
+    "home_rank",       # Only ranked teams have rank — expected null for most
+    "away_rank",       # Only ranked teams have rank — expected null for most
+    "home_h1",         # Halftime data sometimes missing for early-season games
+    "home_h2",         # Halftime data sometimes missing
+    "away_h1",         # Halftime data sometimes missing
+    "away_h2",         # Halftime data sometimes missing
+    "odds_provider",   # No odds = no provider
+    "odds_details",    # No odds = no details
+}
+
 
 def _scoreboard_team_context(games_df: pd.DataFrame) -> pd.DataFrame:
     """Build team-level context rows (wins/losses/conference) from games.csv rows."""
@@ -105,10 +124,10 @@ def _scoreboard_team_context(games_df: pd.DataFrame) -> pd.DataFrame:
         "conference": g.get("home_conference", ""),
         "wins": g.get("home_wins", None),
         "losses": g.get("home_losses", None),
-        "home_wins": g.get("home_wins", None),
-        "home_losses": g.get("home_losses", None),
-        "away_wins": g.get("away_wins", None),
-        "away_losses": g.get("away_losses", None),
+        "home_wins": g.get("home_home_wins", None),
+        "home_losses": g.get("home_home_losses", None),
+        "away_wins": g.get("home_away_wins", None),
+        "away_losses": g.get("home_away_losses", None),
         "conf_wins": g.get("home_conf_wins", None),
         "conf_losses": g.get("home_conf_losses", None),
         "rank": g.get("home_rank", None),
@@ -125,10 +144,10 @@ def _scoreboard_team_context(games_df: pd.DataFrame) -> pd.DataFrame:
         "conference": g.get("away_conference", ""),
         "wins": g.get("away_wins", None),
         "losses": g.get("away_losses", None),
-        "home_wins": g.get("home_wins", None),
-        "home_losses": g.get("home_losses", None),
-        "away_wins": g.get("away_wins", None),
-        "away_losses": g.get("away_losses", None),
+        "home_wins": g.get("away_home_wins", None),
+        "home_losses": g.get("away_home_losses", None),
+        "away_wins": g.get("away_away_wins", None),
+        "away_losses": g.get("away_away_losses", None),
         "conf_wins": g.get("away_conf_wins", None),
         "conf_losses": g.get("away_conf_losses", None),
         "rank": g.get("away_rank", None),
@@ -194,26 +213,47 @@ def _enrich_team_rows_from_scoreboard(df_team: pd.DataFrame, games_df: pd.DataFr
         "h1_pts", "h2_pts", "h1_pts_against", "h2_pts_against",
     ]
 
+    null_tokens = {"", "none", "nan", "null", "nat", "<na>"}
+
+    def _is_null_like(series: pd.Series) -> pd.Series:
+        return series.isna() | series.astype(str).str.strip().str.lower().isin(null_tokens)
+
     for col in fill_cols:
         sb_col = f"{col}_sb"
         if sb_col in df.columns:
             if col in df.columns:
-                df[col] = df[col].where(df[col].notna() & (df[col].astype(str) != ""), df[sb_col])
+                df[col] = df[col].where(~_is_null_like(df[col]), df[sb_col])
             else:
                 df[col] = df[sb_col]
+            # Clear scoreboard values that are themselves null-like strings
+            if col in df.columns:
+                df.loc[_is_null_like(df[col]), col] = None
 
-    if "win_pct" in df.columns and {"wins", "losses"}.issubset(df.columns):
+    if {"wins", "losses"}.issubset(df.columns):
         wins = pd.to_numeric(df["wins"], errors="coerce")
         losses = pd.to_numeric(df["losses"], errors="coerce")
         calc = wins / (wins + losses)
-        df["win_pct"] = df["win_pct"].where(df["win_pct"].notna(), calc.round(3))
+        if "win_pct" in df.columns:
+            df["win_pct"] = df["win_pct"].where(~_is_null_like(df["win_pct"]), calc.round(3))
+        else:
+            df["win_pct"] = calc.round(3)
 
     df = df.drop(columns=[c for c in df.columns if c.endswith("_sb")])
     return df
 
 
-def _validate_team_log_enrichment(df: pd.DataFrame) -> None:
-    """Hard guardrail: fail fast when key enrichment groups are completely missing."""
+def _validate_team_log_enrichment(df: pd.DataFrame, skip_odds_validation: bool = True) -> None:
+    """Hard guardrail: fail fast when key enrichment groups are completely missing.
+
+    Fields listed in SOFT_VALIDATION_FIELDS produce warnings instead of hard
+    errors because ESPN frequently omits them (odds, ranks, halftime data).
+
+    Parameters
+    ----------
+    skip_odds_validation : bool
+        When True (default), odds/soft-field null checks produce warnings only.
+        When False, odds checks raise hard errors (original behaviour).
+    """
     if df.empty:
         return
 
@@ -231,6 +271,7 @@ def _validate_team_log_enrichment(df: pd.DataFrame) -> None:
         return 1.0 - float(null_mask.mean())
 
     errors: List[str] = []
+    warnings: List[str] = []
 
     conf_home_rate = _non_null_rate("home_conference")
     conf_away_rate = _non_null_rate("away_conference")
@@ -240,9 +281,11 @@ def _validate_team_log_enrichment(df: pd.DataFrame) -> None:
     final_mask = df.get("completed", pd.Series(False, index=df.index)).astype(str).str.lower().isin(["true", "1", "yes"])
     for half_col in ["home_h1", "home_h2", "away_h1", "away_h2"]:
         if _non_null_rate(half_col, mask=final_mask) < HALF_SCORE_FINAL_MIN_NON_NULL:
-            errors.append(
-                f"half-score enrichment below threshold for finals: {half_col} < {HALF_SCORE_FINAL_MIN_NON_NULL:.0%}"
-            )
+            msg = f"half-score enrichment below threshold for finals: {half_col} < {HALF_SCORE_FINAL_MIN_NON_NULL:.0%}"
+            if skip_odds_validation and half_col in SOFT_VALIDATION_FIELDS:
+                warnings.append(msg)
+            else:
+                errors.append(msg)
 
     for standings_col in ["home_wins", "home_losses"]:
         if _non_null_rate(standings_col) < STANDINGS_MIN_NON_NULL:
@@ -250,10 +293,19 @@ def _validate_team_log_enrichment(df: pd.DataFrame) -> None:
                 f"standings enrichment below threshold: {standings_col} < {STANDINGS_MIN_NON_NULL:.0%}"
             )
 
+    # Odds fields — these are frequently absent from ESPN API
     odds_fields = ["spread", "over_under", "home_ml", "away_ml", "odds_provider", "odds_details"]
     odds_non_null = max((_non_null_rate(c) for c in odds_fields), default=0.0)
     if odds_non_null <= 0.0:
-        errors.append("odds enrichment failed: all odds fields are 100% null")
+        msg = "odds fields are 100% null — ESPN did not return odds for this run (expected)"
+        if skip_odds_validation:
+            warnings.append(msg)
+        else:
+            errors.append(msg)
+
+    # Log warnings but never raise on them
+    for w in warnings:
+        log.warning(f"[VALIDATION WARN] {w}")
 
     if errors:
         raise ValueError(" | ".join(errors))
@@ -315,6 +367,13 @@ def _append_dedupe_write(
 
     combined = pd.concat([existing, new_df.astype(str)], ignore_index=True)
 
+    # Sanitize null-like string values produced by .astype(str) on None/NaN
+    _null_str_tokens = {"None", "none", "nan", "NaN", "null", "NaT", "nat", "<NA>", "<na>"}
+    for col in combined.columns:
+        mask = combined[col].isin(_null_str_tokens)
+        if mask.any():
+            combined.loc[mask, col] = pd.NA
+
     if unique_keys:
         # Score rows: prefer completed=True, then newest pulled_at_utc
         if "completed" in combined.columns:
@@ -348,7 +407,7 @@ def _append_dedupe_write(
             path.parent.mkdir(parents=True, exist_ok=True)
             # Atomic write via temp file
             tmp = path.with_suffix(".tmp")
-            combined.to_csv(tmp, index=False)
+            safe_write_csv(combined, tmp, label=str(path), allow_empty=True)
             tmp.replace(path)
         else:
             log.info(f"[DRY RUN] Would write {len(combined)} rows → {path}")
@@ -422,7 +481,7 @@ def build_games(days_back: int = DAYS_BACK) -> pd.DataFrame:
 
 # ── Summary pass ──────────────────────────────────────────────────────────────
 
-def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BACK) -> None:
+def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BACK, skip_odds_validation: bool = True) -> dict:
     """
     For each completed game in the run window, fetch the ESPN summary and
     write team + player rows to their respective CSVs.
@@ -527,6 +586,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         df_team = _enrich_team_rows_from_scoreboard(df_team, games_df)
         _log_stage_null_rates("team_rows_after_scoreboard_merge", df_team, TARGET_NULL_GUARD_COLUMNS)
         _assert_required_columns(df_team, REQUIRED_TEAM_COLUMNS, "team_rows")
+        validate_output(df_team, "team_game_logs")
         df_all  = _append_dedupe_write(
             OUT_TEAM_LOGS,
             df_team,
@@ -535,7 +595,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
             persist=False,
         )
         _log_stage_null_rates("team_rows_before_validation", df_all, TARGET_NULL_GUARD_COLUMNS)
-        _validate_team_log_enrichment(df_all)
+        _validate_team_log_enrichment(df_all, skip_odds_validation=skip_odds_validation)
 
         _append_dedupe_write(
             OUT_TEAM_LOGS,
@@ -635,6 +695,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         df_players = pd.DataFrame(player_rows)
         _log_player_stage_diagnostics("player_rows:parsed", df_players)
         _assert_required_columns(df_players, REQUIRED_PLAYER_COLUMNS, "player_rows")
+        validate_output(df_players, "player_game_logs")
         df_all_p   = _append_dedupe_write(
             OUT_PLAYER_LOGS,
             df_players,
@@ -699,7 +760,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
                 "FGA", "FGM", "FTA", "FTM", "TPA", "TPM", "ORB", "DRB", "RB", "TO", "AST",
             ])
             OUT_PLAYER_LOGS.parent.mkdir(parents=True, exist_ok=True)
-            empty_player_logs.to_csv(OUT_PLAYER_LOGS, index=False)
+            safe_write_csv(empty_player_logs, OUT_PLAYER_LOGS, label="player_game_logs", allow_empty=True)
             log.info("player_game_logs.csv: 0 total rows")
 
         if not OUT_PLAYER_METRICS.exists():
@@ -712,7 +773,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
                 "FGA", "FGM", "FTA", "FTM", "TPA", "TPM", "ORB", "DRB", "RB", "TO", "AST",
             ])
             OUT_PLAYER_METRICS.parent.mkdir(parents=True, exist_ok=True)
-            empty_player_metrics.to_csv(OUT_PLAYER_METRICS, index=False)
+            safe_write_csv(empty_player_metrics, OUT_PLAYER_METRICS, label="player_game_metrics", allow_empty=True)
             log.info("player_game_metrics.csv: 0 total rows")
 
     # ── Reconciliation report ──
@@ -728,18 +789,69 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
 
     _clear_checkpoint()
 
+    return {
+        "games_found":       len(game_ids),
+        "games_parsed":      len(processed),
+        "games_failed":      len(failed),
+        "team_rows_written": len(team_rows),
+        "player_rows_written": len(player_rows),
+    }
+
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
-def run(days_back: int = DAYS_BACK) -> None:
+def run(days_back: int = DAYS_BACK, skip_odds_validation: bool = True) -> None:
     log.info(f"=== ESPN CBB Pipeline | DAYS_BACK={days_back} | PARSE_VERSION={PARSE_VERSION} ===")
     games_df = build_games(days_back=days_back)
     if games_df.empty:
         log.error("No games from scoreboard — aborting")
+        try:
+            from cbb_pipeline_logger import log_pipeline_run
+            log_pipeline_run(
+                trigger=os.getenv("GITHUB_EVENT_NAME", "unknown"),
+                days_back=days_back,
+                parse_version=PARSE_VERSION,
+                dry_run=DRY_RUN,
+                status="error_no_games",
+            )
+        except Exception as exc:
+            log.warning(f"Pipeline logger failed (non-fatal): {exc}")
         return
-    build_team_and_player_logs(games_df, days_back=days_back)
+    stats = build_team_and_player_logs(games_df, days_back=days_back, skip_odds_validation=skip_odds_validation)
     log.info("=== Run complete ===")
+    try:
+        from cbb_pipeline_logger import log_pipeline_run
+        log_pipeline_run(
+            trigger=os.getenv("GITHUB_EVENT_NAME", "unknown"),
+            days_back=days_back,
+            dates_fetched=len(games_df["date"].astype(str).unique()),
+            games_found=stats.get("games_found", 0),
+            games_parsed=stats.get("games_parsed", 0),
+            games_failed=stats.get("games_failed", 0),
+            team_rows_written=stats.get("team_rows_written", 0),
+            player_rows_written=stats.get("player_rows_written", 0),
+            parse_version=PARSE_VERSION,
+            dry_run=DRY_RUN,
+            status="ok",
+        )
+    except Exception as exc:
+        log.warning(f"Pipeline logger failed (non-fatal): {exc}")
 
 
 if __name__ == "__main__":
-    run()
+    parser = argparse.ArgumentParser(description="ESPN CBB Pipeline")
+    parser.add_argument(
+        "--days-back",
+        type=int,
+        default=DAYS_BACK,
+        help=f"Number of days back to fetch (default: {DAYS_BACK})",
+    )
+    parser.add_argument(
+        "--skip-odds-validation",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Skip hard validation failure when odds/soft fields are null (default: True). "
+             "Use --no-skip-odds-validation to enforce hard errors.",
+    )
+    args = parser.parse_args()
+    run(days_back=args.days_back, skip_odds_validation=args.skip_odds_validation)

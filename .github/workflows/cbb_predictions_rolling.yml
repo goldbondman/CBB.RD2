@@ -51,7 +51,7 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  actions: write
 
 # Prevent overlapping runs from clobbering latest outputs/artifacts
 concurrency:
@@ -65,11 +65,26 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
 
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
 
     steps:
       # ── 1. Checkout ─────────────────────────────────────────────────────────
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Ensure data directories exist and are git-tracked
+        run: |
+          mkdir -p data/csv
+          mkdir -p data/raw_json
+          touch data/csv/.gitkeep
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add data/csv/.gitkeep 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # ── 2. Download CSVs ────────────────────────────────────────────────────
       - name: Download ESPN CSVs (from triggering pipeline run)
@@ -79,16 +94,47 @@ jobs:
           name: espn-cbb-csvs
           path: data/
           run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: false
+
+      # ── 2b. Fallback for workflow_run if artifact files are missing ────────────
+      - name: "Fallback: Ensure required pipeline outputs exist (workflow_run)"
+        if: github.event_name == 'workflow_run'
+        run: |
+          missing=()
+          [ ! -f data/games.csv ] && missing+=("data/games.csv")
+          [ ! -f data/team_game_weighted.csv ] && missing+=("data/team_game_weighted.csv")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "[WARN] Key artifact files missing after download: ${missing[*]}. Running espn_pipeline.py..."
+            python espn_pipeline.py
+          fi
 
       # NOTE: This does NOT reliably download "latest from another run" by itself.
       # We'll treat it as a best-effort, and then run pipeline if required files missing.
+      - name: Get latest ESPN pipeline run ID
+        id: get_run_id
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'update_espn_cbb.yml',
+              status: 'success',
+              per_page: 1,
+            });
+            const runId = runs.data.workflow_runs[0]?.id;
+            if (!runId) throw new Error('No successful espn pipeline run found');
+            core.setOutput('run_id', runId);
+
       - name: Download ESPN CSVs (manual trigger — best effort)
         if: github.event_name == 'workflow_dispatch'
         uses: actions/download-artifact@v4
         with:
           name: espn-cbb-csvs
           path: data/
+          run-id: ${{ steps.get_run_id.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
@@ -114,6 +160,30 @@ jobs:
         run: |
           python -m pip install -U pip
           python -m pip install -r requirements.txt
+
+      - name: Force install pandas
+        run: pip install pandas
+
+      - name: Verify runtime Python deps
+        run: |
+          python - <<'PY'
+          import importlib.util
+          import subprocess
+          import sys
+
+          required = ["pandas", "numpy", "scipy", "requests"]
+          missing = [pkg for pkg in required if importlib.util.find_spec(pkg) is None]
+
+          if missing:
+              print(f"[WARN] Missing packages after requirements install: {missing}")
+              subprocess.run([sys.executable, "-m", "pip", "install", *missing], check=True)
+
+          for pkg in required:
+              if importlib.util.find_spec(pkg) is None:
+                  raise SystemExit(f"[FAIL] Required package still missing: {pkg}")
+
+          print("[OK] Runtime dependencies available")
+          PY
 
       # ── 4. Ensure required data exists (fallback build) ─────────────────────
       # Only needed for workflow_dispatch. workflow_run already has exact artifact.
@@ -185,6 +255,9 @@ jobs:
           PY
 
       # ── 6. Primary model: espn_prediction_runner.py ─────────────────────────
+      - name: Compute travel fatigue features
+        run: python cbb_travel_fatigue.py || echo "Travel fatigue computation failed (non-fatal)"
+
       - name: Run primary model predictions (rolling 40h)
         id: primary_predictions
         env:
@@ -286,6 +359,7 @@ jobs:
       # ── 7. Ensemble model: cbb_ensemble.py ──────────────────────────────────
       - name: Run ensemble model predictions
         id: ensemble_predictions
+        continue-on-error: true
         if: >
           github.event_name == 'workflow_run' ||
           github.event.inputs.run_ensemble == 'true'
@@ -499,10 +573,28 @@ jobs:
                             f"Ensemble {row.get('ens_ensemble_spread',float('nan')):+.1f} | "
                             f"Gap {row.get('spread_model_gap',float('nan')):+.1f}")
                   combined.to_csv(out, index=False)
+                  from datetime import datetime
+                  from zoneinfo import ZoneInfo
+                  today = datetime.now(tz=ZoneInfo("America/Los_Angeles")).strftime("%Y%m%d")
+                  div_path = data_dir / f"predictions_divergence_{today}.csv"
+                  diverged.to_csv(div_path, index=False)
+                  (data_dir / "predictions_divergence_latest.csv").write_bytes(div_path.read_bytes())
+                  print(f"[OK] Divergence file: {len(diverged)} games → {div_path}")
           PY
+
+      # ── 8b. Player matchup analysis ─────────────────────────────────────────
+      - name: Run player matchup analysis
+        id: player_matchup
+        continue-on-error: true
+        run: |
+          python cbb_player_matchup.py \
+            --games data/predictions_combined_latest.csv \
+            --min-games 5 \
+            --min-minutes 15
 
       # ── 9. Validate ─────────────────────────────────────────────────────────
       - name: Validate prediction outputs
+        if: always()
         run: |
           python - <<'PY'
           import pandas as pd, pathlib, sys
@@ -574,7 +666,7 @@ jobs:
           print("\n[OK] Validation complete")
           PY
 
-      # ── 10. Display summary ─────────────────────────────────────────────────
+      # ── 11. Display summary ─────────────────────────────────────────────────
       - name: Display prediction summary
         if: always()
         run: |
@@ -613,7 +705,7 @@ jobs:
               break
           PY
 
-      # ── 11. Upload artifacts ────────────────────────────────────────────────
+      # ── 12. Upload artifacts ────────────────────────────────────────────────
       - name: Upload prediction artifacts (run-stamped)
         if: always()
         uses: actions/upload-artifact@v4
@@ -623,6 +715,13 @@ jobs:
             data/predictions_*.csv
             data/ensemble_predictions_*.csv
             data/predictions_combined_latest.csv
+            data/predictions_divergence_*.csv
+            data/predictions_divergence_latest.csv
+            data/csv/player_context_scores.csv
+            data/csv/team_matchup_summary.csv
+            data/player_condition_profiles.csv
+            data/player_archetype_matchup_matrix.csv
+            data/team_travel_fatigue.csv
           retention-days: 30
           if-no-files-found: warn
 
@@ -636,18 +735,65 @@ jobs:
             data/predictions_*.csv
             data/ensemble_predictions_*.csv
             data/predictions_combined_latest.csv
+            data/predictions_divergence_*.csv
+            data/predictions_divergence_latest.csv
+            data/csv/player_context_scores.csv
+            data/csv/team_matchup_summary.csv
+            data/player_condition_profiles.csv
+            data/player_archetype_matchup_matrix.csv
+            data/team_travel_fatigue.csv
           retention-days: 30
           if-no-files-found: warn
 
-      # ── 12. (Optional) Commit predictions back to repo ───────────────────────
-      # Uncomment to make predictions browsable in GitHub without downloading artifacts.
-      #
-      # - name: Commit predictions to repo
-      #   run: |
-      #     git config user.name  "github-actions[bot]"
-      #     git config user.email "github-actions[bot]@users.noreply.github.com"
-      #     git add data/predictions_*.csv data/ensemble_predictions_*.csv \
-      #             data/predictions_combined_latest.csv
-      #     git diff --staged --quiet || \
-      #       git commit -m "predictions: $(date +'%Y-%m-%d %H:%M') [rolling 40h]"
-      #     git push
+      # ── 13. Copy CSVs to data/csv/ and commit back to repo ────────────────────
+      - name: Copy CSVs to data/csv/
+        if: success()
+        run: |
+          mkdir -p data/csv
+          for f in data/predictions_latest.csv data/predictions_combined_latest.csv data/ensemble_predictions_latest.csv data/predictions_mc_latest.csv; do
+            [ -f "$f" ] && cp "$f" data/csv/ && echo "Copied $f" || echo "Skipped $f (not found)"
+          done
+
+      - name: Commit predictions to repository
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git pull origin main --rebase --autostash || true
+
+          git add \
+            data/csv/predictions_latest.csv \
+            data/csv/predictions_mc_latest.csv \
+            data/csv/predictions_combined_latest.csv \
+            data/csv/bet_recs.csv \
+            data/csv/matchup_preview.csv \
+            data/csv/upset_watch.csv \
+            data/csv/mc_game_cards.csv \
+            data/csv/player_context_scores.csv \
+            data/csv/team_matchup_summary.csv \
+            data/predictions_latest.csv \
+            data/predictions_combined_latest.csv \
+            data/predictions_primary.csv \
+            data/predictions_mc_latest.csv \
+            data/ensemble_predictions_latest.csv \
+            2>/dev/null || true
+
+          # Also add any dated prediction files
+          git add data/predictions_*.csv data/ensemble_predictions_*.csv 2>/dev/null || true
+          git add data/bet_recs_$(date +'%Y%m%d').csv 2>/dev/null || true
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No prediction changes to commit"
+          else
+            GAME_COUNT=$(python -c "
+          import pandas as pd, pathlib
+          p = pathlib.Path('data/csv/predictions_latest.csv')
+          print(len(pd.read_csv(p)) if p.exists() else 0)
+          " 2>/dev/null || echo "?")
+            git commit -m "predictions: $(date +'%Y-%m-%d %H:%M UTC') — ${GAME_COUNT} games [skip ci]"
+            git push origin main
+            echo "[OK] CSVs committed to repository"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

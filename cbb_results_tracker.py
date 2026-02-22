@@ -822,8 +822,9 @@ class ResultsTracker:
             return [], []
 
         # ── Load actual results ───────────────────────────────────────────────
-        pred_game_ids = preds["game_id"].astype(str).tolist() if "game_id" in preds.columns else []
-        results       = load_games_results(game_ids=pred_game_ids if pred_game_ids else None)
+        # Load ALL completed games (not filtered by prediction game_ids).
+        # Date-based filtering and game_id matching happen via the merge.
+        results = load_games_results(game_ids=None)
 
         if results.empty:
             log.warning("No completed game results found")
@@ -833,10 +834,17 @@ class ResultsTracker:
         preds["game_id"]   = preds["game_id"].astype(str)
         results["game_id"] = results["game_id"].astype(str)
 
+        # Ensure all required merge columns exist in results (fill missing
+        # with NaN so the column selection never raises KeyError).
+        merge_cols = ["game_id", "home_score", "away_score", "actual_margin",
+                     "actual_total", "home_won", "spread", "over_under",
+                     "home_ml", "away_ml", "game_datetime_utc", "neutral_site"]
+        for col in merge_cols:
+            if col not in results.columns:
+                results[col] = np.nan
+
         matched = preds.merge(
-            results[["game_id","home_score","away_score","actual_margin",
-                      "actual_total","home_won","spread","over_under",
-                      "home_ml","away_ml","game_datetime_utc","neutral_site"]],
+            results[merge_cols],
             on="game_id",
             how="inner",
             suffixes=("_pred","_result"),
@@ -846,7 +854,11 @@ class ResultsTracker:
                  f"({len(preds)} predicted, {len(results)} completed)")
 
         if matched.empty:
-            log.warning("No matched predictions — game_ids may not align")
+            log.warning("No matched predictions — game_ids may not align. "
+                        f"Prediction game_ids sample: "
+                        f"{preds['game_id'].head(3).tolist()}, "
+                        f"Results game_ids sample: "
+                        f"{results['game_id'].head(3).tolist()}")
             return [], []
 
         # ── Compute outcomes ──────────────────────────────────────────────────

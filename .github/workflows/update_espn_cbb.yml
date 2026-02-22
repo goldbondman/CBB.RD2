@@ -27,7 +27,8 @@ on:
     - cron: "0 10 * * *"   # 10:00 AM UTC daily (2 AM PST / 3 AM PDT)
 
 permissions:
-  contents: read
+  contents: write
+  actions: write
 
 jobs:
   # ════════════════════════════════════════════════════════════════════════════
@@ -36,6 +37,9 @@ jobs:
   # ════════════════════════════════════════════════════════════════════════════
   update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     outputs:
       pipeline_success: ${{ steps.run_pipeline.outputs.success }}
       game_count:       ${{ steps.run_pipeline.outputs.game_count }}
@@ -43,6 +47,28 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Ensure data directories exist and are git-tracked
+        run: |
+          mkdir -p data/csv
+          mkdir -p data/raw_json
+          touch data/csv/.gitkeep
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add data/csv/.gitkeep 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify .gitignore is not blocking CSV files
+        run: |
+          if git check-ignore -q data/csv/backtest_summary.csv 2>/dev/null; then
+            echo "[WARN] data/csv/ is being ignored by .gitignore — fix required"
+            echo "       Remove any data/ or *.csv entries from .gitignore"
+            exit 1
+          else
+            echo "[OK] data/csv/ is not ignored"
+          fi
 
       - name: Download previous ESPN CSVs
         uses: actions/download-artifact@v4
@@ -58,12 +84,12 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: python -m pip install -r requirements.txt
 
       - name: Run ESPN pipeline
         id: run_pipeline
         run: |
-          python espn_pipeline.py
+          python espn_pipeline.py --days-back ${{ github.event.inputs.days_back || '3' }}
           echo "success=true" >> $GITHUB_OUTPUT
           GAME_COUNT=$(python -c "
           import pandas as pd, pathlib
@@ -77,6 +103,161 @@ jobs:
           echo "game_count=$GAME_COUNT" >> $GITHUB_OUTPUT
         env:
           DAYS_BACK: ${{ github.event.inputs.days_back || '3' }}
+
+      - name: Check pipeline output health
+        if: always()
+        run: |
+          python -c "
+          import pandas as pd, sys, pathlib
+          try:
+              p = pathlib.Path('data/team_game_metrics.csv')
+              if not p.exists():
+                  p = pathlib.Path('data/team_game_logs.csv')
+              if not p.exists():
+                  print('[WARN] No team output CSV found yet — pipeline may not have written data')
+                  sys.exit(0)
+              df = pd.read_csv(p)
+              print(f'[OK] {p.name}: {len(df)} rows')
+              if 'spread' in df.columns:
+                  odds_null = df['spread'].isna().mean() * 100
+                  if odds_null == 100:
+                      print(f'[INFO] Odds fields empty this run — ESPN did not return odds (normal)')
+                  else:
+                      print(f'[OK] Odds populated: {100-odds_null:.1f}% of rows have spread data')
+              else:
+                  print('[INFO] No spread column in output')
+          except Exception as e:
+              print(f'[FAIL] Could not read output: {e}')
+              sys.exit(1)
+          "
+
+      # ── Audit ESPN API field names ────────────────────────────────────────────
+      - name: Audit ESPN API stat headers
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+
+          KNOWN_TEAM_LABELS = {
+              "oreb", "offensiverebounds", "dreb", "defensiverebounds",
+              "reb", "rebounds", "totalrebounds",
+              "ast", "assists", "to", "turnovers",
+              "stl", "steals", "blk", "blocks",
+              "pf", "fouls",
+          }
+          KNOWN_SHOOTING_KEYWORDS = ["goal", "throw", "three"]
+
+          KNOWN_PLAYER_LABELS = {
+              "min", "minutes", "pts", "points",
+              "fg", "fgm-a", "field goals", "fieldgoals", "fieldgoalsmade", "fgma",
+              "3pt", "3p", "3-pt", "3pm-a", "three pointers",
+              "threepointers", "threepointsmade", "3ptma", "3fgma",
+              "ft", "ftm-a", "free throws", "freethrows", "freethrowsmade", "ftma",
+              "oreb", "or", "offensive rebounds",
+              "dreb", "dr", "defensive rebounds",
+              "reb", "tr", "rebounds", "total rebounds",
+              "ast", "a", "assists",
+              "stl", "s", "steals",
+              "blk", "b", "blocks",
+              "to", "tov", "turnovers",
+              "pf", "fouls", "personal fouls",
+              "pm", "+/-", "plusminus",
+          }
+
+          raw_dir = pathlib.Path("data/raw_json")
+          json_files = sorted(raw_dir.glob("*.json")) if raw_dir.exists() else []
+
+          if not json_files:
+              print("[SKIP] No raw JSON files found in data/raw_json/ — skipping audit")
+              sys.exit(0)
+
+          # Use the most recent JSON file
+          sample_file = json_files[-1]
+          print(f"[INFO] Auditing: {sample_file.name}")
+          raw = json.loads(sample_file.read_text())
+
+          audit = {
+              "source_file": sample_file.name,
+              "team_stat_labels": [],
+              "player_stat_labels": [],
+              "unmapped_team_labels": [],
+              "unmapped_player_labels": [],
+          }
+
+          boxscore = raw.get("boxscore", {})
+
+          # ── Team stat labels ──
+          seen_team = {}
+          for t in boxscore.get("teams", []):
+              team_name = t.get("team", {}).get("displayName", "?")
+              for s in t.get("statistics", []):
+                  name  = s.get("name", "")
+                  abbr  = s.get("abbreviation", "")
+                  dv    = s.get("displayValue", "")
+                  label = abbr.lower().replace(" ", "_") if abbr else name.lower().replace(" ", "_")
+                  entry = {"name": name, "abbreviation": abbr, "displayValue": dv, "team": team_name}
+                  seen_team[label] = entry
+
+          audit["team_stat_labels"] = list(seen_team.values())
+
+          for label, entry in seen_team.items():
+              name_lc = entry["name"].lower()
+              is_shooting = any(x in name_lc for x in KNOWN_SHOOTING_KEYWORDS)
+              if not is_shooting and label not in KNOWN_TEAM_LABELS:
+                  audit["unmapped_team_labels"].append(entry)
+
+          # ── Player stat labels ──
+          seen_player = {}
+          for team_block in boxscore.get("players", []):
+              for pg in team_block.get("statistics", []):
+                  raw_keys = list(pg.get("keys") or pg.get("labels") or pg.get("names") or [])
+                  for k in raw_keys:
+                      k_lower = str(k).strip().lower()
+                      seen_player[k_lower] = k  # raw label → original casing
+
+          audit["player_stat_labels"] = [
+              {"raw": orig, "lower": k_lower}
+              for k_lower, orig in seen_player.items()
+          ]
+
+          for k_lower, orig in seen_player.items():
+              if k_lower not in KNOWN_PLAYER_LABELS:
+                  audit["unmapped_player_labels"].append({"raw": orig, "lower": k_lower})
+
+          # ── Print results ──
+          print("\n═══ TEAM STAT LABELS FROM ESPN ════════════════════════")
+          for e in audit["team_stat_labels"]:
+              print(f"  name={e['name']!r:45s}  abbreviation={e['abbreviation']!r:10s}  sample={e['displayValue']!r}")
+
+          print("\n═══ PLAYER STAT LABELS FROM ESPN ══════════════════════")
+          for e in audit["player_stat_labels"]:
+              print(f"  raw={e['raw']!r}")
+
+          if audit["unmapped_team_labels"]:
+              print("\n⚠️  UNMAPPED TEAM LABELS (not in col_map):")
+              for e in audit["unmapped_team_labels"]:
+                  print(f"  name={e['name']!r}  abbreviation={e['abbreviation']!r}")
+          else:
+              print("\n[OK] All team stat labels are accounted for.")
+
+          if audit["unmapped_player_labels"]:
+              print("\n⚠️  UNMAPPED PLAYER LABELS (not in PLAYER_STAT_MAP):")
+              for e in audit["unmapped_player_labels"]:
+                  print(f"  {e['raw']!r}")
+          else:
+              print("[OK] All player stat labels are accounted for.")
+
+          out = pathlib.Path("data/espn_api_field_audit.json")
+          out.write_text(json.dumps(audit, indent=2))
+          print(f"\n[OK] Audit saved to {out}")
+          PY
+
+      - name: Reconcile ESPN field names
+        if: always()
+        continue-on-error: true
+        run: |
+          python field_reconciler.py \
+            --audit-path data/espn_api_field_audit.json
 
       # ── Tournament metrics ────────────────────────────────────────────────
       # Safety net: espn_pipeline.py now calls this inline, but we run it
@@ -126,6 +307,11 @@ jobs:
               print(f"[WARN] Tournament metrics failed (non-fatal): {exc}")
               import traceback; traceback.print_exc()
           PY
+
+      # ── Rebuild player condition profiles (full history) ──────────────────
+      - name: Rebuild player condition profiles (full history)
+        continue-on-error: true
+        run: python cbb_player_matchup.py --build-profiles-only
 
       # ── Validate outputs ──────────────────────────────────────────────────
       - name: Validate outputs
@@ -211,13 +397,59 @@ jobs:
         if: always()
         run: ls -lh data/*.csv 2>/dev/null || echo "No CSVs found"
 
-      - name: Upload ESPN CSVs as artifact
+      - name: Check for silent empty columns
         if: always()
+        continue-on-error: true
+        run: |
+          python field_reconciler.py --check-outputs --fix-duplicates
+
+      - name: Upload ESPN CSVs (for downstream predictions)
         uses: actions/upload-artifact@v4
         with:
           name: espn-cbb-csvs
-          path: data/*.csv
-          retention-days: 7
+          path: |
+            data/games.csv
+            data/team_game_logs.csv
+            data/team_game_metrics.csv
+            data/team_game_sos.csv
+            data/team_game_weighted.csv
+            data/team_tournament_metrics.csv
+            data/team_pretournament_snapshot.csv
+            data/cbb_rankings.csv
+            data/cbb_rankings_by_conference.csv
+            data/player_game_logs.csv
+            data/player_game_metrics.csv
+            data/player_injury_proxy.csv
+            data/team_injury_impact.csv
+            data/team_form_snapshot.csv
+            data/player_condition_profiles.csv
+            data/player_archetype_matchup_matrix.csv
+            data/espn_api_field_audit.json
+            data/field_drift_report.json
+            data/field_drift_report.md
+            data/pipeline_run_log.csv
+            data/csv/backtest_summary.csv
+            data/csv/backtest_by_model.csv
+            data/csv/backtest_weekly.csv
+            data/csv/backtest_by_conference.csv
+            data/csv/backtest_calibration.csv
+            data/csv/backtest_by_edge.csv
+            data/csv/backtest_model_matrix.csv
+            data/results_log_graded.csv
+            data/team_rolling_l5.csv
+            data/team_rolling_l10.csv
+            data/team_weighted_rolling.csv
+            data/team_game_halfsplits.csv
+            data/team_ats_profile.csv
+            data/team_luck_regression.csv
+            data/team_situational.csv
+            data/team_resume.csv
+            data/team_matchup_history.csv
+            data/conference_daily_summary.csv
+            data/team_travel_fatigue.csv
+            data/player_rolling_l5.csv
+            data/player_role_splits.csv
+          retention-days: 30
           if-no-files-found: warn
 
       - name: Upload raw JSON as artifact
@@ -229,12 +461,88 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
+      - name: Copy CSVs to data/csv/
+        if: success()
+        run: |
+          mkdir -p data/csv
+          for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv data/player_game_metrics.csv; do
+            [ -f "$f" ] && cp "$f" data/csv/ && echo "Copied $f" || echo "Skipped $f (not found)"
+          done
+
+      - name: Commit pipeline CSVs to repository
+        if: success() || failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git pull origin main --rebase --autostash || true
+
+          git add \
+            data/csv/tier_classifications.csv \
+            data/csv/team_form_snapshot.csv \
+            data/csv/player_leaders.csv \
+            data/csv/conference_summary.csv \
+            data/csv/backtest_summary.csv \
+            data/csv/backtest_by_model.csv \
+            data/csv/backtest_weekly.csv \
+            data/csv/backtest_by_conference.csv \
+            data/csv/backtest_calibration.csv \
+            data/csv/backtest_by_edge.csv \
+            data/csv/backtest_model_matrix.csv \
+            data/csv/backtest_by_tier.csv \
+            data/player_condition_profiles.csv \
+            data/player_archetype_matchup_matrix.csv \
+            data/field_drift_report.json \
+            data/field_drift_report.md \
+            column_map.json \
+            2>/dev/null || true
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No changes to commit"
+          else
+            git commit -m "pipeline: $(date +'%Y-%m-%d %H:%M UTC') — metrics + backtest [skip ci]"
+            git push origin main
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify CSVs committed successfully
+        if: always()
+        run: |
+          python - <<'PY'
+          import subprocess, sys
+
+          result = subprocess.run(
+              ["git", "log", "--oneline", "-5"],
+              capture_output=True, text=True
+          )
+          print("[GIT LOG - last 5 commits]")
+          print(result.stdout)
+
+          result2 = subprocess.run(
+              ["git", "diff", "HEAD~1", "--name-only"],
+              capture_output=True, text=True
+          )
+          committed_files = result2.stdout.strip().split("\n")
+          csv_files = [f for f in committed_files if "data/csv" in f or ".csv" in f]
+
+          if csv_files:
+              print(f"[OK] {len(csv_files)} CSV file(s) in last commit:")
+              for f in csv_files[:10]:
+                  print(f"  {f}")
+          else:
+              print("[WARN] No CSV files found in last commit — check push steps above")
+          PY
+
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 2 — CAGE RANKINGS
   # Builds cbb_rankings.csv. Runs in parallel with predictions after update.
   # ════════════════════════════════════════════════════════════════════════════
   rankings:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     needs: update
     if: >
       always() &&
@@ -244,6 +552,18 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Ensure data directories exist and are git-tracked
+        run: |
+          mkdir -p data/csv
+          mkdir -p data/raw_json
+          touch data/csv/.gitkeep
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add data/csv/.gitkeep 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download ESPN CSVs
         uses: actions/download-artifact@v4
@@ -258,7 +578,7 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: python -m pip install -r requirements.txt
 
       # Guard: rankings require snapshot — verify it exists before running
       - name: Check snapshot dependency
@@ -325,18 +645,78 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      - name: Copy CSVs to data/csv/
+        if: success()
+        run: |
+          mkdir -p data/csv
+          for f in data/cbb_rankings.csv data/cbb_rankings_by_conference.csv; do
+            [ -f "$f" ] && cp "$f" data/csv/ && echo "Copied $f" || echo "Skipped $f (not found)"
+          done
+
+      - name: Commit rankings CSVs to repository
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+          for attempt in 1 2 3; do
+            git pull origin main --rebase --autostash || true
+
+            git add \
+              data/csv/cbb_rankings.csv \
+              data/csv/cbb_rankings_by_conference.csv \
+              data/cbb_rankings.csv \
+              data/cbb_rankings_by_conference.csv \
+              data/cbb_rankings_$(date +'%Y%m%d').csv \
+              2>/dev/null || true
+
+            if git diff --staged --quiet; then
+              echo "[SKIP] No ranking changes to commit"
+              break
+            fi
+
+            git commit -m "rankings: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]" || true
+
+            if git push origin main; then
+              echo "[OK] Push succeeded on attempt ${attempt}"
+              break
+            else
+              echo "[RETRY] Push failed on attempt ${attempt} — waiting $((attempt * 10)) seconds"
+              sleep $((attempt * 10))
+              git reset HEAD~1 2>/dev/null || true
+            fi
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 3 — TOMORROW'S PREDICTIONS
   # Runs after pipeline completes. Produces predictions_YYYYMMDD.csv.
   # ════════════════════════════════════════════════════════════════════════════
   predictions:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     needs: update
     if: needs.update.result == 'success'
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Ensure data directories exist and are git-tracked
+        run: |
+          mkdir -p data/csv
+          mkdir -p data/raw_json
+          touch data/csv/.gitkeep
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add data/csv/.gitkeep 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download ESPN CSVs
         uses: actions/download-artifact@v4
@@ -351,7 +731,7 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: python -m pip install -r requirements.txt
 
       - name: Run predictions for tomorrow's games
         run: |
@@ -414,3 +794,43 @@ jobs:
           path: data/predictions_*.csv
           retention-days: 30
           if-no-files-found: warn
+
+      - name: Commit predictions CSVs to repository
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+          for attempt in 1 2 3; do
+            git pull origin main --rebase --autostash || true
+
+            git add \
+              data/predictions_latest.csv \
+              data/predictions_combined_latest.csv \
+              data/predictions_primary.csv \
+              data/predictions_mc_latest.csv \
+              data/ensemble_predictions_latest.csv \
+              2>/dev/null || true
+
+            git add data/predictions_*.csv data/ensemble_predictions_*.csv 2>/dev/null || true
+            git add data/bet_recs_$(date +'%Y%m%d').csv 2>/dev/null || true
+
+            if git diff --staged --quiet; then
+              echo "[SKIP] No prediction changes to commit"
+              break
+            fi
+
+            git commit -m "predictions: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]" || true
+
+            if git push origin main; then
+              echo "[OK] Push succeeded on attempt ${attempt}"
+              break
+            else
+              echo "[RETRY] Push failed on attempt ${attempt} — waiting $((attempt * 10)) seconds"
+              sleep $((attempt * 10))
+              git reset HEAD~1 2>/dev/null || true
+            fi
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

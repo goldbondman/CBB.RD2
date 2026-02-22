@@ -679,17 +679,8 @@ def _latest_team_context(
 
 def _validate_prediction_output_schema(df: pd.DataFrame) -> None:
     """Integrity gate: required downstream columns must exist before write."""
-    required = {
-        "home_FGA", "home_FGM", "home_FTA", "home_FTM", "home_TPA", "home_TPM",
-        "home_ORB", "home_DRB", "home_RB", "home_TO", "home_AST",
-        "away_FGA", "away_FGM", "away_FTA", "away_FTM", "away_TPA", "away_TPM",
-        "away_ORB", "away_DRB", "away_RB", "away_TO", "away_AST",
-        "home_wins", "home_losses", "home_conference",
-        "away_wins", "away_losses", "away_conference",
-    }
-    missing = sorted(required - set(df.columns))
-    if missing:
-        raise ValueError(f"Prediction output missing required downstream fields: {missing}")
+    from cbb_output_schemas import validate_output
+    validate_output(df, "predictions", strict=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

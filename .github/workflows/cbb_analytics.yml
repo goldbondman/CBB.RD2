@@ -52,10 +52,16 @@ on:
         default: "false"
         type: choice
         options: ["true", "false"]
+      update_schema:
+        description: "Rebuild schema registry from current outputs"
+        required: false
+        default: "false"
+        type: choice
+        options: ["true", "false"]
 
 permissions:
   contents: write
-  actions: read
+  actions: write
 
 env:
   TZ: "America/Los_Angeles"
@@ -77,24 +83,21 @@ jobs:
           python3 - <<'PY'
           import os
 
-          event    = os.getenv("GITHUB_EVENT_NAME", "schedule")
-          mode     = os.getenv("INPUT_MODE", "")
-          ref_name = os.getenv("GITHUB_REF_NAME", "")
+          event         = os.getenv("GITHUB_EVENT_NAME", "schedule")
+          mode          = os.getenv("INPUT_MODE", "")
+          event_schedule= os.getenv("INPUT_EVENT_SCHEDULE", "").strip()
 
           # workflow_dispatch: honor explicit mode selection
           if event == "workflow_dispatch":
               tracker  = mode in ("tracker_only",  "both", "tracker_summary")
               backtest = mode in ("backtest_only", "both")
 
-          # Scheduled: determine from cron expression via UTC hour + day
+          # Scheduled: prefer GitHub's triggering cron string (deterministic)
           elif event == "schedule":
-              from datetime import datetime, timezone
-              now = datetime.now(timezone.utc)
-              # 08:00 UTC = tracker run; 10:00 UTC Monday = backtester
-              tracker  = (now.hour == 8)
-              backtest = (now.hour == 10 and now.weekday() == 0)
+              tracker  = (event_schedule == "0 8 * * *")
+              backtest = (event_schedule == "0 10 * * 1")
 
-              # Fallback: run tracker if nothing else matches (safety net)
+              # Safety fallback when schedule string is unavailable
               if not tracker and not backtest:
                   tracker = True
 
@@ -110,6 +113,7 @@ jobs:
           PY
         env:
           INPUT_MODE: ${{ github.event.inputs.run_mode || '' }}
+          INPUT_EVENT_SCHEDULE: ${{ github.event.schedule || '' }}
 
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 1 — RESULTS TRACKER
@@ -118,12 +122,27 @@ jobs:
   # ════════════════════════════════════════════════════════════════════════════
   results_tracker:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     needs: setup
-    if: needs.setup.outputs.run_tracker == 'true'
+    if: always() && !cancelled() && needs.setup.outputs.run_tracker == 'true'
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Ensure data directories exist and are git-tracked
+        run: |
+          mkdir -p data/csv
+          mkdir -p data/raw_json
+          touch data/csv/.gitkeep
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add data/csv/.gitkeep 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check artifact availability
         id: artifact_check
@@ -141,6 +160,8 @@ jobs:
               rollingPreds: false,
             };
 
+            const now = new Date();
+
             for await (const page of github.paginate.iterator(
               github.rest.actions.listArtifactsForRepo,
               {
@@ -150,17 +171,36 @@ jobs:
               }
             )) {
               for (const artifact of page.data.artifacts || []) {
-                if (artifact.expired || !names.has(artifact.name)) continue;
-                if (artifact.name === 'espn-cbb-csvs') found.espnCsvs = true;
-                if (artifact.name === 'cbb-results-log') found.resultsLog = true;
-                if (artifact.name === 'cbb-predictions-rolling-latest') found.rollingPreds = true;
+                if (!names.has(artifact.name)) continue;
+                // Skip if expired (expires_at is returned by the list API)
+                if (artifact.expires_at && new Date(artifact.expires_at) < now) continue;
+                if (artifact.name === 'espn-cbb-csvs')                        found.espnCsvs     = true;
+                if (artifact.name === 'cbb-results-log')                      found.resultsLog   = true;
+                if (artifact.name === 'cbb-predictions-rolling-latest')       found.rollingPreds = true;
               }
             }
 
-            core.setOutput('espn_csvs', String(found.espnCsvs));
-            core.setOutput('results_log', String(found.resultsLog));
+            core.setOutput('espn_csvs',           String(found.espnCsvs));
+            core.setOutput('results_log',         String(found.resultsLog));
             core.setOutput('rolling_predictions', String(found.rollingPreds));
             core.info(`Artifact availability: ${JSON.stringify(found)}`);
+
+      - name: Get latest ESPN pipeline run ID
+        id: get_espn_run_id
+        if: steps.artifact_check.outputs.espn_csvs == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'update_espn_cbb.yml',
+              status: 'success',
+              per_page: 1,
+            });
+            const runId = runs.data.workflow_runs[0]?.id;
+            if (!runId) throw new Error('No successful espn pipeline run found');
+            core.setOutput('run_id', runId);
 
       # ── Restore latest CSVs (pipeline data + existing results log) ──────────
       - name: Download ESPN CSVs
@@ -169,11 +209,33 @@ jobs:
         with:
           name: espn-cbb-csvs
           path: data/
+          run-id: ${{ steps.get_espn_run_id.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Skip ESPN CSV download (artifact missing)
         if: steps.artifact_check.outputs.espn_csvs != 'true'
         run: echo "[INFO] Artifact espn-cbb-csvs not found; continuing without download."
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Update schema registry
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.update_schema == 'true'
+        run: python build_schema_registry.py
+
+      - name: Run ESPN pipeline (bootstrap data when artifact missing)
+        if: steps.artifact_check.outputs.espn_csvs != 'true'
+        run: python espn_pipeline.py --days-back 7
+
+      - name: Verify player metrics completeness
+        continue-on-error: true
+        run: python field_reconciler.py --check-outputs
 
       - name: Download previous results log
         if: steps.artifact_check.outputs.results_log == 'true'
@@ -187,31 +249,74 @@ jobs:
         if: steps.artifact_check.outputs.results_log != 'true'
         run: echo "[INFO] Artifact cbb-results-log not found; first run will create fresh outputs."
 
+      - name: Get latest rolling predictions run ID
+        id: get_predictions_run_id
+        if: steps.artifact_check.outputs.rolling_predictions == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'cbb_predictions_rolling.yml',
+              status: 'success',
+              per_page: 1,
+            });
+            const runId = runs.data.workflow_runs[0]?.id;
+            if (!runId) throw new Error('No successful predictions rolling run found');
+            core.setOutput('run_id', runId);
+
       - name: Download latest predictions
         if: steps.artifact_check.outputs.rolling_predictions == 'true'
         uses: actions/download-artifact@v4
         with:
           name: cbb-predictions-rolling-latest
           path: data/
+          run-id: ${{ steps.get_predictions_run_id.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Skip latest predictions download (artifact missing)
         if: steps.artifact_check.outputs.rolling_predictions != 'true'
         run: echo "[INFO] Artifact cbb-predictions-rolling-latest not found; tracker may have no games to process."
 
+      - name: Generate predictions for target date (when artifact missing)
+        if: steps.artifact_check.outputs.rolling_predictions != 'true'
+        env:
+          TARGET_DATE: ${{ github.event.inputs.date || '' }}
+        run: |
+          python - <<'PY'
+          import os, subprocess, sys, pathlib
+          from datetime import datetime, timedelta
+          from zoneinfo import ZoneInfo
+
+          tz   = ZoneInfo("America/Los_Angeles")
+          date = (os.getenv("TARGET_DATE") or "").strip()
+          if not date:
+              date = (datetime.now(tz) - timedelta(days=1)).strftime("%Y%m%d")
+
+          data_dir = pathlib.Path("data")
+          if not data_dir.exists() or not (data_dir / "games.csv").exists():
+              print("[SKIP] data/games.csv not found — cannot generate predictions")
+              raise SystemExit(0)
+
+          print(f"[INFO] Generating predictions for {date}...")
+          result = subprocess.run(
+              [sys.executable, "espn_prediction_runner.py", "--date", date],
+              check=False,
+          )
+          if result.returncode != 0:
+              print(f"[WARN] Primary prediction generation exited {result.returncode} — "
+                    f"check espn_prediction_runner.py logs for details")
+
+          # Attempt ensemble (optional — may fail if profiles/rankings unavailable)
+          subprocess.run([sys.executable, "cbb_ensemble.py"], check=False)
+          print("[OK] Prediction generation step complete")
+          PY
+
       - name: Debug data folder (post-download)
         run: |
           echo "[INFO] Listing data/ (max depth 3)"
           find data -maxdepth 3 -type f | sed -n '1,200p' || true
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
 
       # ── Run tracker ──────────────────────────────────────────────────────────
       - name: Run results tracker
@@ -244,6 +349,11 @@ jobs:
           if result.returncode != 0:
               print(f"[WARN] Tracker exited {result.returncode} — may be no games yesterday")
           PY
+
+      # ── Build season summaries ────────────────────────────────────────────────
+      - name: Build season summaries
+        continue-on-error: true
+        run: python cbb_season_summaries.py
 
       # ── Read alert count for email subject line ────────────────────────────
       - name: Check for alerts
@@ -402,6 +512,7 @@ jobs:
 
       # ── Send tracker email ────────────────────────────────────────────────
       - name: Email tracker results
+        continue-on-error: true
         env:
           GMAIL_ADDRESS:    ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
@@ -417,7 +528,13 @@ jobs:
               data/results_summary.csv \
               data/results_model_split.csv \
               data/results_alerts.csv \
+              data/player_season_summary.csv \
+              data/team_season_summary.csv \
             --critical-count ${{ steps.alerts.outputs.n_critical || 0 }}
+
+      - name: Check schema drift
+        run: python check_schema_drift.py
+        continue-on-error: true
 
       # ── Persist results log as artifact ─────────────────────────────────────
       - name: Check results files for artifact upload
@@ -430,6 +547,8 @@ jobs:
             data/results_summary.csv
             data/results_model_split.csv
             data/results_alerts.csv
+            data/player_season_summary.csv
+            data/team_season_summary.csv
           )
 
           existing=0
@@ -451,12 +570,48 @@ jobs:
             data/results_summary.csv
             data/results_model_split.csv
             data/results_alerts.csv
+            data/player_season_summary.csv
+            data/team_season_summary.csv
+            data/team_ats_profile.csv
+            data/team_luck_regression.csv
+            data/team_situational.csv
+            data/team_resume.csv
+            data/team_matchup_history.csv
+            data/conference_daily_summary.csv
           retention-days: 90       # Keep longer — this is your performance history
           if-no-files-found: warn
 
       - name: Skip results log upload (no files generated)
         if: always() && steps.upload_results.outputs.has_results_files != '1'
         run: echo "[INFO] No results files found; skipping upload for this run."
+
+      - name: Commit results tracker CSVs to repository
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git pull origin main --rebase --autostash || true
+
+          git add \
+            data/results_log.csv \
+            data/results_summary.csv \
+            data/results_model_split.csv \
+            data/results_alerts.csv \
+            data/results_log_graded.csv \
+            data/player_season_summary.csv \
+            data/team_season_summary.csv \
+            2>/dev/null || true
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No results tracker changes to commit"
+          else
+            git commit -m "tracker: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
+            git push origin main
+            echo "[OK] Results tracker CSVs committed to repository"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 2 — BACKTESTER
@@ -465,12 +620,35 @@ jobs:
   # ════════════════════════════════════════════════════════════════════════════
   backtester:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     needs: setup
     if: needs.setup.outputs.run_backtest == 'true'
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Download previous results log
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-results-log
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Ensure data directories exist and are git-tracked
+        run: |
+          mkdir -p data/csv
+          mkdir -p data/raw_json
+          touch data/csv/.gitkeep
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git add data/csv/.gitkeep 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -479,7 +657,7 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: python -m pip install -r requirements.txt
 
       # ── Generate required game log inputs ───────────────────────────────────
       # actions/download-artifact can only pull from the *current* workflow run
@@ -500,6 +678,14 @@ jobs:
           else
             echo "[FAIL] Missing game log inputs. Expected data/team_game_weighted.csv or data/team_game_metrics.csv"
             exit 1
+          fi
+
+      # ── Ensure graded results log exists ────────────────────────────────────
+      - name: Ensure graded results log exists
+        run: |
+          if [ ! -f data/results_log_graded.csv ]; then
+            echo "[WARN] Graded log not found — building from results_log.csv"
+            python build_backtest_csvs.py --section grade-only
           fi
 
       # ── Run backtester ───────────────────────────────────────────────────────
@@ -528,6 +714,14 @@ jobs:
           print(f"[RUN] {' '.join(cmd)}")
           subprocess.run(cmd, check=True)
           PY
+
+      - name: Run build_backtest_csvs
+        run: |
+          if [ -f build_backtest_csvs.py ]; then
+            python build_backtest_csvs.py
+          else
+            echo "[SKIP] build_backtest_csvs.py not found"
+          fi
 
       # ── Build backtest email ──────────────────────────────────────────────
       - name: Build backtest email
@@ -634,6 +828,7 @@ jobs:
 
       # ── Send backtest email with report attachments ──────────────────────
       - name: Email backtest report
+        continue-on-error: true
         env:
           GMAIL_ADDRESS:      ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
@@ -644,9 +839,9 @@ jobs:
             --body-file /tmp/backtest_email_body.txt \
             --attachments \
               data/backtest_optimized_weights.json \
-              data/model_report.csv \
-              data/backtest_results.csv \
-              data/calibration.csv \
+              data/backtest_model_report_latest.csv \
+              data/backtest_results_latest.csv \
+              data/backtest_calibration_latest.csv \
             --critical-count 0
 
       # ── Upload backtest artifacts ────────────────────────────────────────────
@@ -656,6 +851,15 @@ jobs:
         run: |
           shopt -s nullglob
           files=(
+            data/results_log.csv
+            data/results_log_graded.csv
+            data/csv/backtest_summary.csv
+            data/csv/backtest_by_model.csv
+            data/csv/backtest_weekly.csv
+            data/csv/backtest_by_conference.csv
+            data/csv/backtest_calibration.csv
+            data/csv/backtest_by_edge.csv
+            data/csv/backtest_model_matrix.csv
             data/backtest_results_*.csv
             data/backtest_model_report_*.csv
             data/backtest_calibration_*.csv
@@ -677,13 +881,71 @@ jobs:
         with:
           name: cbb-backtest-${{ github.run_id }}
           path: |
+            data/results_log.csv
+            data/results_log_graded.csv
+            data/csv/backtest_summary.csv
+            data/csv/backtest_by_model.csv
+            data/csv/backtest_weekly.csv
+            data/csv/backtest_by_conference.csv
+            data/csv/backtest_calibration.csv
+            data/csv/backtest_by_edge.csv
+            data/csv/backtest_model_matrix.csv
             data/backtest_results_*.csv
             data/backtest_model_report_*.csv
             data/backtest_calibration_*.csv
-            data/backtest_optimized_weights.json
+            data/model_weight_history.csv
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Upload backtest weights artifact
+        if: always() && steps.upload_backtest.outputs.has_backtest_files == '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-backtest-weights-${{ github.run_id }}
+          path: data/backtest_optimized_weights.json
           retention-days: 90
           if-no-files-found: warn
 
       - name: Skip backtest artifact upload (no files generated)
         if: always() && steps.upload_backtest.outputs.has_backtest_files != '1'
         run: echo "[INFO] No backtest artifacts found; skipping upload for this run."
+
+      - name: Commit optimized weights to repository
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git pull origin main --rebase --autostash || true
+
+          git add \
+            data/results_log.csv \
+            data/results_log_graded.csv \
+            data/csv/backtest_summary.csv \
+            data/csv/backtest_by_model.csv \
+            data/csv/backtest_weekly.csv \
+            data/csv/backtest_by_conference.csv \
+            data/csv/backtest_calibration.csv \
+            data/csv/backtest_by_edge.csv \
+            data/csv/backtest_model_matrix.csv \
+            data/backtest_optimized_weights.json \
+            data/backtest_weights_history.csv \
+            data/weight_optimization_report.md \
+            2>/dev/null || true
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] Weights unchanged"
+          else
+            SEASON_PCT=$(python -c "
+          import json, pathlib
+          w = pathlib.Path('data/backtest_optimized_weights.json')
+          d = json.loads(w.read_text()) if w.exists() else {}
+          pct = d.get('season_ats_pct', 0)
+          print(f'{pct*100:.1f}' if pct < 1 else f'{pct:.1f}')
+          " 2>/dev/null || echo "?")
+            git commit -m "weights: optimized $(date +'%Y-%m-%d') — season ATS ${SEASON_PCT}% [skip ci]"
+            git push origin main
+            echo "[OK] Optimized weights committed to repository"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

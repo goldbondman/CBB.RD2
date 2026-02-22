@@ -6,8 +6,8 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from espn_parsers import parse_summary
-from espn_player_metrics import compute_player_metrics
+from espn_parsers import parse_summary, _parse_made_attempt, _map_player_stat_label
+from espn_player_metrics import compute_player_metrics, add_role_split_metrics
 
 
 FIXTURE = Path("tests/fixtures/summary_boxscore_fixture.json")
@@ -59,3 +59,80 @@ def test_compute_player_metrics_adds_derived_and_rolling_features():
     last_row = out.sort_values("game_datetime_utc").iloc[-1]
     assert pd.notna(last_row["pts_l5"])
     assert pd.notna(last_row["pts_l10"])
+
+
+# ── _parse_made_attempt edge cases ────────────────────────────────────────────
+
+def test_parse_made_attempt_standard():
+    assert _parse_made_attempt("8-15") == (8, 15)
+    assert _parse_made_attempt("0-0") == (0, 0)
+
+
+def test_parse_made_attempt_slash():
+    assert _parse_made_attempt("8/15") == (8, 15)
+
+
+def test_parse_made_attempt_of():
+    assert _parse_made_attempt("7 of 13") == (7, 13)
+
+
+def test_parse_made_attempt_empty_and_none():
+    assert _parse_made_attempt("") == (None, None)
+    assert _parse_made_attempt(None) == (None, None)
+
+
+def test_parse_made_attempt_dashes():
+    assert _parse_made_attempt("-") == (None, None)
+    assert _parse_made_attempt("--") == (None, None)
+
+
+def test_parse_made_attempt_na():
+    assert _parse_made_attempt("N/A") == (None, None)
+    assert _parse_made_attempt("n/a") == (None, None)
+
+
+# ── PLAYER_STAT_MAP alias coverage ────────────────────────────────────────────
+
+def test_stat_map_fg_aliases():
+    for label in ("fg", "fgm-a", "fgma", "fieldgoals", "field goals",
+                  "field goal", "fg (ma)"):
+        mapped = _map_player_stat_label(label)
+        assert mapped == "_fg", f"label '{label}' mapped to {mapped!r}, expected '_fg'"
+
+
+def test_stat_map_3pt_aliases():
+    for label in ("3pt", "3pm-a", "3ptma", "3fgma", "3-pt", "3p",
+                  "threepointers", "three pointers", "three point",
+                  "3pt (ma)", "3fg"):
+        mapped = _map_player_stat_label(label)
+        assert mapped == "_3pt", f"label '{label}' mapped to {mapped!r}, expected '_3pt'"
+
+
+def test_stat_map_ft_aliases():
+    for label in ("ft", "ftm-a", "ftma", "freethrows", "free throws",
+                  "free throw", "ft (ma)"):
+        mapped = _map_player_stat_label(label)
+        assert mapped == "_ft", f"label '{label}' mapped to {mapped!r}, expected '_ft'"
+
+
+def test_stat_map_plus_minus_aliases():
+    for label in ("+/-", "pm", "plusminus", "plus/minus"):
+        mapped = _map_player_stat_label(label)
+        assert mapped == "plus_minus", f"label '{label}' mapped to {mapped!r}"
+
+
+def test_add_role_split_metrics_handles_string_booleans_for_starter_flag():
+    df = pd.DataFrame([
+        {"athlete_id": "1", "game_datetime_utc": "2025-01-01T00:00:00Z", "starter": "false", "pts": 10, "min": 20, "efg_pct": 50, "usage_rate": 20},
+        {"athlete_id": "1", "game_datetime_utc": "2025-01-02T00:00:00Z", "starter": "true",  "pts": 12, "min": 22, "efg_pct": 52, "usage_rate": 22},
+        {"athlete_id": "1", "game_datetime_utc": "2025-01-03T00:00:00Z", "starter": "false", "pts": 14, "min": 24, "efg_pct": 54, "usage_rate": 24},
+        {"athlete_id": "1", "game_datetime_utc": "2025-01-04T00:00:00Z", "starter": "true",  "pts": 16, "min": 26, "efg_pct": 56, "usage_rate": 26},
+    ])
+
+    out = add_role_split_metrics(df).sort_values("game_datetime_utc").reset_index(drop=True)
+
+    # At game 4, starter rolling window should only use prior starter rows (game 2 only).
+    assert pd.isna(out.loc[3, "pts_starter_l5"])
+
+    # At game 4, bench rolling window should average prior bench rows (games 1 and 3 => (10+14)/2).
+    assert out.loc[3, "pts_bench_l5"] == 12.0

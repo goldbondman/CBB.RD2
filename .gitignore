@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+data/*
+!data/csv/
+!data/*.csv
+!data/*.json
+!data/*.md
+*.egg-info/
+.pytest_cache/
+
+# Vercel
+.vercel/
+vercel.json

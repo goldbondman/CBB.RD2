@@ -1013,12 +1013,10 @@ def write_data_dictionary(output_dir: Path = OUT_RANKINGS.parent) -> Path:
     """
     Write cbb_rankings_data_dictionary.csv alongside the rankings files.
 
-    Two formats:
-    - CSV: machine-readable, one row per column with name / category /
-           description / range / source / notes
-    - TXT: human-readable formatted version for quick reference
+    CSV format: machine-readable, one row per column with name / category /
+    description / range / source / notes.
 
-    Both are written every time rankings are generated so they stay in sync.
+    Written every time rankings are generated so it stays in sync.
     """
 
     # ── Column definitions ────────────────────────────────────────────────────
@@ -1117,65 +1115,6 @@ def write_data_dictionary(output_dir: Path = OUT_RANKINGS.parent) -> Path:
     csv_path = output_dir / "cbb_rankings_data_dictionary.csv"
     dict_df.to_csv(csv_path, index=False)
     log.info(f"Data dictionary (CSV) → {csv_path}")
-
-    # ── Write TXT version (formatted for quick human reading) ─────────────────
-    txt_lines = [
-        "CAGE RANKINGS — DATA DICTIONARY",
-        "Composite Adjusted Grade Engine | ESPN CBB Pipeline",
-        "=" * 80,
-        "",
-        "This file describes every column in cbb_rankings.csv.",
-        "Generated automatically alongside each rankings run.",
-        "",
-    ]
-
-    current_cat = None
-    for col, cat, desc, rng, src, notes in COLUMNS:
-        if cat != current_cat:
-            txt_lines += ["", f"{'─' * 80}", f"  {cat.upper()}", f"{'─' * 80}"]
-            current_cat = cat
-        txt_lines.append(f"\n  {col}")
-        txt_lines.append(f"    {desc}")
-        txt_lines.append(f"    Range : {rng}")
-        txt_lines.append(f"    Source: {src}")
-        if notes:
-            txt_lines.append(f"    Notes : {notes}")
-
-    txt_lines += [
-        "",
-        "=" * 80,
-        "EQUIVALENCY GUIDE",
-        "─" * 80,
-        "  CAGE_EM       ↔  KenPom AdjEM  ↔  Torvik's NET-equivalent",
-        "  CAGE_O        ↔  KenPom AdjO",
-        "  CAGE_D        ↔  KenPom AdjD",
-        "  CAGE_T        ↔  KenPom AdjT",
-        "  BARTHAG       ↔  Torvik BARTHAG (direct replication)",
-        "  WAB           ↔  Torvik WAB (direct replication)",
-        "  RESUME_SCORE  ↔  Torvik Resume Composite",
-        "  Quad Records  ↔  NCAA/Torvik Quad definitions (our quads use",
-        "                    opponent net rating as proxy for NET rank tiers)",
-        "",
-        "CAGE-ONLY METRICS (no KenPom/Torvik equivalent):",
-        "  CAGE_POWER_INDEX, SUFFOCATION, MOMENTUM, CLUTCH_RATING,",
-        "  CONSISTENCY_SCORE, FLOOR_EM, CEILING_EM, DNA_SCORE,",
-        "  TOURNEY_READINESS, OFF_IDENTITY, STAR_RISK, TREND_ARROW",
-        "",
-        "QUAD THRESHOLDS (opponent adjusted net rating):",
-        "  Quad 1: opp_net ≥ +8.0   (elite — roughly top 75 teams by NET)",
-        "  Quad 2: opp_net  0 – 8.0  (above average)",
-        "  Quad 3: opp_net -8 – 0    (below average)",
-        "  Quad 4: opp_net < -8.0   (weak — bottom tier)",
-        "  Note: Official NCAA Quads also factor game location (home/road/neutral).",
-        "  Our quads use opponent quality only as a location-agnostic equivalent.",
-        "",
-        f"Generated: {datetime.now(TZ).strftime('%Y-%m-%d %H:%M %Z')}",
-        "=" * 80,
-    ]
-
-    txt_path = output_dir / "cbb_rankings_data_dictionary.txt"
-    txt_path.write_text("\n".join(txt_lines))
-    log.info(f"Data dictionary (TXT) → {txt_path}")
 
     return csv_path
 

@@ -4,8 +4,10 @@ Convert raw ESPN JSON into clean flat dictionaries.
 One function per data shape. No I/O here.
 """
 
+import json
 import logging
 from datetime import datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -41,15 +43,26 @@ def _safe_float(val: Any, default: Optional[float] = None) -> Optional[float]:
 
 
 def _parse_made_attempt(s: Any) -> Tuple[Optional[int], Optional[int]]:
-    """Parse ESPN shooting splits like '7-13', '7/13', or '7 of 13'."""
-    text = str(s or "").strip().lower()
-    if not text or text in ("--", "-"):
+    """
+    Parse ESPN made-attempt strings into (made, attempts).
+    Handles: "8-15", "0-0", "8/15", "7 of 13", "", None, "8", "-", "--", "N/A"
+    """
+    if isinstance(s, str):
+        text = s.strip().lower()
+    else:
+        text = str(s or "").strip().lower()
+    if not text or text in ("--", "-", "n/a"):
         return None, None
     text = text.replace("of", "-").replace("/", "-").replace(" ", "")
     try:
         parts = text.split("-")
         if len(parts) == 2:
             return _safe_int(parts[0]), _safe_int(parts[1])
+        # Single number — treat as made with unknown attempts
+        if len(parts) == 1:
+            val = _safe_int(parts[0])
+            if val is not None:
+                return val, None
     except Exception:
         pass
     return None, None
@@ -105,26 +118,168 @@ def _parse_record(record_obj: Any) -> Tuple[Optional[int], Optional[int]]:
 
 # ── Stat label normalization ──────────────────────────────────────────────────
 
+FALLBACK_MAP = {
+    "min": "min", "pts": "pts",
+    "fgm": "fgm", "fga": "fga",
+    "tpm": "tpm", "tpa": "tpa",
+    "ftm": "ftm", "fta": "fta",
+    "orb": "orb", "drb": "drb",
+    "reb": "reb", "ast": "ast",
+    "stl": "stl", "blk": "blk",
+    "tov": "tov", "pf":  "pf",
+    "+/-": "plus_minus",
+}
+
+
+def load_player_stat_map(
+    map_path: str = "column_map.json",
+    override_path: str = "column_map_overrides.json",
+) -> Dict[str, str]:
+    """
+    Load the column map from JSON. Merge overrides. Return flattened
+    label->pipeline_col dict for use in the parser.
+    Falls back to hardcoded FALLBACK_MAP if JSON files not found.
+    """
+    base_path = Path(map_path)
+    if not base_path.exists():
+        return dict(FALLBACK_MAP)
+
+    try:
+        base = json.loads(base_path.read_text())
+        override_file = Path(override_path)
+        if override_file.exists():
+            overrides = json.loads(override_file.read_text())
+            for section in ("player_stats", "team_stats"):
+                override_labels = overrides.get(section, {})
+                if isinstance(override_labels, dict):
+                    base_section = base.setdefault(section, {})
+                    base_labels = base_section.setdefault("espn_labels", {})
+                    base_labels.update(override_labels)
+
+        result: Dict[str, str] = {}
+        espn_labels = base.get("player_stats", {}).get("espn_labels", {})
+        for label, info in espn_labels.items():
+            pipeline_col = info.get("pipeline_col")
+            if pipeline_col is not None:
+                result[label.lower()] = pipeline_col
+            for alias in info.get("aliases", []):
+                if pipeline_col is not None:
+                    result[alias.lower()] = pipeline_col
+
+        # Merge with fallback to ensure nothing is lost
+        for k, v in FALLBACK_MAP.items():
+            result.setdefault(k, v)
+
+        return result
+    except Exception as exc:
+        log.warning(f"Failed to load column map from {map_path}: {exc}")
+        return dict(FALLBACK_MAP)
+
+
+def _load_split_fields(
+    map_path: str = "column_map.json",
+) -> Dict[str, Dict[str, Any]]:
+    """Load split_fields config from column_map.json."""
+    base_path = Path(map_path)
+    if not base_path.exists():
+        return {}
+    try:
+        base = json.loads(base_path.read_text())
+        return base.get("player_stats", {}).get("split_fields", {})
+    except Exception:
+        return {}
+
+
 PLAYER_STAT_MAP = {
+    # Minutes
     "min": "min", "minutes": "min",
+    # Points
     "pts": "pts", "points": "pts",
-    "fg": "_fg", "fgm-a": "_fg", "field goals": "_fg",
-    "3pt": "_3pt", "3p": "_3pt", "3-pt": "_3pt", "3pm-a": "_3pt",
-    "three pointers": "_3pt",
-    "ft": "_ft", "ftm-a": "_ft", "free throws": "_ft",
+    # Field goals — all known ESPN label variants
+    "fg": "_fg", "fgm-a": "_fg", "fgma": "_fg",
+    "fieldgoals": "_fg", "field goals": "_fg", "field goal": "_fg",
+    "fieldgoalsmade": "_fg", "fg (ma)": "_fg",
+    # Three pointers
+    "3pt": "_3pt", "3pm-a": "_3pt", "3ptma": "_3pt", "3fgma": "_3pt",
+    "3-pt": "_3pt", "3p": "_3pt", "3fg": "_3pt",
+    "threepointers": "_3pt", "three pointers": "_3pt", "three point": "_3pt",
+    "threepointsmade": "_3pt", "3pt (ma)": "_3pt",
+    # Free throws
+    "ft": "_ft", "ftm-a": "_ft", "ftma": "_ft",
+    "freethrows": "_ft", "free throws": "_ft", "free throw": "_ft",
+    "freethrowsmade": "_ft", "ft (ma)": "_ft",
+    # Rebounds
     "oreb": "orb", "or": "orb", "offensive rebounds": "orb",
     "dreb": "drb", "dr": "drb", "defensive rebounds": "drb",
     "reb": "reb", "tr": "reb", "rebounds": "reb", "total rebounds": "reb",
+    # Other stats
     "ast": "ast", "a": "ast", "assists": "ast",
     "stl": "stl", "s": "stl", "steals": "stl",
     "blk": "blk", "b": "blk", "blocks": "blk",
     "to": "tov", "tov": "tov", "turnovers": "tov",
     "pf": "pf", "fouls": "pf", "personal fouls": "pf",
-    "+/-": "plus_minus", "plusminus": "plus_minus",
+    # Plus/minus variants
+    "+/-": "plus_minus", "pm": "plus_minus",
+    "plusminus": "plus_minus", "plus/minus": "plus_minus",
 }
+
+# Merge column_map.json labels into PLAYER_STAT_MAP at import time
+_json_map = load_player_stat_map()
+for _k, _v in _json_map.items():
+    PLAYER_STAT_MAP.setdefault(_k, _v)
 
 for _label, _mapped in list(PLAYER_STAT_MAP.items()):
     PLAYER_STAT_MAP.setdefault(_normalize_stat_label(_label), _mapped)
+
+# Pre-compute sets of normalized labels for shooting split lookups
+_FG_SPLIT_LABELS = tuple({
+    _normalize_stat_label(k) for k, v in PLAYER_STAT_MAP.items() if v == "_fg"
+})
+_3PT_SPLIT_LABELS = tuple({
+    _normalize_stat_label(k) for k, v in PLAYER_STAT_MAP.items() if v == "_3pt"
+})
+_FT_SPLIT_LABELS = tuple({
+    _normalize_stat_label(k) for k, v in PLAYER_STAT_MAP.items() if v == "_ft"
+})
+
+
+# ── Team stat label map (loaded from column_map.json with hardcoded fallback) ─
+
+_TEAM_STAT_MAP_FALLBACK = {
+    "oreb": "orb", "offensiverebounds": "orb",
+    "dreb": "drb", "defensiverebounds": "drb",
+    "reb": "reb", "rebounds": "reb", "totalrebounds": "reb",
+    "ast": "ast", "assists": "ast",
+    "to": "tov", "turnovers": "tov",
+    "stl": "stl", "steals": "stl",
+    "blk": "blk", "blocks": "blk",
+    "pf": "pf", "fouls": "pf",
+}
+
+
+def _load_team_stat_map(map_path: str = "column_map.json") -> Dict[str, str]:
+    """Load team stat label map from column_map.json, fallback to hardcoded."""
+    base_path = Path(map_path)
+    if not base_path.exists():
+        return dict(_TEAM_STAT_MAP_FALLBACK)
+    try:
+        base = json.loads(base_path.read_text())
+        result: Dict[str, str] = {}
+        espn_labels = base.get("team_stats", {}).get("espn_labels", {})
+        for label, info in espn_labels.items():
+            pipeline_col = info.get("pipeline_col")
+            if pipeline_col is not None and not info.get("is_made_attempted"):
+                result[label.lower()] = pipeline_col
+                for alias in info.get("aliases", []):
+                    result[alias.lower()] = pipeline_col
+        for k, v in _TEAM_STAT_MAP_FALLBACK.items():
+            result.setdefault(k, v)
+        return result
+    except Exception:
+        return dict(_TEAM_STAT_MAP_FALLBACK)
+
+
+TEAM_STAT_MAP = _load_team_stat_map()
 
 
 # ── Scoreboard parser ─────────────────────────────────────────────────────────
@@ -342,19 +497,8 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                         else:
                             stats["fgm"], stats["fga"] = made, att
                     else:
-                        col_map = {
-                            "oreb": "orb", "offensiverebounds": "orb",
-                            "dreb": "drb", "defensiverebounds": "drb",
-                            "reb": "reb",  "rebounds": "reb",
-                            "totalrebounds": "reb",
-                            "ast": "ast",  "assists": "ast",
-                            "to": "tov",   "turnovers": "tov",
-                            "stl": "stl",  "steals": "stl",
-                            "blk": "blk",  "blocks": "blk",
-                            "pf": "pf",    "fouls": "pf",
-                        }
-                        key = (col_map.get(label) or
-                               col_map.get(name.lower().replace(" ", ""), label))
+                        key = (TEAM_STAT_MAP.get(label) or
+                               TEAM_STAT_MAP.get(name.lower().replace(" ", ""), label))
                         val_p = (_safe_int(dv) if str(dv).isdigit()
                                  else _safe_float(dv))
                         if key == "reb" and ("orb" in stats or "drb" in stats):
@@ -441,20 +585,33 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                                                  if cleaned.isdigit()
                                                  else _safe_float(cleaned)))
 
+                    # DEBUG — print raw ESPN stat labels when env var set
+                    import os as _os
+                    if _os.environ.get("DEBUG_PLAYER_STATS") == "1":
+                        all_labels = [
+                            f"{raw} | {norm}"
+                            for raw, norm in zip(stat_labels_raw, stat_labels)
+                        ]
+                        print(f"[DEBUG] ESPN player stat labels: {all_labels}", flush=True)
+                        _os.environ["DEBUG_PLAYER_STATS"] = "done"
+
+                    if not raw_stats:
+                        log.debug(f"Player stats labels for {athlete_id}: {stat_labels}")
+
                     # Shooting splits — independent loops per type
-                    for fg_lbl in ("fg", "fgm-a", "fieldgoals"):
+                    for fg_lbl in _FG_SPLIT_LABELS:
                         if fg_lbl in raw_stats:
                             m, a = _parse_made_attempt(raw_stats[fg_lbl])
                             if m is not None:
                                 prow["fgm"], prow["fga"] = m, a
                             break
-                    for tp_lbl in ("3pt", "3p", "3-pt", "3pm-a", "threepointers"):
+                    for tp_lbl in _3PT_SPLIT_LABELS:
                         if tp_lbl in raw_stats:
                             m, a = _parse_made_attempt(raw_stats[tp_lbl])
                             if m is not None:
                                 prow["tpm"], prow["tpa"] = m, a
                             break
-                    for ft_lbl in ("ft", "ftm-a", "freethrows"):
+                    for ft_lbl in _FT_SPLIT_LABELS:
                         if ft_lbl in raw_stats:
                             m, a = _parse_made_attempt(raw_stats[ft_lbl])
                             if m is not None:
