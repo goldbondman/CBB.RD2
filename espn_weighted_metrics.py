@@ -220,11 +220,19 @@ def add_weighted_rolling(df: pd.DataFrame,
         (QUAL_METRICS, "_w_qual", "wtd_qual"),
     ]
 
+    # Check for missing source columns once (not per window)
+    for metric_list, weight_col, suffix in metric_groups:
+        missing_src = [m for m in metric_list if m not in df.columns]
+        if missing_src:
+            log.warning(f"Weighted rolling source columns missing ({suffix}) — will be skipped: {missing_src}")
+
+    # Ensure perf_vs_exp columns are numeric before rolling
+    for pve_col in ["perf_vs_exp_ortg", "perf_vs_exp_def", "perf_vs_exp_net"]:
+        if pve_col in df.columns:
+            df[pve_col] = pd.to_numeric(df[pve_col], errors="coerce")
+
     for window in windows:
         for metric_list, weight_col, suffix in metric_groups:
-            missing_src = [m for m in metric_list if m not in df.columns]
-            if missing_src:
-                log.warning(f"Weighted rolling source columns missing ({suffix}) — will be skipped: {missing_src}")
             present = [m for m in metric_list if m in df.columns]
             for metric in present:
                 col_name = f"{metric}_{suffix}_l{window}"
