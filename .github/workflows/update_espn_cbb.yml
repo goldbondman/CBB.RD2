@@ -89,7 +89,7 @@ jobs:
       - name: Run ESPN pipeline
         id: run_pipeline
         run: |
-          python espn_pipeline.py
+          python espn_pipeline.py --days-back ${{ github.event.inputs.days_back || '3' }}
           echo "success=true" >> $GITHUB_OUTPUT
           GAME_COUNT=$(python -c "
           import pandas as pd, pathlib
@@ -103,6 +103,33 @@ jobs:
           echo "game_count=$GAME_COUNT" >> $GITHUB_OUTPUT
         env:
           DAYS_BACK: ${{ github.event.inputs.days_back || '3' }}
+
+      - name: Check pipeline output health
+        if: always()
+        run: |
+          python -c "
+          import pandas as pd, sys, pathlib
+          try:
+              p = pathlib.Path('data/team_game_metrics.csv')
+              if not p.exists():
+                  p = pathlib.Path('data/team_game_logs.csv')
+              if not p.exists():
+                  print('[WARN] No team output CSV found yet — pipeline may not have written data')
+                  sys.exit(0)
+              df = pd.read_csv(p)
+              print(f'[OK] {p.name}: {len(df)} rows')
+              if 'spread' in df.columns:
+                  odds_null = df['spread'].isna().mean() * 100
+                  if odds_null == 100:
+                      print(f'[INFO] Odds fields empty this run — ESPN did not return odds (normal)')
+                  else:
+                      print(f'[OK] Odds populated: {100-odds_null:.1f}% of rows have spread data')
+              else:
+                  print('[INFO] No spread column in output')
+          except Exception as e:
+              print(f'[FAIL] Could not read output: {e}')
+              sys.exit(1)
+          "
 
       # ── Audit ESPN API field names ────────────────────────────────────────────
       - name: Audit ESPN API stat headers
