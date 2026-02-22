@@ -47,10 +47,10 @@ def _parse_made_attempt(s: Any) -> Tuple[Optional[int], Optional[int]]:
     Parse ESPN made-attempt strings into (made, attempts).
     Handles: "8-15", "0-0", "8/15", "7 of 13", "", None, "8", "-", "--", "N/A"
     """
-    if not s or not isinstance(s, str):
-        text = str(s or "").strip().lower()
-    else:
+    if isinstance(s, str):
         text = s.strip().lower()
+    else:
+        text = str(s or "").strip().lower()
     if not text or text in ("--", "-", "n/a"):
         return None, None
     text = text.replace("of", "-").replace("/", "-").replace(" ", "")
@@ -232,18 +232,15 @@ for _label, _mapped in list(PLAYER_STAT_MAP.items()):
     PLAYER_STAT_MAP.setdefault(_normalize_stat_label(_label), _mapped)
 
 # Pre-compute sets of normalized labels for shooting split lookups
-_FG_SPLIT_LABELS = tuple(
-    {_normalize_stat_label(k) for k, v in PLAYER_STAT_MAP.items() if v == "_fg"}
-    | {"fg", "fgm-a", "fgma", "fieldgoals", "fieldgoal", "fg(ma)"}
-)
-_3PT_SPLIT_LABELS = tuple(
-    {_normalize_stat_label(k) for k, v in PLAYER_STAT_MAP.items() if v == "_3pt"}
-    | {"3pt", "3p", "3-pt", "3pm-a", "3ptma", "3fgma", "threepointers", "3fg", "3pt(ma)"}
-)
-_FT_SPLIT_LABELS = tuple(
-    {_normalize_stat_label(k) for k, v in PLAYER_STAT_MAP.items() if v == "_ft"}
-    | {"ft", "ftm-a", "ftma", "freethrows", "freethrow", "ft(ma)"}
-)
+_FG_SPLIT_LABELS = tuple({
+    _normalize_stat_label(k) for k, v in PLAYER_STAT_MAP.items() if v == "_fg"
+})
+_3PT_SPLIT_LABELS = tuple({
+    _normalize_stat_label(k) for k, v in PLAYER_STAT_MAP.items() if v == "_3pt"
+})
+_FT_SPLIT_LABELS = tuple({
+    _normalize_stat_label(k) for k, v in PLAYER_STAT_MAP.items() if v == "_ft"
+})
 
 
 # ── Team stat label map (loaded from column_map.json with hardcoded fallback) ─
