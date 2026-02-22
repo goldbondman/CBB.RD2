@@ -256,8 +256,16 @@ def add_rolling_metrics(df: pd.DataFrame,
     df = df.copy()
     df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
     df = df.sort_values(["team_id", "_sort_dt"])
+    df.reset_index(drop=True, inplace=True)
 
+    missing_src = [m for m in ROLLING_METRICS if m not in df.columns]
+    if missing_src:
+        log.warning(f"Rolling source columns missing — will be skipped: {missing_src}")
     present = [m for m in ROLLING_METRICS if m in df.columns]
+
+    # Ensure rolling source columns are numeric (CSV round-trip may leave them as strings)
+    for m in present:
+        df[m] = pd.to_numeric(df[m], errors="coerce")
 
     for w in windows:
         for m in present:
@@ -301,6 +309,16 @@ def add_rolling_metrics(df: pd.DataFrame,
             lambda g: g["win"].where(g["close_game_flag"] == 1)
             .shift(1).expanding(min_periods=2).mean()
         ).reset_index(level=0, drop=True).round(3)
+
+    # ── Diagnostic logging ──
+    l5_cols = [c for c in df.columns if c.endswith("_l5")]
+    l10_cols = [c for c in df.columns if c.endswith("_l10")]
+    log.info(f"Rolling columns produced: {len(l5_cols)} L5, {len(l10_cols)} L10")
+    if l5_cols:
+        null_pct = df[l5_cols].isna().mean().mean() * 100
+        log.info(f"Rolling columns null rate: {null_pct:.1f}%")
+    else:
+        log.warning("NO L5/L10 ROLLING COLUMNS WERE PRODUCED — check sort and groupby")
 
     df = df.drop(columns=["_sort_dt"], errors="ignore")
     return df

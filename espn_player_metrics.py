@@ -325,6 +325,7 @@ def add_player_rolling(df: pd.DataFrame,
     df["_sort_dt"] = pd.to_datetime(df["game_datetime_utc"], utc=True,
                                     errors="coerce")
     df = df.sort_values(["athlete_id", "_sort_dt"])
+    df.reset_index(drop=True, inplace=True)
 
     # Mark active game rows (played meaningful minutes)
     active = (
@@ -332,6 +333,9 @@ def add_player_rolling(df: pd.DataFrame,
         pd.to_numeric(df.get("min", 0), errors="coerce").gt(0)
     ) if "did_not_play" in df.columns else pd.Series(True, index=df.index)
 
+    missing_src = [m for m in COUNTING_STATS + DERIVED_METRICS if m not in df.columns]
+    if missing_src:
+        log.warning(f"Player rolling source columns missing — will be skipped: {missing_src}")
     all_metrics = [m for m in COUNTING_STATS + DERIVED_METRICS if m in df.columns]
 
     # Counting stats: fill blank/NaN with 0 (0 FGM means they attempted none, not missing)
@@ -395,6 +399,16 @@ def add_player_rolling(df: pd.DataFrame,
         lambda s: s.shift(1).expanding().sum().fillna(0).astype(int)
     )
     df = df.drop(columns=["_active_int"], errors="ignore")
+
+    # ── Diagnostic logging ──
+    l5_cols = [c for c in df.columns if c.endswith("_l5")]
+    l10_cols = [c for c in df.columns if c.endswith("_l10")]
+    log.info(f"Player rolling columns produced: {len(l5_cols)} L5, {len(l10_cols)} L10")
+    if l5_cols:
+        null_pct = df[l5_cols].isna().mean().mean() * 100
+        log.info(f"Player rolling columns null rate: {null_pct:.1f}%")
+    else:
+        log.warning("NO L5/L10 ROLLING COLUMNS WERE PRODUCED — check sort and groupby")
 
     df = df.drop(columns=["_sort_dt"], errors="ignore")
     return df
