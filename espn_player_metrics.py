@@ -31,6 +31,7 @@ import numpy as np
 import pandas as pd
 
 from espn_config import OUT_PLAYER_ROLLING_L5, OUT_PLAYER_ROLE_SPLITS
+from pipeline_csv_utils import safe_write_csv
 
 log = logging.getLogger(__name__)
 
@@ -540,7 +541,7 @@ def _write_player_splits(df: pd.DataFrame) -> None:
         l5_cols = [c for c in df.columns if c.endswith("_l5")]
         if l5_cols:
             out = df[id_cols + l5_cols].copy()
-            out.to_csv(OUT_PLAYER_ROLLING_L5, index=False)
+            safe_write_csv(out, OUT_PLAYER_ROLLING_L5, label="player_rolling_l5")
             log.info(f"player_rolling_l5.csv: {len(out)} rows, {len(l5_cols)} L5 columns")
     except Exception as exc:
         log.warning(f"player_rolling_l5.csv write failed (non-fatal): {exc}")
@@ -557,7 +558,7 @@ def _write_player_splits(df: pd.DataFrame) -> None:
         present_role = [c for c in role_cols if c in df.columns]
         if present_role:
             out = df[id_cols + present_role].copy()
-            out.to_csv(OUT_PLAYER_ROLE_SPLITS, index=False)
+            safe_write_csv(out, OUT_PLAYER_ROLE_SPLITS, label="player_role_splits")
             log.info(f"player_role_splits.csv: {len(out)} rows")
     except Exception as exc:
         log.warning(f"player_role_splits.csv write failed (non-fatal): {exc}")

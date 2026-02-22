@@ -31,6 +31,7 @@ import numpy as np
 import pandas as pd
 
 from espn_config import OUT_ROLLING_L5, OUT_ROLLING_L10, OUT_HALFSPLITS
+from pipeline_csv_utils import safe_write_csv
 
 log = logging.getLogger(__name__)
 
@@ -529,7 +530,7 @@ def _write_rolling_splits(df: pd.DataFrame) -> None:
         l5_cols = [c for c in df.columns if c.endswith("_l5")]
         if l5_cols:
             out = df[id_cols + l5_cols].copy()
-            out.to_csv(OUT_ROLLING_L5, index=False)
+            safe_write_csv(out, OUT_ROLLING_L5, label="team_rolling_l5")
             log.info(f"team_rolling_l5.csv: {len(out)} rows, {len(l5_cols)} L5 columns")
     except Exception as exc:
         log.warning(f"team_rolling_l5.csv write failed (non-fatal): {exc}")
@@ -542,7 +543,7 @@ def _write_rolling_splits(df: pd.DataFrame) -> None:
         l10_cols = list(dict.fromkeys(l10_base + l10_extra))  # deduplicate preserving order
         if l10_cols:
             out = df[id_cols + l10_cols].copy()
-            out.to_csv(OUT_ROLLING_L10, index=False)
+            safe_write_csv(out, OUT_ROLLING_L10, label="team_rolling_l10")
             log.info(f"team_rolling_l10.csv: {len(out)} rows, {len(l10_cols)} L10 columns")
     except Exception as exc:
         log.warning(f"team_rolling_l10.csv write failed (non-fatal): {exc}")
@@ -574,7 +575,7 @@ def _write_rolling_splits(df: pd.DataFrame) -> None:
                 )
                 df = df.drop(columns=["_improved"], errors="ignore")
 
-            out.to_csv(OUT_HALFSPLITS, index=False)
+            safe_write_csv(out, OUT_HALFSPLITS, label="team_game_halfsplits")
             log.info(f"team_game_halfsplits.csv: {len(out)} rows")
     except Exception as exc:
         log.warning(f"team_game_halfsplits.csv write failed (non-fatal): {exc}")
