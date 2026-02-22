@@ -847,9 +847,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--skip-odds-validation",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
         default=True,
-        help="Skip hard validation failure when odds fields are null (default: True)",
+        help="Skip hard validation failure when odds/soft fields are null (default: True). "
+             "Use --no-skip-odds-validation to enforce hard errors.",
     )
     args = parser.parse_args()
     run(days_back=args.days_back, skip_odds_validation=args.skip_odds_validation)
