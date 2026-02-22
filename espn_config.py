@@ -34,6 +34,30 @@ OUT_PREDICTIONS_LATEST   = CSV_DIR / "predictions_latest.csv"
 OUT_PREDICTIONS_COMBINED = CSV_DIR / "predictions_combined_latest.csv"
 OUT_DIVERGENCE_LATEST    = CSV_DIR / "predictions_divergence_latest.csv"
 
+# Rolling window splits
+OUT_ROLLING_L5       = CSV_DIR / "team_rolling_l5.csv"
+OUT_ROLLING_L10      = CSV_DIR / "team_rolling_l10.csv"
+OUT_WEIGHTED_ROLLING = CSV_DIR / "team_weighted_rolling.csv"
+
+# Half splits
+OUT_HALFSPLITS = CSV_DIR / "team_game_halfsplits.csv"
+
+# Focused snapshot tables
+OUT_ATS_PROFILE        = CSV_DIR / "team_ats_profile.csv"
+OUT_LUCK_REGRESSION    = CSV_DIR / "team_luck_regression.csv"
+OUT_SITUATIONAL        = CSV_DIR / "team_situational.csv"
+OUT_RESUME             = CSV_DIR / "team_resume.csv"
+OUT_MATCHUP_HISTORY    = CSV_DIR / "team_matchup_history.csv"
+OUT_CONFERENCE_SUMMARY = CSV_DIR / "conference_daily_summary.csv"
+
+# Travel
+OUT_TRAVEL_FATIGUE = CSV_DIR / "team_travel_fatigue.csv"
+OUT_VENUE_GEOCODES = CSV_DIR / "venue_geocodes.csv"
+
+# Player splits
+OUT_PLAYER_ROLLING_L5  = CSV_DIR / "player_rolling_l5.csv"
+OUT_PLAYER_ROLE_SPLITS = CSV_DIR / "player_role_splits.csv"
+
 # ── ESPN API ─────────────────────────────────────────────────────────────────
 ESPN_SCOREBOARD_URL = (
     "https://site.api.espn.com/apis/site/v2/sports/basketball"

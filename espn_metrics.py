@@ -30,6 +30,8 @@ from typing import List
 import numpy as np
 import pandas as pd
 
+from espn_config import OUT_ROLLING_L5, OUT_ROLLING_L10, OUT_HALFSPLITS
+
 log = logging.getLogger(__name__)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
@@ -515,6 +517,69 @@ def derive_records(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _write_rolling_splits(df: pd.DataFrame) -> None:
+    """
+    Write focused rolling-window split CSVs from the full metrics DataFrame.
+    Each write is non-fatal — failures are logged but never crash the pipeline.
+    """
+    id_cols = [c for c in ["event_id", "team_id", "game_datetime_utc"] if c in df.columns]
+
+    # ── team_rolling_l5.csv ──
+    try:
+        l5_cols = [c for c in df.columns if c.endswith("_l5")]
+        if l5_cols:
+            out = df[id_cols + l5_cols].copy()
+            out.to_csv(OUT_ROLLING_L5, index=False)
+            log.info(f"team_rolling_l5.csv: {len(out)} rows, {len(l5_cols)} L5 columns")
+    except Exception as exc:
+        log.warning(f"team_rolling_l5.csv write failed (non-fatal): {exc}")
+
+    # ── team_rolling_l10.csv ──
+    try:
+        l10_base = [c for c in df.columns if c.endswith("_l10")]
+        l10_extra = [c for c in ["net_rtg_std_l10", "efg_std_l10", "three_pct_std_l10",
+                                  "cover_rate_l10", "ats_margin_l10"] if c in df.columns]
+        l10_cols = list(dict.fromkeys(l10_base + l10_extra))  # deduplicate preserving order
+        if l10_cols:
+            out = df[id_cols + l10_cols].copy()
+            out.to_csv(OUT_ROLLING_L10, index=False)
+            log.info(f"team_rolling_l10.csv: {len(out)} rows, {len(l10_cols)} L10 columns")
+    except Exception as exc:
+        log.warning(f"team_rolling_l10.csv write failed (non-fatal): {exc}")
+
+    # ── team_game_halfsplits.csv ──
+    try:
+        half_base = [
+            "home_away",
+            "h1_pts", "h2_pts", "h1_pts_against", "h2_pts_against",
+            "h1_margin", "h2_margin",
+            "h1_ortg", "h2_ortg", "h1_drtg", "h2_drtg",
+        ]
+        half_rolling = [c for c in df.columns
+                        if (c.startswith("h1_") or c.startswith("h2_"))
+                        and (c.endswith("_l5") or c.endswith("_l10"))]
+        half_cols = [c for c in half_base + half_rolling if c in df.columns]
+
+        if half_cols:
+            out = df[id_cols + half_cols].copy()
+
+            # h2_comeback_rate: expanding season-to-date fraction of games where
+            # h2_margin > h1_margin (team improved in second half), leak-free.
+            if "h1_margin" in df.columns and "h2_margin" in df.columns:
+                h1 = pd.to_numeric(df["h1_margin"], errors="coerce")
+                h2 = pd.to_numeric(df["h2_margin"], errors="coerce")
+                df["_improved"] = (h2 > h1).astype(float).where(h1.notna() & h2.notna())
+                out["h2_comeback_rate"] = df.groupby("team_id")["_improved"].transform(
+                    lambda s: s.shift(1).expanding(min_periods=3).mean().round(3)
+                )
+                df = df.drop(columns=["_improved"], errors="ignore")
+
+            out.to_csv(OUT_HALFSPLITS, index=False)
+            log.info(f"team_game_halfsplits.csv: {len(out)} rows")
+    except Exception as exc:
+        log.warning(f"team_game_halfsplits.csv write failed (non-fatal): {exc}")
+
+
 def compute_all_metrics(df: pd.DataFrame) -> pd.DataFrame:
     """
     Full metrics pipeline. Call from espn_pipeline.py after team logs are written.
@@ -530,4 +595,5 @@ def compute_all_metrics(df: pd.DataFrame) -> pd.DataFrame:
     df = add_home_away_splits(df)
     df = add_true_rebound_pcts(df)
     log.info("Metrics complete")
+    _write_rolling_splits(df)
     return df

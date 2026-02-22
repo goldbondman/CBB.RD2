@@ -560,6 +560,12 @@ jobs:
             data/results_alerts.csv
             data/player_season_summary.csv
             data/team_season_summary.csv
+            data/team_ats_profile.csv
+            data/team_luck_regression.csv
+            data/team_situational.csv
+            data/team_resume.csv
+            data/team_matchup_history.csv
+            data/conference_daily_summary.csv
           retention-days: 90       # Keep longer — this is your performance history
           if-no-files-found: warn
 

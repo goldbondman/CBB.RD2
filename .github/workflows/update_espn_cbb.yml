@@ -409,6 +409,19 @@ jobs:
             data/csv/backtest_by_edge.csv
             data/csv/backtest_model_matrix.csv
             data/results_log_graded.csv
+            data/team_rolling_l5.csv
+            data/team_rolling_l10.csv
+            data/team_weighted_rolling.csv
+            data/team_game_halfsplits.csv
+            data/team_ats_profile.csv
+            data/team_luck_regression.csv
+            data/team_situational.csv
+            data/team_resume.csv
+            data/team_matchup_history.csv
+            data/conference_daily_summary.csv
+            data/team_travel_fatigue.csv
+            data/player_rolling_l5.csv
+            data/player_role_splits.csv
           retention-days: 30
           if-no-files-found: warn
 

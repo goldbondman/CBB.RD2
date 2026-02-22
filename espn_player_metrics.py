@@ -30,6 +30,8 @@ from typing import List, Optional
 import numpy as np
 import pandas as pd
 
+from espn_config import OUT_PLAYER_ROLLING_L5, OUT_PLAYER_ROLE_SPLITS
+
 log = logging.getLogger(__name__)
 
 ROLLING_WINDOWS    = [5, 10]
@@ -526,6 +528,41 @@ def _validate_player_metric_integrity(df: pd.DataFrame,
 
 # ── Main entry point ──────────────────────────────────────────────────────────
 
+def _write_player_splits(df: pd.DataFrame) -> None:
+    """
+    Write focused player split CSVs. Non-fatal — failures logged, never crash.
+    """
+    id_cols = [c for c in ["athlete_id", "event_id", "team_id", "game_datetime_utc"]
+               if c in df.columns]
+
+    # ── player_rolling_l5.csv ──
+    try:
+        l5_cols = [c for c in df.columns if c.endswith("_l5")]
+        if l5_cols:
+            out = df[id_cols + l5_cols].copy()
+            out.to_csv(OUT_PLAYER_ROLLING_L5, index=False)
+            log.info(f"player_rolling_l5.csv: {len(out)} rows, {len(l5_cols)} L5 columns")
+    except Exception as exc:
+        log.warning(f"player_rolling_l5.csv write failed (non-fatal): {exc}")
+
+    # ── player_role_splits.csv ──
+    try:
+        role_cols = [
+            "starter",
+            "pts_starter_l5", "pts_bench_l5",
+            "min_starter_l5", "min_bench_l5",
+            "efg_pct_starter_l5", "efg_pct_bench_l5",
+            "usage_rate_starter_l5", "usage_rate_bench_l5",
+        ]
+        present_role = [c for c in role_cols if c in df.columns]
+        if present_role:
+            out = df[id_cols + present_role].copy()
+            out.to_csv(OUT_PLAYER_ROLE_SPLITS, index=False)
+            log.info(f"player_role_splits.csv: {len(out)} rows")
+    except Exception as exc:
+        log.warning(f"player_role_splits.csv write failed (non-fatal): {exc}")
+
+
 def compute_player_metrics(player_df: pd.DataFrame,
                             team_logs_df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -559,4 +596,5 @@ def compute_player_metrics(player_df: pd.DataFrame,
     _validate_player_metric_integrity(df, raw_df=normalized_input_df)
 
     log.info("Player metrics complete")
+    _write_player_splits(df)
     return df
