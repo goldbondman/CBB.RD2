@@ -39,7 +39,7 @@ from typing import List
 
 import numpy as np
 import pandas as pd
-from espn_config import LEAGUE_AVG_ORTG, LEAGUE_AVG_DRTG
+from espn_config import LEAGUE_AVG_ORTG, LEAGUE_AVG_DRTG, OUT_WEIGHTED_ROLLING
 
 log = logging.getLogger(__name__)
 
@@ -305,6 +305,25 @@ def add_weighted_rolling(df: pd.DataFrame,
 
 # ── Main entry point ──────────────────────────────────────────────────────────
 
+def _write_weighted_rolling(df: pd.DataFrame) -> None:
+    """
+    Write focused weighted-rolling CSV. Non-fatal — failures logged, never crash.
+    """
+    try:
+        id_cols = [c for c in ["event_id", "team_id", "game_datetime_utc"] if c in df.columns]
+        wtd_cols = [c for c in df.columns if "_wtd_" in c]
+        pve_cols = [c for c in df.columns if c.startswith("perf_vs_exp_")]
+        extra_cols = [c for c in ["momentum_score", "form_rating"] if c in df.columns]
+        selected = list(dict.fromkeys(id_cols + wtd_cols + pve_cols + extra_cols))
+        if len(selected) > len(id_cols):
+            out = df[selected].copy()
+            out.to_csv(OUT_WEIGHTED_ROLLING, index=False)
+            log.info(f"team_weighted_rolling.csv: {len(out)} rows, "
+                     f"{len(selected) - len(id_cols)} feature columns")
+    except Exception as exc:
+        log.warning(f"team_weighted_rolling.csv write failed (non-fatal): {exc}")
+
+
 def compute_weighted_metrics(df: pd.DataFrame) -> pd.DataFrame:
     """
     Full weighted metrics pipeline.
@@ -320,4 +339,5 @@ def compute_weighted_metrics(df: pd.DataFrame) -> pd.DataFrame:
     df = add_performance_vs_expectation(df)
     df = add_weighted_rolling(df, windows=ROLLING_WINDOWS)
     log.info("Weighted metrics complete")
+    _write_weighted_rolling(df)
     return df

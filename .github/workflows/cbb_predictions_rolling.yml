@@ -255,6 +255,9 @@ jobs:
           PY
 
       # ── 6. Primary model: espn_prediction_runner.py ─────────────────────────
+      - name: Compute travel fatigue features
+        run: python cbb_travel_fatigue.py || echo "Travel fatigue computation failed (non-fatal)"
+
       - name: Run primary model predictions (rolling 40h)
         id: primary_predictions
         env:
@@ -718,6 +721,7 @@ jobs:
             data/csv/team_matchup_summary.csv
             data/player_condition_profiles.csv
             data/player_archetype_matchup_matrix.csv
+            data/team_travel_fatigue.csv
           retention-days: 30
           if-no-files-found: warn
 
@@ -737,6 +741,7 @@ jobs:
             data/csv/team_matchup_summary.csv
             data/player_condition_profiles.csv
             data/player_archetype_matchup_matrix.csv
+            data/team_travel_fatigue.csv
           retention-days: 30
           if-no-files-found: warn
 
