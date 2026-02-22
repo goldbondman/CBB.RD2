@@ -480,6 +480,15 @@ def run_predictions(
 
         kick_utc = _parse_utc_dt(matchup.get("game_datetime_utc"))
         cutoff_dt = kick_utc if kick_utc is not None else default_cutoff_dt
+        if cutoff_dt is None:
+            # Conservative fallback for malformed/missing kickoff datetimes:
+            # never include future games relative to prediction runtime.
+            cutoff_dt = pd.Timestamp.now(tz="UTC")
+            log.warning(
+                "    Missing kickoff for game_id=%s; using current UTC as leak-safe cutoff (%s)",
+                game_id,
+                cutoff_dt.isoformat(),
+            )
 
         log.info(f"  Processing: {home_name} vs {away_name} (game_id={game_id})")
 
