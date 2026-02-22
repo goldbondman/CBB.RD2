@@ -936,8 +936,13 @@ def main():
     # Load results log
     df = _load(RESULTS_LOG, "results_log.csv")
     if df is None:
-        print("[FAIL] Cannot proceed without results_log.csv")
-        sys.exit(1)
+        print("[WARN] results_log.csv missing or empty — this is expected on first run.")
+        print("[INFO] Writing empty placeholder files so downstream steps don't fail.")
+        GRADED_LOG.parent.mkdir(parents=True, exist_ok=True)
+        CSV_DIR.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame().to_csv(GRADED_LOG, index=False)
+        print(f"[OK]   Empty placeholder → {GRADED_LOG}")
+        sys.exit(0)
 
     print(f"[BACKTEST] Loading results_log.csv: {len(df):,} rows")
 

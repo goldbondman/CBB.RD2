@@ -418,3 +418,29 @@ class TestValidation:
     def test_missing_required_column_fails(self):
         df = _make_results_df(20).drop(columns=["pred_spread"])
         assert validate_results_log(df) is False
+
+
+# ── Tests: Bootstrap (missing results_log.csv) ─────────────────────────────
+
+class TestBootstrapMissingResultsLog:
+    """Tests that main() exits cleanly when results_log.csv is missing."""
+
+    def test_main_exits_zero_when_results_log_missing(self, tmp_path, monkeypatch):
+        """main() should exit 0 and write an empty graded log placeholder
+        when results_log.csv does not exist."""
+        import build_backtest_csvs as mod
+
+        data_dir = tmp_path / "data"
+        data_dir.mkdir()
+        csv_dir = data_dir / "csv"
+
+        monkeypatch.setattr(mod, "RESULTS_LOG", data_dir / "results_log.csv")
+        monkeypatch.setattr(mod, "GRADED_LOG", data_dir / "results_log_graded.csv")
+        monkeypatch.setattr(mod, "CSV_DIR", csv_dir)
+        monkeypatch.setattr("sys.argv", ["build_backtest_csvs.py", "--section", "grade-only"])
+
+        with pytest.raises(SystemExit) as exc_info:
+            mod.main()
+
+        assert exc_info.value.code == 0
+        assert (data_dir / "results_log_graded.csv").exists()
