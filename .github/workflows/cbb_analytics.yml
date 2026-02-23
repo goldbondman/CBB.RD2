@@ -723,6 +723,37 @@ jobs:
             echo "[SKIP] build_backtest_csvs.py not found"
           fi
 
+      - name: Verify backtest output landed
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          import sys
+          from pathlib import Path
+
+          path = Path("data/backtest_results_latest.csv")
+          if not path.exists():
+              print(f"FAIL: {path} missing after backtester run")
+              sys.exit(1)
+
+          df = pd.read_csv(path)
+          print(f"Rows: {len(df)}")
+          failures = []
+          for col in ["game_id", "actual_margin", "ens_spread", "home_team_id", "away_team_id"]:
+              if col not in df.columns:
+                  failures.append(f"{col} (missing)")
+                  continue
+              null_pct = df[col].isna().mean() * 100
+              print(f"  {col}: {null_pct:.0f}% null")
+              if null_pct == 100:
+                  failures.append(col)
+
+          if failures:
+              print(f"FAIL: critical output columns invalid: {failures}")
+              sys.exit(1)
+
+          print("PASS: critical backtest columns contain data")
+          PY
+
 
       - name: Run pipeline health tests
         run: pytest tests/test_pipeline_health.py -v
@@ -936,6 +967,13 @@ jobs:
           git add \
             data/results_log.csv \
             data/results_log_graded.csv \
+            data/team_season_summary.csv \
+            data/backtest_results_latest.csv \
+            data/backtest_model_report_latest.csv \
+            data/backtest_calibration_latest.csv \
+            data/backtest_results_*.csv \
+            data/backtest_model_report_*.csv \
+            data/backtest_calibration_*.csv \
             data/csv/backtest_summary.csv \
             data/csv/backtest_by_model.csv \
             data/csv/backtest_weekly.csv \

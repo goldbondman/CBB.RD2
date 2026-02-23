@@ -47,6 +47,7 @@ Usage:
 import argparse
 import random
 import json
+import sys
 import warnings
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timedelta
@@ -1133,9 +1134,12 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
     outputs = {}
 
     results_path = output_dir / f"backtest_results_{today}.csv"
-    safe_write_csv(records, results_path, index=False, label="backtest_results", allow_empty=True)
-    safe_write_csv(records, output_dir / "backtest_results_latest.csv", index=False, label="backtest_results_latest", allow_empty=True)
+    safe_write_csv(records, results_path, index=False, label="backtest_results", allow_empty=False)
+    latest_results_path = output_dir / "backtest_results_latest.csv"
+    safe_write_csv(records, latest_results_path, index=False, label="backtest_results_latest", allow_empty=False)
+    safe_write_csv(records, output_dir / "team_season_summary.csv", index=False, label="team_season_summary", allow_empty=False)
     outputs["results"] = results_path
+    outputs["results_latest"] = latest_results_path
     log.info(f"Results → {results_path}  ({len(records):,} rows)")
 
     report_path = output_dir / f"backtest_model_report_{today}.csv"
@@ -1193,6 +1197,36 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
     return outputs
 
 
+def verify_backtest_output(path: Path) -> bool:
+    """Read back a freshly written backtest CSV and fail loud on bad writes."""
+    if not path.exists():
+        log.error("[VERIFY FAIL] %s does not exist after write", path)
+        return False
+
+    if path.stat().st_size < 500:
+        log.error("[VERIFY FAIL] %s is suspiciously small: %s bytes", path, path.stat().st_size)
+        return False
+
+    df = pd.read_csv(path)
+    if df.empty:
+        log.error("[VERIFY FAIL] %s has 0 rows", path)
+        return False
+
+    critical_cols = ["game_id", "actual_margin", "ens_spread", "home_team_id", "away_team_id"]
+    missing = [col for col in critical_cols if col not in df.columns]
+    if missing:
+        log.error("[VERIFY FAIL] %s missing critical columns: %s", path, missing)
+        return False
+
+    null_failures = [col for col in critical_cols if df[col].isna().mean() == 1.0]
+    if null_failures:
+        log.error("[VERIFY FAIL] %s has 100%% null critical columns: %s", path, null_failures)
+        return False
+
+    log.info("[VERIFY PASS] %s: %s rows, critical columns populated", path, len(df))
+    return True
+
+
 def main():
     parser = argparse.ArgumentParser(description="CBB Prediction Backtester")
     parser.add_argument("--min-games",    type=int, default=5)
@@ -1215,7 +1249,13 @@ def main():
         optimizer_metric    = args.optimizer_metric,
     )
 
-    run(config, args.output_dir)
+    outputs = run(config, args.output_dir)
+    if not outputs:
+        sys.exit(1)
+
+    verify_path = args.output_dir / "backtest_results_latest.csv"
+    if not verify_backtest_output(verify_path):
+        sys.exit(1)
 
 
 if __name__ == "__main__":
