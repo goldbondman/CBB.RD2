@@ -723,12 +723,9 @@ jobs:
             echo "[SKIP] build_backtest_csvs.py not found"
           fi
 
-      - name: Optimize ensemble weights
-        run: python optimize_weights.py --window 60 --min-sample 50
-        continue-on-error: true
 
-      - name: Calibrate confidence scores
-        run: python calibrate_confidence.py
+      - name: Run pipeline health tests
+        run: pytest tests/test_pipeline_health.py -v
         continue-on-error: true
 
       # ── Build backtest email ──────────────────────────────────────────────

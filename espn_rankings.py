@@ -31,7 +31,6 @@ Pipeline position: run after espn_pipeline.py + espn_tournament.py
 """
 
 import argparse
-import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -39,6 +38,8 @@ from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
+
+from config.logging_config import get_logger
 
 from cbb_config import (
     LEAGUE_AVG_ORTG, LEAGUE_AVG_DRTG, LEAGUE_AVG_EFG, PYTH_EXP,
@@ -53,12 +54,7 @@ from espn_config import (
     OUT_RANKINGS_CONF,
 )
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s  %(levelname)-8s  %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 TZ = ZoneInfo("America/Los_Angeles")
 
 # ── Constants ─────────────────────────────────────────────────────────────────

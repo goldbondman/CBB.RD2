@@ -45,8 +45,8 @@ Usage:
 """
 
 import argparse
+import random
 import json
-import logging
 import warnings
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timedelta
@@ -54,18 +54,21 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
 import pandas as pd
 from scipy import stats as scipy_stats
 from scipy.optimize import minimize
 
+from config.logging_config import get_logger
+from espn_config import PIPELINE_RUN_ID
+from pipeline_csv_utils import safe_write_csv
+
 warnings.filterwarnings("ignore")
 
-log = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s  %(levelname)-8s  %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+log = get_logger(__name__)
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 DATA_DIR     = Path("data")
@@ -95,6 +98,19 @@ LEAGUE_AVG_EFG  = 50.5
 LEAGUE_AVG_TOV  = 18.0
 LEAGUE_AVG_FTR  = 28.0
 VIG_BREAK_EVEN  = 52.38   # % ATS needed to break even at -110 juice
+
+
+def _append_weight_history_snapshot(history_path: Path, current_weights: dict) -> None:
+    snapshots = []
+    if history_path.exists() and history_path.stat().st_size > 0:
+        try:
+            snapshots = json.loads(history_path.read_text())
+            if not isinstance(snapshots, list):
+                snapshots = []
+        except Exception:
+            snapshots = []
+    snapshots.append(current_weights)
+    history_path.write_text(json.dumps(snapshots, indent=2))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1117,28 +1133,44 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
     outputs = {}
 
     results_path = output_dir / f"backtest_results_{today}.csv"
-    records.to_csv(results_path, index=False)
-    records.to_csv(output_dir / "backtest_results_latest.csv", index=False)
+    safe_write_csv(records, results_path, index=False, label="backtest_results", allow_empty=True)
+    safe_write_csv(records, output_dir / "backtest_results_latest.csv", index=False, label="backtest_results_latest", allow_empty=True)
     outputs["results"] = results_path
     log.info(f"Results → {results_path}  ({len(records):,} rows)")
 
     report_path = output_dir / f"backtest_model_report_{today}.csv"
-    report_df.to_csv(report_path, index=False)
-    report_df.to_csv(output_dir / "backtest_model_report_latest.csv", index=False)
+    safe_write_csv(report_df, report_path, index=False, label="backtest_model_report", allow_empty=True)
+    safe_write_csv(report_df, output_dir / "backtest_model_report_latest.csv", index=False, label="backtest_model_report_latest", allow_empty=True)
     outputs["report"] = report_path
     log.info(f"Report  → {report_path}")
 
     if not calib_df.empty:
         calib_path = output_dir / f"backtest_calibration_{today}.csv"
-        calib_df.to_csv(calib_path, index=False)
-        calib_df.to_csv(output_dir / "backtest_calibration_latest.csv", index=False)
+        safe_write_csv(calib_df, calib_path, index=False, label="backtest_calibration", allow_empty=True)
+        safe_write_csv(calib_df, output_dir / "backtest_calibration_latest.csv", index=False, label="backtest_calibration_latest", allow_empty=True)
         outputs["calibration"] = calib_path
         log.info(f"Calibration → {calib_path}")
 
     if optimized_weights:
+        weights_payload = {
+            **optimized_weights,
+            "pipeline_run_id": PIPELINE_RUN_ID,
+            "seed": SEED,
+            "saved_at_utc": pd.Timestamp.utcnow().isoformat(),
+        }
+
         weights_path = output_dir / "backtest_optimized_weights.json"
-        with open(weights_path, "w") as f:
-            json.dump(optimized_weights, f, indent=2)
+        model_weights_path = output_dir / "model_weights.json"
+        history_path = output_dir / "model_weights_history.json"
+
+        for candidate in (weights_path, model_weights_path):
+            if candidate.exists() and candidate.stat().st_size > 0:
+                try:
+                    _append_weight_history_snapshot(history_path, json.loads(candidate.read_text()))
+                except Exception:
+                    log.warning("Could not snapshot existing weights at %s", candidate)
+            candidate.write_text(json.dumps(weights_payload, indent=2))
+
         outputs["weights"] = weights_path
         log.info(f"Weights → {weights_path}")
 
@@ -1155,7 +1187,7 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
         if weight_history_path.exists() and weight_history_path.stat().st_size > 0:
             existing = pd.read_csv(weight_history_path)
             history_df = pd.concat([existing, history_df], ignore_index=True)
-        history_df.to_csv(weight_history_path, index=False)
+        safe_write_csv(history_df, weight_history_path, index=False, label="model_weight_history", allow_empty=True)
         log.info(f"Weight history appended → {weight_history_path}")
 
     return outputs

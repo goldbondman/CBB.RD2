@@ -44,7 +44,6 @@ Usage:
 """
 
 import argparse
-import logging
 import warnings
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timedelta
@@ -56,15 +55,11 @@ import numpy as np
 import pandas as pd
 
 from pipeline_csv_utils import safe_write_csv
+from config.logging_config import get_logger
 
 warnings.filterwarnings("ignore")
 
-log = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s  %(levelname)-8s  %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+log = get_logger(__name__)
 
 TZ = ZoneInfo("America/Los_Angeles")
 
@@ -963,7 +958,7 @@ class ResultsTracker:
 
         if all_outcomes:
             new_rows    = pd.DataFrame([o.to_dict() for o in all_outcomes])
-            new_rows.to_csv(self.output_dir / "results_log.csv", index=False)
+            safe_write_csv(new_rows, self.output_dir / "results_log.csv", index=False, label="results_log", allow_empty=True)
             log.info(f"Reprocessed {len(all_outcomes)} outcomes")
 
             updated_log = load_results_log()
@@ -988,20 +983,20 @@ class ResultsTracker:
                 summary_rows.append(row)
 
         summary_df = pd.DataFrame(summary_rows)
-        summary_df.to_csv(self.output_dir / "results_summary.csv", index=False)
+        safe_write_csv(summary_df, self.output_dir / "results_summary.csv", index=False, label="results_summary", allow_empty=True)
         log.info(f"Summary written → {self.output_dir / 'results_summary.csv'}")
 
         # Alerts
         if alerts:
             alert_df = pd.DataFrame([a.to_dict() for a in alerts])
-            alert_df.to_csv(self.output_dir / "results_alerts.csv", index=False)
+            safe_write_csv(alert_df, self.output_dir / "results_alerts.csv", index=False, label="results_alerts", allow_empty=True)
             log.info(f"Alerts written: {len(alerts)} active → {self.output_dir / 'results_alerts.csv'}")
         else:
-            pd.DataFrame().to_csv(self.output_dir / "results_alerts.csv", index=False)
+            safe_write_csv(pd.DataFrame(), self.output_dir / "results_alerts.csv", index=False, label="results_alerts", allow_empty=True)
 
         # Per-model split table
         model_split = build_model_split_table(log_df)
-        model_split.to_csv(self.output_dir / "results_model_split.csv", index=False)
+        safe_write_csv(model_split, self.output_dir / "results_model_split.csv", index=False, label="results_model_split", allow_empty=True)
 
     def _print_daily_summary(
         self,

@@ -12,13 +12,13 @@ are missing.
 
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
+from config.logging_config import get_logger
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 DATA_DIR = Path("data")
 
@@ -879,10 +879,6 @@ def build_conference_summary(output_path: Path = CONF_SUMMARY_CSV) -> pd.DataFra
 
 
 def main() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)-8s %(message)s",
-    )
     build_player_season_summary()
     build_team_season_summary()
     build_team_ats_profile()
