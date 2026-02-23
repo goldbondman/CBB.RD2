@@ -1156,12 +1156,12 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
     if metrics_path is None:
         metrics_path = _resolve_optional_csv(WEIGHTED_CSV)
     if metrics_path is None:
-        log.warning("Skipping backtest.csv build: no team_game_metrics/team_game_weighted CSV found")
+        log.warning("Skipping team_season_summary.csv build: no team_game_metrics/team_game_weighted CSV found")
         return None
 
     tgm = pd.read_csv(metrics_path, low_memory=False)
     if tgm.empty:
-        log.warning("Skipping backtest.csv build: team game metrics file is empty")
+        log.warning("Skipping team_season_summary.csv build: team game metrics file is empty")
         return None
 
     tgm["team_id"] = tgm["team_id"].astype(str)
@@ -1353,9 +1353,9 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
     base = _add_sample_guards(base)
     _assert_consistency(base)
 
-    out_path = output_dir / "backtest.csv"
-    safe_write_csv(base, out_path, index=False, label="backtest", allow_empty=True)
-    safe_write_csv(base, output_dir / "backtest_latest.csv", index=False, label="backtest_latest", allow_empty=True)
+    out_path = output_dir / "team_season_summary.csv"
+    safe_write_csv(base, out_path, index=False, label="team_season_summary", allow_empty=True)
+    safe_write_csv(base, output_dir / "team_season_summary_latest.csv", index=False, label="team_season_summary_latest", allow_empty=True)
     log.info("Backtest team analytics → %s", out_path)
     return out_path
 
@@ -1379,7 +1379,7 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
         outputs = {}
         backtest_path = build_team_backtest_csv(output_dir)
         if backtest_path is not None:
-            outputs["backtest"] = backtest_path
+            outputs["team_season_summary"] = backtest_path
         return outputs
 
     # ── Run backtest ─────────────────────────────────────────────────────────
@@ -1391,7 +1391,7 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
         outputs = {}
         backtest_path = build_team_backtest_csv(output_dir)
         if backtest_path is not None:
-            outputs["backtest"] = backtest_path
+            outputs["team_season_summary"] = backtest_path
         return outputs
 
     records = engine.attach_market_lines(records)
@@ -1492,7 +1492,7 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
 
     backtest_path = build_team_backtest_csv(output_dir)
     if backtest_path is not None:
-        outputs["backtest"] = backtest_path
+        outputs["team_season_summary"] = backtest_path
 
     return outputs
 
