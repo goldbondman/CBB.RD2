@@ -18,7 +18,6 @@ Exit codes: 0 = success or skipped (missing secrets), 1 = SMTP failure
 """
 
 import argparse
-import logging
 import os
 import smtplib
 import sys
@@ -27,9 +26,9 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
+from config.logging_config import get_logger
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 
 def build_subject(base: str, critical_count: int) -> str:

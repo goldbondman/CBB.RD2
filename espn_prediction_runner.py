@@ -28,7 +28,6 @@ Important:
 """
 
 import argparse
-import logging
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -42,12 +41,15 @@ from espn_config import (
     TZ,
 )
 
-OUT_PREDICTIONS_LATEST = DATA_DIR / "predictions_latest.csv"
 from typing import Dict, List, Optional
 from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
+from config.logging_config import get_logger
+from pipeline_csv_utils import safe_write_csv
+
+OUT_PREDICTIONS_LATEST = DATA_DIR / "predictions_latest.csv"
 
 # ── Local imports ──────────────────────────────────────────────────────────────
 try:
@@ -76,12 +78,7 @@ try:
 except ImportError:
     ESPN_CLIENT_AVAILABLE = False
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s  %(levelname)-8s  %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 BOX_COL_MAP = {
@@ -701,8 +698,8 @@ def write_predictions(df: pd.DataFrame, label: str) -> Path:
     if not df.empty:
         _validate_prediction_output_schema(df)
     dated_path = DATA_DIR / f"predictions_{label}.csv"
-    df.to_csv(dated_path, index=False)
-    df.to_csv(OUT_PREDICTIONS_LATEST, index=False)
+    safe_write_csv(df, dated_path, index=False, label="predictions_dated", allow_empty=True)
+    safe_write_csv(df, OUT_PREDICTIONS_LATEST, index=False, label="predictions_latest", allow_empty=True)
 
     log.info(f"Wrote {len(df)} predictions -> {dated_path}")
     log.info("Updated predictions_latest.csv")

@@ -7,6 +7,8 @@ import os
 from zoneinfo import ZoneInfo
 from pathlib import Path
 
+import pandas as pd
+
 # ── Paths ────────────────────────────────────────────────────────────────────
 BASE_DIR  = Path(__file__).parent.resolve()
 CSV_DIR   = BASE_DIR / "data"
@@ -96,6 +98,10 @@ CHECKPOINT_FILE = os.getenv("CHECKPOINT_FILE", "/tmp/espn_cbb_checkpoint.json")
 SOURCE      = "espn"
 PARSE_VERSION = "v1.0.0"
 DRY_RUN     = os.getenv("DRY_RUN", "0").strip().lower() in ("1", "true", "yes")
+PIPELINE_RUN_ID = os.environ.get(
+    "GITHUB_RUN_ID",
+    pd.Timestamp.utcnow().strftime("%Y%m%d_%H%M%S")
+)
 
 # ── Rate limiting ─────────────────────────────────────────────────────────────
 # Seconds to sleep between summary fetches to avoid hammering ESPN.

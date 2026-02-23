@@ -9,7 +9,6 @@ Output:  data/team_travel_fatigue.csv
 
 from __future__ import annotations
 
-import logging
 import re
 import string
 from datetime import datetime, timezone
@@ -19,8 +18,9 @@ from pathlib import Path
 import pandas as pd
 
 from espn_config import OUT_TRAVEL_FATIGUE, OUT_VENUE_GEOCODES, OUT_GAMES, OUT_TEAM_LOGS
+from config.logging_config import get_logger
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 DATA_DIR = Path("data")
 
@@ -276,11 +276,7 @@ def compute_travel_fatigue(
 
 
 def main() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)-8s %(message)s",
-    )
-
+    
     games_df = _safe_read(OUT_GAMES)
     logs_df  = _safe_read(OUT_TEAM_LOGS)
     geo_df   = _safe_read(OUT_VENUE_GEOCODES)

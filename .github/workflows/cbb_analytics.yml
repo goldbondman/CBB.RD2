@@ -723,6 +723,11 @@ jobs:
             echo "[SKIP] build_backtest_csvs.py not found"
           fi
 
+
+      - name: Run pipeline health tests
+        run: pytest tests/test_pipeline_health.py -v
+        continue-on-error: true
+
       # ── Build backtest email ──────────────────────────────────────────────
       - name: Build backtest email
         id: backtest_email
