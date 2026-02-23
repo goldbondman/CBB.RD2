@@ -723,6 +723,10 @@ jobs:
             echo "[SKIP] build_backtest_csvs.py not found"
           fi
 
+      - name: Run bias detector
+        run: python bias_detector.py --window 60
+        continue-on-error: true
+
       # ── Build backtest email ──────────────────────────────────────────────
       - name: Build backtest email
         id: backtest_email

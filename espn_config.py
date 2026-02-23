@@ -7,6 +7,8 @@ import os
 from zoneinfo import ZoneInfo
 from pathlib import Path
 
+import pandas as pd
+
 # ── Paths ────────────────────────────────────────────────────────────────────
 BASE_DIR  = Path(__file__).parent.resolve()
 CSV_DIR   = BASE_DIR / "data"
@@ -33,6 +35,10 @@ OUT_PREDICTIONS_PRIMARY  = CSV_DIR / "predictions_primary.csv"
 OUT_PREDICTIONS_LATEST   = CSV_DIR / "predictions_latest.csv"
 OUT_PREDICTIONS_COMBINED = CSV_DIR / "predictions_combined_latest.csv"
 OUT_DIVERGENCE_LATEST    = CSV_DIR / "predictions_divergence_latest.csv"
+OUT_PREDICTIONS_GRADED   = CSV_DIR / "predictions_graded.csv"
+OUT_BIAS_TABLE           = CSV_DIR / "model_bias_table.csv"
+OUT_BIAS_REPORT          = CSV_DIR / "bias_report.json"
+OUT_BIAS_HISTORY         = CSV_DIR / "bias_history.csv"
 
 # Rolling window splits
 OUT_ROLLING_L5       = CSV_DIR / "team_rolling_l5.csv"
@@ -113,3 +119,52 @@ LEAGUE_AVG_ORB    = 30.0
 LEAGUE_AVG_DRB    = 70.0
 PYTHAGOREAN_EXP   = 11.5
 DEFAULT_HCA       = 3.2
+
+
+CONFERENCE_TIERS = {
+    "HIGH": {
+        "ACC", "Big Ten", "Big 12", "SEC", "Big East", "Pac-12",
+    },
+    "MID": {
+        "American Athletic", "Mountain West", "Atlantic 10",
+        "Missouri Valley", "West Coast", "Conference USA",
+        "Sun Belt", "MAC", "Colonial Athletic",
+    },
+    "LOW": {
+        "Big South", "Horizon", "Ivy League", "MAAC",
+        "Metro Atlantic", "Mid-American", "Northeast",
+        "Ohio Valley", "Patriot", "Southern", "Southland",
+        "SWAC", "MEAC", "NEC", "Big Sky", "WAC",
+        "America East", "Summit League", "Atlantic Sun",
+    },
+}
+
+
+def get_conference_tier(conference: str) -> str:
+    """Return HIGH / MID / LOW / UNKNOWN for a conference string."""
+    if not conference or pd.isna(conference):
+        return "UNKNOWN"
+
+    conf_clean = str(conference).strip()
+    for tier, conf_set in CONFERENCE_TIERS.items():
+        for conf_name in conf_set:
+            if conf_name.lower() in conf_clean.lower():
+                return tier
+    return "UNKNOWN"
+
+
+def get_game_tier(home_conference: str, away_conference: str) -> str:
+    """Classify game as pure conference tier or cross-tier matchup."""
+    tier_h = get_conference_tier(home_conference)
+    tier_a = get_conference_tier(away_conference)
+
+    if tier_h == tier_a:
+        return tier_h
+
+    tiers = tuple(sorted([tier_h, tier_a]))
+    cross_map = {
+        ("HIGH", "LOW"): "CROSS_HIGH_LOW",
+        ("HIGH", "MID"): "CROSS_HIGH_MID",
+        ("LOW", "MID"): "CROSS_MID_LOW",
+    }
+    return cross_map.get(tiers, "UNKNOWN")
