@@ -584,7 +584,24 @@ def run_predictions(
             elif revenge.get("revenge_team") == "away":
                 pred_spread = round(pred_spread + 0.5, 2)
 
-        alpha = detect_alpha(pred_spread, spread_line, favored_team, trap_for_favorite, revenge)
+        market_context = {
+            "rlm_sharp_side": matchup.get("rlm_sharp_side"),
+            "book_sharp_side": matchup.get("book_sharp_side"),
+            "book_spread_diff": _safe_float(matchup.get("book_spread_diff")),
+            "steam_flag": bool(matchup.get("steam_flag")) if matchup.get("steam_flag") is not None else False,
+            "line_movement": _safe_float(matchup.get("line_movement")),
+            "line_freeze_flag": bool(matchup.get("line_freeze_flag")) if matchup.get("line_freeze_flag") is not None else False,
+            "home_tickets_pct": _safe_float(matchup.get("home_tickets_pct")),
+        }
+
+        alpha = detect_alpha(
+            pred_spread,
+            spread_line,
+            favored_team,
+            trap_for_favorite,
+            revenge,
+            game_context=market_context,
+        )
         totals_proj = model_total(home_ctx, away_ctx)
         line_advisory = line_shopping_advisory(pred_spread, spread_line)
 
@@ -887,19 +904,81 @@ def model_total(team_a: dict, team_b: dict) -> dict:
     }
 
 
-def detect_alpha(pred_spread: float, spread_line: Optional[float], favored_team: str, trap_for_favorite: bool, revenge_info: dict) -> dict:
+def detect_alpha(
+    pred_spread: float,
+    spread_line: Optional[float],
+    favored_team: str,
+    trap_for_favorite: bool,
+    revenge_info: dict,
+    game_context: Optional[dict] = None,
+) -> dict:
     reasoning = []
     kelly = 0.0
     if spread_line is not None:
         edge = abs(pred_spread - spread_line)
         kelly = min(0.08, max(0.0, (edge - 1.0) / 30.0))
+
     if trap_for_favorite:
         reasoning.append("⚠️ TRAP GAME — fade the favorite historically profitable")
         kelly *= 0.7
+
     if revenge_info.get("revenge_flag"):
         team = revenge_info.get("revenge_team")
         margin = revenge_info.get("revenge_margin")
         reasoning.append(f"REVENGE SPOT: {team} team lost last meeting by {margin}.")
+
+    if game_context:
+        prediction = pred_spread - spread_line if spread_line is not None else pred_spread
+        model_side = "home" if prediction > 0 else "away"
+
+        rlm_sharp = game_context.get("rlm_sharp_side")
+        book_sharp = game_context.get("book_sharp_side")
+
+        if rlm_sharp and rlm_sharp == model_side:
+            reasoning.append(
+                f"Reverse line movement confirms model: public fading {model_side} but sharps backing it"
+            )
+
+        if book_sharp and book_sharp == model_side:
+            reasoning.append(
+                f"Pinnacle vs DraftKings disagrees {float(game_context.get('book_spread_diff') or 0):.1f}pts in model direction — sharp books agree"
+            )
+
+        if rlm_sharp and rlm_sharp != model_side:
+            reasoning.append(
+                f"⚠️ WARNING: RLM shows sharps on {rlm_sharp.upper()} but model likes {model_side.upper()} — reduce size or stand down"
+            )
+            kelly *= 0.4
+
+        if game_context.get("steam_flag"):
+            steam_side = "home" if (game_context.get("line_movement") or 0) > 0 else "away"
+            if steam_side == model_side:
+                reasoning.append("🔥 Steam move confirms model direction — sharp syndicate action detected")
+            else:
+                reasoning.append(
+                    f"⚠️ Steam move AGAINST model — sharps moved line {abs(game_context.get('line_movement', 0)):.1f}pts the other way. Stand down."
+                )
+                kelly = 0.0
+
+        if game_context.get("line_freeze_flag"):
+            reasoning.append(
+                "⚠️ LINE FREEZE: heavy public action, line unmoved — books comfortable. Model edge likely illusory here."
+            )
+            kelly *= 0.5
+
+        home_tickets = game_context.get("home_tickets_pct")
+        if home_tickets is not None:
+            heavy_public_home = float(home_tickets) >= 70
+            heavy_public_away = float(home_tickets) <= 30
+            if heavy_public_home and model_side == "away":
+                reasoning.append(
+                    f"Public fade: {home_tickets:.0f}% of tickets on home but model likes away — contrarian + model signal"
+                )
+            elif heavy_public_away and model_side == "home":
+                reasoning.append(
+                    f"Public fade: only {home_tickets:.0f}% on home but model likes home — contrarian + model signal"
+                )
+
     return {"kelly_fraction": round(kelly, 4), "alpha_reasoning": " | ".join(reasoning)}
 
 

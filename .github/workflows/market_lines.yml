@@ -1,0 +1,64 @@
+name: Market Lines Capture
+
+on:
+  schedule:
+    - cron: '0 11 * * *'
+    - cron: '0 15-23,0-4 * * *'
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Capture mode'
+        default: 'pregame'
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download latest predictions artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-predictions-latest
+          path: data/
+        continue-on-error: true
+
+      - name: Download existing market lines
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-market-lines
+          path: data/
+        continue-on-error: true
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Capture market lines
+        run: |
+          MODE="${{ github.event.inputs.mode }}"
+          if [ -z "$MODE" ]; then
+            HOUR=$(date -u +%H)
+            if [ "$HOUR" = "11" ]; then MODE="morning"
+            elif [ "$HOUR" = "05" ]; then MODE="postgame"
+            else MODE="pregame"
+            fi
+          fi
+          python -m ingestion.market_lines --mode "$MODE"
+
+      - name: Build predictions with context
+        run: python -m enrichment.predictions_with_context
+
+      - name: Upload market lines artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-market-lines
+          path: data/market_lines.csv
+          retention-days: 90
+
+      - name: Upload predictions-with-context artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-predictions-with-context
+          path: data/predictions_with_context.csv
+          retention-days: 30
