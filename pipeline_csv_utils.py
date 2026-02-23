@@ -34,8 +34,19 @@ def dedupe_by_primary_key(df: pd.DataFrame, path: str | pathlib.Path) -> pd.Data
 
     available_pk = [c for c in pk if c in df.columns]
     if not available_pk:
-        logger.warning("Primary key columns %s not present in %s; skipping dedupe", pk, fname)
+        logger.warning(
+            "No primary key columns available for dedupe in %s; expected %s",
+            fname,
+            pk,
+        )
         return df
+    if available_pk != pk:
+        logger.warning(
+            "Partial primary key for dedupe in %s: using %s (expected %s)",
+            fname,
+            available_pk,
+            pk,
+        )
 
     before = len(df)
     deduped = df.drop_duplicates(subset=available_pk, keep='last')
