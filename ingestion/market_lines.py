@@ -13,6 +13,8 @@ from typing import Optional
 import pandas as pd
 import requests
 
+from espn_gap_fillers import fill_market_row_gaps
+
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(message)s")
 
@@ -387,6 +389,13 @@ def build_market_row(
         "line_freeze_flag": (
             abs(line_movement or 0) < 0.5 and home_tickets is not None and abs((home_tickets or 50) - 50) > 15
         ),
+        # Gap-fill targets
+        "home_win_prob": market_data.get("home_win_prob"),
+        "away_win_prob": market_data.get("away_win_prob"),
+        "home_ats_wins": market_data.get("home_ats_wins"),
+        "home_ats_losses": market_data.get("home_ats_losses"),
+        "away_ats_wins": market_data.get("away_ats_wins"),
+        "away_ats_losses": market_data.get("away_ats_losses"),
     }
 
 
@@ -503,6 +512,11 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
         dk_match = dk_by_team.get(team_key)
 
         row = build_market_row(event_id, capture_type, parsed, pinn_match, dk_match, existing)
+        row["home_team_id"] = parsed.get("home_team_id")
+        row["away_team_id"] = parsed.get("away_team_id")
+
+        # Attempt unofficial ESPN endpoints only for still-missing gap fields.
+        row = fill_market_row_gaps(row)
         new_rows.append(row)
 
     inserted = append_market_rows(new_rows, market_path) if new_rows else 0
@@ -521,6 +535,15 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
         rows_with_pinnacle,
         len(new_rows),
         rows_with_dk,
+        len(new_rows),
+    )
+    rows_with_win_prob = sum(1 for row in new_rows if row.get("home_win_prob") is not None)
+    rows_with_ats = sum(1 for row in new_rows if row.get("home_ats_wins") is not None or row.get("away_ats_wins") is not None)
+    log.info(
+        "Gap-fill integrity: home_win_prob_populated=%s/%s ats_rows_populated=%s/%s",
+        rows_with_win_prob,
+        len(new_rows),
+        rows_with_ats,
         len(new_rows),
     )
 

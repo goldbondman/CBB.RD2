@@ -58,7 +58,7 @@ import pandas as pd
 from config.logging_config import get_logger
 from config.model_version import compute_model_version, save_version_to_history
 from pipeline_csv_utils import safe_write_csv
-from models.alpha_evaluator import evaluate_alpha, kelly_fraction_calc
+from models.alpha_evaluator import evaluate_alpha
 
 OUT_PREDICTIONS_LATEST = DATA_DIR / "predictions_latest.csv"
 
@@ -126,15 +126,28 @@ def load_team_game_data() -> pd.DataFrame:
     Load the richest available team data file.
     Priority: weighted > metrics > logs.
     Ensures game_datetime_utc is parsed and sorted chronologically.
+
+    Integrity fallback: if the canonical root data file is missing,
+    automatically try data/csv/<filename> so pipeline runs in repos that
+    keep raw artifacts under data/csv.
     """
     for path, label in [
         (CSV_WEIGHTED, "team_game_weighted"),
         (CSV_METRICS,  "team_game_metrics"),
         (CSV_LOGS,     "team_game_logs"),
     ]:
-        if path.exists() and path.stat().st_size > 100:
-            log.info(f"Loading team data from {path.name} ({path.stat().st_size:,} bytes)")
-            df = pd.read_csv(path, dtype=str, low_memory=False)
+        candidate_paths = [path, DATA_DIR / "csv" / path.name]
+        chosen = next(
+            (p for p in candidate_paths if p.exists() and p.stat().st_size > 100),
+            None,
+        )
+        if chosen is not None:
+            log.info(
+                "Loading team data from %s (%s bytes)",
+                chosen,
+                f"{chosen.stat().st_size:,}",
+            )
+            df = pd.read_csv(chosen, dtype=str, low_memory=False)
             df["game_datetime_utc"] = pd.to_datetime(
                 df.get("game_datetime_utc", pd.NaT), utc=True, errors="coerce"
             )
@@ -161,11 +174,12 @@ def load_team_game_data() -> pd.DataFrame:
 
 def load_games_schedule() -> pd.DataFrame:
     """Load games.csv scoreboard data for scheduled games fallback."""
-    if not CSV_GAMES.exists():
-        log.warning(f"{CSV_GAMES} not found. Cannot use fallback schedule.")
+    schedule_path = CSV_GAMES if CSV_GAMES.exists() else (DATA_DIR / "csv" / CSV_GAMES.name)
+    if not schedule_path.exists():
+        log.warning("%s not found. Cannot use fallback schedule.", CSV_GAMES)
         return pd.DataFrame()
 
-    df = pd.read_csv(CSV_GAMES, dtype=str, low_memory=False)
+    df = pd.read_csv(schedule_path, dtype=str, low_memory=False)
     df["game_datetime_utc"] = pd.to_datetime(
         df.get("game_datetime_utc", pd.NaT), utc=True, errors="coerce"
     )
@@ -938,19 +952,30 @@ def _latest_team_context(
         all_team_rows = all_team_rows[
             all_team_rows["game_datetime_utc"] < cutoff_dt
         ]
-    if not all_team_rows.empty and "wins" in all_team_rows.columns:
+    if not all_team_rows.empty:
         per_game_wins = pd.to_numeric(
-            all_team_rows["wins"], errors="coerce"
+            all_team_rows.get("wins", pd.Series(dtype=float)),
+            errors="coerce",
         ).fillna(0)
-        max_val = per_game_wins.max()
+
+        # If "wins" is a dead/placeholder column (all zeros), fall back to
+        # per-game win flag and rebuild season totals deterministically.
+        if per_game_wins.max() <= 0 and "win" in all_team_rows.columns:
+            per_game_wins = pd.to_numeric(
+                all_team_rows["win"], errors="coerce"
+            ).fillna(0)
+
+        max_val = per_game_wins.max() if not per_game_wins.empty else 0
         if max_val <= 1:
-            out["wins"] = int(per_game_wins.sum())
-            out["losses"] = int(len(all_team_rows) - per_game_wins.sum())
+            season_wins = float(per_game_wins.sum())
+            out["wins"] = int(season_wins)
+            out["losses"] = int(max(0, len(all_team_rows) - season_wins))
         else:
             out["wins"] = int(per_game_wins.iloc[-1])
             out["losses"] = int(
                 pd.to_numeric(
-                    all_team_rows["losses"], errors="coerce"
+                    all_team_rows.get("losses", pd.Series(dtype=float)),
+                    errors="coerce",
                 ).fillna(0).iloc[-1]
             )
     else:

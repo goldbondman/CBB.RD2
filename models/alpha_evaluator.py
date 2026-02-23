@@ -22,6 +22,29 @@ log = logging.getLogger(__name__)
 DATA_DIR = Path("data")
 
 
+def _as_bool(val) -> bool:
+    """Parse bool-like CSV values safely (True/False/1/0/yes/no)."""
+    if isinstance(val, bool):
+        return val
+    if val is None:
+        return False
+    if isinstance(val, (int, float)):
+        if pd.isna(val):
+            return False
+        return val != 0
+    return str(val).strip().lower() in {"1", "true", "t", "yes", "y"}
+
+
+def _as_side(val: Optional[str]) -> Optional[str]:
+    """Normalize market side values to home/away when possible."""
+    if val is None:
+        return None
+    side = str(val).strip().lower()
+    if side in {"home", "away"}:
+        return side
+    return None
+
+
 def kelly_fraction_calc(
     model_confidence: float,
     juice: float = -110,
@@ -111,7 +134,7 @@ def evaluate_alpha(
     market_evaluated = bool(market_context)
 
     if market_evaluated:
-        steam = bool(market_context.get("steam_flag", False))
+        steam = _as_bool(market_context.get("steam_flag", False))
         line_move = float(market_context.get("line_movement") or 0)
         if steam:
             steam_side = "home" if line_move > 0 else "away"
@@ -131,7 +154,7 @@ def evaluate_alpha(
                     f"{steam_side.upper()} — standing down."
                 )
 
-        rlm_side = market_context.get("rlm_sharp_side")
+        rlm_side = _as_side(market_context.get("rlm_sharp_side"))
         if rlm_side:
             if rlm_side == model_side:
                 is_alpha = True
@@ -149,7 +172,7 @@ def evaluate_alpha(
                     f"{model_side.upper()} — reducing to 40%"
                 )
 
-        book_sharp = market_context.get("book_sharp_side")
+        book_sharp = _as_side(market_context.get("book_sharp_side"))
         book_diff = float(market_context.get("book_spread_diff") or 0)
         if book_sharp:
             if book_sharp == model_side:
@@ -169,7 +192,7 @@ def evaluate_alpha(
                     f"model likes {model_side.upper()}"
                 )
 
-        if bool(market_context.get("line_freeze_flag", False)):
+        if _as_bool(market_context.get("line_freeze_flag", False)):
             kelly_mult = min(kelly_mult, 0.50)
             reasoning.append(
                 "⚠️ LINE FREEZE: heavy public action, line unmoved — "

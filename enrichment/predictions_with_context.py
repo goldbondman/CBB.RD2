@@ -9,7 +9,13 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-from espn_config import DATA_DIR, OUT_PREDICTIONS_COMBINED, OUT_PREDICTIONS_CONTEXT
+from espn_config import (
+    DATA_DIR,
+    OUT_PREDICTIONS_COMBINED,
+    OUT_PREDICTIONS_CONTEXT,
+    OUT_GAMES,
+    conference_id_to_name,
+)
 from models.alpha_evaluator import evaluate_alpha
 
 log = logging.getLogger(__name__)
@@ -108,9 +114,18 @@ def _enrich_win_loss_records(df: pd.DataFrame) -> pd.DataFrame:
             log.warning("Failed to read team records cache (%s): %s", RECORDS_CACHE_PATH, exc)
 
     records = dict(existing_records)
+
+    # Local team-game derived records are authoritative for this repo run.
+    local_records = _build_records_from_local_team_data()
+    for tid, rec in local_records.items():
+        records[tid] = rec
+
     history_records = _build_records_from_local_history()
     for tid, rec in history_records.items():
-        if tid not in records or (int(records[tid].get("wins", 0)) == 0 and int(records[tid].get("losses", 0)) == 0):
+        if tid not in records or (
+            int(records[tid].get("wins", 0)) == 0
+            and int(records[tid].get("losses", 0)) == 0
+        ):
             records[tid] = rec
     missing = [t for t in team_ids if t not in records]
     fetched = 0
@@ -140,6 +155,193 @@ def _normalize_conference_names(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+
+def _build_market_lines_fallback(pred_df: pd.DataFrame, market_path: Path) -> pd.DataFrame:
+    """
+    Build minimal market_lines.csv from available local artifacts.
+
+    Priority:
+      1) predictions input itself (guaranteed event_id join key)
+      2) games.csv snapshots (root or data/csv)
+    """
+    now_utc = pd.Timestamp.now("UTC").isoformat()
+
+    # Source 1: predictions rows (guarantees event_id match)
+    pred_market = pd.DataFrame({
+        "event_id": pred_df.get("event_id", pd.Series(dtype=str)).astype(str).str.strip(),
+        "home_spread_open": pd.to_numeric(pred_df.get("spread_line"), errors="coerce"),
+        "home_spread_current": pd.to_numeric(pred_df.get("spread_line"), errors="coerce"),
+        "spread": pd.to_numeric(pred_df.get("spread_line"), errors="coerce"),
+        "over_under": pd.to_numeric(pred_df.get("total_line"), errors="coerce"),
+        "home_ml": pd.to_numeric(pred_df.get("home_ml"), errors="coerce"),
+        "away_ml": pd.to_numeric(pred_df.get("away_ml"), errors="coerce"),
+        "line_movement": 0.0,
+        "pinnacle_spread": pd.to_numeric(pred_df.get("spread_line"), errors="coerce"),
+        "draftkings_spread": pd.to_numeric(pred_df.get("spread_line"), errors="coerce"),
+        "home_tickets_pct": pd.NA,
+        "home_money_pct": pd.NA,
+        "steam_flag": False,
+        "rlm_flag": False,
+        "rlm_sharp_side": pd.NA,
+        "book_disagreement_flag": False,
+        "book_sharp_side": pd.NA,
+        "book_spread_diff": 0.0,
+        "line_freeze_flag": False,
+        "captured_at_utc": now_utc,
+        "capture_type": "fallback_predictions",
+    })
+    pred_market = pred_market[pred_market["event_id"].str.len() > 0]
+
+    # Source 2: games.csv if available
+    source_frames = [pred_market]
+    sources = [OUT_GAMES, DATA_DIR / "csv" / OUT_GAMES.name]
+    games_path = next((gp for gp in sources if gp.exists()), None)
+    if games_path is not None:
+        games = pd.read_csv(games_path, dtype={"game_id": str}, low_memory=False)
+        if not games.empty:
+            game_market = pd.DataFrame({
+                "event_id": games.get("game_id", pd.Series(dtype=str)).astype(str).str.strip(),
+                "home_spread_open": pd.to_numeric(games.get("spread"), errors="coerce"),
+                "home_spread_current": pd.to_numeric(games.get("spread"), errors="coerce"),
+                "spread": pd.to_numeric(games.get("spread"), errors="coerce"),
+                "over_under": pd.to_numeric(games.get("over_under"), errors="coerce"),
+                "home_ml": pd.to_numeric(games.get("home_ml"), errors="coerce"),
+                "away_ml": pd.to_numeric(games.get("away_ml"), errors="coerce"),
+                "line_movement": 0.0,
+                "pinnacle_spread": pd.to_numeric(games.get("spread"), errors="coerce"),
+                "draftkings_spread": pd.to_numeric(games.get("spread"), errors="coerce"),
+                "home_tickets_pct": pd.NA,
+                "home_money_pct": pd.NA,
+                "steam_flag": False,
+                "rlm_flag": False,
+                "rlm_sharp_side": pd.NA,
+                "book_disagreement_flag": False,
+                "book_sharp_side": pd.NA,
+                "book_spread_diff": 0.0,
+                "line_freeze_flag": False,
+                "captured_at_utc": now_utc,
+                "capture_type": "fallback_games",
+            })
+            source_frames.append(game_market)
+
+    fallback = pd.concat(source_frames, ignore_index=True)
+    fallback = fallback.drop_duplicates(subset=["event_id"], keep="first")
+    fallback = fallback[fallback["event_id"].isin(pred_df["event_id"].astype(str).str.strip())]
+
+    if fallback.empty:
+        log.warning("Fallback market builder could not create matching rows")
+        return pd.DataFrame()
+
+    market_path.parent.mkdir(parents=True, exist_ok=True)
+    fallback.to_csv(market_path, index=False)
+    log.warning("Built fallback market_lines.csv: %d rows", len(fallback))
+    return fallback
+
+
+def _build_records_from_local_team_data() -> dict:
+    """Derive season W-L records from local team-game datasets."""
+    records: dict[str, dict] = {}
+    candidate_paths = [
+        DATA_DIR / "team_game_weighted.csv",
+        DATA_DIR / "team_game_metrics.csv",
+        DATA_DIR / "csv" / "team_game_weighted.csv",
+        DATA_DIR / "csv" / "team_game_metrics.csv",
+    ]
+    for path in candidate_paths:
+        if not path.exists():
+            continue
+        try:
+            df = pd.read_csv(path, dtype={"team_id": str}, low_memory=False)
+        except Exception:
+            continue
+        if "team_id" not in df.columns:
+            continue
+
+        if "win" in df.columns:
+            win_flag = pd.to_numeric(df["win"], errors="coerce").fillna(0)
+            grouped = (
+                pd.DataFrame({"team_id": df["team_id"].astype(str), "win": win_flag})
+                .groupby("team_id", as_index=False)
+                .agg(wins=("win", "sum"), games=("win", "count"))
+            )
+            grouped["losses"] = grouped["games"] - grouped["wins"]
+            for _, r in grouped.iterrows():
+                tid = str(r["team_id"]).strip()
+                if not tid:
+                    continue
+                records[tid] = {
+                    "team_id": tid,
+                    "wins": int(max(0, r["wins"])),
+                    "losses": int(max(0, r["losses"])),
+                }
+            if records:
+                return records
+
+    return records
+
+
+
+def _enrich_ats_records(df: pd.DataFrame) -> pd.DataFrame:
+    """Fill ATS records from local team_season_summary snapshot when available."""
+    summary_path = DATA_DIR / "team_season_summary.csv"
+    if not summary_path.exists():
+        return df
+    try:
+        summary = pd.read_csv(summary_path, dtype={"team_id": str}, low_memory=False)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Failed reading %s: %s", summary_path, exc)
+        return df
+
+    required_cols = {"team_id", "ats_wins", "ats_losses"}
+    if not required_cols.issubset(summary.columns):
+        return df
+
+    map_df = summary[["team_id", "ats_wins", "ats_losses"]].copy()
+    map_df["team_id"] = map_df["team_id"].astype(str).str.strip()
+
+    if "home_team_id" in df.columns:
+        df["home_team_id"] = df["home_team_id"].astype(str).str.strip()
+        home_map = map_df.rename(columns={
+            "team_id": "home_team_id",
+            "ats_wins": "home_ats_wins",
+            "ats_losses": "home_ats_losses",
+        })
+        df = df.merge(home_map, on="home_team_id", how="left")
+
+    if "away_team_id" in df.columns:
+        df["away_team_id"] = df["away_team_id"].astype(str).str.strip()
+        away_map = map_df.rename(columns={
+            "team_id": "away_team_id",
+            "ats_wins": "away_ats_wins",
+            "ats_losses": "away_ats_losses",
+        })
+        df = df.merge(away_map, on="away_team_id", how="left")
+
+    return df
+
+
+def _enrich_win_probabilities(df: pd.DataFrame) -> pd.DataFrame:
+    """Derive model-implied win probabilities only when explicit fields are missing."""
+    if "home_win_prob" not in df.columns:
+        df["home_win_prob"] = pd.NA
+    if "away_win_prob" not in df.columns:
+        df["away_win_prob"] = pd.NA
+
+    if "model_confidence" in df.columns and "pred_spread" in df.columns:
+        conf = pd.to_numeric(df["model_confidence"], errors="coerce")
+        spread = pd.to_numeric(df["pred_spread"], errors="coerce")
+        home_implied = conf.where(spread < 0, 1.0 - conf)
+        away_implied = 1.0 - home_implied
+
+        df["home_win_prob"] = pd.to_numeric(df["home_win_prob"], errors="coerce").fillna(home_implied)
+        df["away_win_prob"] = pd.to_numeric(df["away_win_prob"], errors="coerce").fillna(away_implied)
+
+    if "win_prob_source" not in df.columns:
+        df["win_prob_source"] = pd.NA
+    null_source = df["win_prob_source"].isna() & df["home_win_prob"].notna() & df["away_win_prob"].notna()
+    df.loc[null_source, "win_prob_source"] = "model_implied"
+    return df
+
 def build_predictions_with_context(
     predictions_path: Path = OUT_PREDICTIONS_COMBINED,
     out_path: Path = OUT_PREDICTIONS_CONTEXT,
@@ -160,18 +362,25 @@ def build_predictions_with_context(
             )
 
     expected_market_cols = [
-        "home_spread_open", "home_spread_current", "line_movement",
+        "home_spread_open", "home_spread_current", "spread", "line_movement",
+        "over_under", "home_ml", "away_ml", "home_win_prob", "away_win_prob",
         "pinnacle_spread", "draftkings_spread",
         "home_tickets_pct", "home_money_pct",
         "steam_flag", "rlm_flag", "rlm_sharp_side",
-        "book_disagreement_flag", "book_sharp_side", "line_freeze_flag",
+        "book_disagreement_flag", "book_sharp_side", "book_spread_diff",
+        "line_freeze_flag",
     ]
     market_path = DATA_DIR / "market_lines.csv"
     market_merged = False
 
+    market = pd.DataFrame()
     if market_path.exists():
         market = pd.read_csv(market_path, dtype={"event_id": str})
-        if not market.empty and "captured_at_utc" in market.columns:
+    else:
+        market = _build_market_lines_fallback(df, market_path)
+
+    if not market.empty:
+        if "captured_at_utc" in market.columns:
             capture_order = {"closing": 0, "pregame": 1, "opening": 2}
             market["_cap_rank"] = (
                 market.get("capture_type", pd.Series(dtype=str))
@@ -200,7 +409,14 @@ def build_predictions_with_context(
             df = df.merge(
                 market_latest[available], on="event_id", how="left"
             )
-            matched = df["home_spread_current"].notna().sum()
+            market_signal_cols = [
+                c for c in [
+                    "home_spread_current", "home_spread_open", "line_movement",
+                    "pinnacle_spread", "draftkings_spread", "home_tickets_pct",
+                    "home_money_pct",
+                ] if c in df.columns
+            ]
+            matched = int(df[market_signal_cols].notna().any(axis=1).sum()) if market_signal_cols else 0
             log.info(
                 "Market lines merged: %d/%d games matched | steam=%d, RLM=%d, book_dis=%d",
                 matched, before_rows,
@@ -223,7 +439,7 @@ def build_predictions_with_context(
             else:
                 market_merged = True
     else:
-        log.warning("market_lines.csv not found: %s", market_path)
+        log.warning("No market lines available after fallback: %s", market_path)
 
     sit_path = DATA_DIR / "team_situational.csv"
     if sit_path.exists():
@@ -362,6 +578,42 @@ def build_predictions_with_context(
             pd.to_numeric(df[pred_col], errors="coerce") -
             pd.to_numeric(df["home_spread_open"], errors="coerce")
         ).round(3)
+
+    # Integrity normalization for downstream consumers.
+    df = _normalize_conference_names(df)
+    df = _enrich_win_loss_records(df)
+    df = _enrich_ats_records(df)
+    df = _enrich_win_probabilities(df)
+
+    # Backward-compatible market aliases for downstream consumers.
+    if "spread" not in df.columns:
+        df["spread"] = pd.to_numeric(df.get("home_spread_current"), errors="coerce")
+    else:
+        df["spread"] = pd.to_numeric(df["spread"], errors="coerce").fillna(
+            pd.to_numeric(df.get("home_spread_current"), errors="coerce")
+        )
+
+    if "over_under" not in df.columns:
+        df["over_under"] = pd.to_numeric(df.get("total_line"), errors="coerce")
+    else:
+        df["over_under"] = pd.to_numeric(df["over_under"], errors="coerce").fillna(
+            pd.to_numeric(df.get("total_line"), errors="coerce")
+        )
+
+    # Backward-compatible aggregate record aliases expected by some checks.
+    if "wins" not in df.columns and "home_wins" in df.columns:
+        df["wins"] = df["home_wins"]
+    if "losses" not in df.columns and "home_losses" in df.columns:
+        df["losses"] = df["home_losses"]
+
+    # Canonical single conference_name field for downstream DB/UI contracts.
+    if "conference_name" not in df.columns:
+        if "home_conference" in df.columns:
+            df["conference_name"] = df["home_conference"]
+        elif "conference" in df.columns:
+            df["conference_name"] = df["conference"]
+        else:
+            df["conference_name"] = ""
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_path, index=False)
