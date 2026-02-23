@@ -45,6 +45,22 @@ def fetch_action_network(game_date: date) -> list[dict]:
         return []
 
 
+def fetch_espn_scoreboard(game_date: date) -> list[dict]:
+    """Primary market source: ESPN scoreboard odds (event IDs match pipeline IDs)."""
+    date_str = game_date.strftime("%Y%m%d")
+    url = (
+        "https://site.api.espn.com/apis/site/v2/sports/basketball"
+        f"/mens-college-basketball/scoreboard?dates={date_str}&limit=200"
+    )
+    try:
+        resp = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
+        resp.raise_for_status()
+        return resp.json().get("events", [])
+    except Exception as exc:  # noqa: BLE001
+        log.warning("ESPN scoreboard fetch failed: %s", exc)
+        return []
+
+
 def fetch_pinnacle_lines() -> list[dict]:
     url = "https://guest.api.arcadia.pinnacle.com/0.1/leagues/487/matchups"
     try:
@@ -101,6 +117,50 @@ def parse_action_network_game(game: dict) -> Optional[dict]:
         }
     except Exception as exc:  # noqa: BLE001
         log.debug("Parse error on AN game: %s", exc)
+        return None
+
+
+def parse_espn_event(event: dict) -> Optional[dict]:
+    """Parse ESPN scoreboard event into market row fields."""
+    try:
+        comp = event.get("competitions", [{}])[0]
+        odds = (comp.get("odds") or [{}])[0]
+        teams = comp.get("competitors", [])
+        home_team = next((t for t in teams if t.get("homeAway") == "home"), {})
+        away_team = next((t for t in teams if t.get("homeAway") == "away"), {})
+
+        spread_raw = str(odds.get("details") or "").strip().upper()
+        home_spread_current = None
+        if spread_raw in {"PK", "PICK", "PICKEM", "EVEN"}:
+            home_spread_current = 0.0
+        elif spread_raw:
+            try:
+                home_spread_current = float(spread_raw)
+            except ValueError:
+                home_spread_current = None
+
+        total_current = odds.get("overUnder")
+        try:
+            total_current = float(total_current) if total_current is not None else None
+        except (TypeError, ValueError):
+            total_current = None
+
+        return {
+            "event_id": str(event.get("id", "")).strip(),
+            "home_team_name": home_team.get("team", {}).get("displayName", ""),
+            "away_team_name": away_team.get("team", {}).get("displayName", ""),
+            "game_time_utc": comp.get("date"),
+            "home_spread_open": None,
+            "home_spread_current": home_spread_current,
+            "total_open": None,
+            "total_current": total_current,
+            "home_tickets_pct": None,
+            "away_tickets_pct": None,
+            "home_money_pct": None,
+            "away_money_pct": None,
+        }
+    except Exception as exc:  # noqa: BLE001
+        log.debug("Parse error on ESPN event: %s", exc)
         return None
 
 
@@ -286,11 +346,12 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
     today = override_date or date.today()
     log.info("Market capture mode=%s date=%s", mode, today)
 
-    pred_path = data_dir / "predictions_combined_latest.csv"
-    predictions = pd.read_csv(pred_path, dtype=str) if pred_path.exists() else pd.DataFrame()
-
     market_path = data_dir / "market_lines.csv"
     existing = pd.read_csv(market_path, dtype={"event_id": str}) if market_path.exists() else pd.DataFrame()
+
+    log.info("Fetching ESPN scoreboard...")
+    espn_events = fetch_espn_scoreboard(today)
+    time.sleep(REQUEST_DELAY)
 
     log.info("Fetching Action Network...")
     an_games = fetch_action_network(today)
@@ -303,19 +364,42 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
     log.info("Fetching DraftKings...")
     dk_games = fetch_draftkings_lines()
 
-    new_rows: list[dict] = []
-    matched = 0
-    unmatched = 0
-
+    action_by_team: dict[tuple[str, str], dict] = {}
     for game in an_games:
         parsed = parse_action_network_game(game)
         if not parsed:
             continue
+        key = (
+            str(parsed.get("home_team_name", "")).strip().lower(),
+            str(parsed.get("away_team_name", "")).strip().lower(),
+        )
+        action_by_team[key] = parsed
 
-        event_id = match_to_pipeline_event(parsed, predictions)
+    new_rows: list[dict] = []
+    matched = 0
+    unmatched = 0
+
+    for event in espn_events:
+        parsed = parse_espn_event(event)
+        if not parsed or not parsed.get("event_id"):
+            continue
+
+        event_id = str(parsed.get("event_id", "")).strip()
         if not event_id:
             unmatched += 1
             continue
+
+        an_enrichment = action_by_team.get(
+            (
+                str(parsed.get("home_team_name", "")).strip().lower(),
+                str(parsed.get("away_team_name", "")).strip().lower(),
+            )
+        )
+        if an_enrichment:
+            parsed["home_tickets_pct"] = an_enrichment.get("home_tickets_pct")
+            parsed["away_tickets_pct"] = an_enrichment.get("away_tickets_pct")
+            parsed["home_money_pct"] = an_enrichment.get("home_money_pct")
+            parsed["away_money_pct"] = an_enrichment.get("away_money_pct")
 
         matched += 1
         capture_type = {
@@ -333,10 +417,10 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
         new_rows.append(row)
 
     inserted = append_market_rows(new_rows, market_path) if new_rows else 0
-    rejected = len(an_games) - matched
+    rejected = max(len(espn_events) - matched, 0)
     log.info(
         "Market ingest summary: pulled=%s matched=%s inserted=%s rejected=%s",
-        len(an_games),
+        len(espn_events),
         matched,
         inserted,
         rejected,
