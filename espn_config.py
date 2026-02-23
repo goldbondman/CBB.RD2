@@ -47,7 +47,7 @@ OUT_BIAS_HISTORY         = CSV_DIR / "bias_history.csv"
 # ── New output files ─────────────────────────────────────
 OUT_PREDICTIONS_GRADED     = CSV_DIR / "predictions_graded.csv"
 OUT_PREDICTIONS_CONTEXT    = CSV_DIR / "predictions_with_context.csv"
-OUT_MARKET_LINES           = CSV_DIR / "market_lines.csv"
+OUT_MARKET_LINES           = DATA_DIR / "market_lines.csv"
 OUT_FORM_SNAPSHOT          = CSV_DIR / "team_form_snapshot.csv"
 OUT_EDGE_HISTORY           = CSV_DIR / "edge_history.csv"
 

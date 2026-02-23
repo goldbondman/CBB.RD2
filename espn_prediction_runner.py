@@ -587,23 +587,13 @@ def run_predictions(
             elif revenge.get("revenge_team") == "away":
                 pred_spread = round(pred_spread + 0.5, 2)
 
-        market_context = {
-            "rlm_sharp_side": matchup.get("rlm_sharp_side"),
-            "book_sharp_side": matchup.get("book_sharp_side"),
-            "book_spread_diff": _safe_float(matchup.get("book_spread_diff")),
-            "steam_flag": bool(matchup.get("steam_flag")) if matchup.get("steam_flag") is not None else False,
-            "line_movement": _safe_float(matchup.get("line_movement")),
-            "line_freeze_flag": bool(matchup.get("line_freeze_flag")) if matchup.get("line_freeze_flag") is not None else False,
-            "home_tickets_pct": _safe_float(matchup.get("home_tickets_pct")),
-        }
-
         alpha = detect_alpha(
             pred_spread,
             spread_line,
             favored_team,
             trap_for_favorite,
             revenge,
-            game_context=market_context,
+            game_context=matchup,
         )
         totals_proj = model_total(home_ctx, away_ctx)
         line_advisory = line_shopping_advisory(pred_spread, spread_line)
@@ -730,6 +720,8 @@ def run_predictions(
             "away_fatigue_index": _safe_float(away_ctx.get("fatigue_index")),
             "kelly_fraction": alpha.get("kelly_fraction", 0.0),
             "alpha_reasoning": alpha.get("alpha_reasoning", ""),
+            "is_alpha": alpha.get("is_alpha", False),
+            "edge_types": alpha.get("edge_types", ""),
         }
 
         row.update(uws_result)
@@ -924,7 +916,10 @@ def detect_alpha(
     game_context: Optional[dict] = None,
 ) -> dict:
     reasoning = []
+    edge_types = []
+    is_alpha = False
     kelly = 0.0
+    result_adjustments: Dict[str, float] = {}
     if spread_line is not None:
         edge = abs(pred_spread - spread_line)
         kelly = min(0.08, max(0.0, (edge - 1.0) / 30.0))
@@ -938,59 +933,134 @@ def detect_alpha(
         margin = revenge_info.get("revenge_margin")
         reasoning.append(f"REVENGE SPOT: {team} team lost last meeting by {margin}.")
 
-    if game_context:
-        prediction = pred_spread - spread_line if spread_line is not None else pred_spread
-        model_side = "home" if prediction > 0 else "away"
+    game_context = game_context or {}
 
-        rlm_sharp = game_context.get("rlm_sharp_side")
-        book_sharp = game_context.get("book_sharp_side")
+    model_side = "home" if pred_spread > 0 else "away"
 
-        if rlm_sharp and rlm_sharp == model_side:
+    rlm_sharp = game_context.get("rlm_sharp_side")
+    if rlm_sharp and rlm_sharp == model_side:
+        is_alpha = True
+        edge_types.append("RLM_CONFIRMED")
+        reasoning.append(
+            f"Reverse line movement confirms model: public fading {model_side} "
+            f"but sharp money pushed the line toward {model_side}"
+        )
+
+    book_sharp = game_context.get("book_sharp_side")
+    if book_sharp and book_sharp == model_side:
+        diff = game_context.get("book_spread_diff", 0)
+        try:
+            diff_val = float(diff)
+        except (TypeError, ValueError):
+            diff_val = 0.0
+        reasoning.append(
+            f"Pinnacle vs DraftKings disagrees {diff_val:.1f}pts in model direction — "
+            "sharp market agrees with model"
+        )
+
+    steam = game_context.get("steam_flag", False)
+    line_move = game_context.get("line_movement", 0) or 0
+    if steam:
+        steam_side = "home" if float(line_move) > 0 else "away"
+        if steam_side != model_side:
+            result_adjustments["kelly_multiplier"] = 0.0
             reasoning.append(
-                f"Reverse line movement confirms model: public fading {model_side} but sharps backing it"
+                f"🔥 STEAM AGAINST MODEL: sharp syndicate moved line {abs(float(line_move)):.1f}pts "
+                f"toward {steam_side.upper()} — model is {model_side.upper()}. Standing down."
+            )
+        else:
+            reasoning.append(
+                f"🔥 Steam confirms model direction — sharp money {abs(float(line_move)):.1f}pts "
+                f"toward {model_side.upper()}"
             )
 
-        if book_sharp and book_sharp == model_side:
-            reasoning.append(
-                f"Pinnacle vs DraftKings disagrees {float(game_context.get('book_spread_diff') or 0):.1f}pts in model direction — sharp books agree"
-            )
+    if rlm_sharp and rlm_sharp != model_side:
+        result_adjustments["kelly_multiplier"] = 0.4
+        reasoning.append(
+            f"⚠️  RLM AGAINST MODEL: sharps on {rlm_sharp.upper()}, model likes "
+            f"{model_side.upper()} — reducing size to 40%"
+        )
 
-        if rlm_sharp and rlm_sharp != model_side:
-            reasoning.append(
-                f"⚠️ WARNING: RLM shows sharps on {rlm_sharp.upper()} but model likes {model_side.upper()} — reduce size or stand down"
-            )
-            kelly *= 0.4
+    if game_context.get("line_freeze_flag"):
+        result_adjustments["kelly_multiplier"] = min(
+            result_adjustments.get("kelly_multiplier", 1.0), 0.5
+        )
+        reasoning.append(
+            "⚠️  LINE FREEZE: heavy public action, line unmoved — books comfortable "
+            "taking the action. Model edge likely illusory here."
+        )
 
-        if game_context.get("steam_flag"):
-            steam_side = "home" if (game_context.get("line_movement") or 0) > 0 else "away"
-            if steam_side == model_side:
-                reasoning.append("🔥 Steam move confirms model direction — sharp syndicate action detected")
-            else:
+    home_tickets = game_context.get("home_tickets_pct")
+    if home_tickets is not None:
+        try:
+            tickets = float(home_tickets)
+            if tickets >= 70 and model_side == "away":
                 reasoning.append(
-                    f"⚠️ Steam move AGAINST model — sharps moved line {abs(game_context.get('line_movement', 0)):.1f}pts the other way. Stand down."
+                    f"Public fade opportunity: {tickets:.0f}% of tickets on home, "
+                    "model likes away — contrarian + model signal"
                 )
-                kelly = 0.0
-
-        if game_context.get("line_freeze_flag"):
-            reasoning.append(
-                "⚠️ LINE FREEZE: heavy public action, line unmoved — books comfortable. Model edge likely illusory here."
-            )
-            kelly *= 0.5
-
-        home_tickets = game_context.get("home_tickets_pct")
-        if home_tickets is not None:
-            heavy_public_home = float(home_tickets) >= 70
-            heavy_public_away = float(home_tickets) <= 30
-            if heavy_public_home and model_side == "away":
+            elif tickets <= 30 and model_side == "home":
                 reasoning.append(
-                    f"Public fade: {home_tickets:.0f}% of tickets on home but model likes away — contrarian + model signal"
+                    f"Public fade opportunity: only {tickets:.0f}% on home, "
+                    "model likes home — contrarian + model signal"
                 )
-            elif heavy_public_away and model_side == "home":
-                reasoning.append(
-                    f"Public fade: only {home_tickets:.0f}% on home but model likes home — contrarian + model signal"
-                )
+        except (TypeError, ValueError):
+            pass
 
-    return {"kelly_fraction": round(kelly, 4), "alpha_reasoning": " | ".join(reasoning)}
+    try:
+        from config.espn_config import DATA_DIR
+
+        summary_path = DATA_DIR / "model_accuracy_summary.csv"
+        if summary_path.exists():
+            s = pd.read_csv(summary_path).iloc[-1]
+
+            beat_pinn = s.get("beat_pinnacle_pct")
+            clv_pinn_n = s.get("clv_vs_pinnacle_n", 0)
+            clv_with = s.get("clv_with_sharp_mean")
+            ats_confirm = s.get("ats_market_confirmed")
+            confirm_n = s.get("market_confirmed_n", 0)
+
+            if float(clv_pinn_n or 0) >= 50:
+                if beat_pinn and float(beat_pinn) > 52:
+                    if spread_line is not None:
+                        gap = abs(pred_spread - float(spread_line))
+                        if gap > 2.0:
+                            is_alpha = True
+                            edge_types.append("CLV_VS_PINNACLE")
+                            reasoning.append(
+                                f"Model beats Pinnacle closing line {float(beat_pinn):.0f}% "
+                                f"of the time ({float(clv_pinn_n):.0f} games). "
+                                f"Current gap {gap:.1f}pts is signal."
+                            )
+
+                if clv_with and float(clv_with) > 0.3 and game_context.get("clv_direction") == "WITH_SHARP":
+                    reasoning.append(
+                        f"Model CLV +{float(clv_with):.2f}pts historically when aligned "
+                        "with line movement direction — this game is aligned."
+                    )
+
+                if (
+                    ats_confirm
+                    and float(ats_confirm) > 55
+                    and float(confirm_n or 0) >= 20
+                    and game_context.get("market_confirmed")
+                ):
+                    is_alpha = True
+                    edge_types.append("MARKET_CONFIRMED_HISTORICAL")
+                    reasoning.append(
+                        f"Market-confirmed picks: {float(ats_confirm):.0f}% ATS historically "
+                        f"(n={float(confirm_n):.0f}). This game has market confirmation."
+                    )
+    except Exception as e:
+        log.debug(f"CLV criterion skipped: {e}")
+
+    kelly *= float(result_adjustments.get("kelly_multiplier", 1.0))
+    return {
+        "kelly_fraction": round(kelly, 4),
+        "alpha_reasoning": " | ".join(reasoning),
+        "edge_types": "|".join(edge_types),
+        "is_alpha": bool(is_alpha),
+    }
 
 
 def _safe_float(val) -> Optional[float]:
