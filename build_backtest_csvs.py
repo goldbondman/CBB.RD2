@@ -94,6 +94,48 @@ MODEL_COMPARISON_EVEN_THRESHOLD = 0.02
 MIN_NUMERIC_RATIO  = 0.5
 
 
+def compute_clv(pred_spread: float, opening_line: float, closing_line: float) -> dict:
+    """Compute CLV vs open/close and whether we beat the close."""
+    clv_vs_open = pred_spread - opening_line if pd.notna(opening_line) else None
+    clv_vs_close = pred_spread - closing_line if pd.notna(closing_line) else None
+    beat_close = None
+    if pd.notna(closing_line):
+        beat_close = abs(pred_spread) < abs(closing_line)
+
+    return {
+        "clv_vs_open": round(clv_vs_open, 2) if clv_vs_open is not None else None,
+        "clv_vs_close": round(clv_vs_close, 2) if clv_vs_close is not None else None,
+        "beat_closing_line": beat_close,
+    }
+
+
+def compute_weekly_sharpe(df: pd.DataFrame) -> Optional[float]:
+    """Weekly Sharpe ratio of flat-bet ATS ROI."""
+    working = df.copy()
+    if "game_datetime_utc" not in working.columns:
+        return None
+    working["week"] = pd.to_datetime(working["game_datetime_utc"], errors="coerce", utc=True).dt.to_period("W")
+    ats = working[working["ats_result"].isin(["WIN", "LOSS"])].copy()
+    if ats.empty:
+        return None
+
+    ats["ats_win"] = (ats["ats_result"] == "WIN").astype(int)
+    weekly_pnl = ats.groupby("week")["ats_win"].apply(
+        lambda x: x.sum() * (100 / 110) - (len(x) - x.sum())
+    )
+
+    if len(weekly_pnl) < 4:
+        return None
+
+    mean_pnl = weekly_pnl.mean()
+    std_pnl = weekly_pnl.std()
+    if std_pnl == 0 or pd.isna(std_pnl):
+        return None
+
+    sharpe = (mean_pnl / std_pnl) * (30 ** 0.5)
+    return round(float(sharpe), 3)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # HELPERS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -246,6 +288,10 @@ def grade_prediction(row: pd.Series) -> dict:
     spread_error = abs(row["pred_spread"] - row["actual_spread"]) if pd.notna(row.get("actual_spread")) else None
     total_error  = abs(row["pred_total"]  - row["actual_total"])  if pd.notna(row.get("actual_total"))  else None
 
+    opening_line = row.get("spread_line")
+    closing_line = row.get("closing_spread_line", opening_line)
+    clv = compute_clv(row["pred_spread"], opening_line, closing_line)
+
     return {
         "predicted_winner": predicted_winner,
         "actual_winner":    actual_winner,
@@ -259,6 +305,7 @@ def grade_prediction(row: pd.Series) -> dict:
         "ou_roi":           ou_roi,
         "spread_error":     spread_error,
         "total_error":      total_error,
+        **clv,
     }
 
 
@@ -330,6 +377,10 @@ def compute_period_stats(df: pd.DataFrame, label: str) -> dict:
         "avg_spread_error":    _safe_round(df["spread_error"].mean()),
         "avg_total_error":     _safe_round(df["total_error"].mean()),
         "median_spread_error": _safe_round(df["spread_error"].median()),
+        "mean_clv_vs_open":    _safe_round(df["clv_vs_open"].mean()) if "clv_vs_open" in df.columns else None,
+        "mean_clv_vs_close":   _safe_round(df["clv_vs_close"].mean()) if "clv_vs_close" in df.columns else None,
+        "beat_close_pct":      _safe_pct(df["beat_closing_line"]) if "beat_closing_line" in df.columns else None,
+        "sharpe_ratio":        compute_weekly_sharpe(df),
 
         # Confidence calibration
         "avg_confidence":      _safe_round(df["model_confidence"].mean(), 3) if "model_confidence" in df.columns else None,
@@ -795,6 +846,7 @@ def build_by_edge(df: pd.DataFrame) -> pd.DataFrame:
             "ou_pct":                 _safe_pct(ou_g["ou_result"] == "WIN"),
             "ml_pct":                 _safe_pct(ml_g["winner_correct"]),
             "avg_actual_spread_error": _safe_round(tdf["spread_error"].mean()),
+            "avg_kelly_units":        _safe_round(tdf["kelly_units"].mean()) if "kelly_units" in tdf.columns else None,
         })
 
     return pd.DataFrame(rows)
@@ -975,6 +1027,27 @@ def main():
     # Write graded log
     _write(df, GRADED_LOG, "results_log_graded.csv", dry_run=args.dry_run)
 
+    if not args.dry_run:
+        try:
+            from evaluation.walk_forward import walk_forward_validation
+
+            wf = walk_forward_validation(df)
+            wf.to_csv(DATA / "walk_forward_results.csv", index=False)
+            if not wf.empty:
+                print(f"[OK]   walk_forward_results.csv: {len(wf)} rows")
+        except Exception as exc:
+            print(f"[WARN] walk-forward validation skipped: {exc}")
+
+        try:
+            from evaluation.feature_audit import audit_feature_predictiveness
+
+            if len(df) >= 100:
+                feat = audit_feature_predictiveness(df)
+                feat.to_csv(DATA / "feature_audit.csv", index=False)
+                print(f"[OK]   feature_audit.csv: {len(feat)} rows")
+        except Exception as exc:
+            print(f"[WARN] feature audit skipped: {exc}")
+
     if args.section == "grade-only":
         return
 
@@ -1032,6 +1105,8 @@ def main():
         if not by_edge.empty:
             _write(by_edge, CSV_DIR / "backtest_by_edge.csv",
                    "backtest_by_edge.csv", dry_run=args.dry_run)
+            _write(by_edge, DATA / "edge_history.csv",
+                   "edge_history.csv", dry_run=args.dry_run)
 
     # ── Section H: Model Matrix ────────────────────────────────────────
     if sections is None or sections == "matrix":

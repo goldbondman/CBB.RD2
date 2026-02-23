@@ -6,7 +6,6 @@ Keep this file focused on coordination only; logic lives in other modules.
 
 import argparse
 import json
-import logging
 import os
 import time
 from datetime import datetime, timedelta, timezone
@@ -37,13 +36,9 @@ from espn_tournament import compute_tournament_metrics, build_pretournament_snap
 from espn_rankings import run as run_rankings
 from cbb_output_schemas import validate_output
 from pipeline_csv_utils import safe_write_csv
+from config.logging_config import get_logger
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s  %(levelname)-8s  %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 # Required downstream integrity columns
 REQUIRED_TEAM_COLUMNS = [

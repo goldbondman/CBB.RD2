@@ -80,7 +80,7 @@ class ModelConfig:
     schedule_adjustment_factor: float = 0.5
 
     # ─── Baseline Values ───
-    avg_pace: float = 70.0
+    avg_pace: float = 67.2
     default_hca: float = 3.2
     league_avg_off_eff: float = 105.0
 
@@ -567,7 +567,7 @@ class PerformanceVsExpectationAnalyzer:
             'team_off_eff':     105.0,
             'team_def_eff':     105.0,
             'team_net_eff':     0.0,
-            'team_pace':        70.0,
+            'team_pace':        67.2,
             'team_margin':      0.0,
             'team_efg':         0.50,
             'team_tov_pct':     15.0,
@@ -614,6 +614,8 @@ class CBBPredictionModel:
         away_games: List[GameData],
         neutral_site: bool = False,
         game_type: Optional[str] = None,
+        home_team_profile: Optional[Dict] = None,
+        away_team_profile: Optional[Dict] = None,
     ) -> Dict:
         """
         Predict spread and total for a matchup.
@@ -643,7 +645,12 @@ class CBBPredictionModel:
 
         # ── Core matchup calculation ───────────────────────────────────────────
         prediction = self._calculate_matchup(
-            home_blended, away_blended, neutral_site, effective_game_type
+            home_blended,
+            away_blended,
+            neutral_site,
+            effective_game_type,
+            home_team_profile=home_team_profile,
+            away_team_profile=away_team_profile,
         )
 
         # ── Confidence ────────────────────────────────────────────────────────
@@ -696,6 +703,8 @@ class CBBPredictionModel:
         away: Dict,
         neutral: bool,
         game_type: str,
+        home_team_profile: Optional[Dict] = None,
+        away_team_profile: Optional[Dict] = None,
     ) -> Dict:
         """
         Compute expected margin and total from blended team profiles.
@@ -708,6 +717,39 @@ class CBBPredictionModel:
         """
         cfg = self.config
 
+        def _to_unit_rate(value: float) -> float:
+            value = float(value)
+            return value / 100.0 if abs(value) > 1.5 else value
+
+        def _luck_regression(profile: Optional[Dict]) -> float:
+            if not profile:
+                return 0.0
+            luck = float(profile.get('luck_score', 0.0) or 0.0)
+            return -(luck * 0.4 * 5.0)
+
+        def home_court_advantage(
+            home_team_profile: Optional[Dict],
+            is_neutral: bool = False,
+        ) -> float:
+            if is_neutral:
+                return 0.0
+
+            # Legacy reference only (do not use in live calculation):
+            # VENUE_HCA = {
+            #     'Duke-Cameron': 4.2,
+            #     'Kansas-Phog':  4.0,
+            #     'default':      2.7,
+            # }
+
+            if home_team_profile:
+                ha_net = home_team_profile.get('ha_net_rtg_l10')
+                if ha_net is not None and not (
+                    isinstance(ha_net, float) and pd.isna(ha_net)
+                ):
+                    return round(max(0.5, min(8.0, float(ha_net) / 2.0)), 2)
+
+            return 3.2
+
         # ── Expected pace ─────────────────────────────────────────────────────
         exp_pace = (home['team_pace'] + away['team_pace']) / 2.0
 
@@ -718,23 +760,23 @@ class CBBPredictionModel:
             return cfg.raw_weight * raw + cfg.vs_exp_weight * vs_exp
 
         efg_delta = _delta(
-            home['team_efg']     * 100, away['team_efg']     * 100,
-            home['efg_vs_exp'],         away['efg_vs_exp'],
+            _to_unit_rate(home['team_efg']), _to_unit_rate(away['team_efg']),
+            home['efg_vs_exp'],              away['efg_vs_exp'],
         )
         tov_delta = _delta(
-            away['team_tov_pct'],        home['team_tov_pct'],  # reversed: lower is better
-            home['tov_vs_exp'],          away['tov_vs_exp'],
+            _to_unit_rate(away['team_tov_pct']), _to_unit_rate(home['team_tov_pct']),
+            home['tov_vs_exp'],                away['tov_vs_exp'],
         )
         orb_delta = _delta(
-            home['team_orb_pct'] * 100, away['team_orb_pct'] * 100,
-            home['orb_vs_exp'],          away['orb_vs_exp'],
+            _to_unit_rate(home['team_orb_pct']), _to_unit_rate(away['team_orb_pct']),
+            home['orb_vs_exp'],                away['orb_vs_exp'],
         )
         drb_delta = _delta(
-            home['team_drb_pct'] * 100, away['team_drb_pct'] * 100,
-            home['drb_vs_exp'],          away['drb_vs_exp'],
+            _to_unit_rate(home['team_drb_pct']), _to_unit_rate(away['team_drb_pct']),
+            home['drb_vs_exp'],                away['drb_vs_exp'],
         )
         ftr_delta = _delta(
-            home['team_ftr']     * 100, away['team_ftr']     * 100,
+            _to_unit_rate(home['team_ftr']), _to_unit_rate(away['team_ftr']),
             home['ftr_vs_exp'],          away['ftr_vs_exp'],
         )
 
@@ -748,7 +790,10 @@ class CBBPredictionModel:
         )
 
         # ── Efficiency edge ───────────────────────────────────────────────────
-        raw_eff    = home['team_net_eff']    - away['team_net_eff']
+        raw_eff = (
+            home['team_net_eff'] + _luck_regression(home_team_profile)
+            - away['team_net_eff'] - _luck_regression(away_team_profile)
+        )
         vs_exp_eff = home['off_eff_vs_exp']  - away['off_eff_vs_exp']
         eff_edge   = cfg.raw_weight * raw_eff + cfg.vs_exp_weight * vs_exp_eff
 
@@ -758,7 +803,7 @@ class CBBPredictionModel:
         # ── HCA and final spread ──────────────────────────────────────────────
         # Note: NO SOS adjustment (embedded in normalization)
         #       NO pace scaling on spread (pace only affects total)
-        hca        = 0.0 if neutral else cfg.default_hca
+        hca        = home_court_advantage(home_team_profile, is_neutral=neutral)
         final_edge = raw_edge + hca
 
         # Spread convention: negative = home favored

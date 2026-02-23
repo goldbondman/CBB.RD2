@@ -723,6 +723,11 @@ jobs:
             echo "[SKIP] build_backtest_csvs.py not found"
           fi
 
+
+      - name: Run pipeline health tests
+        run: pytest tests/test_pipeline_health.py -v
+        continue-on-error: true
+
       # ── Build backtest email ──────────────────────────────────────────────
       - name: Build backtest email
         id: backtest_email
@@ -864,6 +869,11 @@ jobs:
             data/backtest_model_report_*.csv
             data/backtest_calibration_*.csv
             data/backtest_optimized_weights.json
+            data/model_weights.json
+            data/confidence_calibration.json
+            data/model_bias_table.csv
+            data/bias_report.json
+            data/bias_history.csv
           )
 
           existing=0
@@ -894,6 +904,11 @@ jobs:
             data/backtest_model_report_*.csv
             data/backtest_calibration_*.csv
             data/model_weight_history.csv
+            data/model_weights.json
+            data/confidence_calibration.json
+            data/model_bias_table.csv
+            data/bias_report.json
+            data/bias_history.csv
           retention-days: 90
           if-no-files-found: warn
 

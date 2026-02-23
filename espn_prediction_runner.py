@@ -28,7 +28,6 @@ Important:
 """
 
 import argparse
-import logging
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -42,13 +41,21 @@ from espn_config import (
     OUT_RANKINGS as CSV_RANKINGS,
     TZ,
 )
+try:
+    from espn_config import get_game_tier
+except ImportError:
+    def get_game_tier(home_conf: str, away_conf: str) -> str:
+        return "unknown"
 
-OUT_PREDICTIONS_LATEST = DATA_DIR / "predictions_latest.csv"
 from typing import Dict, List, Optional
 from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
+from config.logging_config import get_logger
+from pipeline_csv_utils import safe_write_csv
+
+OUT_PREDICTIONS_LATEST = DATA_DIR / "predictions_latest.csv"
 
 # ── Local imports ──────────────────────────────────────────────────────────────
 try:
@@ -77,12 +84,7 @@ try:
 except ImportError:
     ESPN_CLIENT_AVAILABLE = False
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s  %(levelname)-8s  %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 BOX_COL_MAP = {
@@ -107,6 +109,22 @@ REQUIRED_TEAM_CONTEXT_FIELDS = [
 
 OPP_HISTORY_WINDOW = 5
 TEAM_GAMES_WINDOW = 10
+
+
+def kelly_fraction(model_win_prob: float, juice: float = -110) -> float:
+    """Quarter-Kelly bankroll fraction for a spread/total bet."""
+    if juice < 0:
+        decimal_odds = 1 + (100 / abs(juice))
+    else:
+        decimal_odds = 1 + (juice / 100)
+
+    b = decimal_odds - 1.0
+    p = model_win_prob
+    q = 1.0 - p
+
+    kelly = (b * p - q) / b
+    quarter_kelly = kelly * 0.25
+    return max(0.0, round(quarter_kelly, 4))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -508,11 +526,15 @@ def run_predictions(
             continue
 
         try:
+            home_ctx = _latest_team_context(all_data, str(home_id), cutoff_dt)
+            away_ctx = _latest_team_context(all_data, str(away_id), cutoff_dt)
             prediction = model.predict_game(
                 home_games=home_games,
                 away_games=away_games,
                 neutral_site=neutral,
                 game_type=game_type,
+                home_team_profile=home_ctx,
+                away_team_profile=away_ctx,
             )
         except Exception as exc:
             log.error(f"    Prediction failed for {game_id}: {exc}")
@@ -583,6 +605,8 @@ def run_predictions(
             "pred_home_score": round(prediction["predicted_total"] / 2 - pred_spread / 2, 1),
             "pred_away_score": round(prediction["predicted_total"] / 2 + pred_spread / 2, 1),
             "model_confidence": round(prediction["confidence"], 3),
+            "kelly_fraction": kelly_fraction(prediction["confidence"]),
+            "kelly_units": round(kelly_fraction(prediction["confidence"]) * 100, 2),
             "pace_projected": round(prediction["pace"], 1),
 
             "home_net_eff": round(prediction["home_net_eff"], 2),
@@ -626,6 +650,23 @@ def run_predictions(
             "away_conference": away_ctx.get("conference"),
             "away_wins": away_ctx.get("wins"),
             "away_losses": away_ctx.get("losses"),
+            "game_tier": get_game_tier(
+                home_ctx.get("conference", ""),
+                away_ctx.get("conference", ""),
+            ),
+
+            "home_form_rating": home_ctx.get("form_rating"),
+            "away_form_rating": away_ctx.get("form_rating"),
+            "home_momentum_score": home_ctx.get("momentum_score"),
+            "away_momentum_score": away_ctx.get("momentum_score"),
+            "home_momentum_tier": home_ctx.get("momentum_tier"),
+            "away_momentum_tier": away_ctx.get("momentum_tier"),
+            "home_luck_score": home_ctx.get("luck_score"),
+            "away_luck_score": away_ctx.get("luck_score"),
+            "home_ha_net_rtg_l10": home_ctx.get("ha_net_rtg_l10"),
+            "away_ha_net_rtg_l10": away_ctx.get("ha_net_rtg_l10"),
+            "home_net_rtg_std_l10": home_ctx.get("net_rtg_std_l10"),
+            "away_net_rtg_std_l10": away_ctx.get("net_rtg_std_l10"),
 
             # Required downstream box score fields (legacy uppercase contract)
             "home_FGA": home_ctx.get("fga"),
@@ -905,8 +946,8 @@ def write_predictions(df: pd.DataFrame, label: str) -> Path:
     if not df.empty:
         _validate_prediction_output_schema(df)
     dated_path = DATA_DIR / f"predictions_{label}.csv"
-    df.to_csv(dated_path, index=False)
-    df.to_csv(OUT_PREDICTIONS_LATEST, index=False)
+    safe_write_csv(df, dated_path, index=False, label="predictions_dated", allow_empty=True)
+    safe_write_csv(df, OUT_PREDICTIONS_LATEST, index=False, label="predictions_latest", allow_empty=True)
 
     log.info(f"Wrote {len(df)} predictions -> {dated_path}")
     log.info("Updated predictions_latest.csv")
