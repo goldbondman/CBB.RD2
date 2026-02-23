@@ -34,11 +34,17 @@ import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 from scipy import stats as scipy_stats
+
+try:
+    from espn_config import get_game_tier
+except ImportError:
+    def get_game_tier(home_conf: str, away_conf: str) -> str:
+        return "unknown"
 
 from cbb_config import (
     LEAGUE_AVG_ORTG,
@@ -56,10 +62,34 @@ from cbb_config import (
     DEFAULT_TOTAL_WEIGHTS,
     WEIGHTS_PATH,
 )
+from espn_config import get_game_tier
 
 log = logging.getLogger(__name__)
 
 DATA_DIR = Path("data")
+
+DEFAULT_WEIGHTS = {
+    "w_schedule":      0.25,
+    "w_four_factors":  0.20,
+    "w_bidirectional": 0.25,
+    "w_ats":           0.15,
+    "w_situational":   0.10,
+}
+
+
+def load_model_weights(weights_path: Path = Path("data/model_weights.json")) -> Dict[str, float]:
+    log.info("Attempting to load model weights from %s", weights_path)
+    if weights_path.exists():
+        try:
+            with open(weights_path) as f:
+                loaded = json.load(f)
+            total = sum(loaded.values())
+            if abs(total - 1.0) > 0.02:
+                raise ValueError(f"Weights sum to {total:.3f}, not 1.0")
+            return loaded
+        except Exception as e:
+            log.warning("Could not load model_weights.json (%s) — using defaults", e)
+    return DEFAULT_WEIGHTS.copy()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -162,6 +192,15 @@ class TeamProfile:
     rest_days:        float = 3.0
     games_l7:         float = 2.0
 
+    # ATS / bias context
+    cover_rate_season: float = 0.5
+    cover_rate_l10:    float = 0.5
+    ats_margin_l10:    float = 0.0
+    cover_margin:      float = 0.0
+    cover_streak:      float = 0.0
+    momentum_tier:     str   = ""
+    ha_net_rtg_l10:    float = 0.0
+
 
 @dataclass
 class ModelPrediction:
@@ -189,6 +228,8 @@ class EnsembleResult:
     edge_flag_total:   bool  = False
     spread_edge_pts:   float = 0.0
     total_edge_pts:    float = 0.0
+    bias_corrections_applied: List[str] = field(default_factory=list)
+    pre_correction_prediction: float = 0.0
 
     def to_flat_dict(self) -> Dict:
         """Flatten for CSV output — one row per game."""
@@ -204,6 +245,8 @@ class EnsembleResult:
             "edge_flag_total":     int(self.edge_flag_total),
             "spread_edge_pts":     round(self.spread_edge_pts, 2),
             "total_edge_pts":      round(self.total_edge_pts, 2),
+            "pre_correction_prediction": round(self.pre_correction_prediction, 2),
+            "bias_corrections_applied": "|".join(self.bias_corrections_applied),
         }
         for mp in self.model_predictions:
             name = mp.model_name.lower()
@@ -325,10 +368,14 @@ class FourFactorsModel(_BaseModel):
         away: TeamProfile,
         neutral: bool = False,
     ) -> ModelPrediction:
-        efg_delta = home.efg_vs_opp - away.efg_vs_opp
-        tov_delta = -(home.tov_vs_opp - away.tov_vs_opp)
-        orb_delta = home.orb_vs_opp - away.orb_vs_opp
-        ftr_delta = home.ftr_vs_opp - away.ftr_vs_opp
+        def _to_unit_rate(v: float) -> float:
+            v = float(v)
+            return v / 100.0 if abs(v) > 1.5 else v
+
+        efg_delta = _to_unit_rate(home.efg_vs_opp - away.efg_vs_opp)
+        tov_delta = -_to_unit_rate(home.tov_vs_opp - away.tov_vs_opp)
+        orb_delta = _to_unit_rate(home.orb_vs_opp - away.orb_vs_opp)
+        ftr_delta = _to_unit_rate(home.ftr_vs_opp - away.ftr_vs_opp)
 
         composite = (
             self.W_EFG * efg_delta
@@ -488,6 +535,37 @@ class MomentumModel(_BaseModel):
         return ModelPrediction(
             self.name, round(spread, 2), round(total, 1), round(conf, 3)
         )
+
+
+class ATSIntelligenceModel(_BaseModel):
+    """ATS behavior model using cover rates, margin and streak context."""
+
+    name = "ATSIntelligence"
+
+    def predict(
+        self,
+        home: TeamProfile,
+        away: TeamProfile,
+        neutral: bool = False,
+    ) -> ModelPrediction:
+        cover_a = float(home.cover_rate_season or home.cover_rate_l10 or 0.5)
+        cover_b = float(away.cover_rate_season or away.cover_rate_l10 or 0.5)
+        ats_a = float(home.ats_margin_l10 or home.cover_margin or 0.0)
+        ats_b = float(away.ats_margin_l10 or away.cover_margin or 0.0)
+        streak_a = float(home.cover_streak or 0.0)
+        streak_b = float(away.cover_streak or 0.0)
+
+        margin = (
+            (cover_a - cover_b) * 3.0
+            + (ats_a - ats_b) * 0.4
+            + (streak_a - streak_b) * 0.15
+            + self._hca(neutral)
+        )
+        spread = -margin
+        pace = self._expected_pace(home, away)
+        total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        conf = max(0.10, min(0.90, self._confidence_from_games(home, away)))
+        return ModelPrediction(self.name, round(spread, 2), round(total, 1), round(conf, 3))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -652,6 +730,44 @@ class RegressedEfficiencyModel(_BaseModel):
         return team.cage_em * self._reg_factor(team)
 
 
+def _apply_bias_corrections(
+    prediction: float,
+    home_conf: str,
+    away_conf: str,
+    home_momentum_tier: str = None,
+    bias_path: Path = Path("data/model_bias_table.csv"),
+) -> tuple[float, list[str]]:
+    """Apply actionable bias corrections with ±4.0 total cap."""
+    if not bias_path.exists():
+        return prediction, []
+
+    try:
+        bt = pd.read_csv(bias_path)
+        actionable = bt[bt["actionable"] == True]
+    except Exception:
+        return prediction, []
+
+    game_tier = get_game_tier(home_conf, away_conf)
+    game_features = {
+        "conference_tier": game_tier,
+        "cross_tier_matchup": game_tier,
+        "momentum_tier": home_momentum_tier,
+    }
+
+    applied = []
+    total = 0.0
+    for _, row in actionable.iterrows():
+        dim = str(row.get("dimension", ""))
+        group = str(row.get("group", ""))
+        corr = float(row.get("correction", 0.0) or 0.0)
+        if game_features.get(dim) == group:
+            total += corr
+            applied.append(f"{dim}={group}:{corr:+.2f}")
+
+    total = float(np.clip(total, -4.0, 4.0))
+    return round(prediction + total, 1), applied
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # ENSEMBLE PREDICTOR
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -674,14 +790,65 @@ class EnsemblePredictor:
         AdjustedEfficiencyModel,
         PythagoreanModel,
         MomentumModel,
+        ATSIntelligenceModel,
         SituationalModel,
         CAGERankingsModel,
         RegressedEfficiencyModel,
     ]
 
+    def _apply_bias_corrections(
+        self,
+        prediction: float,
+        home: TeamProfile,
+        away: TeamProfile,
+        bias_table_path: Path,
+    ) -> Tuple[float, List[str]]:
+        """Apply additive post-prediction bias corrections from bias table."""
+        if not bias_table_path.exists():
+            return prediction, []
+
+        try:
+            bt = pd.read_csv(bias_table_path)
+            actionable = bt[bt["actionable"] == True]
+        except Exception as exc:
+            log.debug("Unable to load bias table %s: %s", bias_table_path, exc)
+            return prediction, []
+
+        game_tier = get_game_tier(home.conference, away.conference)
+        momentum_tier = pd.cut(
+            pd.Series([home.momentum]),
+            bins=[-999, -10, -4, 4, 10, 999],
+            labels=["COLD", "COOLING", "STEADY", "RISING", "HOT"],
+        ).astype(str).iloc[0]
+
+        game_features = {
+            "conference": home.conference,
+            "conference_tier": game_tier,
+            "cross_tier_matchup": game_tier,
+            "momentum_tier": momentum_tier,
+        }
+
+        applied: List[str] = []
+        total_correction = 0.0
+        for _, row in actionable.iterrows():
+            dim = row.get("dimension")
+            group = row.get("group")
+            corr = float(row.get("correction", 0.0))
+            if dim in game_features and game_features[dim] == group:
+                total_correction += corr
+                applied.append(f"{dim}={group}: {corr:+.2f}pts")
+
+        total_correction = float(np.clip(total_correction, -4.0, 4.0))
+        corrected = prediction + total_correction
+        if applied:
+            log.debug("Bias corrections applied: %s → total %+.2f", applied, total_correction)
+
+        return round(corrected, 1), applied
+
     def __init__(self, config: EnsembleConfig = None):
         self.config = config or EnsembleConfig()
         self.models = [cls() for cls in self.MODELS]
+        self.model_weights = load_model_weights()
 
     def predict(
         self,
@@ -721,6 +888,30 @@ class EnsemblePredictor:
 
         ens_spread = spread_sum / spread_w if spread_w > 0 else 0.0
         ens_total  = total_sum  / total_w  if total_w  > 0 else 140.0
+
+        model_map = {mp.model_name: mp.spread for mp in preds}
+        m1 = model_map.get("Situational", ens_spread)
+        m2 = model_map.get("FourFactors", ens_spread)
+        m3 = model_map.get("AdjEfficiency", ens_spread)
+        m4 = model_map.get("ATSIntelligence", ens_spread)
+        m5 = model_map.get("Momentum", ens_spread)
+        w = self.model_weights
+        pre_correction = (
+            w.get("w_schedule", DEFAULT_WEIGHTS["w_schedule"]) * m1
+            + w.get("w_four_factors", DEFAULT_WEIGHTS["w_four_factors"]) * m2
+            + w.get("w_bidirectional", DEFAULT_WEIGHTS["w_bidirectional"]) * m3
+            + w.get("w_ats", DEFAULT_WEIGHTS["w_ats"]) * m4
+            + w.get("w_situational", DEFAULT_WEIGHTS["w_situational"]) * m5
+        )
+        ens_spread = pre_correction
+
+        corrected_pred, bias_corrections = _apply_bias_corrections(
+            ens_spread,
+            home_conf=home.conference,
+            away_conf=away.conference,
+            home_momentum_tier=home.momentum_tier,
+        )
+        ens_spread = corrected_pred
 
         # ── Confidence & agreement ────────────────────────────────────────
         spreads = np.array([mp.spread for mp in preds])
@@ -767,8 +958,15 @@ class EnsemblePredictor:
                 total_edge_pts >= self.config.edge_threshold_total
             )
 
+        corrected_spread, bias_applied = self._apply_bias_corrections(
+            ens_spread,
+            home,
+            away,
+            bias_table_path=DATA_DIR / "model_bias_table.csv",
+        )
+
         return EnsembleResult(
-            spread=round(ens_spread, 2),
+            spread=round(corrected_spread, 2),
             total=round(ens_total, 1),
             confidence=round(ensemble_conf, 3),
             model_agreement=agreement,
@@ -780,6 +978,8 @@ class EnsemblePredictor:
             edge_flag_total=edge_total,
             spread_edge_pts=round(spread_edge_pts, 2),
             total_edge_pts=round(total_edge_pts, 2),
+            bias_corrections_applied=bias_corrections,
+            pre_correction_prediction=round(pre_correction, 2),
         )
 
 
@@ -913,6 +1113,13 @@ def load_team_profiles(
             opp_avg_ortg=g("opp_avg_ortg_season", LEAGUE_AVG_ORTG),
             opp_avg_drtg=g("opp_avg_drtg_season", LEAGUE_AVG_DRTG),
             opp_orb_pct=g("opp_avg_orb_season", 30.0),
+            cover_rate_season=g("cover_rate_season", 0.5),
+            cover_rate_l10=g("cover_rate_l10", 0.5),
+            ats_margin_l10=g("ats_margin_l10", 0.0),
+            cover_margin=g("cover_margin", 0.0),
+            cover_streak=g("cover_streak", 0.0),
+            momentum_tier=str(row.get("momentum_tier", "") or ""),
+            ha_net_rtg_l10=g("ha_net_rtg_l10", 0.0),
         )
         profiles[tid] = tp
 

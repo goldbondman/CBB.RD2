@@ -41,6 +41,11 @@ from espn_config import (
     OUT_TOURNAMENT_SNAPSHOT as CSV_SNAPSHOT,
     TZ,
 )
+try:
+    from espn_config import get_game_tier
+except ImportError:
+    def get_game_tier(home_conf: str, away_conf: str) -> str:
+        return "unknown"
 
 OUT_PREDICTIONS_LATEST = DATA_DIR / "predictions_latest.csv"
 from typing import Dict, List, Optional
@@ -504,11 +509,15 @@ def run_predictions(
             continue
 
         try:
+            home_ctx = _latest_team_context(all_data, str(home_id), cutoff_dt)
+            away_ctx = _latest_team_context(all_data, str(away_id), cutoff_dt)
             prediction = model.predict_game(
                 home_games=home_games,
                 away_games=away_games,
                 neutral_site=neutral,
                 game_type=game_type,
+                home_team_profile=home_ctx,
+                away_team_profile=away_ctx,
             )
         except Exception as exc:
             log.error(f"    Prediction failed for {game_id}: {exc}")
@@ -541,8 +550,6 @@ def run_predictions(
             uws_result = _compute_uws_for_matchup(matchup, snapshot, game_type=game_type)
 
         bd = prediction.get("breakdown", {})
-        home_ctx = _latest_team_context(all_data, str(home_id), cutoff_dt)
-        away_ctx = _latest_team_context(all_data, str(away_id), cutoff_dt)
         row = {
             "game_id": game_id,
             "game_datetime_utc": matchup.get("game_datetime_utc"),
@@ -597,6 +604,23 @@ def run_predictions(
             "away_conference": away_ctx.get("conference"),
             "away_wins": away_ctx.get("wins"),
             "away_losses": away_ctx.get("losses"),
+            "game_tier": get_game_tier(
+                home_ctx.get("conference", ""),
+                away_ctx.get("conference", ""),
+            ),
+
+            "home_form_rating": home_ctx.get("form_rating"),
+            "away_form_rating": away_ctx.get("form_rating"),
+            "home_momentum_score": home_ctx.get("momentum_score"),
+            "away_momentum_score": away_ctx.get("momentum_score"),
+            "home_momentum_tier": home_ctx.get("momentum_tier"),
+            "away_momentum_tier": away_ctx.get("momentum_tier"),
+            "home_luck_score": home_ctx.get("luck_score"),
+            "away_luck_score": away_ctx.get("luck_score"),
+            "home_ha_net_rtg_l10": home_ctx.get("ha_net_rtg_l10"),
+            "away_ha_net_rtg_l10": away_ctx.get("ha_net_rtg_l10"),
+            "home_net_rtg_std_l10": home_ctx.get("net_rtg_std_l10"),
+            "away_net_rtg_std_l10": away_ctx.get("net_rtg_std_l10"),
 
             # Required downstream box score fields (legacy uppercase contract)
             "home_FGA": home_ctx.get("fga"),
