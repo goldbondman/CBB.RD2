@@ -76,6 +76,8 @@ DATA_CSV_DIR = DATA_DIR / "csv"
 WEIGHTED_CSV = DATA_DIR / "team_game_weighted.csv"
 METRICS_CSV  = DATA_DIR / "team_game_metrics.csv"
 GAMES_CSV    = DATA_DIR / "games.csv"
+GRADED_RESULTS_CSV = DATA_DIR / "results_log_graded.csv"
+TIER_CLASSIFICATIONS_CSV = DATA_DIR / "tier_classifications.csv"
 
 
 def _resolve_data_path(primary: Path) -> Path:
@@ -98,6 +100,23 @@ LEAGUE_AVG_EFG  = 50.5
 LEAGUE_AVG_TOV  = 18.0
 LEAGUE_AVG_FTR  = 28.0
 VIG_BREAK_EVEN  = 52.38   # % ATS needed to break even at -110 juice
+UNIT_WIN = 100 / 110
+
+MIN_SAMPLE = {
+    "ats_pct": 10,
+    "clv_positive_rate": 10,
+    "home_ats_pct": 5,
+    "edge_ats_pct": 5,
+    "ou_pct": 10,
+    "calibration_error": 20,
+}
+
+CONFERENCE_BASE_TIER = {
+    "HIGH": 3,
+    "MID": 2,
+    "LOW": 1,
+    "UNKNOWN": 0,
+}
 
 
 def _append_weight_history_snapshot(history_path: Path, current_weights: dict) -> None:
@@ -1033,7 +1052,6 @@ def build_full_report(
 
 def print_report(report_df: pd.DataFrame, records: pd.DataFrame) -> None:
     """Print backtest summary to stdout."""
-    print()
     print("=" * 100)
     print("  BACKTEST RESULTS — All Models")
     print(f"  {len(records):,} games backtested  |  "
@@ -1068,6 +1086,280 @@ def print_report(report_df: pd.DataFrame, records: pd.DataFrame) -> None:
     print()
 
 
+def _resolve_optional_csv(path: Path) -> Optional[Path]:
+    resolved = _resolve_data_path(path)
+    if resolved.exists() and resolved.stat().st_size > 10:
+        return resolved
+    return None
+
+
+def _safe_rate(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
+    denom = denominator.replace(0, np.nan)
+    return numerator / denom
+
+
+def _wilson_ci(wins: float, losses: float, z: float = 1.96) -> Tuple[float, float]:
+    n = wins + losses
+    if n <= 0:
+        return (np.nan, np.nan)
+    p = wins / n
+    denom = 1 + (z ** 2 / n)
+    center = (p + z ** 2 / (2 * n)) / denom
+    margin = z * np.sqrt((p * (1 - p) / n) + (z ** 2 / (4 * n ** 2))) / denom
+    return (max(0.0, center - margin), min(1.0, center + margin))
+
+
+def _add_sample_guards(backtest_df: pd.DataFrame) -> pd.DataFrame:
+    df = backtest_df.copy()
+    sample_map = {
+        "ats_pct": "ats_sample",
+        "clv_positive_rate": "clv_sample",
+        "home_ats_pct": "home_ats_sample",
+        "edge_ats_pct": "edge_ats_sample",
+        "ou_pct": "ou_sample",
+        "calibration_error": "calibration_sample",
+    }
+
+    for metric, threshold in MIN_SAMPLE.items():
+        sample_col = sample_map.get(metric)
+        if metric in df.columns and sample_col in df.columns:
+            below_min = df[sample_col].fillna(0) < threshold
+            df.loc[below_min, metric] = np.nan
+
+    return df
+
+
+def _assert_consistency(df: pd.DataFrame) -> None:
+    checks = [
+        ("home_wins + away_wins + neutral_wins", "wins", 2),
+        ("ats_wins + ats_losses", "wins + losses", 5),
+    ]
+
+    for left_expr, right_expr, tolerance in checks:
+        try:
+            left = df.eval(left_expr)
+            right = df.eval(right_expr)
+            mismatch = (left - right).abs() > tolerance
+            if mismatch.any():
+                log.warning(
+                    "Consistency check failed for %s ~ %s (%d rows)",
+                    left_expr,
+                    right_expr,
+                    int(mismatch.sum()),
+                )
+        except Exception as exc:
+            log.warning("Consistency check skipped for %s ~ %s: %s", left_expr, right_expr, exc)
+
+
+def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
+    metrics_path = _resolve_optional_csv(METRICS_CSV)
+    if metrics_path is None:
+        metrics_path = _resolve_optional_csv(WEIGHTED_CSV)
+    if metrics_path is None:
+        log.warning("Skipping team_season_summary.csv build: no team_game_metrics/team_game_weighted CSV found")
+        return None
+
+    tgm = pd.read_csv(metrics_path, low_memory=False)
+    if tgm.empty:
+        log.warning("Skipping team_season_summary.csv build: team game metrics file is empty")
+        return None
+
+    tgm["team_id"] = tgm["team_id"].astype(str)
+    tgm["home_away_norm"] = tgm.get("home_away", "").astype(str).str.lower()
+    tgm["conference"] = tgm.get("conference", np.nan)
+    tgm["opp_rest_days"] = pd.to_numeric(tgm.get("opp_rest_days"), errors="coerce")
+    tgm["rest_days"] = pd.to_numeric(tgm.get("rest_days"), errors="coerce")
+    tgm["cover"] = pd.to_numeric(tgm.get("cover"), errors="coerce")
+    tgm["ats_push"] = pd.to_numeric(tgm.get("ats_push"), errors="coerce").fillna(0)
+    tgm["game_datetime_utc"] = pd.to_datetime(tgm.get("game_datetime_utc"), errors="coerce", utc=True)
+
+    grouped = tgm.groupby("team_id", dropna=False)
+
+    def _series(col_name: str, default=np.nan) -> pd.Series:
+        if col_name in tgm.columns:
+            return tgm[col_name]
+        return pd.Series(default, index=tgm.index)
+
+    base = grouped.agg(
+        team=("team", "last"),
+        conference=("conference", "last"),
+        wins=("wins", "last"),
+        losses=("losses", "last"),
+        home_wins=("home_wins", "last"),
+        away_wins=("away_wins", "last"),
+        neutral_wins=("neutral_wins", "sum") if "neutral_wins" in tgm.columns else ("neutral_site", "sum"),
+        ats_wins=("cover", lambda s: int((s == 1).sum())),
+        ats_losses=("cover", lambda s: int((s == 0).sum())),
+        ats_pushes=("ats_push", "sum"),
+        avg_total_scored=("points_for", "mean"),
+        avg_ou_line=("over_under", "mean"),
+        h2_avg_pts=("h2_pts", "mean"),
+        h2_avg_pts_against=("h2_pts_against", "mean"),
+        ortg_l5=("ortg_l5", "last"),
+        ortg_l10=("ortg_l10", "last"),
+        drtg_l5=("drtg_l5", "last"),
+        drtg_l10=("drtg_l10", "last"),
+        net_rtg_l5=("net_rtg_l5", "last"),
+        net_rtg_l10=("net_rtg_l10", "last"),
+        net_rtg_std=("net_rtg_std_l10", "last"),
+        luck_score=("luck_score", "last"),
+        pyth_win_pct=("pyth_win_pct_season", "last"),
+        avg_margin_l10=("margin_l10", "last"),
+        avg_margin_l5=("margin_l5", "last"),
+        avg_opp_net_rtg=("opp_avg_net_rtg_season", "last"),
+        data_through_date=("game_datetime_utc", "max"),
+        cover_streak=("cover_streak", "last"),
+    ).reset_index()
+
+    base["ats_sample"] = base["ats_wins"] + base["ats_losses"]
+    base["ats_pct"] = _safe_rate(base["ats_wins"], base["ats_sample"])
+    base["avg_ou_margin"] = base["avg_total_scored"] - base["avg_ou_line"]
+
+    splits = []
+    split_specs = {
+        "home_ats_pct": tgm["home_away_norm"] == "home",
+        "away_ats_pct": tgm["home_away_norm"] == "away",
+        "close_game_ats_pct": pd.to_numeric(_series("close_game_flag"), errors="coerce") == 1,
+        "blowout_ats_pct": pd.to_numeric(_series("blowout_flag"), errors="coerce") == 1,
+        "conf_game_ats_pct": pd.to_numeric(_series("conf_game_flag"), errors="coerce") == 1,
+        "nonconf_ats_pct": pd.to_numeric(_series("conf_game_flag"), errors="coerce") == 0,
+        "favorite_ats_pct": pd.to_numeric(_series("spread"), errors="coerce") < 0,
+        "underdog_ats_pct": pd.to_numeric(_series("spread"), errors="coerce") > 0,
+        "rest_advantage_ats_pct": tgm["rest_days"] > tgm["opp_rest_days"],
+    }
+    for metric, condition in split_specs.items():
+        subset = tgm[condition.fillna(False)].copy()
+        if subset.empty:
+            continue
+        agg = subset.groupby("team_id")["cover"].agg(
+            **{f"{metric}_wins": lambda s: int((s == 1).sum()), f"{metric}_losses": lambda s: int((s == 0).sum())}
+        ).reset_index()
+        agg[f"{metric}_sample"] = agg[f"{metric}_wins"] + agg[f"{metric}_losses"]
+        agg[metric] = _safe_rate(agg[f"{metric}_wins"], agg[f"{metric}_sample"])
+        splits.append(agg[["team_id", metric, f"{metric}_sample"]])
+
+    for split_df in splits:
+        base = base.merge(split_df, on="team_id", how="left")
+
+    base["ats_pct_l10"] = grouped["cover"].apply(lambda s: (s.tail(10) == 1).mean()).values
+    base["ats_pct_l20"] = grouped["cover"].apply(lambda s: (s.tail(20) == 1).mean()).values
+    base["ortg_trend"] = pd.to_numeric(base["ortg_l5"], errors="coerce") - pd.to_numeric(base["ortg_l10"], errors="coerce")
+    base["drtg_trend"] = pd.to_numeric(base["drtg_l5"], errors="coerce") - pd.to_numeric(base["drtg_l10"], errors="coerce")
+    base["net_rtg_trend"] = pd.to_numeric(base["net_rtg_l5"], errors="coerce") - pd.to_numeric(base["net_rtg_l10"], errors="coerce")
+    base["regression_risk_flag"] = (
+        pd.to_numeric(base["net_rtg_l5"], errors="coerce") >
+        (pd.to_numeric(base["net_rtg_l10"], errors="coerce") + (2 * pd.to_numeric(base["net_rtg_std"], errors="coerce")))
+    )
+    base["sos_rank"] = pd.to_numeric(base["avg_opp_net_rtg"], errors="coerce").rank(ascending=False, method="average")
+
+    if "actual_total" in tgm.columns:
+        tgm["actual_total"] = pd.to_numeric(tgm["actual_total"], errors="coerce")
+    else:
+        tgm["actual_total"] = pd.to_numeric(tgm.get("points_for"), errors="coerce") + pd.to_numeric(tgm.get("points_against"), errors="coerce")
+    tgm["ou_line"] = pd.to_numeric(tgm.get("over_under"), errors="coerce")
+    tgm["ou_result"] = np.where(
+        tgm["actual_total"] > tgm["ou_line"],
+        1,
+        np.where(tgm["actual_total"] < tgm["ou_line"], 0, np.nan),
+    )
+    tgm["h1_ou_result"] = np.where(
+        (pd.to_numeric(tgm.get("h1_pts"), errors="coerce") + pd.to_numeric(tgm.get("h1_pts_against"), errors="coerce")) > (tgm["ou_line"] / 2),
+        1,
+        np.where((pd.to_numeric(tgm.get("h1_pts"), errors="coerce") + pd.to_numeric(tgm.get("h1_pts_against"), errors="coerce")) < (tgm["ou_line"] / 2), 0, np.nan),
+    )
+    ou_agg = tgm.groupby("team_id").agg(
+        ou_wins=("ou_result", lambda s: int((s == 1).sum())),
+        ou_losses=("ou_result", lambda s: int((s == 0).sum())),
+        h1_ou_wins=("h1_ou_result", lambda s: int((s == 1).sum())),
+        h1_ou_losses=("h1_ou_result", lambda s: int((s == 0).sum())),
+    ).reset_index()
+    ou_agg["ou_sample"] = ou_agg["ou_wins"] + ou_agg["ou_losses"]
+    ou_agg["ou_pct"] = _safe_rate(ou_agg["ou_wins"], ou_agg["ou_sample"])
+    ou_agg["h1_ou_sample"] = ou_agg["h1_ou_wins"] + ou_agg["h1_ou_losses"]
+    ou_agg["h1_ou_pct"] = _safe_rate(ou_agg["h1_ou_wins"], ou_agg["h1_ou_sample"])
+    base = base.merge(ou_agg[["team_id", "ou_pct", "ou_sample", "h1_ou_pct", "h1_ou_sample"]], on="team_id", how="left")
+
+    graded_path = _resolve_optional_csv(GRADED_RESULTS_CSV)
+    if graded_path is not None:
+        rl = pd.read_csv(graded_path, low_memory=False)
+        if "team_id" in rl.columns and not rl.empty:
+            rl["team_id"] = rl["team_id"].astype(str)
+            rl["cover"] = pd.to_numeric(rl.get("cover"), errors="coerce")
+            rl["edge_flag"] = pd.to_numeric(rl.get("edge_flag"), errors="coerce").fillna(0)
+            rl["model_confidence"] = pd.to_numeric(rl.get("model_confidence"), errors="coerce")
+            rl["predicted_prob"] = rl.get("predicted_prob", rl["model_confidence"])
+            rl["actual_outcome"] = np.where(pd.to_numeric(rl.get("actual_spread"), errors="coerce") < 0, 1.0, 0.0)
+
+            rl_agg = rl.groupby("team_id").agg(
+                directional_accuracy=("winner_correct", "mean"),
+                ats_wins_rl=("ats_result", lambda s: int((s == "WIN").sum())),
+                ats_losses_rl=("ats_result", lambda s: int((s == "LOSS").sum())),
+                avg_edge_size=("edge_size", "mean"),
+                edge_wins=("ats_result", lambda s: int(((s == "WIN") & (rl.loc[s.index, "edge_flag"] == 1)).sum())),
+                edge_losses=("ats_result", lambda s: int(((s == "LOSS") & (rl.loc[s.index, "edge_flag"] == 1)).sum())),
+                calibration_error=("predicted_prob", lambda s: float(np.abs(s - rl.loc[s.index, "actual_outcome"]).mean())),
+                brier_score=("predicted_prob", lambda s: float(np.mean((s - rl.loc[s.index, "actual_outcome"]) ** 2))),
+                avg_clv=("clv_vs_close", "mean"),
+                clv_positive_wins=("clv_vs_close", lambda s: int((s > 0).sum())),
+                clv_sample=("clv_vs_close", lambda s: int(s.notna().sum())),
+                avg_clv_edge_games=("clv_vs_close", lambda s: float(s[rl.loc[s.index, "edge_flag"] == 1].mean())),
+                clv_grade=("beat_closing_line", "mean"),
+            ).reset_index()
+            rl_agg["ats_sample"] = rl_agg["ats_wins_rl"] + rl_agg["ats_losses_rl"]
+            rl_agg["ats_pct"] = _safe_rate(rl_agg["ats_wins_rl"], rl_agg["ats_sample"])
+            rl_agg["edge_sample"] = rl_agg["edge_wins"] + rl_agg["edge_losses"]
+            rl_agg["edge_ats_pct"] = _safe_rate(rl_agg["edge_wins"], rl_agg["edge_sample"])
+            rl_agg["clv_positive_rate"] = _safe_rate(rl_agg["clv_positive_wins"], rl_agg["clv_sample"])
+            rl_agg["roi_units"] = (rl_agg["ats_wins_rl"] * UNIT_WIN) - rl_agg["ats_losses_rl"]
+            rl_agg["roi_units_edge_only"] = (rl_agg["edge_wins"] * UNIT_WIN) - rl_agg["edge_losses"]
+            rl_agg["clv_roi"] = np.where(rl_agg["clv_positive_rate"].notna(), (rl_agg["clv_positive_rate"] * UNIT_WIN) - (1 - rl_agg["clv_positive_rate"]), np.nan)
+
+            base = base.merge(
+                rl_agg[[
+                    "team_id", "directional_accuracy", "ats_pct", "roi_units", "roi_units_edge_only",
+                    "avg_edge_size", "edge_ats_pct", "calibration_error", "brier_score", "avg_clv",
+                    "clv_positive_rate", "clv_roi", "avg_clv_edge_games", "clv_grade", "clv_sample", "edge_sample",
+                ]],
+                on="team_id",
+                how="left",
+            )
+
+    # Confidence intervals on ATS
+    wilson = base.apply(lambda row: _wilson_ci(float(row.get("ats_wins", 0)), float(row.get("ats_losses", 0))), axis=1)
+    base["ats_pct_95ci_low"] = wilson.apply(lambda x: x[0])
+    base["ats_pct_95ci_high"] = wilson.apply(lambda x: x[1])
+
+    # Tier join/fallback
+    tier_path = _resolve_optional_csv(TIER_CLASSIFICATIONS_CSV)
+    if tier_path is not None:
+        tiers = pd.read_csv(tier_path, low_memory=False)
+        if "team_id" in tiers.columns:
+            tiers["team_id"] = tiers["team_id"].astype(str)
+            cols = [c for c in ["team_id", "tier", "tier_score", "conference_base_tier"] if c in tiers.columns]
+            base = base.merge(tiers[cols], on="team_id", how="left")
+
+    if "tier" not in base.columns:
+        from espn_config import get_conference_tier
+
+        base["tier"] = base["conference"].apply(get_conference_tier)
+        base["conference_base_tier"] = base["tier"]
+        base["tier_score"] = base["tier"].map(CONFERENCE_BASE_TIER).fillna(0)
+    else:
+        if "conference_base_tier" not in base.columns:
+            base["conference_base_tier"] = base["tier"]
+        if "tier_score" not in base.columns:
+            base["tier_score"] = base["conference_base_tier"].map(CONFERENCE_BASE_TIER).fillna(0)
+
+    base = _add_sample_guards(base)
+    _assert_consistency(base)
+
+    out_path = output_dir / "team_season_summary.csv"
+    safe_write_csv(base, out_path, index=False, label="team_season_summary", allow_empty=True)
+    safe_write_csv(base, output_dir / "team_season_summary_latest.csv", index=False, label="team_season_summary_latest", allow_empty=True)
+    log.info("Backtest team analytics → %s", out_path)
+    return out_path
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # ENTRY POINT
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1084,7 +1376,11 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
 
     if completed_games.empty:
         log.error("No completed games found")
-        return {}
+        outputs = {}
+        backtest_path = build_team_backtest_csv(output_dir)
+        if backtest_path is not None:
+            outputs["team_season_summary"] = backtest_path
+        return outputs
 
     # ── Run backtest ─────────────────────────────────────────────────────────
     engine  = BacktestEngine(config)
@@ -1092,7 +1388,11 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
 
     if records.empty:
         log.error("No records produced — check data and min_games threshold")
-        return {}
+        outputs = {}
+        backtest_path = build_team_backtest_csv(output_dir)
+        if backtest_path is not None:
+            outputs["team_season_summary"] = backtest_path
+        return outputs
 
     records = engine.attach_market_lines(records)
 
@@ -1189,6 +1489,10 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
             history_df = pd.concat([existing, history_df], ignore_index=True)
         safe_write_csv(history_df, weight_history_path, index=False, label="model_weight_history", allow_empty=True)
         log.info(f"Weight history appended → {weight_history_path}")
+
+    backtest_path = build_team_backtest_csv(output_dir)
+    if backtest_path is not None:
+        outputs["team_season_summary"] = backtest_path
 
     return outputs
 
