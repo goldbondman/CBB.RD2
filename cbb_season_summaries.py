@@ -582,33 +582,207 @@ def build_team_situational(output_path: Path = TEAM_SITUATIONAL_CSV) -> pd.DataF
     """
     Build team_situational.csv — one row per team per game, situational columns.
     """
-    df = _safe_read(TEAM_METRICS_CSV)
-    if df.empty:
-        log.info("No team_game_metrics data — skipping team_situational")
+    all_games = _safe_read_with_fallback(TEAM_WEIGHTED_CSV)
+    if all_games.empty:
+        all_games = _safe_read(TEAM_METRICS_CSV)
+    if all_games.empty:
+        log.info("No weighted/metrics data — skipping team_situational")
         return pd.DataFrame()
 
-    sit_cols = [
-        "event_id", "team_id", "game_datetime_utc", "home_away",
-        "rest_days", "games_l7", "games_l14",
-        "win_streak", "lose_streak", "cover_streak",
-        "close_win_pct_season", "close_game_win_pct",
-        "blowout_flag", "close_game_flag",
-        "margin", "margin_capped",
-    ]
-    present = [c for c in sit_cols if c in df.columns]
-    out = df[present].copy()
+    required_cols = ["event_id", "team_id", "opponent_id", "game_datetime_utc", "home_away"]
+    missing = [c for c in required_cols if c not in all_games.columns]
+    if missing:
+        log.warning("build_team_situational: missing required columns: %s", missing)
+        return pd.DataFrame()
 
-    # scoring_consistency_l5: std of margin over last 5 games (rolling, shift(1), min_periods=3)
-    if "margin" in df.columns and "team_id" in df.columns:
-        df_sorted = df.copy()
-        if "game_datetime_utc" in df_sorted.columns:
-            df_sorted = df_sorted.sort_values(["team_id", "game_datetime_utc"])
-        df_sorted["margin"] = pd.to_numeric(df_sorted["margin"], errors="coerce")
-        out = out.copy()
-        out.index = df_sorted.index
-        out["scoring_consistency_l5"] = df_sorted.groupby("team_id")["margin"].transform(
-            lambda s: s.shift(1).rolling(5, min_periods=3).std().round(2)
-        )
+    df = all_games.copy()
+    df["team_id"] = df["team_id"].astype(str).str.strip()
+    df["opponent_id"] = df["opponent_id"].astype(str).str.strip()
+    df["event_id"] = df["event_id"].astype(str).str.strip()
+    df["game_datetime_utc"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
+    df = df.dropna(subset=["game_datetime_utc", "team_id", "event_id"]).copy()
+
+    # Attach spread line if weighted input is missing it.
+    if "spread" not in df.columns and "spread_line" not in df.columns:
+        games = _safe_read_with_fallback(GAMES_CSV)
+        if not games.empty and "event_id" in games.columns:
+            games["event_id"] = games["event_id"].astype(str).str.strip()
+            spread_candidates = [c for c in ["spread_line", "spread"] if c in games.columns]
+            if spread_candidates:
+                gcols = ["event_id", *spread_candidates]
+                df = df.merge(games[gcols].drop_duplicates(subset=["event_id"]), on="event_id", how="left")
+    spread_col = "spread_line" if "spread_line" in df.columns else "spread" if "spread" in df.columns else None
+
+    team_name_col = "team" if "team" in df.columns else "team_name" if "team_name" in df.columns else None
+    team_map = {}
+    if team_name_col:
+        team_map = (df[["team_id", team_name_col]]
+                    .dropna(subset=["team_id", team_name_col])
+                    .drop_duplicates(subset=["team_id"])
+                    .set_index("team_id")[team_name_col]
+                    .to_dict())
+
+    def _season_start(dt: pd.Timestamp) -> pd.Timestamp:
+        year = dt.year if dt.month >= 8 else dt.year - 1
+        return pd.Timestamp(f"{year}-08-01", tz="UTC")
+
+    def _extract_outcome(row: pd.Series) -> int | None:
+        pf = pd.to_numeric(row.get("points_for"), errors="coerce")
+        pa = pd.to_numeric(row.get("points_against"), errors="coerce")
+        if pd.notna(pf) and pd.notna(pa):
+            return 1 if pf > pa else -1
+        w = row.get("wins", row.get("win", None))
+        wv = pd.to_numeric(w, errors="coerce")
+        if pd.notna(wv):
+            return 1 if float(wv) >= 0.5 else -1
+        return None
+
+    def _compute_streak(values: list[int]) -> int:
+        if not values:
+            return 0
+        streak = 0
+        last = values[-1]
+        for v in reversed(values):
+            if v == last:
+                streak += v
+            else:
+                break
+        return int(streak)
+
+    team_histories = {
+        str(tid): grp.sort_values("game_datetime_utc").reset_index(drop=True)
+        for tid, grp in df.groupby("team_id", dropna=False)
+    }
+
+    rows: list[dict] = []
+    spread_available = 0
+    for _, row in df.sort_values(["team_id", "game_datetime_utc", "event_id"]).iterrows():
+        tid = str(row["team_id"]).strip()
+        game_dt = row["game_datetime_utc"]
+        hist = team_histories.get(tid, pd.DataFrame())
+        prior = hist[hist["game_datetime_utc"] < game_dt]
+
+        # rest/games window
+        if prior.empty:
+            rest_days = 7.0
+        else:
+            last_game_dt = prior["game_datetime_utc"].iloc[-1]
+            rest_days = min(round((game_dt - last_game_dt).total_seconds() / 86400, 1), 14.0)
+        cutoff_7 = game_dt - pd.Timedelta(days=7)
+        cutoff_14 = game_dt - pd.Timedelta(days=14)
+        games_l7 = int((prior["game_datetime_utc"] >= cutoff_7).sum())
+        games_l14 = int((prior["game_datetime_utc"] >= cutoff_14).sum())
+
+        # win streak
+        outcomes = [o for o in prior.apply(_extract_outcome, axis=1).tolist() if o is not None]
+        win_streak = _compute_streak(outcomes)
+
+        # cover streak
+        cover_outcomes: list[int] = []
+        if spread_col:
+            for _, g in prior.iterrows():
+                spread_val = pd.to_numeric(g.get(spread_col), errors="coerce")
+                pf = pd.to_numeric(g.get("points_for"), errors="coerce")
+                pa = pd.to_numeric(g.get("points_against"), errors="coerce")
+                if pd.isna(spread_val) or pd.isna(pf) or pd.isna(pa):
+                    continue
+                if str(g.get("home_away", "")).strip().lower() == "home":
+                    covered = (pf - pa) > float(spread_val)
+                else:
+                    covered = (pa - pf) > -float(spread_val)
+                cover_outcomes.append(1 if covered else -1)
+            spread_available += int(prior[spread_col].notna().any())
+        cover_streak = _compute_streak(cover_outcomes)
+
+        # close game percentages
+        season_prior = prior[prior["game_datetime_utc"] >= _season_start(game_dt)]
+        season_margin = (pd.to_numeric(season_prior.get("points_for"), errors="coerce") -
+                         pd.to_numeric(season_prior.get("points_against"), errors="coerce"))
+        close_games = season_prior[season_margin.abs() <= 5]
+        if len(close_games) < 3:
+            close_win_pct_season = None
+        else:
+            close_wins = (
+                pd.to_numeric(close_games.get("points_for"), errors="coerce") >
+                pd.to_numeric(close_games.get("points_against"), errors="coerce")
+            ).sum()
+            close_win_pct_season = round(float(close_wins / len(close_games)), 3)
+
+        recent_10 = prior.tail(10)
+        recent_margin = (pd.to_numeric(recent_10.get("points_for"), errors="coerce") -
+                         pd.to_numeric(recent_10.get("points_against"), errors="coerce"))
+        close_l10 = recent_10[recent_margin.abs() <= 5]
+        if len(close_l10) < 2:
+            close_game_win_pct = None
+        else:
+            close_l10_wins = (
+                pd.to_numeric(close_l10.get("points_for"), errors="coerce") >
+                pd.to_numeric(close_l10.get("points_against"), errors="coerce")
+            ).sum()
+            close_game_win_pct = round(float(close_l10_wins / len(close_l10)), 3)
+
+        recent_5 = prior.tail(5)
+        if len(recent_5) < 3:
+            scoring_consistency_l5 = None
+        else:
+            margins = (pd.to_numeric(recent_5.get("points_for"), errors="coerce") -
+                       pd.to_numeric(recent_5.get("points_against"), errors="coerce")).dropna()
+            scoring_consistency_l5 = round(float(margins.std(ddof=0)), 2) if len(margins) >= 3 else None
+
+        pf_now = pd.to_numeric(row.get("points_for"), errors="coerce")
+        pa_now = pd.to_numeric(row.get("points_against"), errors="coerce")
+        if pd.isna(pf_now) or pd.isna(pa_now) or (float(pf_now) == 0.0 and float(pa_now) == 0.0):
+            blowout_flag = None
+            close_game_flag = None
+            margin = None
+            margin_capped = None
+        else:
+            margin = float(pf_now - pa_now)
+            blowout_flag = 1 if abs(margin) >= 15 else 0
+            close_game_flag = 1 if abs(margin) <= 5 else 0
+            margin_capped = float(max(-15.0, min(15.0, margin)))
+
+        fatigue_index = round((games_l7 * 0.6) + (games_l14 * 0.3) + max(0.0, (3.0 - rest_days) * 0.5), 2)
+
+        rows.append({
+            "event_id": str(row.get("event_id", "")).strip(),
+            "team_id": tid,
+            "team_name": team_map.get(tid, tid),
+            "opponent_id": str(row.get("opponent_id", "")).strip(),
+            "opponent_name": team_map.get(str(row.get("opponent_id", "")).strip(), str(row.get("opponent_id", "")).strip()),
+            "game_datetime_utc": game_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "home_away": row.get("home_away"),
+            "rest_days": rest_days,
+            "games_l7": games_l7,
+            "games_l14": games_l14,
+            "fatigue_index": fatigue_index,
+            "win_streak": win_streak,
+            "cover_streak": cover_streak,
+            "close_win_pct_season": close_win_pct_season,
+            "close_game_win_pct": close_game_win_pct,
+            "scoring_consistency_l5": scoring_consistency_l5,
+            "blowout_flag": blowout_flag,
+            "close_game_flag": close_game_flag,
+            "margin": margin,
+            "margin_capped": margin_capped,
+        })
+
+    out = pd.DataFrame(rows)
+    output_cols = [
+        "event_id", "team_id", "team_name", "opponent_id", "opponent_name",
+        "game_datetime_utc", "home_away", "rest_days", "games_l7", "games_l14",
+        "fatigue_index", "win_streak", "cover_streak", "close_win_pct_season",
+        "close_game_win_pct", "scoring_consistency_l5", "blowout_flag",
+        "close_game_flag", "margin", "margin_capped",
+    ]
+    out = out.reindex(columns=output_cols)
+
+    if spread_col and len(df):
+        spread_rate = float(df[spread_col].notna().mean())
+        if spread_rate < 0.10:
+            log.warning("Spread data coverage low for team_situational: %.1f%%", spread_rate * 100)
+    elif not spread_col:
+        log.warning("Spread data column missing; cover_streak defaults to 0")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(output_path, index=False)
