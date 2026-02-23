@@ -55,8 +55,8 @@ permissions:
 
 # Prevent overlapping runs from clobbering latest outputs/artifacts
 concurrency:
-  group: cbb-predictions-rolling
-  cancel-in-progress: true
+  group: git-push-predictions-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   predict:
@@ -765,31 +765,14 @@ jobs:
           for f in data/predictions_latest.csv data/predictions_combined_latest.csv data/ensemble_predictions_latest.csv data/predictions_mc_latest.csv; do
             [ -f "$f" ] && cp "$f" data/csv/ && echo "Copied $f" || echo "Skipped $f (not found)"
           done
-
       - name: Commit predictions to repository
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git pull origin main --rebase --autostash || true
 
-          git add \
-            data/csv/predictions_latest.csv \
-            data/csv/predictions_mc_latest.csv \
-            data/csv/predictions_combined_latest.csv \
-            data/csv/bet_recs.csv \
-            data/csv/matchup_preview.csv \
-            data/csv/upset_watch.csv \
-            data/csv/mc_game_cards.csv \
-            data/csv/player_context_scores.csv \
-            data/csv/team_matchup_summary.csv \
-            data/predictions_latest.csv \
-            data/predictions_combined_latest.csv \
-            data/predictions_primary.csv \
-            data/predictions_mc_latest.csv \
-            data/ensemble_predictions_latest.csv \
-            2>/dev/null || true
+          git add             data/csv/predictions_latest.csv             data/csv/predictions_mc_latest.csv             data/csv/predictions_combined_latest.csv             data/csv/bet_recs.csv             data/csv/matchup_preview.csv             data/csv/upset_watch.csv             data/csv/mc_game_cards.csv             data/csv/player_context_scores.csv             data/csv/team_matchup_summary.csv             data/predictions_latest.csv             data/predictions_combined_latest.csv             data/predictions_primary.csv             data/predictions_mc_latest.csv             data/ensemble_predictions_latest.csv             2>/dev/null || true
 
           # Also add any dated prediction files
           git add data/predictions_*.csv data/ensemble_predictions_*.csv 2>/dev/null || true
@@ -797,15 +780,46 @@ jobs:
 
           if git diff --staged --quiet; then
             echo "[SKIP] No prediction changes to commit"
-          else
+            exit 0
+          fi
+
+          MAX_RETRIES=5
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Push attempt $i/$MAX_RETRIES"
+            git fetch origin main
+            git rebase origin/main -X ours --no-stat 2>&1 || {
+              git rebase --abort 2>/dev/null || true
+              git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
+            }
+
+            git add               data/csv/predictions_latest.csv               data/csv/predictions_mc_latest.csv               data/csv/predictions_combined_latest.csv               data/csv/bet_recs.csv               data/csv/matchup_preview.csv               data/csv/upset_watch.csv               data/csv/mc_game_cards.csv               data/csv/player_context_scores.csv               data/csv/team_matchup_summary.csv               data/predictions_latest.csv               data/predictions_combined_latest.csv               data/predictions_primary.csv               data/predictions_mc_latest.csv               data/ensemble_predictions_latest.csv               2>/dev/null || true
+
+            git add data/predictions_*.csv data/ensemble_predictions_*.csv 2>/dev/null || true
+            git add data/bet_recs_$(date +'%Y%m%d').csv 2>/dev/null || true
+
+            if git diff --staged --quiet; then
+              echo "[SKIP] Nothing to commit after merge"
+              exit 0
+            fi
+
             GAME_COUNT=$(python -c "
           import pandas as pd, pathlib
           p = pathlib.Path('data/csv/predictions_latest.csv')
           print(len(pd.read_csv(p)) if p.exists() else 0)
           " 2>/dev/null || echo "?")
-            git commit -m "predictions: $(date +'%Y-%m-%d %H:%M UTC') — ${GAME_COUNT} games [skip ci]"
-            git push origin main
-            echo "[OK] CSVs committed to repository"
-          fi
+            git commit -m "predictions: $(date +'%Y-%m-%d %H:%M UTC') — ${GAME_COUNT} games [skip ci]" || true
+
+            if git push origin main; then
+              echo "[OK] Push succeeded on attempt $i"
+              echo "[OK] CSVs committed to repository"
+              exit 0
+            fi
+
+            echo "[RETRY] Push failed, waiting before retry..."
+            sleep $((i * 3))
+          done
+
+          echo "[FAIL] Could not push after $MAX_RETRIES attempts"
+          exit 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

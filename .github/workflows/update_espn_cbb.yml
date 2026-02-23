@@ -30,6 +30,10 @@ permissions:
   contents: write
   actions: write
 
+concurrency:
+  group: git-push-update-espn-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 1 — DATA PIPELINE
@@ -468,43 +472,52 @@ jobs:
           for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv data/player_game_metrics.csv; do
             [ -f "$f" ] && cp "$f" data/csv/ && echo "Copied $f" || echo "Skipped $f (not found)"
           done
-
       - name: Commit pipeline CSVs to repository
         if: success() || failure()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git pull origin main --rebase --autostash || true
 
-          git add \
-            data/csv/tier_classifications.csv \
-            data/csv/team_form_snapshot.csv \
-            data/csv/player_leaders.csv \
-            data/csv/conference_summary.csv \
-            data/csv/backtest_summary.csv \
-            data/csv/backtest_by_model.csv \
-            data/csv/backtest_weekly.csv \
-            data/csv/backtest_by_conference.csv \
-            data/csv/backtest_calibration.csv \
-            data/csv/backtest_by_edge.csv \
-            data/csv/backtest_model_matrix.csv \
-            data/csv/backtest_by_tier.csv \
-            data/player_condition_profiles.csv \
-            data/player_archetype_matchup_matrix.csv \
-            data/field_drift_report.json \
-            data/field_drift_report.md \
-            column_map.json \
-            2>/dev/null || true
+          git add             data/csv/tier_classifications.csv             data/csv/team_form_snapshot.csv             data/csv/player_leaders.csv             data/csv/conference_summary.csv             data/csv/backtest_summary.csv             data/csv/backtest_by_model.csv             data/csv/backtest_weekly.csv             data/csv/backtest_by_conference.csv             data/csv/backtest_calibration.csv             data/csv/backtest_by_edge.csv             data/csv/backtest_model_matrix.csv             data/csv/backtest_by_tier.csv             data/player_condition_profiles.csv             data/player_archetype_matchup_matrix.csv             data/field_drift_report.json             data/field_drift_report.md             column_map.json             2>/dev/null || true
 
           if git diff --staged --quiet; then
             echo "[SKIP] No changes to commit"
-          else
-            git commit -m "pipeline: $(date +'%Y-%m-%d %H:%M UTC') — metrics + backtest [skip ci]"
-            git push origin main
+            exit 0
           fi
+
+          MAX_RETRIES=5
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Push attempt $i/$MAX_RETRIES"
+            git fetch origin main
+            git rebase origin/main -X ours --no-stat 2>&1 || {
+              git rebase --abort 2>/dev/null || true
+              git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
+            }
+
+            git add               data/csv/tier_classifications.csv               data/csv/team_form_snapshot.csv               data/csv/player_leaders.csv               data/csv/conference_summary.csv               data/csv/backtest_summary.csv               data/csv/backtest_by_model.csv               data/csv/backtest_weekly.csv               data/csv/backtest_by_conference.csv               data/csv/backtest_calibration.csv               data/csv/backtest_by_edge.csv               data/csv/backtest_model_matrix.csv               data/csv/backtest_by_tier.csv               data/player_condition_profiles.csv               data/player_archetype_matchup_matrix.csv               data/field_drift_report.json               data/field_drift_report.md               column_map.json               2>/dev/null || true
+
+            if git diff --staged --quiet; then
+              echo "[SKIP] Nothing to commit after merge"
+              exit 0
+            fi
+
+            git commit -m "pipeline: $(date +'%Y-%m-%d %H:%M UTC') — metrics + backtest [skip ci]" || true
+
+            if git push origin main; then
+              echo "[OK] Push succeeded on attempt $i"
+              exit 0
+            fi
+
+            echo "[RETRY] Push failed, waiting before retry..."
+            sleep $((i * 3))
+          done
+
+          echo "[FAIL] Could not push after $MAX_RETRIES attempts"
+          exit 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
       - name: Verify CSVs committed successfully
         if: always()
@@ -652,7 +665,6 @@ jobs:
           for f in data/cbb_rankings.csv data/cbb_rankings_by_conference.csv; do
             [ -f "$f" ] && cp "$f" data/csv/ && echo "Copied $f" || echo "Skipped $f (not found)"
           done
-
       - name: Commit rankings CSVs to repository
         if: success()
         run: |
@@ -660,49 +672,45 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
-          for attempt in 1 2 3; do
-            git pull origin main --rebase --autostash || true
+          git add             data/csv/cbb_rankings.csv             data/csv/cbb_rankings_by_conference.csv             data/cbb_rankings.csv             data/cbb_rankings_by_conference.csv             data/cbb_rankings_*.csv             2>/dev/null || true
 
-            git add \
-              data/csv/cbb_rankings.csv \
-              data/csv/cbb_rankings_by_conference.csv \
-              data/cbb_rankings.csv \
-              data/cbb_rankings_by_conference.csv \
-              data/cbb_rankings_$(date +'%Y%m%d').csv \
-              2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "[SKIP] No ranking changes to commit"
+            exit 0
+          fi
+
+          MAX_RETRIES=5
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Push attempt $i/$MAX_RETRIES"
+            git fetch origin main
+            git rebase origin/main -X ours --no-stat 2>&1 || {
+              git rebase --abort 2>/dev/null || true
+              git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
+            }
+
+            git add               data/csv/cbb_rankings.csv               data/csv/cbb_rankings_by_conference.csv               data/cbb_rankings.csv               data/cbb_rankings_by_conference.csv               data/cbb_rankings_*.csv               2>/dev/null || true
 
             if git diff --staged --quiet; then
-              echo "[SKIP] No ranking changes to commit"
-              break
+              echo "[SKIP] Nothing to commit after merge"
+              exit 0
             fi
 
             git commit -m "rankings: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]" || true
 
             if git push origin main; then
-              echo "[OK] Push succeeded on attempt ${attempt}"
-              break
-            else
-              echo "[RETRY] Push failed on attempt ${attempt} — waiting $((attempt * 10)) seconds"
-              sleep $((attempt * 10))
-              git reset HEAD~1 2>/dev/null || true
+              echo "[OK] Push succeeded on attempt $i"
+              exit 0
             fi
+
+            echo "[RETRY] Push failed, waiting before retry..."
+            sleep $((i * 3))
           done
+
+          echo "[FAIL] Could not push after $MAX_RETRIES attempts"
+          exit 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ════════════════════════════════════════════════════════════════════════════
-  # JOB 3 — TOMORROW'S PREDICTIONS
-  # Runs after pipeline completes. Produces predictions_YYYYMMDD.csv.
-  # ════════════════════════════════════════════════════════════════════════════
-  predictions:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      actions: write
-    needs: update
-    if: needs.update.result == 'success'
-
-    steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
@@ -806,7 +814,6 @@ jobs:
             data/ensemble_predictions_latest.csv
           retention-days: 30
           if-no-files-found: warn
-
       - name: Commit predictions CSVs to repository
         if: always()
         run: |
@@ -814,35 +821,47 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
-          for attempt in 1 2 3; do
-            git pull origin main --rebase --autostash || true
+          git add             data/predictions_latest.csv             data/predictions_combined_latest.csv             data/predictions_primary.csv             data/predictions_mc_latest.csv             data/ensemble_predictions_latest.csv             2>/dev/null || true
 
-            git add \
-              data/predictions_latest.csv \
-              data/predictions_combined_latest.csv \
-              data/predictions_primary.csv \
-              data/predictions_mc_latest.csv \
-              data/ensemble_predictions_latest.csv \
-              2>/dev/null || true
+          git add data/predictions_*.csv data/ensemble_predictions_*.csv 2>/dev/null || true
+          git add data/bet_recs_$(date +'%Y%m%d').csv 2>/dev/null || true
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No prediction changes to commit"
+            exit 0
+          fi
+
+          MAX_RETRIES=5
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Push attempt $i/$MAX_RETRIES"
+            git fetch origin main
+            git rebase origin/main -X ours --no-stat 2>&1 || {
+              git rebase --abort 2>/dev/null || true
+              git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
+            }
+
+            git add               data/predictions_latest.csv               data/predictions_combined_latest.csv               data/predictions_primary.csv               data/predictions_mc_latest.csv               data/ensemble_predictions_latest.csv               2>/dev/null || true
 
             git add data/predictions_*.csv data/ensemble_predictions_*.csv 2>/dev/null || true
             git add data/bet_recs_$(date +'%Y%m%d').csv 2>/dev/null || true
 
             if git diff --staged --quiet; then
-              echo "[SKIP] No prediction changes to commit"
-              break
+              echo "[SKIP] Nothing to commit after merge"
+              exit 0
             fi
 
             git commit -m "predictions: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]" || true
 
             if git push origin main; then
-              echo "[OK] Push succeeded on attempt ${attempt}"
-              break
-            else
-              echo "[RETRY] Push failed on attempt ${attempt} — waiting $((attempt * 10)) seconds"
-              sleep $((attempt * 10))
-              git reset HEAD~1 2>/dev/null || true
+              echo "[OK] Push succeeded on attempt $i"
+              exit 0
             fi
+
+            echo "[RETRY] Push failed, waiting before retry..."
+            sleep $((i * 3))
           done
+
+          echo "[FAIL] Could not push after $MAX_RETRIES attempts"
+          exit 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

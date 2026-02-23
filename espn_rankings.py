@@ -17,7 +17,7 @@ CAGE-only  → Suffocation, Momentum, Clutch, Floor/Ceiling,    (proprietary)
              Star Risk, Offensive Identity, Trend Arrow
 
 OUTPUT: data/cbb_rankings.csv — one row per D1 team, ranked by CAGE_EM
-        data/cbb_rankings_YYYYMMDD.csv — dated snapshot
+        data/cbb_rankings_YYYYMMDDTHHMMSSZ.csv — dated snapshot
 
 Inputs:
     data/team_pretournament_snapshot.csv  (one row per team, most recent game)
@@ -1136,7 +1136,7 @@ def run(output_dir: Path = OUT_RANKINGS.parent, top_n: int = 25) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     out_latest = output_dir / "cbb_rankings.csv"
-    out_dated  = output_dir / f"cbb_rankings_{datetime.now(TZ).strftime('%Y%m%d')}.csv"
+    out_dated  = output_dir / f"cbb_rankings_{datetime.now(TZ).strftime('%Y%m%dT%H%M%SZ')}.csv"
 
     formatted.to_csv(out_latest, index=False)
     formatted.to_csv(out_dated,  index=False)
