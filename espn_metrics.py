@@ -322,10 +322,16 @@ def add_rolling_metrics(df: pd.DataFrame,
     for m in present:
         df[m] = pd.to_numeric(df[m], errors="coerce")
 
+    new_cols = {}
     for w in windows:
         for m in present:
-            df[f"{m}_l{w}"] = df.groupby("team_id")[m].transform(
-                lambda s, ww=w: s.shift(1).rolling(ww, min_periods=1).mean().round(2)
+            col_name = f"{m}_l{w}"
+            new_cols[col_name] = df.groupby("team_id")[m].transform(
+                lambda s, ww=w: pd.to_numeric(s, errors="coerce")
+                .shift(1)
+                .rolling(ww, min_periods=1)
+                .mean()
+                .round(2)
             )
 
     # ── Shooting variance (10-game rolling std) ──
@@ -333,21 +339,21 @@ def add_rolling_metrics(df: pd.DataFrame,
                               ("three_pct", "three_pct_std_l10"),
                               ("net_rtg", "net_rtg_std_l10")]:
         if metric in df.columns:
-            df[col_name] = df.groupby("team_id")[metric].transform(
+            new_cols[col_name] = df.groupby("team_id")[metric].transform(
                 lambda s: s.shift(1).rolling(10, min_periods=3).std().round(2)
             )
 
     # ── ATS rolling rates ──
     if "cover" in df.columns:
-        df["cover_rate_l10"] = df.groupby("team_id")["cover"].transform(
+        new_cols["cover_rate_l10"] = df.groupby("team_id")["cover"].transform(
             lambda s: s.shift(1).rolling(10, min_periods=3).mean().round(3)
         )
-        df["cover_rate_season"] = df.groupby("team_id")["cover"].transform(
+        new_cols["cover_rate_season"] = df.groupby("team_id")["cover"].transform(
             lambda s: s.shift(1).expanding(min_periods=3).mean().round(3)
         )
 
     if "cover_margin" in df.columns:
-        df["ats_margin_l10"] = df.groupby("team_id")["cover_margin"].transform(
+        new_cols["ats_margin_l10"] = df.groupby("team_id")["cover_margin"].transform(
             lambda s: s.shift(1).rolling(10, min_periods=3).mean().round(2)
         )
 
@@ -355,15 +361,19 @@ def add_rolling_metrics(df: pd.DataFrame,
     if "win" in df.columns and "close_game_flag" in df.columns:
         # Win % in close games only — season rolling
         close_wins = df["win"].where(df["close_game_flag"] == 1)
-        df["close_win_pct_season"] = df.groupby("team_id")[df.columns[
+        new_cols["close_win_pct_season"] = df.groupby("team_id")[df.columns[
             df.columns.get_loc("win")]].transform(
             lambda s: s.shift(1).expanding(min_periods=2).mean().round(3)
         )
         # Simpler approach
-        df["close_game_win_pct"] = df.groupby("team_id").apply(
+        new_cols["close_game_win_pct"] = df.groupby("team_id", group_keys=False).apply(
             lambda g: g["win"].where(g["close_game_flag"] == 1)
-            .shift(1).expanding(min_periods=2).mean()
-        ).reset_index(level=0, drop=True).round(3)
+            .shift(1).expanding(min_periods=2).mean(),
+            include_groups=False,
+        ).round(3)
+
+    if new_cols:
+        df = pd.concat([df, pd.DataFrame(new_cols, index=df.index)], axis=1)
 
     # ── Diagnostic logging ──
     l5_cols = [c for c in df.columns if c.endswith("_l5")]
