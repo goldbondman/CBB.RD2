@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pandas as pd
 from config.logging_config import get_logger
+from espn_config import conference_id_to_name
 
 log = get_logger(__name__)
 
@@ -420,7 +421,7 @@ def build_team_ats_profile(output_path: Path = TEAM_ATS_PROFILE_CSV) -> pd.DataF
     """
     Build team_ats_profile.csv — one row per team, ATS/O-U snapshot.
     """
-    df = _safe_read(TEAM_METRICS_CSV)
+    df = _safe_read_with_fallback(TEAM_METRICS_CSV)
     if df.empty:
         log.info("No team_game_metrics data — skipping team_ats_profile")
         return pd.DataFrame()
@@ -435,6 +436,7 @@ def build_team_ats_profile(output_path: Path = TEAM_ATS_PROFILE_CSV) -> pd.DataF
         df["ou_result"] = pd.to_numeric(df["ou_result"], errors="coerce")
 
     rows = []
+    unmapped_conf_ids: set[str] = set()
     for keys, grp in df.groupby(id_cols):
         grp = grp.sort_values("game_datetime_utc", na_position="last") if "game_datetime_utc" in grp.columns else grp
         record: dict = {}
@@ -442,19 +444,68 @@ def build_team_ats_profile(output_path: Path = TEAM_ATS_PROFILE_CSV) -> pd.DataF
             record[k] = v
 
         cover_s = grp["cover"] if "cover" in grp.columns else pd.Series(dtype=float)
-        cm_s    = grp["cover_margin"] if "cover_margin" in grp.columns else pd.Series(dtype=float)
+        cm_s = grp["cover_margin"] if "cover_margin" in grp.columns else pd.Series(dtype=float)
+        spread_s = pd.to_numeric(grp["spread"], errors="coerce") if "spread" in grp.columns else pd.Series(dtype=float)
 
-        record["games_with_spread"] = int(cover_s.notna().sum())
-        record["cover_rate_season"] = round(float(cover_s.mean()), 4) if cover_s.notna().any() else None
-        record["cover_rate_l10"]    = round(float(cover_s.tail(10).mean()), 4) if cover_s.notna().any() else None
-        record["cover_rate_l5"]     = round(float(cover_s.tail(5).mean()), 4) if cover_s.notna().any() else None
-        record["ats_margin_season"] = round(float(cm_s.mean()), 4) if cm_s.notna().any() else None
-        record["ats_margin_l10"]    = round(float(cm_s.tail(10).mean()), 4) if cm_s.notna().any() else None
-        record["ats_margin_l5"]     = round(float(cm_s.tail(5).mean()), 4) if cm_s.notna().any() else None
+        cover_s = pd.to_numeric(cover_s, errors="coerce")
+        cm_s = pd.to_numeric(cm_s, errors="coerce")
+        has_cover_mask = cover_s.notna()
+        graded_cover = cover_s[has_cover_mask]
+        graded_cm = cm_s[has_cover_mask]
+
+        record["conference_name"] = conference_id_to_name(record.get("conference"))
+        if record.get("conference") not in (None, "", record["conference_name"]) and record["conference_name"] == str(record.get("conference")):
+            unmapped_conf_ids.add(str(record.get("conference")))
+
+        record["games_with_spread"] = int(spread_s.notna().sum())
+        record["games_with_cover_result"] = int(graded_cover.notna().sum())
+
+        record["cover_rate_season"] = round(float(graded_cover.mean()), 4) if graded_cover.notna().any() else None
+        record["cover_rate_l10"] = round(float(graded_cover.tail(10).mean()), 4) if graded_cover.notna().any() else None
+        record["cover_rate_l5"] = round(float(graded_cover.tail(5).mean()), 4) if graded_cover.notna().any() else None
+
+        record["ats_margin_season"] = round(float(graded_cm.mean()), 4) if graded_cm.notna().any() else None
+        record["ats_margin_l10"] = round(float(graded_cm.tail(10).mean()), 4) if graded_cm.notna().any() else None
+        record["ats_margin_l5"] = round(float(graded_cm.tail(5).mean()), 4) if graded_cm.notna().any() else None
+
+        record["ats_wins"] = int((graded_cover == 1).sum())
+        record["ats_losses"] = int((graded_cover == 0).sum())
+        if "ats_push" in grp.columns:
+            ats_push = pd.to_numeric(grp["ats_push"], errors="coerce")
+            record["ats_pushes"] = int(ats_push.fillna(0).astype(int).sum())
+        else:
+            record["ats_pushes"] = 0
+
+        if spread_s.notna().any():
+            fav_cover = cover_s[(spread_s < 0) & has_cover_mask]
+            dog_cover = cover_s[(spread_s > 0) & has_cover_mask]
+            record["favorite_cover_rate"] = round(float(fav_cover.mean()), 4) if fav_cover.notna().any() else None
+            record["underdog_cover_rate"] = round(float(dog_cover.mean()), 4) if dog_cover.notna().any() else None
+            record["games_as_favorite"] = int(fav_cover.notna().sum())
+            record["games_as_underdog"] = int(dog_cover.notna().sum())
+        else:
+            record["favorite_cover_rate"] = None
+            record["underdog_cover_rate"] = None
+            record["games_as_favorite"] = 0
+            record["games_as_underdog"] = 0
+
+        if graded_cm.notna().any():
+            record["avg_cover_margin_when_covered"] = round(float(graded_cm[graded_cover == 1].mean()), 4) if (graded_cover == 1).any() else None
+            record["avg_loss_margin_when_failed"] = round(float(graded_cm[graded_cover == 0].mean()), 4) if (graded_cover == 0).any() else None
+        else:
+            record["avg_cover_margin_when_covered"] = None
+            record["avg_loss_margin_when_failed"] = None
+
+        if graded_cover.notna().sum() >= 5:
+            recent_rate = graded_cover.tail(5).mean()
+            season_rate = graded_cover.mean()
+            record["ats_regression_risk"] = int(recent_rate > 0.70 and season_rate < 0.55)
+        else:
+            record["ats_regression_risk"] = None
 
         if "home_away" in grp.columns:
-            home_cover = grp.loc[grp["home_away"] == "home", "cover"] if "cover" in grp.columns else pd.Series(dtype=float)
-            away_cover = grp.loc[grp["home_away"] == "away", "cover"] if "cover" in grp.columns else pd.Series(dtype=float)
+            home_cover = pd.to_numeric(grp.loc[grp["home_away"] == "home", "cover"], errors="coerce") if "cover" in grp.columns else pd.Series(dtype=float)
+            away_cover = pd.to_numeric(grp.loc[grp["home_away"] == "away", "cover"], errors="coerce") if "cover" in grp.columns else pd.Series(dtype=float)
             record["home_cover_rate"] = round(float(home_cover.mean()), 4) if home_cover.notna().any() else None
             record["away_cover_rate"] = round(float(away_cover.mean()), 4) if away_cover.notna().any() else None
         else:
@@ -487,11 +538,14 @@ def build_team_ats_profile(output_path: Path = TEAM_ATS_PROFILE_CSV) -> pd.DataF
         rows.append(record)
 
     out_cols = [
-        "team_id", "team", "conference",
+        "team_id", "team", "conference", "conference_name",
         "cover_rate_season", "cover_rate_l10", "cover_rate_l5",
         "ats_margin_season", "ats_margin_l10", "ats_margin_l5",
+        "ats_wins", "ats_losses", "ats_pushes",
+        "favorite_cover_rate", "underdog_cover_rate", "games_as_favorite", "games_as_underdog",
+        "avg_cover_margin_when_covered", "avg_loss_margin_when_failed", "ats_regression_risk",
         "home_cover_rate", "away_cover_rate",
-        "cover_streak", "games_with_spread",
+        "cover_streak", "games_with_spread", "games_with_cover_result",
         "ou_over_rate_season", "ou_over_rate_l10", "updated_at",
     ]
     summary = pd.DataFrame(rows)
@@ -499,6 +553,9 @@ def build_team_ats_profile(output_path: Path = TEAM_ATS_PROFILE_CSV) -> pd.DataF
         if c not in summary.columns:
             summary[c] = None
     summary = summary[[c for c in out_cols if c in summary.columns]]
+
+    if unmapped_conf_ids:
+        log.warning(f"build_team_ats_profile: unmapped conference ids {sorted(unmapped_conf_ids)}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     summary.to_csv(output_path, index=False)
