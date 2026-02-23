@@ -48,7 +48,6 @@ def dedupe_by_primary_key(df: pd.DataFrame, path: str | pathlib.Path) -> pd.Data
 def safe_write_csv(
     df: pd.DataFrame,
     path: str | pathlib.Path,
-    *,
     index: bool = False,
     label: str | None = None,
     allow_empty: bool = False,
