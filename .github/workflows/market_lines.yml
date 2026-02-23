@@ -17,7 +17,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download latest predictions artifact
+      - name: Download latest rolling predictions artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-predictions-rolling-latest
+          path: data/
+        continue-on-error: true
+
+      - name: Download legacy predictions artifact (backward compatibility)
         uses: actions/download-artifact@v4
         with:
           name: cbb-predictions-latest
@@ -33,6 +40,18 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Verify artifact handoff inputs
+        run: |
+          echo "=== Files available before capture ==="
+          ls -lh data/predictions_latest.csv 2>/dev/null || echo "predictions_latest.csv: NOT FOUND"
+          ls -lh data/predictions_combined_latest.csv 2>/dev/null || echo "predictions_combined_latest.csv: NOT FOUND"
+          ls -lh data/market_lines.csv 2>/dev/null || echo "market_lines.csv: NOT FOUND"
+
+          if [ ! -f data/predictions_combined_latest.csv ] && [ -f data/predictions_latest.csv ]; then
+            cp data/predictions_latest.csv data/predictions_combined_latest.csv
+            echo "[INFO] Created predictions_combined_latest.csv from predictions_latest.csv"
+          fi
 
       - name: Capture market lines
         run: |
@@ -53,8 +72,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cbb-market-lines
-          path: data/market_lines.csv
+          path: |
+            data/market_lines.csv
+            data/market_lines_latest.csv
+            data/odds_snapshot.csv
           retention-days: 90
+          if-no-files-found: warn
 
       - name: Upload predictions-with-context artifact
         uses: actions/upload-artifact@v4
