@@ -40,6 +40,32 @@ OUT_BIAS_TABLE           = CSV_DIR / "model_bias_table.csv"
 OUT_BIAS_REPORT          = CSV_DIR / "bias_report.json"
 OUT_BIAS_HISTORY         = CSV_DIR / "bias_history.csv"
 
+# ── New output files ─────────────────────────────────────
+OUT_PREDICTIONS_GRADED     = CSV_DIR / "predictions_graded.csv"
+OUT_PREDICTIONS_CONTEXT    = CSV_DIR / "predictions_with_context.csv"
+OUT_FORM_SNAPSHOT          = CSV_DIR / "team_form_snapshot.csv"
+OUT_EDGE_HISTORY           = CSV_DIR / "edge_history.csv"
+
+# Accuracy outputs
+OUT_ACCURACY_WEEKLY        = CSV_DIR / "model_accuracy_weekly.csv"
+OUT_ACCURACY_BY_CONF       = CSV_DIR / "model_accuracy_by_conf.csv"
+OUT_MODEL_CALIBRATION      = CSV_DIR / "model_calibration.csv"
+OUT_ACCURACY_SUMMARY       = CSV_DIR / "model_accuracy_summary.csv"
+OUT_HCA_ANALYSIS           = CSV_DIR / "hca_analysis.csv"
+
+# Self-improvement outputs
+OUT_BIAS_TABLE             = CSV_DIR / "model_bias_table.csv"
+OUT_BIAS_REPORT            = CSV_DIR / "bias_report.json"
+OUT_BIAS_HISTORY           = CSV_DIR / "bias_history.csv"
+OUT_MODEL_WEIGHTS          = CSV_DIR / "model_weights.json"
+OUT_CONFIDENCE_CALIBRATION = CSV_DIR / "confidence_calibration.json"
+
+# Rankings history
+OUT_RANKINGS_HISTORY       = CSV_DIR / "rankings_history.csv"
+
+# Results
+OUT_RESULTS_LOG            = CSV_DIR / "results_log.csv"
+
 # Rolling window splits
 OUT_ROLLING_L5       = CSV_DIR / "team_rolling_l5.csv"
 OUT_ROLLING_L10      = CSV_DIR / "team_rolling_l10.csv"
@@ -63,6 +89,65 @@ OUT_VENUE_GEOCODES = CSV_DIR / "venue_geocodes.csv"
 # Player splits
 OUT_PLAYER_ROLLING_L5  = CSV_DIR / "player_rolling_l5.csv"
 OUT_PLAYER_ROLE_SPLITS = CSV_DIR / "player_role_splits.csv"
+
+# ── Conference tier classification ────────────────────────
+CONFERENCE_TIERS = {
+    "HIGH": {
+        "ACC", "Big Ten", "Big 12", "SEC",
+        "Big East", "Pac-12",
+    },
+    "MID": {
+        "American Athletic", "Mountain West", "Atlantic 10",
+        "Missouri Valley", "West Coast", "Conference USA",
+        "Sun Belt", "MAC", "Colonial Athletic",
+    },
+    "LOW": {
+        "Big South", "Horizon", "Ivy League", "MAAC",
+        "Metro Atlantic", "Northeast", "Ohio Valley",
+        "Patriot", "Southern", "Southland", "SWAC",
+        "MEAC", "NEC", "Big Sky", "WAC",
+        "America East", "Summit League", "Atlantic Sun",
+    },
+}
+
+
+def get_conference_tier(conference: str) -> str:
+    """
+    Returns HIGH / MID / LOW / UNKNOWN.
+    Case-insensitive partial match handles ESPN name variations
+    (e.g. 'Southeastern Conference' matches 'SEC').
+    """
+    import pandas as _pd
+
+    if not conference or (
+        isinstance(conference, float) and _pd.isna(conference)
+    ):
+        return "UNKNOWN"
+    conf_clean = str(conference).strip().lower()
+    for tier, conf_set in CONFERENCE_TIERS.items():
+        for name in conf_set:
+            if name.lower() in conf_clean or conf_clean in name.lower():
+                return tier
+    return "UNKNOWN"
+
+
+def get_game_tier(home_conference: str,
+                  away_conference: str) -> str:
+    """
+    Classify the matchup tier.
+    Returns: HIGH | MID | LOW |
+             CROSS_HIGH_MID | CROSS_HIGH_LOW | CROSS_MID_LOW | UNKNOWN
+    """
+    tier_h = get_conference_tier(home_conference)
+    tier_a = get_conference_tier(away_conference)
+    if tier_h == tier_a:
+        return tier_h
+    cross_map = {
+        ("HIGH", "LOW"): "CROSS_HIGH_LOW",
+        ("HIGH", "MID"): "CROSS_HIGH_MID",
+        ("LOW", "MID"): "CROSS_MID_LOW",
+    }
+    return cross_map.get(tuple(sorted([tier_h, tier_a])), "UNKNOWN")
 
 # ── ESPN API ─────────────────────────────────────────────────────────────────
 ESPN_SCOREBOARD_URL = (
