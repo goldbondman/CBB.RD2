@@ -17,14 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download latest rolling predictions artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: cbb-predictions-rolling-latest
-          path: data/
-        continue-on-error: true
-
-      - name: Download legacy predictions artifact (backward compatibility)
+      - name: Download predictions artifact
         uses: actions/download-artifact@v4
         with:
           name: cbb-predictions-latest
@@ -43,15 +36,45 @@ jobs:
 
       - name: Verify artifact handoff inputs
         run: |
-          echo "=== Files available before capture ==="
-          ls -lh data/predictions_latest.csv 2>/dev/null || echo "predictions_latest.csv: NOT FOUND"
-          ls -lh data/predictions_combined_latest.csv 2>/dev/null || echo "predictions_combined_latest.csv: NOT FOUND"
-          ls -lh data/market_lines.csv 2>/dev/null || echo "market_lines.csv: NOT FOUND"
+          echo "=== Prediction files available ==="
 
-          if [ ! -f data/predictions_combined_latest.csv ] && [ -f data/predictions_latest.csv ]; then
+          fallback() {
+            local file=$1
+            if [ -f "$file" ]; then
+              echo "[OK] $file ($(wc -l < $file) lines)"
+            else
+              if git show HEAD:"$file" > "$file" 2>/dev/null; then
+                echo "[FALLBACK] $file restored from repo ($(wc -l < $file) lines)"
+              else
+                echo "[WARN] $file not available from artifact or repo"
+              fi
+            fi
+          }
+
+          fallback data/predictions_latest.csv
+          fallback data/market_lines.csv
+
+          for f in \
+            data/predictions_combined_latest.csv \
+            data/predictions_rolling_latest.csv \
+            data/ensemble_predictions_latest.csv; do
+            if [ -f "$f" ]; then
+              echo "[OK] $f"
+            else
+              git show HEAD:"$f" > "$f" 2>/dev/null && \
+                echo "[FALLBACK] $f from repo" || \
+                echo "[SKIP] $f not available"
+            fi
+          done
+
+          if [ ! -f data/predictions_combined_latest.csv ] && \
+             [ -f data/predictions_latest.csv ]; then
             cp data/predictions_latest.csv data/predictions_combined_latest.csv
-            echo "[INFO] Created predictions_combined_latest.csv from predictions_latest.csv"
+            echo "[ALIAS] predictions_combined_latest.csv created from predictions_latest.csv"
           fi
+
+          echo "=== Final state ==="
+          ls -lh data/predictions*.csv 2>/dev/null
 
       - name: Capture market lines
         run: |
