@@ -219,6 +219,49 @@ def build_predictions_with_context(
     df = _normalize_conference_names(df)
     df = _enrich_win_loss_records(df)
 
+    sit_path = DATA_DIR / "team_situational.csv"
+    if sit_path.exists():
+        sit = pd.read_csv(sit_path, dtype={"event_id": str, "team_id": str})
+        sit_cols = [
+            "rest_days", "games_l7", "games_l14", "fatigue_index",
+            "win_streak", "cover_streak", "close_win_pct_season",
+            "close_game_win_pct", "scoring_consistency_l5",
+        ]
+        keep_cols = ["event_id", "team_id", "home_away", *[c for c in sit_cols if c in sit.columns]]
+        sit = sit[keep_cols].copy()
+
+        home_sit = sit[sit["home_away"] == "home"].copy()
+        home_rename = {c: f"home_{c}" for c in sit_cols if c in home_sit.columns}
+        home_sit = home_sit.rename(columns=home_rename).rename(columns={"team_id": "home_team_id"})
+        home_keep = ["event_id", "home_team_id", *home_rename.values()]
+        home_sit = home_sit[home_keep]
+
+        away_sit = sit[sit["home_away"] == "away"].copy()
+        away_rename = {c: f"away_{c}" for c in sit_cols if c in away_sit.columns}
+        away_sit = away_sit.rename(columns=away_rename).rename(columns={"team_id": "away_team_id"})
+        away_keep = ["event_id", "away_team_id", *away_rename.values()]
+        away_sit = away_sit[away_keep]
+
+        df["event_id"] = df["event_id"].astype(str).str.strip()
+        df["home_team_id"] = df["home_team_id"].astype(str).str.strip()
+        df["away_team_id"] = df["away_team_id"].astype(str).str.strip()
+        home_sit["event_id"] = home_sit["event_id"].astype(str).str.strip()
+        away_sit["event_id"] = away_sit["event_id"].astype(str).str.strip()
+        home_sit["home_team_id"] = home_sit["home_team_id"].astype(str).str.strip()
+        away_sit["away_team_id"] = away_sit["away_team_id"].astype(str).str.strip()
+
+        df = df.merge(home_sit, on=["event_id", "home_team_id"], how="left")
+        df = df.merge(away_sit, on=["event_id", "away_team_id"], how="left")
+        log.info(
+            "Situational features merged for %d/%d home, %d/%d away games",
+            df.get("home_rest_days", pd.Series(dtype=float)).notna().sum(),
+            len(df),
+            df.get("away_rest_days", pd.Series(dtype=float)).notna().sum(),
+            len(df),
+        )
+    else:
+        log.warning("Situational file missing: %s", sit_path)
+
     for col in expected_market_cols:
         if col not in df.columns:
             df[col] = pd.NA
