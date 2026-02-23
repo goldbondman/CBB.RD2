@@ -803,16 +803,13 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      - name: Upload predictions artifact (latest alias)
+      - name: Upload predictions-latest artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cbb-predictions-latest
-          path: |
-            data/predictions_latest.csv
-            data/predictions_combined_latest.csv
-            data/ensemble_predictions_latest.csv
-          retention-days: 30
+          path: data/predictions_latest.csv
+          retention-days: 90
           if-no-files-found: warn
       - name: Commit predictions CSVs to repository
         if: always()
