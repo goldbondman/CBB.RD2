@@ -110,6 +110,22 @@ OPP_HISTORY_WINDOW = 5
 TEAM_GAMES_WINDOW = 10
 
 
+def kelly_fraction(model_win_prob: float, juice: float = -110) -> float:
+    """Quarter-Kelly bankroll fraction for a spread/total bet."""
+    if juice < 0:
+        decimal_odds = 1 + (100 / abs(juice))
+    else:
+        decimal_odds = 1 + (juice / 100)
+
+    b = decimal_odds - 1.0
+    p = model_win_prob
+    q = 1.0 - p
+
+    kelly = (b * p - q) / b
+    quarter_kelly = kelly * 0.25
+    return max(0.0, round(quarter_kelly, 4))
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # DATA LOADING
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -561,6 +577,8 @@ def run_predictions(
             "pred_home_score": round(prediction["predicted_total"] / 2 - pred_spread / 2, 1),
             "pred_away_score": round(prediction["predicted_total"] / 2 + pred_spread / 2, 1),
             "model_confidence": round(prediction["confidence"], 3),
+            "kelly_fraction": kelly_fraction(prediction["confidence"]),
+            "kelly_units": round(kelly_fraction(prediction["confidence"]) * 100, 2),
             "pace_projected": round(prediction["pace"], 1),
 
             "home_net_eff": round(prediction["home_net_eff"], 2),

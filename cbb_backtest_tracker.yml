@@ -1,0 +1,10 @@
+version: 1
+pipeline:
+  - name: grade_predictions
+    command: python build_backtest_csvs.py --section grade-only
+  - name: walk_forward_validation
+    command: python -m evaluation.walk_forward
+    after: grade_predictions
+  - name: feature_audit
+    command: python -m evaluation.feature_audit
+    after: grade_predictions
