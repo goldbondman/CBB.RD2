@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 import time
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -282,8 +282,8 @@ def append_market_rows(new_rows: list[dict], output_path: Path) -> int:
     return inserted
 
 
-def run_capture(mode: str, data_dir: Path) -> None:
-    today = date.today()
+def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None) -> None:
+    today = override_date or date.today()
     log.info("Market capture mode=%s date=%s", mode, today)
 
     pred_path = data_dir / "predictions_combined_latest.csv"
@@ -359,9 +359,20 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["morning", "pregame", "postgame", "all"], default="pregame")
+    parser.add_argument("--backfill-days", type=int, default=0)
     args = parser.parse_args()
 
-    if args.mode == "all":
+    if args.backfill_days > 0:
+        for d in range(args.backfill_days, -1, -1):
+            target = date.today() - timedelta(days=d)
+            log.info("Backfill date: %s", target)
+            if args.mode == "all":
+                for mode in ["morning", "pregame", "postgame"]:
+                    run_capture(mode, DATA_DIR, override_date=target)
+                    time.sleep(REQUEST_DELAY)
+            else:
+                run_capture(args.mode, DATA_DIR, override_date=target)
+    elif args.mode == "all":
         for mode in ["morning", "pregame", "postgame"]:
             run_capture(mode, DATA_DIR)
             time.sleep(REQUEST_DELAY)

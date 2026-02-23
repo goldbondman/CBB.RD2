@@ -11,6 +11,8 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 from typing import Any, Dict, List, Optional, Tuple
 
+from espn_config import conference_id_to_name
+
 log = logging.getLogger(__name__)
 
 TZ_PST = ZoneInfo("America/Los_Angeles")
@@ -339,7 +341,7 @@ def parse_scoreboard_event(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
                 f"{prefix}team":        team.get("displayName", team.get("name", "")),
                 f"{prefix}team_id":     str(team.get("id", "")).strip(),
                 f"{prefix}conference":  conf_obj.get("name", conf_obj.get("shortName",
-                                        str(team.get("conferenceId", "")))),
+                                        conference_id_to_name(team.get("conferenceId", "")))),
                 f"{prefix}conf_id":     str(team.get("conferenceId", "")),
                 f"{prefix}score":       _safe_int(c.get("score")),
                 f"{prefix}rank":        rank,
@@ -462,7 +464,7 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                 "team_id":    str(team.get("id", "")).strip(),
                 "team":       team.get("displayName", team.get("name", "")),
                 "conference": conf_obj.get("name", conf_obj.get("shortName",
-                              str(team.get("conferenceId", "")))),
+                              conference_id_to_name(team.get("conferenceId", "")))),
                 "conf_id":    str(team.get("conferenceId", "")),
                 "score":      _safe_int(meta.get("score")),
                 "home_away":  meta.get("homeAway", "").lower(),
