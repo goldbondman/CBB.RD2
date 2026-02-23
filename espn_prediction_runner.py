@@ -974,13 +974,25 @@ def _validate_prediction_output_schema(df: pd.DataFrame) -> None:
 
 def write_predictions(df: pd.DataFrame, label: str) -> Path:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    if not df.empty:
-        _validate_prediction_output_schema(df)
-    dated_path = DATA_DIR / f"predictions_{label}.csv"
-    safe_write_csv(df, dated_path, index=False, label="predictions_dated", allow_empty=True)
-    safe_write_csv(df, OUT_PREDICTIONS_LATEST, index=False, label="predictions_latest", allow_empty=True)
+    out_df = df.copy()
 
-    log.info(f"Wrote {len(df)} predictions -> {dated_path}")
+    # Backward-compatible normalization for downstream schema + dedupe contracts.
+    # Keep legacy columns (game_id/pred_spread) while adding canonical aliases
+    # expected by predictions_latest validation (event_id/predicted_spread).
+    if "event_id" not in out_df.columns and "game_id" in out_df.columns:
+        out_df["event_id"] = out_df["game_id"]
+        log.info("Normalized prediction output: added event_id from game_id")
+    if "predicted_spread" not in out_df.columns and "pred_spread" in out_df.columns:
+        out_df["predicted_spread"] = out_df["pred_spread"]
+        log.info("Normalized prediction output: added predicted_spread from pred_spread")
+
+    if not out_df.empty:
+        _validate_prediction_output_schema(out_df)
+    dated_path = DATA_DIR / f"predictions_{label}.csv"
+    safe_write_csv(out_df, dated_path, index=False, label="predictions_dated", allow_empty=True)
+    safe_write_csv(out_df, OUT_PREDICTIONS_LATEST, index=False, label="predictions_latest", allow_empty=True)
+
+    log.info(f"Wrote {len(out_df)} predictions -> {dated_path}")
     log.info("Updated predictions_latest.csv")
     return dated_path
 

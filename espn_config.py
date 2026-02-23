@@ -166,6 +166,57 @@ CONFERENCE_TIERS = {
 }
 
 
+ESPN_CONFERENCE_MAP = {
+    "1": "Atlantic Coast Conference",
+    "2": "Big East",
+    "4": "Big 12",
+    "7": "Pac-12",
+    "8": "Southeastern Conference",
+    "9": "Atlantic 10",
+    "10": "Western Athletic Conference",
+    "11": "Missouri Valley Conference",
+    "12": "Mountain West",
+    "13": "Metro Atlantic Athletic Conference",
+    "14": "Mid-American Conference",
+    "15": "Big Sky Conference",
+    "16": "Southern Conference",
+    "17": "Big South",
+    "18": "Ohio Valley Conference",
+    "19": "Sun Belt Conference",
+    "20": "Southland Conference",
+    "21": "Northeast Conference",
+    "23": "Patriot League",
+    "24": "Colonial Athletic Association",
+    "25": "Horizon League",
+    "26": "Southwestern Athletic Conference",
+    "27": "Mid-Eastern Athletic Conference",
+    "28": "Summit League",
+    "29": "America East Conference",
+    "30": "Atlantic Sun Conference",
+    "31": "Big Ten",
+    "32": "American Athletic Conference",
+    "33": "Conference USA",
+    "34": "Ivy League",
+    "35": "West Coast Conference",
+    "36": "Western Athletic Conference",
+    "37": "Big West Conference",
+    "44": "Independents",
+    "45": "Horizon League",
+    "46": "Missouri Valley Conference",
+    "49": "Big Ten",
+    "50": "Mid-American Conference",
+    "62": "Atlantic Coast Conference",
+}
+
+
+def conference_id_to_name(conference_id) -> str:
+    """Convert ESPN numeric conference ID to human-readable name."""
+    if conference_id is None or pd.isna(conference_id):
+        return ""
+    cid = str(conference_id).strip()
+    return ESPN_CONFERENCE_MAP.get(cid, cid)
+
+
 def get_conference_tier(conference: str) -> str:
     """
     Returns HIGH / MID / LOW / UNKNOWN.
