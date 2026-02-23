@@ -38,6 +38,7 @@ from espn_config import (
     OUT_GAMES     as CSV_GAMES,
     OUT_TEAM_LOGS as CSV_LOGS,
     OUT_TOURNAMENT_SNAPSHOT as CSV_SNAPSHOT,
+    OUT_RANKINGS as CSV_RANKINGS,
     TZ,
 )
 try:
@@ -487,6 +488,9 @@ def run_predictions(
     """
     results: List[Dict] = []
     skipped = 0
+    rankings_df = _load_rankings()
+    schedule_df = load_games_schedule()
+    team_schedule_df = build_team_schedule_index(schedule_df)
 
     for matchup in matchups:
         home_id = matchup.get("home_team_id")
@@ -563,6 +567,27 @@ def run_predictions(
             uws_result = _compute_uws_for_matchup(matchup, snapshot, game_type=game_type)
 
         bd = prediction.get("breakdown", {})
+        home_ctx = _latest_team_context(all_data, str(home_id), cutoff_dt)
+        away_ctx = _latest_team_context(all_data, str(away_id), cutoff_dt)
+
+        game_date = str(matchup.get("game_datetime_utc") or "")
+        trap_home = detect_trap_game(str(home_id), game_date, team_schedule_df, rankings_df)
+        trap_away = detect_trap_game(str(away_id), game_date, team_schedule_df, rankings_df)
+        revenge = detect_revenge_spot(str(home_id), str(away_id), game_date, schedule_df)
+
+        favored_team = "home" if pred_spread < 0 else "away"
+        trap_for_favorite = bool(trap_home.get("trap_game_flag") if favored_team == "home" else trap_away.get("trap_game_flag"))
+
+        if revenge.get("revenge_flag"):
+            if revenge.get("revenge_team") == "home":
+                pred_spread = round(pred_spread - 0.5, 2)
+            elif revenge.get("revenge_team") == "away":
+                pred_spread = round(pred_spread + 0.5, 2)
+
+        alpha = detect_alpha(pred_spread, spread_line, favored_team, trap_for_favorite, revenge)
+        totals_proj = model_total(home_ctx, away_ctx)
+        line_advisory = line_shopping_advisory(pred_spread, spread_line)
+
         row = {
             "game_id": game_id,
             "game_datetime_utc": matchup.get("game_datetime_utc"),
@@ -574,6 +599,9 @@ def run_predictions(
 
             "pred_spread": round(pred_spread, 2),
             "pred_total": round(prediction["predicted_total"], 2),
+            "projected_total": totals_proj.get("projected_total"),
+            "projected_poss": totals_proj.get("projected_poss"),
+            "total_confidence_adj": totals_proj.get("total_confidence_adj"),
             "pred_home_score": round(prediction["predicted_total"] / 2 - pred_spread / 2, 1),
             "pred_away_score": round(prediction["predicted_total"] / 2 + pred_spread / 2, 1),
             "model_confidence": round(prediction["confidence"], 3),
@@ -601,6 +629,9 @@ def run_predictions(
             "away_ml": _safe_float(matchup.get("away_ml")),
             "spread_diff_vs_line": spread_diff,
             "total_diff_vs_line": total_diff,
+            "total_edge": (round(totals_proj.get("projected_total", 0) - total_line, 2)
+                           if total_line is not None else None),
+            "line_shopping_advisory": line_advisory,
             "spread_pick": spread_pick,
             "edge_flag": int(edge_flag),
             "total_direction": "OVER" if (total_diff or 0) > 2 else "UNDER" if (total_diff or 0) < -2 else "PUSH",
@@ -661,6 +692,16 @@ def run_predictions(
             "away_RB": away_ctx.get("reb"),
             "away_TO": away_ctx.get("tov"),
             "away_AST": away_ctx.get("ast"),
+
+            "dead_spread_flag": int((home_ctx.get("dead_spread_flag") or 0) > 0 or (away_ctx.get("dead_spread_flag") or 0) > 0),
+            "trap_game_flag": int(bool(trap_home.get("trap_game_flag") or trap_away.get("trap_game_flag"))),
+            "trap_game_reason": trap_home.get("trap_game_reason") or trap_away.get("trap_game_reason") or "",
+            "revenge_flag": int(bool(revenge.get("revenge_flag"))),
+            "revenge_team": revenge.get("revenge_team", ""),
+            "home_fatigue_index": _safe_float(home_ctx.get("fatigue_index")),
+            "away_fatigue_index": _safe_float(away_ctx.get("fatigue_index")),
+            "kelly_fraction": alpha.get("kelly_fraction", 0.0),
+            "alpha_reasoning": alpha.get("alpha_reasoning", ""),
         }
 
         row.update(uws_result)
@@ -700,6 +741,168 @@ def _compute_uws_for_matchup(matchup: Dict, snapshot: pd.DataFrame, game_type: s
         return {}
 
 
+
+
+def _load_rankings() -> pd.DataFrame:
+    if CSV_RANKINGS.exists() and CSV_RANKINGS.stat().st_size > 100:
+        df = pd.read_csv(CSV_RANKINGS, dtype=str, low_memory=False)
+        if "team_id" in df.columns:
+            if "cage_rank" not in df.columns and "rank" in df.columns:
+                df["cage_rank"] = pd.to_numeric(df["rank"], errors="coerce")
+            else:
+                df["cage_rank"] = pd.to_numeric(df.get("cage_rank"), errors="coerce")
+            return df
+    return pd.DataFrame(columns=["team_id", "cage_rank"])
+
+
+def build_team_schedule_index(schedule_df: pd.DataFrame) -> pd.DataFrame:
+    if schedule_df.empty:
+        return pd.DataFrame(columns=["team_id", "opponent_id", "game_datetime_utc"])
+
+    base = schedule_df.copy()
+    home = pd.DataFrame({
+        "team_id": base.get("home_team_id", ""),
+        "opponent_id": base.get("away_team_id", ""),
+        "game_datetime_utc": base.get("game_datetime_utc", ""),
+    })
+    away = pd.DataFrame({
+        "team_id": base.get("away_team_id", ""),
+        "opponent_id": base.get("home_team_id", ""),
+        "game_datetime_utc": base.get("game_datetime_utc", ""),
+    })
+    out = pd.concat([home, away], ignore_index=True)
+    out["team_id"] = out["team_id"].astype(str)
+    out["opponent_id"] = out["opponent_id"].astype(str)
+    out["game_datetime_utc"] = out["game_datetime_utc"].astype(str)
+    out = out.sort_values(["team_id", "game_datetime_utc"]).reset_index(drop=True)
+    return out
+
+
+def detect_trap_game(team_id: str, game_date: str, schedule_df: pd.DataFrame, rankings_df: pd.DataFrame) -> dict:
+    """Flag potential trap-game spot for a ranked team facing weak opposition."""
+    if schedule_df.empty or rankings_df.empty:
+        return {"trap_game_flag": False, "trap_game_reason": ""}
+
+    team_games = schedule_df[schedule_df["team_id"].astype(str) == str(team_id)].sort_values("game_datetime_utc").reset_index(drop=True)
+    mask = team_games["game_datetime_utc"].astype(str).str[:10] == str(game_date)[:10]
+    game_idx = team_games[mask].index
+    if len(game_idx) == 0:
+        return {"trap_game_flag": False, "trap_game_reason": ""}
+
+    pos = int(game_idx[0])
+    prev_game = team_games.iloc[pos - 1] if pos > 0 else None
+    next_game = team_games.iloc[pos + 1] if pos < len(team_games) - 1 else None
+
+    rank_map = dict(zip(rankings_df["team_id"].astype(str), pd.to_numeric(rankings_df["cage_rank"], errors="coerce").fillna(999)))
+    opp_rank = rank_map.get(str(team_games.iloc[pos].get("opponent_id", "")), 999)
+    prev_rank = rank_map.get(str(prev_game.get("opponent_id", "")), 999) if prev_game is not None else 999
+    next_rank = rank_map.get(str(next_game.get("opponent_id", "")), 999) if next_game is not None else 999
+    team_rank = rank_map.get(str(team_id), 999)
+
+    is_trap = bool(team_rank <= 40 and opp_rank > 100 and (prev_rank <= 40 or next_rank <= 40))
+    return {
+        "trap_game_flag": is_trap,
+        "trap_game_reason": (
+            f"Ranked team (#{int(team_rank)}) vs weak opp (#{int(opp_rank)}) between quality games"
+            if is_trap else ""
+        ),
+    }
+
+
+def detect_revenge_spot(home_team_id: str, away_team_id: str, game_date: str, results_df: pd.DataFrame, lookback_days: int = 45) -> dict:
+    """Check if either side recently lost this same matchup and is in a revenge spot."""
+    if results_df.empty:
+        return {"revenge_flag": False, "revenge_team": "", "revenge_margin": None}
+
+    cutoff = pd.Timestamp(game_date, tz="UTC") - pd.Timedelta(days=lookback_days)
+    results = results_df.copy()
+    results["dt"] = pd.to_datetime(results.get("game_datetime_utc"), utc=True, errors="coerce")
+    recent = results[results["dt"] >= cutoff]
+
+    home_lost = recent[(recent["home_team_id"].astype(str) == str(home_team_id)) &
+                       (recent["away_team_id"].astype(str) == str(away_team_id)) &
+                       (pd.to_numeric(recent["home_score"], errors="coerce") < pd.to_numeric(recent["away_score"], errors="coerce"))]
+    away_lost = recent[(recent["home_team_id"].astype(str) == str(away_team_id)) &
+                       (recent["away_team_id"].astype(str) == str(home_team_id)) &
+                       (pd.to_numeric(recent["home_score"], errors="coerce") > pd.to_numeric(recent["away_score"], errors="coerce"))]
+
+    if len(home_lost) > 0:
+        r = home_lost.sort_values("dt").iloc[-1]
+        return {"revenge_flag": True, "revenge_team": "home", "revenge_margin": int(float(r["away_score"]) - float(r["home_score"]))}
+    if len(away_lost) > 0:
+        r = away_lost.sort_values("dt").iloc[-1]
+        return {"revenge_flag": True, "revenge_team": "away", "revenge_margin": int(float(r["home_score"]) - float(r["away_score"]))}
+
+    return {"revenge_flag": False, "revenge_team": "", "revenge_margin": None}
+
+
+def line_shopping_advisory(model_spread: float, closing_line: Optional[float]) -> str:
+    """Flag near-threshold edges where shopping a half-point matters."""
+    if closing_line is None:
+        return ""
+    edge = abs(model_spread - closing_line)
+    if 2.0 <= edge <= 4.0:
+        key_number = None
+        for n in [1, 2, 3, 5, 6, 7]:
+            if abs(closing_line) % n < 0.6:
+                key_number = n
+                break
+        if key_number:
+            return (f"LINE SHOP: edge {edge:.1f}pts — closing on key number {key_number}. "
+                    f"Half point could be critical.")
+    return ""
+
+
+def model_total(team_a: dict, team_b: dict) -> dict:
+    """Dedicated totals model using pace + ortg/drtg interaction."""
+    def get_metric(team: dict, col: str, default: float) -> float:
+        val = team.get(col, default)
+        return float(val) if val is not None and pd.notna(val) else default
+
+    pace_a = get_metric(team_a, "poss_l10", get_metric(team_a, "pace_l10", 67.2))
+    pace_b = get_metric(team_b, "poss_l10", get_metric(team_b, "pace_l10", 67.2))
+    projected_poss = (pace_a + pace_b) / 2
+
+    ortg_a = get_metric(team_a, "ortg_l10", 110.0)
+    drtg_b = get_metric(team_b, "drtg_l10", 110.0)
+    ortg_b = get_metric(team_b, "ortg_l10", 110.0)
+    drtg_a = get_metric(team_a, "drtg_l10", 110.0)
+
+    adj_ortg_a = (ortg_a + drtg_b) / 2
+    adj_ortg_b = (ortg_b + drtg_a) / 2
+
+    score_a = (adj_ortg_a / 100) * projected_poss
+    score_b = (adj_ortg_b / 100) * projected_poss
+    projected_total = score_a + score_b
+
+    pace_diff = abs(pace_a - pace_b)
+    total_confidence_adj = max(0.85, 1.0 - pace_diff / 40)
+
+    return {
+        "projected_total": round(projected_total, 1),
+        "projected_score_a": round(score_a, 1),
+        "projected_score_b": round(score_b, 1),
+        "projected_poss": round(projected_poss, 1),
+        "total_confidence_adj": round(total_confidence_adj, 3),
+    }
+
+
+def detect_alpha(pred_spread: float, spread_line: Optional[float], favored_team: str, trap_for_favorite: bool, revenge_info: dict) -> dict:
+    reasoning = []
+    kelly = 0.0
+    if spread_line is not None:
+        edge = abs(pred_spread - spread_line)
+        kelly = min(0.08, max(0.0, (edge - 1.0) / 30.0))
+    if trap_for_favorite:
+        reasoning.append("⚠️ TRAP GAME — fade the favorite historically profitable")
+        kelly *= 0.7
+    if revenge_info.get("revenge_flag"):
+        team = revenge_info.get("revenge_team")
+        margin = revenge_info.get("revenge_margin")
+        reasoning.append(f"REVENGE SPOT: {team} team lost last meeting by {margin}.")
+    return {"kelly_fraction": round(kelly, 4), "alpha_reasoning": " | ".join(reasoning)}
+
+
 def _safe_float(val) -> Optional[float]:
     try:
         return float(val) if val is not None else None
@@ -722,7 +925,10 @@ def _latest_team_context(
         return {k: None for k in REQUIRED_TEAM_CONTEXT_FIELDS}
 
     latest = rows.iloc[-1]
-    return {k: latest.get(k, None) for k in REQUIRED_TEAM_CONTEXT_FIELDS}
+    out = latest.to_dict()
+    for k in REQUIRED_TEAM_CONTEXT_FIELDS:
+        out.setdefault(k, None)
+    return out
 
 
 def _validate_prediction_output_schema(df: pd.DataFrame) -> None:
