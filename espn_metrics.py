@@ -74,6 +74,15 @@ def _safe_int(value, default: int = 0) -> int:
         return default
 
 
+def _safe_float(value, default: float = np.nan) -> float:
+    if value is None or pd.isna(value):
+        return default
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 # ── Per-game metrics ──────────────────────────────────────────────────────────
 
 def add_per_game_metrics(df: pd.DataFrame) -> pd.DataFrame:
@@ -184,10 +193,10 @@ def add_luck_score(df: pd.DataFrame) -> pd.DataFrame:
     df = df.sort_values(["team_id", "_sort_dt"])
 
     df["actual_win_pct_season"] = df.groupby("team_id")["win"].transform(
-        lambda s: s.shift(1).expanding(min_periods=3).mean().round(3)
+        lambda s: pd.to_numeric(s, errors="coerce").shift(1).expanding(min_periods=3).mean().round(3)
     )
     df["pyth_win_pct_season"] = df.groupby("team_id")["pythagorean_win_pct"].transform(
-        lambda s: s.shift(1).expanding(min_periods=3).mean().round(3)
+        lambda s: pd.to_numeric(s, errors="coerce").shift(1).expanding(min_periods=3).mean().round(3)
     )
     df["luck_score"] = (df["actual_win_pct_season"] - df["pyth_win_pct_season"]).round(3)
 
@@ -248,7 +257,7 @@ def add_schedule_features(df: pd.DataFrame) -> pd.DataFrame:
             if pd.isna(val):
                 result.append(0)
                 continue
-            w = int(val)
+            w = _safe_int(val, default=0)
             if streak == 0:
                 streak = 1 if w else -1
             elif w and streak > 0:
@@ -276,8 +285,10 @@ def flag_dead_spread(row: pd.Series) -> bool:
     Defined as: H1 margin >= 15 pts AND final margin < H1 margin * 0.7
     These games corrupt L5/L10 efficiency averages.
     """
-    h1_margin = row.get("h1_margin", 0) or 0
-    final_margin = row.get("margin", 0) or 0
+    h1_margin = _safe_float(row.get("h1_margin", 0), default=np.nan)
+    final_margin = _safe_float(row.get("margin", row.get("final_margin", 0)), default=np.nan)
+    if pd.isna(h1_margin) or pd.isna(final_margin):
+        return False
     if abs(h1_margin) >= 15:
         if abs(final_margin) < abs(h1_margin) * 0.7:
             return True
@@ -393,6 +404,9 @@ def add_home_away_splits(df: pd.DataFrame) -> pd.DataFrame:
 
     ha_metrics = ["ortg", "drtg", "net_rtg", "efg_pct", "tov_pct", "pace"]
     present    = [m for m in ha_metrics if m in df.columns]
+
+    for metric in present:
+        df[metric] = pd.to_numeric(df[metric], errors="coerce")
 
     for m in present:
         df[f"ha_{m}_l10"] = df.groupby(["team_id", "home_away"])[m].transform(
