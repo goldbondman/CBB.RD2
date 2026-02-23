@@ -65,6 +65,15 @@ def _col(df: pd.DataFrame, name: str) -> pd.Series:
             else pd.Series(np.nan, index=df.index))
 
 
+def _safe_int(value, default: int = 0) -> int:
+    if value is None or pd.isna(value):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 # ── Per-game metrics ──────────────────────────────────────────────────────────
 
 def add_per_game_metrics(df: pd.DataFrame) -> pd.DataFrame:
@@ -124,6 +133,10 @@ def add_per_game_metrics(df: pd.DataFrame) -> pd.DataFrame:
     df["h2_ortg"] = (h2_pts  / half_poss * 100).round(1)
     df["h1_drtg"] = (h1_opp / half_poss * 100).round(1)
     df["h2_drtg"] = (h2_opp / half_poss * 100).round(1)
+
+    # ── Dead spread detector ──
+    # Blowout at half, margin collapses late (starters rest / backdoor cover noise)
+    df["dead_spread_flag"] = df.apply(flag_dead_spread, axis=1).astype(float)
 
     # ── Game outcome flags ──
     margin = _col(df, "margin")
@@ -216,6 +229,16 @@ def add_schedule_features(df: pd.DataFrame) -> pd.DataFrame:
     df["games_l14"] = df.groupby("team_id")["_sort_dt"].transform(
         lambda s: _games_in_window(s, 14))
 
+    # ── Fatigue index ──
+    df["fatigue_index"] = df.apply(
+        lambda r: compute_fatigue_index(
+            _safe_int(r.get("games_l7", 0)),
+            _safe_int(r.get("games_l14", 0)),
+            _safe_int(r.get("rest_days", 3)),
+        ),
+        axis=1,
+    )
+
     # ── Win/loss streak ──
     def _streak(series: pd.Series) -> pd.Series:
         """Current streak length (+N = win streak, -N = loss streak) using prior games."""
@@ -245,6 +268,35 @@ def add_schedule_features(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.drop(columns=["_sort_dt"], errors="ignore")
     return df
+
+
+def flag_dead_spread(row: pd.Series) -> bool:
+    """
+    Dead spread: game was decided by halftime, margin collapsed in H2.
+    Defined as: H1 margin >= 15 pts AND final margin < H1 margin * 0.7
+    These games corrupt L5/L10 efficiency averages.
+    """
+    h1_margin = row.get("h1_margin", 0) or 0
+    final_margin = row.get("margin", 0) or 0
+    if abs(h1_margin) >= 15:
+        if abs(final_margin) < abs(h1_margin) * 0.7:
+            return True
+    return False
+
+
+def compute_fatigue_index(games_l7: int, games_l14: int, rest_days: int) -> float:
+    """
+    Fatigue index: higher = more fatigued.
+    Normal load: 2 games per week → games_l7 = 2, games_l14 = 4
+    Grueling: 4 games in 7 days (conference tournament week)
+
+    Returns 0.0 (fresh) to 1.0 (exhausted)
+    """
+    excess_l7 = max(0, games_l7 - 2)
+    excess_l14 = max(0, games_l14 - 4)
+    rest_penalty = max(0, (2 - rest_days) / 2)
+    raw = (excess_l7 * 0.4 + excess_l14 * 0.3 + rest_penalty * 0.3)
+    return round(min(1.0, raw), 3)
 
 
 def add_rolling_metrics(df: pd.DataFrame,

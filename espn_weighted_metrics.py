@@ -142,6 +142,11 @@ def _build_weights(df: pd.DataFrame) -> pd.DataFrame:
     df["_w_qual"] = ((opp_net_rtg + NET_RTG_OFFSET) / NET_RTG_OFFSET
                     ).clip(0.25, 3.0).fillna(1.0)
 
+    # Downweight dead-spread games in rolling efficiency calculations
+    # Dead spreads can inflate/deflate efficiency due to late-game bench units
+    dead_spread = pd.to_numeric(df.get("dead_spread_flag", 0), errors="coerce").fillna(0)
+    df["_game_weight"] = np.where(dead_spread > 0, 0.3, 1.0)
+
     return df
 
 
@@ -214,10 +219,14 @@ def add_weighted_rolling(df: pd.DataFrame,
     # ── Weight columns ──
     df = _build_weights(df)
 
+    df["_w_off_eff"] = pd.to_numeric(df["_w_off"], errors="coerce") * pd.to_numeric(df["_game_weight"], errors="coerce")
+    df["_w_def_eff"] = pd.to_numeric(df["_w_def"], errors="coerce") * pd.to_numeric(df["_game_weight"], errors="coerce")
+    df["_w_qual_eff"] = pd.to_numeric(df["_w_qual"], errors="coerce") * pd.to_numeric(df["_game_weight"], errors="coerce")
+
     metric_groups = [
-        (OFF_METRICS,  "_w_off",  "wtd_off"),
-        (DEF_METRICS,  "_w_def",  "wtd_def"),
-        (QUAL_METRICS, "_w_qual", "wtd_qual"),
+        (OFF_METRICS,  "_w_off_eff",  "wtd_off"),
+        (DEF_METRICS,  "_w_def_eff",  "wtd_def"),
+        (QUAL_METRICS, "_w_qual_eff", "wtd_qual"),
     ]
 
     # Check for missing source columns once (not per window)
@@ -261,7 +270,7 @@ def add_weighted_rolling(df: pd.DataFrame,
             ).apply(
                 lambda g, ww=window: _weighted_rolling(
                     pd.to_numeric(g["cover"], errors="coerce"),
-                    pd.to_numeric(g["_w_qual"], errors="coerce"),
+                    pd.to_numeric(g["_w_qual_eff"], errors="coerce"),
                     ww,
                 )
             )
@@ -285,7 +294,7 @@ def add_weighted_rolling(df: pd.DataFrame,
         df["form_rating"] = (0.6 * net_w + 0.4 * pve).round(2)
 
     # Drop internal weight columns
-    df = df.drop(columns=["_w_off", "_w_def", "_w_qual", "_sort_dt"],
+    df = df.drop(columns=["_w_off", "_w_def", "_w_qual", "_game_weight", "_w_off_eff", "_w_def_eff", "_w_qual_eff", "_sort_dt"],
                  errors="ignore")
 
     # ── Diagnostic logging ──

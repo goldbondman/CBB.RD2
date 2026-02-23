@@ -161,6 +161,7 @@ class TeamProfile:
     # Situational (injected at predict-time)
     rest_days:        float = 3.0
     games_l7:         float = 2.0
+    fatigue_index:    float = 0.0
 
 
 @dataclass
@@ -501,6 +502,7 @@ class SituationalModel(_BaseModel):
     ) -> ModelPrediction:
         eff_edge = (home.cage_em - away.cage_em) * 0.5
         rest_edge = self._rest_adjustment(home.rest_days, away.rest_days)
+        fatigue_edge = (away.fatigue_index - home.fatigue_index) * 2.0
 
         if neutral:
             split_edge = 0.0
@@ -515,7 +517,7 @@ class SituationalModel(_BaseModel):
         ) * 0.3
 
         pace = self._expected_pace(home, away)
-        margin = eff_edge + rest_edge + split_edge + close_edge + streak_edge
+        margin = eff_edge + rest_edge + fatigue_edge + split_edge + close_edge + streak_edge
         if not neutral:
             margin += HCA * 0.5
         spread = -margin
@@ -904,6 +906,7 @@ def load_team_profiles(
             opp_avg_ortg=g("opp_avg_ortg_season", LEAGUE_AVG_ORTG),
             opp_avg_drtg=g("opp_avg_drtg_season", LEAGUE_AVG_DRTG),
             opp_orb_pct=g("opp_avg_orb_season", 30.0),
+            fatigue_index=g("fatigue_index", 0.0),
         )
         profiles[tid] = tp
 
