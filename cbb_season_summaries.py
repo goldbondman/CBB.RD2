@@ -34,7 +34,6 @@ TEAM_SOS_CSV       = DATA_DIR / "team_game_sos.csv"
 
 PLAYER_SUMMARY_CSV     = DATA_DIR / "player_season_summary.csv"
 TEAM_SUMMARY_CSV       = DATA_DIR / "team_season_summary.csv"
-BACKTEST_CSV           = DATA_DIR / "backtest.csv"
 TEAM_ATS_PROFILE_CSV   = DATA_DIR / "team_ats_profile.csv"
 TEAM_LUCK_CSV          = DATA_DIR / "team_luck_regression.csv"
 TEAM_SITUATIONAL_CSV   = DATA_DIR / "team_situational.csv"
@@ -413,9 +412,7 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     summary.to_csv(output_path, index=False)
-    summary.to_csv(BACKTEST_CSV, index=False)
     log.info(f"team_season_summary.csv → {output_path}  ({len(summary):,} rows)")
-    log.info(f"backtest.csv → {BACKTEST_CSV}  ({len(summary):,} rows)")
     return summary
 
 
