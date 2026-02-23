@@ -867,9 +867,18 @@ class CBBPredictionModel:
         cfg = self.config
 
         # Sample size
-        home_sample = min(home_l5['n_games'] / cfg.min_games_for_full_confidence, 1.0)
-        away_sample = min(away_l5['n_games'] / cfg.min_games_for_full_confidence, 1.0)
+        FULL_SEASON_GAMES = 20.0
+        home_sample = np.clip(
+            home_l5['n_games'] / FULL_SEASON_GAMES, 0.05, 1.0
+        )
+        away_sample = np.clip(
+            away_l5['n_games'] / FULL_SEASON_GAMES, 0.05, 1.0
+        )
+        below_threshold_home = home_l5['n_games'] < cfg.min_games_for_full_confidence
+        below_threshold_away = away_l5['n_games'] < cfg.min_games_for_full_confidence
         sample_conf = (home_sample + away_sample) / 2.0
+        if below_threshold_home or below_threshold_away:
+            sample_conf = min(sample_conf, 0.55)
 
         # L5 vs L10 consistency
         home_delta = abs(home_l5['team_net_eff'] - home_l10['team_net_eff'])
