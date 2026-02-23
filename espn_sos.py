@@ -74,7 +74,8 @@ def _rolling_mean(series: pd.Series, window: int) -> pd.Series:
 
 def _expanding_mean(series: pd.Series) -> pd.Series:
     """Leak-free expanding (season-to-date) mean using only prior games."""
-    return series.shift(1).expanding(min_periods=1).mean()
+    numeric = pd.to_numeric(series, errors="coerce")
+    return numeric.shift(1).expanding(min_periods=1).mean()
 
 
 def _get_league_avg_pace(df: pd.DataFrame) -> float:
@@ -133,19 +134,45 @@ def _build_opponent_lookup(df: pd.DataFrame) -> pd.DataFrame:
     opp_src_metrics = list(dict.fromkeys(opp_src_metrics))
     present_metrics = [m for m in opp_src_metrics if m in df.columns]
 
-    team_stats = df[["team_id", "_sort_dt"] + present_metrics].copy()
+    if not present_metrics:
+        log.warning("_build_opponent_lookup: no SOS metrics found in input frame")
+        return df
 
-    rolled = team_stats.groupby("team_id")[present_metrics].transform(
+    # Guard against object/mixed dtypes causing DataError in expanding/rolling mean
+    numeric_metrics = []
+    dropped_metrics = []
+    for metric in present_metrics:
+        coerced = pd.to_numeric(df[metric], errors="coerce")
+        has_numeric = coerced.notna().any()
+        if has_numeric:
+            df[metric] = coerced.astype("float64")
+            numeric_metrics.append(metric)
+        else:
+            dropped_metrics.append(metric)
+
+    if dropped_metrics:
+        log.warning(
+            "_build_opponent_lookup: dropping non-numeric SOS metrics %s",
+            dropped_metrics,
+        )
+
+    if not numeric_metrics:
+        log.error("_build_opponent_lookup: no numeric SOS metrics available")
+        return df
+
+    team_stats = df[["team_id", "_sort_dt"] + numeric_metrics].copy()
+
+    rolled = team_stats.groupby("team_id")[numeric_metrics].transform(
         lambda s: _expanding_mean(s)
     )
-    rolled.columns = [f"_opp_{c}_season" for c in present_metrics]
+    rolled.columns = [f"_opp_{c}_season" for c in numeric_metrics]
     team_stats = pd.concat([team_stats, rolled], axis=1)
 
     for w in SOS_WINDOWS:
-        r = team_stats.groupby("team_id")[present_metrics].transform(
+        r = team_stats.groupby("team_id")[numeric_metrics].transform(
             lambda s, ww=w: _rolling_mean(s, ww)
         )
-        r.columns = [f"_opp_{c}_l{w}" for c in present_metrics]
+        r.columns = [f"_opp_{c}_l{w}" for c in numeric_metrics]
         team_stats = pd.concat([team_stats, r], axis=1)
 
     stat_cols = [c for c in team_stats.columns if c.startswith("_opp_")]
@@ -361,6 +388,20 @@ def compute_sos_metrics(df: pd.DataFrame) -> pd.DataFrame:
     if missing:
         log.warning(f"compute_sos_metrics: missing required columns {missing} , skipping")
         return df
+
+    # Normalize expected numeric SOS inputs early to prevent object dtype
+    # from breaking downstream rolling/expanding aggregations.
+    numeric_sos_cols = [
+        "ortg", "drtg", "net_rtg", "efg_pct", "tov_pct",
+        "orb_pct", "drb_pct", "poss", "pace", "margin",
+        "points_for", "points_against", "win", "win_pct",
+        "h1_margin", "h2_margin", "ortg_l5", "drtg_l5",
+        "net_rtg_l5", "ortg_l10", "drtg_l10", "net_rtg_l10", "ftr",
+    ]
+    for col in numeric_sos_cols:
+        if col in df.columns and not pd.api.types.is_numeric_dtype(df[col]):
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+            log.debug("compute_sos_metrics: cast %s to numeric", col)
 
     log.info(f"Computing SOS metrics for {len(df)} rows")
 
