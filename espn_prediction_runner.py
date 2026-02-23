@@ -28,6 +28,7 @@ Important:
 """
 
 import argparse
+import json
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -53,6 +54,7 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pandas as pd
 from config.logging_config import get_logger
+from config.model_version import compute_model_version, save_version_to_history
 from pipeline_csv_utils import safe_write_csv
 
 OUT_PREDICTIONS_LATEST = DATA_DIR / "predictions_latest.csv"
@@ -479,6 +481,7 @@ def run_predictions(
     all_data: pd.DataFrame,
     model: CBBPredictionModel,
     snapshot: Optional[pd.DataFrame],
+    version: Dict,
     game_type: str = "regular",
     default_cutoff_dt: Optional[pd.Timestamp] = None,
 ) -> pd.DataFrame:
@@ -649,6 +652,14 @@ def run_predictions(
             "game_type": game_type,
             "predicted_at_utc": pd.Timestamp.now("UTC").isoformat(),
             "history_cutoff_utc": cutoff_dt.isoformat() if cutoff_dt is not None else None,
+            "model_version_hash": version["model_version_hash"],
+            "pipeline_run_id": version["pipeline_run_id"],
+            "model_weights_used": json.dumps(
+                version["config_snapshot"].get("weights", {})
+            ),
+            "active_bias_corrections": version["config_snapshot"].get(
+                "active_bias_corrections", 0
+            ),
 
             # Required downstream team metadata
             "home_conference": home_ctx.get("conference"),
@@ -912,9 +923,11 @@ def detect_alpha(
     if spread_line is not None:
         edge = abs(pred_spread - spread_line)
         kelly = min(0.08, max(0.0, (edge - 1.0) / 30.0))
+
     if trap_for_favorite:
         reasoning.append("⚠️ TRAP GAME — fade the favorite historically profitable")
         kelly *= 0.7
+
     if revenge_info.get("revenge_flag"):
         team = revenge_info.get("revenge_team")
         margin = revenge_info.get("revenge_margin")
@@ -1186,6 +1199,13 @@ def main():
     )
     args = parser.parse_args()
 
+    version = compute_model_version(DATA_DIR)
+    save_version_to_history(version, DATA_DIR / "model_version_history.json")
+    log.info(
+        f"Model version: {version['model_version_hash']} | "
+        f"Run: {version['pipeline_run_id']}"
+    )
+
     log.info(f"{'='*70}")
     log.info(f"CBB Prediction Runner")
     log.info(f"Game type: {args.game_type} | Decay: {args.decay} | Min games: {args.min_games}")
@@ -1238,6 +1258,7 @@ def main():
         all_data=all_data,
         model=model,
         snapshot=snapshot,
+        version=version,
         game_type=args.game_type,
         default_cutoff_dt=default_cutoff_dt,
     )

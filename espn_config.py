@@ -54,6 +54,8 @@ OUT_EDGE_HISTORY           = CSV_DIR / "edge_history.csv"
 # Accuracy outputs
 OUT_ACCURACY_WEEKLY        = CSV_DIR / "model_accuracy_weekly.csv"
 OUT_ACCURACY_BY_CONF       = CSV_DIR / "model_accuracy_by_conf.csv"
+OUT_MODEL_VERSION_HISTORY = CSV_DIR / "model_version_history.json"
+OUT_ACCURACY_BY_VERSION   = CSV_DIR / "accuracy_by_version.csv"
 OUT_MODEL_CALIBRATION      = CSV_DIR / "model_calibration.csv"
 OUT_ACCURACY_SUMMARY       = CSV_DIR / "model_accuracy_summary.csv"
 OUT_HCA_ANALYSIS           = CSV_DIR / "hca_analysis.csv"

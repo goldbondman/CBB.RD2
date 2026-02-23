@@ -1,11 +1,14 @@
 import argparse
 import json
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
+
+from config.model_version import compute_model_version, save_version_to_history
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)-8s %(message)s")
@@ -162,9 +165,23 @@ def write_weights(weights: dict, tier_weights: dict, output_path: Path, df: pd.D
             "If file is missing, defaults are used."
         ),
     }
+    data_dir = output_path.parent
+    current_version = compute_model_version(data_dir)
+    current_version["superseded_by"] = "pending"
+    current_version["superseded_at_utc"] = datetime.now(timezone.utc).isoformat()
+    save_version_to_history(current_version, data_dir / "model_version_history.json")
+    log.info(
+        "Archived current model version: %s before weight update",
+        current_version["model_version_hash"],
+    )
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(output, indent=2))
     log.info("model_weights.json → %s", output_path)
+
+    new_version = compute_model_version(data_dir)
+    save_version_to_history(new_version, data_dir / "model_version_history.json")
+    log.info("New model version: %s", new_version["model_version_hash"])
 
 
 def main() -> None:
