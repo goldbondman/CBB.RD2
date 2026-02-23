@@ -25,7 +25,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from cbb_monte_carlo import (
+from models.cbb_monte_carlo import (
     GameSimInput,
     SimResult,
     compute_spread_std,

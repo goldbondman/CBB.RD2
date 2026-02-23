@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
-from espn_config import (
+from config.espn_config import (
     BASE_DIR, CSV_DIR, JSON_DIR,
     OUT_GAMES, OUT_TEAM_LOGS, OUT_PLAYER_LOGS, OUT_METRICS, OUT_SOS,
     OUT_PLAYER_PROXY, OUT_TEAM_INJURY,
@@ -26,17 +26,17 @@ from espn_config import (
     SOURCE, PARSE_VERSION,
     FETCH_SLEEP, DRY_RUN,
 )
-from espn_client import fetch_scoreboard, fetch_summary
-from espn_parsers import parse_scoreboard_event, parse_summary, summary_to_team_rows
-from espn_metrics import compute_all_metrics
-from espn_sos import compute_sos_metrics
-from espn_injury_proxy import compute_injury_proxy, compute_team_injury_impact
-from espn_weighted_metrics import compute_weighted_metrics
-from espn_player_metrics import compute_player_metrics
-from espn_tournament import compute_tournament_metrics, build_pretournament_snapshot
-from espn_rankings import run as run_rankings
-from cbb_output_schemas import validate_output
-from pipeline_csv_utils import safe_write_csv
+from ingestion.espn_client import fetch_scoreboard, fetch_summary
+from ingestion.espn_parsers import parse_scoreboard_event, parse_summary, summary_to_team_rows
+from features.espn_metrics import compute_all_metrics
+from features.espn_sos import compute_sos_metrics
+from features.espn_injury_proxy import compute_injury_proxy, compute_team_injury_impact
+from features.espn_weighted_metrics import compute_weighted_metrics
+from features.espn_player_metrics import compute_player_metrics
+from features.espn_tournament import compute_tournament_metrics, build_pretournament_snapshot
+from features.espn_rankings import run as run_rankings
+from config.cbb_output_schemas import validate_output
+from config.pipeline_csv_utils import safe_write_csv
 
 logging.basicConfig(
     level=logging.INFO,
@@ -821,7 +821,7 @@ def run(days_back: int = DAYS_BACK, skip_odds_validation: bool = True) -> None:
     if games_df.empty:
         log.error("No games from scoreboard — aborting")
         try:
-            from cbb_pipeline_logger import log_pipeline_run
+            from config.cbb_pipeline_logger import log_pipeline_run
             log_pipeline_run(
                 trigger=os.getenv("GITHUB_EVENT_NAME", "unknown"),
                 days_back=days_back,
@@ -835,7 +835,7 @@ def run(days_back: int = DAYS_BACK, skip_odds_validation: bool = True) -> None:
     stats = build_team_and_player_logs(games_df, days_back=days_back, skip_odds_validation=skip_odds_validation)
     log.info("=== Run complete ===")
     try:
-        from cbb_pipeline_logger import log_pipeline_run
+        from config.cbb_pipeline_logger import log_pipeline_run
         log_pipeline_run(
             trigger=os.getenv("GITHUB_EVENT_NAME", "unknown"),
             days_back=days_back,

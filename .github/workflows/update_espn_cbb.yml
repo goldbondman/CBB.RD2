@@ -89,7 +89,7 @@ jobs:
       - name: Run ESPN pipeline
         id: run_pipeline
         run: |
-          python espn_pipeline.py --days-back ${{ github.event.inputs.days_back || '3' }}
+          python -m ingestion.espn_pipeline --days-back ${{ github.event.inputs.days_back || '3' }}
           echo "success=true" >> $GITHUB_OUTPUT
           GAME_COUNT=$(python -c "
           import pandas as pd, pathlib
@@ -256,7 +256,7 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
-          python field_reconciler.py \
+          python -m evaluation.field_reconciler \
             --audit-path data/espn_api_field_audit.json
 
       # ── Tournament metrics ────────────────────────────────────────────────
@@ -280,7 +280,7 @@ jobs:
               sys.exit(0)
 
           try:
-              from espn_tournament import compute_tournament_metrics, build_pretournament_snapshot
+              from features.espn_tournament import compute_tournament_metrics, build_pretournament_snapshot
 
               player_path = pathlib.Path("data/player_game_metrics.csv")
               player_df   = pd.read_csv(player_path) if player_path.exists() else pd.DataFrame()
@@ -311,7 +311,7 @@ jobs:
       # ── Rebuild player condition profiles (full history) ──────────────────
       - name: Rebuild player condition profiles (full history)
         continue-on-error: true
-        run: python cbb_player_matchup.py --build-profiles-only
+        run: python -m features.cbb_player_matchup --build-profiles-only
 
       # ── Validate outputs ──────────────────────────────────────────────────
       - name: Validate outputs
@@ -401,7 +401,7 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
-          python field_reconciler.py --check-outputs --fix-duplicates
+          python -m evaluation.field_reconciler --check-outputs --fix-duplicates
 
       - name: Upload ESPN CSVs (for downstream predictions)
         uses: actions/upload-artifact@v4
@@ -596,7 +596,7 @@ jobs:
           PY
 
       - name: Build CAGE rankings
-        run: python espn_rankings.py --top 25
+        run: python -m features.espn_rankings --top 25
 
       - name: Validate rankings output
         run: |
@@ -735,7 +735,7 @@ jobs:
 
       - name: Run predictions for tomorrow's games
         run: |
-          python espn_prediction_runner.py \
+          python -m models.espn_prediction_runner \
             --game-type "${{ github.event.inputs.game_type || 'regular' }}" \
             --decay     "smooth"
         env:

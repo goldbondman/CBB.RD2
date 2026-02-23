@@ -9,7 +9,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from field_reconciler import (
+from evaluation.field_reconciler import (
     bigram_similarity,
     load_column_map,
     get_all_known_labels,

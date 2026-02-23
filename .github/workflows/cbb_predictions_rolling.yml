@@ -106,7 +106,7 @@ jobs:
           [ ! -f data/team_game_weighted.csv ] && missing+=("data/team_game_weighted.csv")
           if [ ${#missing[@]} -gt 0 ]; then
             echo "[WARN] Key artifact files missing after download: ${missing[*]}. Running espn_pipeline.py..."
-            python espn_pipeline.py
+            python -m ingestion.espn_pipeline
           fi
 
       # NOTE: This does NOT reliably download "latest from another run" by itself.
@@ -256,7 +256,7 @@ jobs:
 
       # ── 6. Primary model: espn_prediction_runner.py ─────────────────────────
       - name: Compute travel fatigue features
-        run: python cbb_travel_fatigue.py || echo "Travel fatigue computation failed (non-fatal)"
+        run: python -m features.cbb_travel_fatigue || echo "Travel fatigue computation failed (non-fatal)"
 
       - name: Run primary model predictions (rolling 40h)
         id: primary_predictions
@@ -378,7 +378,7 @@ jobs:
           data_dir = pathlib.Path("data")
 
           try:
-              from cbb_ensemble import (
+              from models.cbb_ensemble import (
                   EnsemblePredictor, EnsembleConfig,
                   load_team_profiles, results_to_csv,
               )
@@ -587,7 +587,7 @@ jobs:
         id: player_matchup
         continue-on-error: true
         run: |
-          python cbb_player_matchup.py \
+          python -m features.cbb_player_matchup \
             --games data/predictions_combined_latest.csv \
             --min-games 5 \
             --min-minutes 15

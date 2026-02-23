@@ -8,8 +8,8 @@ from zoneinfo import ZoneInfo
 from pathlib import Path
 
 # ── Paths ────────────────────────────────────────────────────────────────────
-BASE_DIR  = Path(__file__).parent.resolve()
-CSV_DIR   = BASE_DIR / "data"
+BASE_DIR  = Path(__file__).resolve().parent.parent
+CSV_DIR   = BASE_DIR / "data" / "csv"
 JSON_DIR  = BASE_DIR / "data" / "raw_json"
 
 CSV_DIR.mkdir(parents=True, exist_ok=True)

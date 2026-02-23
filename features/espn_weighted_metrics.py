@@ -39,7 +39,7 @@ from typing import List
 
 import numpy as np
 import pandas as pd
-from espn_config import LEAGUE_AVG_ORTG, LEAGUE_AVG_DRTG, OUT_WEIGHTED_ROLLING
+from config.espn_config import LEAGUE_AVG_ORTG, LEAGUE_AVG_DRTG, OUT_WEIGHTED_ROLLING
 
 log = logging.getLogger(__name__)
 

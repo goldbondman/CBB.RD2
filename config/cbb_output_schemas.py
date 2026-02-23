@@ -6,7 +6,7 @@ Addresses Root Cause #3 (no centralized schema contract) and Root Cause #5
 (no pre-write integrity gate) from docs_pipeline_field_trace_report.md.
 
 Usage:
-    from cbb_output_schemas import validate_output, OUTPUT_FILE_SCHEMAS
+    from config.cbb_output_schemas import validate_output, OUTPUT_FILE_SCHEMAS
 
     validate_output(df, "team_game_logs")  # raises ValueError on missing cols
 """

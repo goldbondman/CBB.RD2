@@ -27,7 +27,7 @@ from typing import Optional
 
 import pandas as pd
 
-from pipeline_csv_utils import safe_write_csv
+from config.pipeline_csv_utils import safe_write_csv
 
 # ── Paths ──────────────────────────────────────────────────────────────────
 DATA        = pathlib.Path("data")

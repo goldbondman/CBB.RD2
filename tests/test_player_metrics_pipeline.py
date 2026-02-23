@@ -6,8 +6,8 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from espn_parsers import parse_summary, _parse_made_attempt, _map_player_stat_label
-from espn_player_metrics import compute_player_metrics, add_role_split_metrics
+from ingestion.espn_parsers import parse_summary, _parse_made_attempt, _map_player_stat_label
+from features.espn_player_metrics import compute_player_metrics, add_role_split_metrics
 
 
 FIXTURE = Path("tests/fixtures/summary_boxscore_fixture.json")

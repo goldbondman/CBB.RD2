@@ -5,7 +5,7 @@ Add the following changes to espn_pipeline.py to wire in espn_tournament.py.
 
 1. ADD to imports section (top of file):
 ──────────────────────────────────────────────────────────────────────────────
-from espn_tournament import compute_tournament_metrics, build_pretournament_snapshot
+from features.espn_tournament import compute_tournament_metrics, build_pretournament_snapshot
 
 2. ADD to espn_config.py (or wherever your OUT_* paths are defined):
 ──────────────────────────────────────────────────────────────────────────────
@@ -69,7 +69,7 @@ Usage:
     python espn_matchup_example.py
 """
 import pandas as pd
-from espn_tournament import build_matchup_row, compute_matchup_projections
+from features.espn_tournament import build_matchup_row, compute_matchup_projections
 
 # Load the pre-tournament snapshot built by the pipeline
 snapshot = pd.read_csv("data/team_pretournament_snapshot.csv")

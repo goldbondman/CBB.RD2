@@ -40,7 +40,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats as scipy_stats
 
-from cbb_config import (
+from config.cbb_config import (
     LEAGUE_AVG_ORTG,
     LEAGUE_AVG_DRTG,
     LEAGUE_AVG_PACE,

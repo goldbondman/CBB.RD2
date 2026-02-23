@@ -32,7 +32,7 @@ import logging
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from espn_config import (
+from config.espn_config import (
     CSV_DIR as DATA_DIR,
     OUT_WEIGHTED  as CSV_WEIGHTED,
     OUT_METRICS   as CSV_METRICS,
@@ -51,7 +51,7 @@ import pandas as pd
 
 # ── Local imports ──────────────────────────────────────────────────────────────
 try:
-    from cbb_prediction_model import (
+    from models.cbb_prediction_model import (
         CBBPredictionModel,
         GameData,
         ModelConfig,
@@ -62,7 +62,7 @@ except ImportError as e:
     )
 
 try:
-    from espn_tournament import (
+    from features.espn_tournament import (
         compute_underdog_winner_score,
         build_pretournament_snapshot,
     )
@@ -71,7 +71,7 @@ except ImportError:
     TOURNAMENT_AVAILABLE = False
 
 try:
-    from espn_client import fetch_scoreboard
+    from ingestion.espn_client import fetch_scoreboard
     ESPN_CLIENT_AVAILABLE = True
 except ImportError:
     ESPN_CLIENT_AVAILABLE = False
@@ -688,7 +688,7 @@ def _latest_team_context(
 
 def _validate_prediction_output_schema(df: pd.DataFrame) -> None:
     """Integrity gate: required downstream columns must exist before write."""
-    from cbb_output_schemas import validate_output
+    from config.cbb_output_schemas import validate_output
     validate_output(df, "predictions", strict=True)
 
 

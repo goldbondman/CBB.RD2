@@ -20,7 +20,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from cbb_player_matchup import (
+from features.cbb_player_matchup import (
     normalize,
     _defense_tier,
     classify_player_role,

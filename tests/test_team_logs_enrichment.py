@@ -4,7 +4,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 import pandas as pd
 import pytest
 
-from espn_pipeline import (
+from ingestion.espn_pipeline import (
     _append_dedupe_write,
     _enrich_team_rows_from_scoreboard,
     _validate_team_log_enrichment,

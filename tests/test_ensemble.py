@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from cbb_ensemble import (
+from models.cbb_ensemble import (
     TeamProfile,
     ModelPrediction,
     EnsembleResult,

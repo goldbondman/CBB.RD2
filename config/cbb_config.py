@@ -55,7 +55,7 @@ DEFAULT_TOTAL_WEIGHTS = {
     "RegressedEff":  0.08,
 }
 
-WEIGHTS_PATH = Path("data") / "backtest_optimized_weights.json"
+WEIGHTS_PATH = Path("config") / "model_weights.json"
 
 
 def load_ensemble_weights() -> Dict[str, Dict[str, float]]:

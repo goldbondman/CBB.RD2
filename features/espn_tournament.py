@@ -35,7 +35,7 @@ import numpy as np
 import pandas as pd
 
 try:
-    from cbb_config import (
+    from config.cbb_config import (
         LEAGUE_AVG_ORTG, LEAGUE_AVG_DRTG, LEAGUE_AVG_PACE,
         LEAGUE_AVG_EFG, LEAGUE_AVG_TOV, LEAGUE_AVG_FTR,
         LEAGUE_AVG_ORB, LEAGUE_AVG_DRB,

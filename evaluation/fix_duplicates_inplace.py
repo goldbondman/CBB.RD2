@@ -2,7 +2,7 @@ import pathlib
 
 import pandas as pd
 
-from pipeline_csv_utils import dedupe_by_primary_key
+from config.pipeline_csv_utils import dedupe_by_primary_key
 
 
 def main() -> None:

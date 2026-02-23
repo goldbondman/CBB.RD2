@@ -433,7 +433,7 @@ def build_team_state_before(
 
 def _state_to_profile(state: Dict):
     """Convert a raw state dict to a TeamProfile for the ensemble models."""
-    from cbb_ensemble import TeamProfile
+    from models.cbb_ensemble import TeamProfile
     return TeamProfile(**{
         k: state[k] for k in TeamProfile.__dataclass_fields__
         if k in state
@@ -456,7 +456,7 @@ def predict_game_historical(
 
     weights: if provided, overrides EnsembleConfig defaults (for optimizer).
     """
-    from cbb_ensemble import (
+    from models.cbb_ensemble import (
         EnsemblePredictor, EnsembleConfig,
         FourFactorsModel, AdjustedEfficiencyModel, PythagoreanModel,
         MomentumModel, SituationalModel, CAGERankingsModel, RegressedEfficiencyModel,

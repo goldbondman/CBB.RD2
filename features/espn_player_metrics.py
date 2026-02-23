@@ -30,8 +30,8 @@ from typing import List, Optional
 import numpy as np
 import pandas as pd
 
-from espn_config import OUT_PLAYER_ROLLING_L5, OUT_PLAYER_ROLE_SPLITS
-from pipeline_csv_utils import safe_write_csv
+from config.espn_config import OUT_PLAYER_ROLLING_L5, OUT_PLAYER_ROLE_SPLITS
+from config.pipeline_csv_utils import safe_write_csv
 
 log = logging.getLogger(__name__)
 

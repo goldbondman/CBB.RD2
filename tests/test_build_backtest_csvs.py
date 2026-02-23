@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from build_backtest_csvs import (
+from evaluation.build_backtest_csvs import (
     grade_prediction,
     grade_all,
     compute_period_stats,
@@ -428,7 +428,7 @@ class TestBootstrapMissingResultsLog:
     def test_main_exits_zero_when_results_log_missing(self, tmp_path, monkeypatch):
         """main() should exit 0 and write an empty graded log placeholder
         when results_log.csv does not exist."""
-        import build_backtest_csvs as mod
+        import evaluation.build_backtest_csvs as mod
 
         data_dir = tmp_path / "data"
         data_dir.mkdir()

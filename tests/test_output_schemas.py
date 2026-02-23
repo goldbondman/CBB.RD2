@@ -6,7 +6,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from cbb_output_schemas import (
+from config.cbb_output_schemas import (
     OUTPUT_FILE_SCHEMAS,
     completeness_report,
     validate_output,

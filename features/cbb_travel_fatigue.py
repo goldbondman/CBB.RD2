@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from espn_config import OUT_TRAVEL_FATIGUE, OUT_VENUE_GEOCODES, OUT_GAMES, OUT_TEAM_LOGS
+from config.espn_config import OUT_TRAVEL_FATIGUE, OUT_VENUE_GEOCODES, OUT_GAMES, OUT_TEAM_LOGS
 
 log = logging.getLogger(__name__)
 

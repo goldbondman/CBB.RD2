@@ -9,7 +9,7 @@ from typing import Any, Dict
 
 import requests
 
-from espn_config import (
+from config.espn_config import (
     DEFAULT_HEADERS,
     REQUEST_TIMEOUT,
     MAX_RETRIES,

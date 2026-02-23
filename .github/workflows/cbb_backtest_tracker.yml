@@ -227,15 +227,15 @@ jobs:
 
       - name: Update schema registry
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.update_schema == 'true'
-        run: python build_schema_registry.py
+        run: python -m evaluation.build_schema_registry
 
       - name: Run ESPN pipeline (bootstrap data when artifact missing)
         if: steps.artifact_check.outputs.espn_csvs != 'true'
-        run: python espn_pipeline.py --days-back 7
+        run: python -m ingestion.espn_pipeline --days-back 7
 
       - name: Verify player metrics completeness
         continue-on-error: true
-        run: python field_reconciler.py --check-outputs
+        run: python -m evaluation.field_reconciler --check-outputs
 
       - name: Download previous results log
         if: steps.artifact_check.outputs.results_log == 'true'
@@ -353,7 +353,7 @@ jobs:
       # ── Build season summaries ────────────────────────────────────────────────
       - name: Build season summaries
         continue-on-error: true
-        run: python cbb_season_summaries.py
+        run: python -m features.team_form_snapshot
 
       # ── Read alert count for email subject line ────────────────────────────
       - name: Check for alerts
@@ -520,7 +520,7 @@ jobs:
           N_ALERTS:         ${{ steps.alerts.outputs.n_alerts }}
           N_CRITICAL:       ${{ steps.alerts.outputs.n_critical }}
         run: |
-          python send_email.py \
+          python -m enrichment.send_email \
             --subject "CBB Results $(date +'%b %d')" \
             --body-file /tmp/tracker_email_body.txt \
             --attachments \
@@ -533,7 +533,7 @@ jobs:
             --critical-count ${{ steps.alerts.outputs.n_critical || 0 }}
 
       - name: Check schema drift
-        run: python check_schema_drift.py
+        run: python -m evaluation.check_schema_drift
         continue-on-error: true
 
       # ── Persist results log as artifact ─────────────────────────────────────
@@ -665,7 +665,7 @@ jobs:
       # analytics runs, we generate the inputs directly.
       - name: Run ESPN pipeline (required for backtester)
         run: |
-          python espn_pipeline.py --days-back 120
+          python -m ingestion.espn_pipeline --days-back 120
 
       - name: Preflight backtester inputs
         run: |
@@ -685,7 +685,7 @@ jobs:
         run: |
           if [ ! -f data/results_log_graded.csv ]; then
             echo "[WARN] Graded log not found — building from results_log.csv"
-            python build_backtest_csvs.py --section grade-only
+            python -m evaluation.build_backtest_csvs --section grade-only
           fi
 
       # ── Run backtester ───────────────────────────────────────────────────────
@@ -718,7 +718,7 @@ jobs:
       - name: Run build_backtest_csvs
         run: |
           if [ -f build_backtest_csvs.py ]; then
-            python build_backtest_csvs.py
+            python -m evaluation.build_backtest_csvs
           else
             echo "[SKIP] build_backtest_csvs.py not found"
           fi
@@ -834,7 +834,7 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           NOTIFY_EMAIL:       ${{ secrets.NOTIFY_EMAIL }}
         run: |
-          python send_email.py \
+          python -m enrichment.send_email \
             --subject "CBB Backtester $(date +'%b %d, %Y')" \
             --body-file /tmp/backtest_email_body.txt \
             --attachments \

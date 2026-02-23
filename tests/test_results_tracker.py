@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from cbb_results_tracker import (
+from ingestion.cbb_results_tracker import (
     ResultsTracker,
     load_predictions,
     load_games_results,

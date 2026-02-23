@@ -1,6 +1,6 @@
 import pandas as pd
 
-from espn_pipeline import _append_dedupe_write
+from ingestion.espn_pipeline import _append_dedupe_write
 
 
 def test_append_dedupe_preserves_existing_odds_when_new_row_is_null(tmp_path):

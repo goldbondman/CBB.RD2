@@ -5,8 +5,8 @@ import pandas as pd
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from espn_parsers import parse_summary
-from espn_player_metrics import compute_player_metrics
+from ingestion.espn_parsers import parse_summary
+from features.espn_player_metrics import compute_player_metrics
 
 
 def _summary_fixture_with_split_strings(event_id: str = "401"):

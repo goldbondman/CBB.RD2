@@ -33,7 +33,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from espn_config import (
+from config.espn_config import (
     CSV_DIR,
     OUT_PLAYER_METRICS,
     OUT_RANKINGS,

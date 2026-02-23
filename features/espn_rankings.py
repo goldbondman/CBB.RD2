@@ -40,11 +40,11 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pandas as pd
 
-from cbb_config import (
+from config.cbb_config import (
     LEAGUE_AVG_ORTG, LEAGUE_AVG_DRTG, LEAGUE_AVG_EFG, PYTH_EXP,
     QUAD_1_MIN_NET, QUAD_2_MIN_NET, QUAD_3_MIN_NET,
 )
-from espn_config import (
+from config.espn_config import (
     OUT_TOURNAMENT_SNAPSHOT  as CSV_SNAPSHOT,
     OUT_WEIGHTED             as CSV_WEIGHTED,
     OUT_METRICS              as CSV_METRICS,
