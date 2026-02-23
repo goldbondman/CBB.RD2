@@ -34,7 +34,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -62,6 +62,7 @@ from cbb_config import (
     DEFAULT_TOTAL_WEIGHTS,
     WEIGHTS_PATH,
 )
+from espn_config import get_game_tier
 
 log = logging.getLogger(__name__)
 
@@ -786,6 +787,55 @@ class EnsemblePredictor:
         RegressedEfficiencyModel,
     ]
 
+    def _apply_bias_corrections(
+        self,
+        prediction: float,
+        home: TeamProfile,
+        away: TeamProfile,
+        bias_table_path: Path,
+    ) -> Tuple[float, List[str]]:
+        """Apply additive post-prediction bias corrections from bias table."""
+        if not bias_table_path.exists():
+            return prediction, []
+
+        try:
+            bt = pd.read_csv(bias_table_path)
+            actionable = bt[bt["actionable"] == True]
+        except Exception as exc:
+            log.debug("Unable to load bias table %s: %s", bias_table_path, exc)
+            return prediction, []
+
+        game_tier = get_game_tier(home.conference, away.conference)
+        momentum_tier = pd.cut(
+            pd.Series([home.momentum]),
+            bins=[-999, -10, -4, 4, 10, 999],
+            labels=["COLD", "COOLING", "STEADY", "RISING", "HOT"],
+        ).astype(str).iloc[0]
+
+        game_features = {
+            "conference": home.conference,
+            "conference_tier": game_tier,
+            "cross_tier_matchup": game_tier,
+            "momentum_tier": momentum_tier,
+        }
+
+        applied: List[str] = []
+        total_correction = 0.0
+        for _, row in actionable.iterrows():
+            dim = row.get("dimension")
+            group = row.get("group")
+            corr = float(row.get("correction", 0.0))
+            if dim in game_features and game_features[dim] == group:
+                total_correction += corr
+                applied.append(f"{dim}={group}: {corr:+.2f}pts")
+
+        total_correction = float(np.clip(total_correction, -4.0, 4.0))
+        corrected = prediction + total_correction
+        if applied:
+            log.debug("Bias corrections applied: %s → total %+.2f", applied, total_correction)
+
+        return round(corrected, 1), applied
+
     def __init__(self, config: EnsembleConfig = None):
         self.config = config or EnsembleConfig()
         self.models = [cls() for cls in self.MODELS]
@@ -899,8 +949,15 @@ class EnsemblePredictor:
                 total_edge_pts >= self.config.edge_threshold_total
             )
 
+        corrected_spread, bias_applied = self._apply_bias_corrections(
+            ens_spread,
+            home,
+            away,
+            bias_table_path=DATA_DIR / "model_bias_table.csv",
+        )
+
         return EnsembleResult(
-            spread=round(ens_spread, 2),
+            spread=round(corrected_spread, 2),
             total=round(ens_total, 1),
             confidence=round(ensemble_conf, 3),
             model_agreement=agreement,
