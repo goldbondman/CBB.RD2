@@ -21,6 +21,7 @@ from config.logging_config import get_logger
 log = get_logger(__name__)
 
 DATA_DIR = Path("data")
+CSV_DATA_DIR = DATA_DIR / "csv"
 
 PLAYER_LOGS_CSV   = DATA_DIR / "player_game_logs.csv"
 PLAYER_METRICS_CSV = DATA_DIR / "player_game_metrics.csv"
@@ -51,6 +52,17 @@ def _safe_read(path: Path, **kwargs) -> pd.DataFrame:
     except Exception as exc:
         log.warning(f"Could not read {path}: {exc}")
         return pd.DataFrame()
+
+
+def _safe_read_with_fallback(path: Path, **kwargs) -> pd.DataFrame:
+    """Read CSV from data/, then fallback to data/csv/ if needed."""
+    df = _safe_read(path, **kwargs)
+    if not df.empty:
+        return df
+    fallback = CSV_DATA_DIR / path.name
+    if fallback == path:
+        return df
+    return _safe_read(fallback, **kwargs)
 
 
 def build_player_season_summary(output_path: Path = PLAYER_SUMMARY_CSV) -> pd.DataFrame:
@@ -178,8 +190,10 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
 
     Returns the summary DataFrame (empty if inputs are missing).
     """
-    weighted = _safe_read(TEAM_WEIGHTED_CSV)
-    results  = _safe_read(RESULTS_LOG_CSV)
+    weighted = _safe_read_with_fallback(TEAM_WEIGHTED_CSV, low_memory=False)
+    results = _safe_read_with_fallback(DATA_DIR / "results_log_graded.csv", low_memory=False)
+    if results.empty:
+        results = _safe_read_with_fallback(RESULTS_LOG_CSV, low_memory=False)
 
     empty_cols = [
         "team_id", "team", "conference",
@@ -191,6 +205,7 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
         "ats_wins", "ats_losses",
         "ou_over", "ou_under",
         "avg_pred_spread_error",
+        "avg_clv", "clv_positive_rate", "avg_clv_edge_games", "clv_sample_size", "clv_grade",
         "updated_at",
     ]
 
@@ -201,11 +216,11 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
         empty.to_csv(output_path, index=False)
         return empty
 
-    # ── Build win/loss records from weighted CSV ───────────────────────────────
-    tid_col  = "team_id"   if "team_id"   in weighted.columns else None
-    team_col = "team"      if "team"      in weighted.columns else None
+    # ── Build records/averages from weighted CSV ───────────────────────────────
+    tid_col = "team_id" if "team_id" in weighted.columns else None
+    team_col = "team" if "team" in weighted.columns else None
     conf_col = "conference" if "conference" in weighted.columns else None
-    ha_col   = "home_away"  if "home_away"  in weighted.columns else None
+    ha_col = "home_away" if "home_away" in weighted.columns else None
 
     if tid_col is None and team_col is None:
         log.warning("team_game_weighted missing team_id/team columns — skipping team summary")
@@ -216,52 +231,47 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
     group_keys = [c for c in [tid_col, team_col] if c]
     df = weighted.copy()
 
-    # Determine if team won: actual_margin > 0 means home team won.
-    # team_game_weighted is one row per team per game; we need to know the team's perspective.
-    if "actual_margin" in df.columns and ha_col:
-        df["actual_margin"] = pd.to_numeric(df["actual_margin"], errors="coerce")
-        df["_won"] = (
-            ((df[ha_col] == "home") & (df["actual_margin"] > 0)) |
-            ((df[ha_col] == "away") & (df["actual_margin"] < 0))
-        ).astype(int)
-    elif "actual_margin" in df.columns:
-        df["actual_margin"] = pd.to_numeric(df["actual_margin"], errors="coerce")
-        df["_won"] = (df["actual_margin"] > 0).astype(int)
-    else:
-        df["_won"] = None
-
-    # Games played
-    gp = df.groupby(group_keys).size().reset_index(name="_gp")
-
-    agg_map: dict[str, object] = {}
-    if "_won" in df.columns and df["_won"].notna().any():
-        agg_map["_won"] = "sum"
-    for col in ["actual_margin", "adj_off_rtg", "adj_def_rtg", "pace"]:
+    for col in ["win", "margin", "ortg", "drtg", "pace", "neutral_site", "cover", "event_id", "over_under", "points_for", "completed"]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
-            agg_map[col] = "mean"
 
-    if agg_map:
-        sums = df.groupby(group_keys).agg(agg_map).reset_index()
-    else:
-        sums = df[group_keys].drop_duplicates()
+    if "win" not in df.columns:
+        log.warning("team_game_weighted missing 'win' column; cannot build team records")
+        df["win"] = pd.NA
 
-    summary = gp.merge(sums, on=group_keys, how="left")
+    # Restrict aggregates to played games; upcoming fixtures should not poison means/records
+    played = df.copy()
+    if "completed" in played.columns:
+        played["completed"] = played["completed"].astype(str).str.lower().map({"true": 1, "false": 0})
+        played = played[played["completed"] == 1]
+    elif "win" in played.columns:
+        played = played[played["win"].notna()]
 
-    summary["wins"]   = summary.get("_won", pd.Series(dtype=float)).fillna(0).astype(int)
-    summary["losses"] = summary["_gp"] - summary["wins"]
+    # Games played
+    gp = played.groupby(group_keys).size().reset_index(name="_gp")
+
+    summary = gp.copy()
+
+    wl = played.groupby(group_keys).agg(
+        wins=("win", lambda x: (x == 1).sum()),
+        losses=("win", lambda x: (x == 0).sum()),
+    ).reset_index()
+    summary = summary.merge(wl, on=group_keys, how="left")
 
     # ── Home / away / neutral splits ──────────────────────────────────────────
     for venue, label in [("home", "home"), ("away", "away"), ("neutral", "neutral")]:
         if ha_col:
-            sub = df[df[ha_col] == venue]
+            sub = played[played[ha_col] == venue]
         else:
             sub = pd.DataFrame()
 
-        if not sub.empty and "_won" in sub.columns:
-            vw = sub.groupby(group_keys)["_won"].agg(["sum", "count"]).reset_index()
-            vw.columns = list(group_keys) + [f"{label}_wins", f"{label}_gp"]
-            vw[f"{label}_losses"] = vw[f"{label}_gp"] - vw[f"{label}_wins"]
+        if not sub.empty and "win" in sub.columns:
+            vw = sub.groupby(group_keys).agg(
+                **{
+                    f"{label}_wins": ("win", lambda x: (x == 1).sum()),
+                    f"{label}_losses": ("win", lambda x: (x == 0).sum()),
+                }
+            ).reset_index()
             summary = summary.merge(
                 vw[group_keys + [f"{label}_wins", f"{label}_losses"]],
                 on=group_keys, how="left",
@@ -271,17 +281,17 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
             summary[f"{label}_losses"] = None
 
     # ── Rating columns ─────────────────────────────────────────────────────────
-    col_map = {
-        "actual_margin": "avg_margin",
-        "adj_off_rtg":   "avg_ortg",
-        "adj_def_rtg":   "avg_drtg",
-        "pace":          "avg_pace",
-    }
+    mean_cols = [c for c in ["margin", "ortg", "drtg", "pace"] if c in played.columns]
+    if mean_cols:
+        means = played.groupby(group_keys)[mean_cols].mean().reset_index()
+        summary = summary.merge(means, on=group_keys, how="left")
+    col_map = {"margin": "avg_margin", "ortg": "avg_ortg", "drtg": "avg_drtg", "pace": "avg_pace"}
     for src, dst in col_map.items():
-        if src in summary.columns:
-            summary[dst] = summary[src].round(2)
-        else:
-            summary[dst] = None
+        summary[dst] = summary[src].round(3) if src in summary.columns else None
+
+    for c in ["home_wins", "home_losses", "away_wins", "away_losses", "neutral_wins", "neutral_losses"]:
+        if c in summary.columns:
+            summary[c] = summary[c].fillna(0).astype(int)
 
     # conference column
     if conf_col:
@@ -298,75 +308,80 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
     summary["ou_under"]            = None
     summary["avg_pred_spread_error"] = None
 
-    if not results.empty and tid_col:
-        for side in ["home", "away"]:
-            tid_field = f"{side}_team_id"
-            ats_field = "primary_ats_correct"
-            ou_field  = "primary_ou_correct"
-            err_field = "primary_margin_error"
+    ats_source = results if (not results.empty and "team_id" in results.columns) else played
+    if not ats_source.empty and "team_id" in ats_source.columns:
+        ats_col = "cover" if "cover" in ats_source.columns else ("ats_correct" if "ats_correct" in ats_source.columns else None)
+        ou_col = "ou_correct" if "ou_correct" in ats_source.columns else None
+        err_col = next((c for c in ["spread_error", "absolute_error", "pred_error", "primary_margin_error"] if c in ats_source.columns), None)
 
-            if tid_field not in results.columns:
-                continue
+        if ats_col:
+            ats_source[ats_col] = pd.to_numeric(ats_source[ats_col], errors="coerce")
+            ats = ats_source[ats_source[ats_col].notna()].groupby("team_id").agg(
+                ats_wins=(ats_col, lambda x: (x == 1).sum()),
+                ats_losses=(ats_col, lambda x: (x == 0).sum()),
+            ).reset_index()
+            summary = summary.merge(ats, on="team_id", how="left")
 
-            for col in [ats_field, ou_field, err_field]:
-                if col in results.columns:
-                    results[col] = pd.to_numeric(results[col], errors="coerce")
+        if ou_col:
+            ats_source[ou_col] = pd.to_numeric(ats_source[ou_col], errors="coerce")
+            ou = ats_source[ats_source[ou_col].notna()].groupby("team_id").agg(
+                ou_over=(ou_col, lambda x: (x == 1).sum()),
+                ou_under=(ou_col, lambda x: (x == 0).sum()),
+            ).reset_index()
+            summary = summary.merge(ou, on="team_id", how="left")
+        elif {"event_id", "over_under", "points_for"}.issubset(played.columns):
+            event_totals = played.groupby("event_id").agg(total_pts=("points_for", "sum"), ou_line=("over_under", "first")).reset_index()
+            event_totals["went_over"] = (event_totals["total_pts"] > event_totals["ou_line"]).astype(float)
+            event_teams = played[["event_id", "team_id"]].merge(event_totals[["event_id", "went_over"]], on="event_id", how="left")
+            ou = event_teams[event_teams["went_over"].notna()].groupby("team_id").agg(
+                ou_over=("went_over", lambda x: (x == 1).sum()),
+                ou_under=("went_over", lambda x: (x == 0).sum()),
+            ).reset_index()
+            summary = summary.merge(ou, on="team_id", how="left")
 
-            sub = results.rename(columns={tid_field: tid_col})
-            if team_col and f"{side}_team" in results.columns:
-                sub = sub.rename(columns={f"{side}_team": team_col})
+        if err_col:
+            ats_source[err_col] = pd.to_numeric(ats_source[err_col], errors="coerce")
+            err = ats_source.groupby("team_id")[err_col].mean().reset_index().rename(columns={err_col: "avg_pred_spread_error"})
+            summary = summary.merge(err, on="team_id", how="left")
 
-            agg2: dict[str, object] = {}
-            if ats_field in sub.columns:
-                agg2[ats_field] = "sum"
-                agg2["_ats_n"]  = (ats_field, "count")
-            if ou_field in sub.columns:
-                agg2[ou_field]   = "sum"
-            if err_field in sub.columns:
-                agg2[err_field] = "mean"
+    # CLV metrics
+    pred_col = next((c for c in ["pred_spread", "ensemble_spread", "prediction", "model_spread"] if c in results.columns), None)
+    close_col = next((c for c in ["spread", "closing_spread", "closing_line", "vegas_line", "spread_line", "closing_spread_line"] if c in results.columns), None)
+    edge_col = next((c for c in ["edge_flag", "is_alpha"] if c in results.columns), None)
+    if pred_col and close_col and "team_id" in results.columns:
+        clv_df = results[["team_id", pred_col, close_col] + ([edge_col] if edge_col else [])].copy()
+        clv_df[pred_col] = pd.to_numeric(clv_df[pred_col], errors="coerce")
+        clv_df[close_col] = pd.to_numeric(clv_df[close_col], errors="coerce")
+        clv_df["clv"] = clv_df[pred_col] - clv_df[close_col]
+        clv_df = clv_df[clv_df["clv"].notna()]
+        if not clv_df.empty:
+            clv_agg = clv_df.groupby("team_id").agg(
+                avg_clv=("clv", "mean"),
+                clv_positive_rate=("clv", lambda x: (x > 0).mean()),
+                clv_sample_size=("clv", "count"),
+            ).reset_index()
+            if edge_col:
+                edge_games = clv_df[pd.to_numeric(clv_df[edge_col], errors="coerce") == 1]
+                edge_agg = edge_games.groupby("team_id")["clv"].mean().reset_index().rename(columns={"clv": "avg_clv_edge_games"})
+                clv_agg = clv_agg.merge(edge_agg, on="team_id", how="left")
+            else:
+                clv_agg["avg_clv_edge_games"] = None
 
-            if agg2:
-                sub_keys = [c for c in group_keys if c in sub.columns]
-                if sub_keys:
-                    r_agg = (
-                        sub.groupby(sub_keys)
-                        .agg(**{k: v for k, v in agg2.items() if k != "_ats_n"})
-                        .reset_index()
-                    )
-                    if ats_field in r_agg.columns:
-                        r_agg["ats_wins_part"]   = r_agg[ats_field].fillna(0).astype(int)
-                        r_agg["ats_games_part"]  = sub.groupby(sub_keys)[ats_field].count().values
-                    if ou_field in r_agg.columns:
-                        r_agg["ou_over_part"]  = r_agg[ou_field].fillna(0).astype(int)
-                    if err_field in r_agg.columns:
-                        r_agg["err_part"] = r_agg[err_field]
+            def _clv_grade(row: pd.Series) -> str:
+                if row["clv_sample_size"] < 10:
+                    return "INSUFFICIENT_SAMPLE"
+                if row["avg_clv"] > 2 and row["clv_positive_rate"] > 0.58:
+                    return "A"
+                if row["avg_clv"] > 1 and row["clv_positive_rate"] > 0.54:
+                    return "B"
+                if row["avg_clv"] > 0 and row["clv_positive_rate"] > 0.50:
+                    return "C"
+                if row["avg_clv"] > -1:
+                    return "D"
+                return "F"
 
-                    summary = summary.merge(
-                        r_agg[sub_keys + [c for c in
-                              ["ats_wins_part", "ats_games_part", "ou_over_part", "err_part"]
-                              if c in r_agg.columns]],
-                        on=sub_keys, how="left",
-                    )
-
-        # Combine home/away partial columns if both sides contributed
-        for base_col, part_col in [("ats_wins", "ats_wins_part"), ("ou_over", "ou_over_part")]:
-            if part_col in summary.columns:
-                summary[base_col] = summary.get(part_col, pd.Series()).fillna(0).astype(int)
-
-        if "ats_games_part" in summary.columns and "ats_wins" in summary.columns:
-            summary["ats_losses"] = (
-                summary["ats_games_part"].fillna(0).astype(int) - summary["ats_wins"]
-            )
-
-        if "ou_over_part" in summary.columns:
-            summary["ou_under"] = None  # we don't separately track O/U losses here
-
-        if "err_part" in summary.columns:
-            summary["avg_pred_spread_error"] = summary["err_part"].round(3)
-
-        # Drop scratch columns
-        drop_cols = [c for c in summary.columns if c.endswith("_part")]
-        summary = summary.drop(columns=drop_cols, errors="ignore")
+            clv_agg["clv_grade"] = clv_agg.apply(_clv_grade, axis=1)
+            summary = summary.merge(clv_agg, on="team_id", how="left")
 
     summary["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -381,6 +396,7 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
         "ats_wins", "ats_losses",
         "ou_over", "ou_under",
         "avg_pred_spread_error",
+        "avg_clv", "clv_positive_rate", "avg_clv_edge_games", "clv_sample_size", "clv_grade",
         "updated_at",
     ]
     for c in final_cols:
