@@ -92,6 +92,75 @@ def load_model_weights(weights_path: Path = Path("data/model_weights.json")) -> 
     return DEFAULT_WEIGHTS.copy()
 
 
+def detect_alpha(prediction: float, vegas_line: Optional[float], game_context: Optional[Dict] = None) -> Dict[str, object]:
+    """Market-aware alpha detector (CLV-first)."""
+    game_context = game_context or {}
+    reasoning: List[str] = []
+    edge_types: List[str] = []
+    is_alpha = False
+    result_adjustments: Dict[str, float] = {"kelly_multiplier": 1.0}
+
+    model_side = "home" if prediction > 0 else "away"
+
+    rlm_sharp = game_context.get("rlm_sharp_side")
+    if rlm_sharp and rlm_sharp == model_side:
+        is_alpha = True
+        edge_types.append("RLM_CONFIRMED")
+        reasoning.append(
+            f"Reverse line movement confirms model: public fading {model_side} "
+            f"but sharp money pushed the line toward {model_side}"
+        )
+
+    book_sharp = game_context.get("book_sharp_side")
+    if book_sharp and book_sharp == model_side:
+        diff = game_context.get("book_spread_diff", 0)
+        try:
+            diff_val = float(diff)
+        except (TypeError, ValueError):
+            diff_val = 0.0
+        reasoning.append(
+            f"Pinnacle vs DraftKings disagrees {diff_val:.1f}pts in model direction "
+            "— sharp market agrees with model"
+        )
+
+    steam = game_context.get("steam_flag", False)
+    line_move = game_context.get("line_movement", 0) or 0
+    if steam:
+        steam_side = "home" if float(line_move) > 0 else "away"
+        if steam_side != model_side:
+            result_adjustments["kelly_multiplier"] = 0.0
+            reasoning.append(
+                f"🔥 STEAM AGAINST MODEL: sharp syndicate moved line {abs(float(line_move)):.1f}pts "
+                f"toward {steam_side.upper()} — model is {model_side.upper()}. Standing down."
+            )
+        else:
+            reasoning.append(
+                f"🔥 Steam confirms model direction — sharp money {abs(float(line_move)):.1f}pts "
+                f"toward {model_side.upper()}"
+            )
+
+    if rlm_sharp and rlm_sharp != model_side:
+        result_adjustments["kelly_multiplier"] = 0.4
+        reasoning.append(
+            f"⚠️  RLM AGAINST MODEL: sharps on {rlm_sharp.upper()}, model likes "
+            f"{model_side.upper()} — reducing size to 40%"
+        )
+
+    if game_context.get("line_freeze_flag"):
+        result_adjustments["kelly_multiplier"] = min(result_adjustments.get("kelly_multiplier", 1.0), 0.5)
+        reasoning.append(
+            "⚠️  LINE FREEZE: heavy public action, line unmoved — books comfortable taking the action. "
+            "Model edge likely illusory here."
+        )
+
+    return {
+        "is_alpha": is_alpha,
+        "edge_types": edge_types,
+        "reasoning": reasoning,
+        "result_adjustments": result_adjustments,
+    }
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # DATA STRUCTURES
 # ═══════════════════════════════════════════════════════════════════════════════
