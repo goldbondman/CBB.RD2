@@ -43,10 +43,12 @@ from espn_config import (
     TZ,
 )
 try:
-    from espn_config import get_game_tier
+    from espn_config import get_game_tier, conference_id_to_name
 except ImportError:
     def get_game_tier(home_conf: str, away_conf: str) -> str:
         return "unknown"
+    def conference_id_to_name(cid) -> str:
+        return str(cid)
 
 from typing import Dict, List, Optional
 from zoneinfo import ZoneInfo
@@ -56,6 +58,7 @@ import pandas as pd
 from config.logging_config import get_logger
 from config.model_version import compute_model_version, save_version_to_history
 from pipeline_csv_utils import safe_write_csv
+from models.alpha_evaluator import evaluate_alpha, kelly_fraction_calc
 
 OUT_PREDICTIONS_LATEST = DATA_DIR / "predictions_latest.csv"
 
@@ -112,21 +115,6 @@ REQUIRED_TEAM_CONTEXT_FIELDS = [
 OPP_HISTORY_WINDOW = 5
 TEAM_GAMES_WINDOW = 10
 
-
-def kelly_fraction(model_win_prob: float, juice: float = -110) -> float:
-    """Quarter-Kelly bankroll fraction for a spread/total bet."""
-    if juice < 0:
-        decimal_odds = 1 + (100 / abs(juice))
-    else:
-        decimal_odds = 1 + (juice / 100)
-
-    b = decimal_odds - 1.0
-    p = model_win_prob
-    q = 1.0 - p
-
-    kelly = (b * p - q) / b
-    quarter_kelly = kelly * 0.25
-    return max(0.0, round(quarter_kelly, 4))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -587,13 +575,16 @@ def run_predictions(
             elif revenge.get("revenge_team") == "away":
                 pred_spread = round(pred_spread + 0.5, 2)
 
-        alpha = detect_alpha(
-            pred_spread,
-            spread_line,
-            favored_team,
-            trap_for_favorite,
-            revenge,
-            game_context=matchup,
+        alpha = evaluate_alpha(
+            pred_spread=pred_spread,
+            spread_line=spread_line,
+            model_confidence=prediction["confidence"],
+            trap_for_favorite=trap_for_favorite,
+            revenge_info=revenge,
+            market_context=None,
+            game_id=str(game_id),
+            home_team=str(home_name),
+            away_team=str(away_name),
         )
         totals_proj = model_total(home_ctx, away_ctx)
         line_advisory = line_shopping_advisory(pred_spread, spread_line)
@@ -615,8 +606,11 @@ def run_predictions(
             "pred_home_score": round(prediction["predicted_total"] / 2 - pred_spread / 2, 1),
             "pred_away_score": round(prediction["predicted_total"] / 2 + pred_spread / 2, 1),
             "model_confidence": round(prediction["confidence"], 3),
-            "kelly_fraction": kelly_fraction(prediction["confidence"]),
-            "kelly_units": round(kelly_fraction(prediction["confidence"]) * 100, 2),
+            "kelly_fraction": alpha["kelly_fraction"],
+            "kelly_units": alpha["kelly_units"],
+            "kelly_multiplier": alpha["kelly_multiplier"],
+            "market_evaluated": alpha["market_evaluated"],
+            "edge_pts": alpha["edge_pts"],
             "pace_projected": round(prediction["pace"], 1),
 
             "home_net_eff": round(prediction["home_net_eff"], 2),
@@ -718,7 +712,6 @@ def run_predictions(
             "revenge_team": revenge.get("revenge_team", ""),
             "home_fatigue_index": _safe_float(home_ctx.get("fatigue_index")),
             "away_fatigue_index": _safe_float(away_ctx.get("fatigue_index")),
-            "kelly_fraction": alpha.get("kelly_fraction", 0.0),
             "alpha_reasoning": alpha.get("alpha_reasoning", ""),
             "is_alpha": alpha.get("is_alpha", False),
             "edge_types": alpha.get("edge_types", ""),
@@ -907,167 +900,14 @@ def model_total(team_a: dict, team_b: dict) -> dict:
     }
 
 
-def detect_alpha(
-    pred_spread: float,
-    spread_line: Optional[float],
-    favored_team: str,
-    trap_for_favorite: bool,
-    revenge_info: dict,
-    game_context: Optional[dict] = None,
-) -> dict:
-    reasoning = []
-    edge_types = []
-    is_alpha = False
-    kelly = 0.0
-    result_adjustments: Dict[str, float] = {}
-    if spread_line is not None:
-        edge = abs(pred_spread - spread_line)
-        kelly = min(0.08, max(0.0, (edge - 1.0) / 30.0))
-
-    if trap_for_favorite:
-        reasoning.append("⚠️ TRAP GAME — fade the favorite historically profitable")
-        kelly *= 0.7
-
-    if revenge_info.get("revenge_flag"):
-        team = revenge_info.get("revenge_team")
-        margin = revenge_info.get("revenge_margin")
-        reasoning.append(f"REVENGE SPOT: {team} team lost last meeting by {margin}.")
-
-    game_context = game_context or {}
-
-    model_side = "home" if pred_spread > 0 else "away"
-
-    rlm_sharp = game_context.get("rlm_sharp_side")
-    if rlm_sharp and rlm_sharp == model_side:
-        is_alpha = True
-        edge_types.append("RLM_CONFIRMED")
-        reasoning.append(
-            f"Reverse line movement confirms model: public fading {model_side} "
-            f"but sharp money pushed the line toward {model_side}"
-        )
-
-    book_sharp = game_context.get("book_sharp_side")
-    if book_sharp and book_sharp == model_side:
-        diff = game_context.get("book_spread_diff", 0)
-        try:
-            diff_val = float(diff)
-        except (TypeError, ValueError):
-            diff_val = 0.0
-        reasoning.append(
-            f"Pinnacle vs DraftKings disagrees {diff_val:.1f}pts in model direction — "
-            "sharp market agrees with model"
-        )
-
-    steam = game_context.get("steam_flag", False)
-    line_move = game_context.get("line_movement", 0) or 0
-    if steam:
-        steam_side = "home" if float(line_move) > 0 else "away"
-        if steam_side != model_side:
-            result_adjustments["kelly_multiplier"] = 0.0
-            reasoning.append(
-                f"🔥 STEAM AGAINST MODEL: sharp syndicate moved line {abs(float(line_move)):.1f}pts "
-                f"toward {steam_side.upper()} — model is {model_side.upper()}. Standing down."
-            )
-        else:
-            reasoning.append(
-                f"🔥 Steam confirms model direction — sharp money {abs(float(line_move)):.1f}pts "
-                f"toward {model_side.upper()}"
-            )
-
-    if rlm_sharp and rlm_sharp != model_side:
-        result_adjustments["kelly_multiplier"] = 0.4
-        reasoning.append(
-            f"⚠️  RLM AGAINST MODEL: sharps on {rlm_sharp.upper()}, model likes "
-            f"{model_side.upper()} — reducing size to 40%"
-        )
-
-    if game_context.get("line_freeze_flag"):
-        result_adjustments["kelly_multiplier"] = min(
-            result_adjustments.get("kelly_multiplier", 1.0), 0.5
-        )
-        reasoning.append(
-            "⚠️  LINE FREEZE: heavy public action, line unmoved — books comfortable "
-            "taking the action. Model edge likely illusory here."
-        )
-
-    home_tickets = game_context.get("home_tickets_pct")
-    if home_tickets is not None:
-        try:
-            tickets = float(home_tickets)
-            if tickets >= 70 and model_side == "away":
-                reasoning.append(
-                    f"Public fade opportunity: {tickets:.0f}% of tickets on home, "
-                    "model likes away — contrarian + model signal"
-                )
-            elif tickets <= 30 and model_side == "home":
-                reasoning.append(
-                    f"Public fade opportunity: only {tickets:.0f}% on home, "
-                    "model likes home — contrarian + model signal"
-                )
-        except (TypeError, ValueError):
-            pass
-
+def _safe_float(val, default: Optional[float] = None) -> Optional[float]:
     try:
-        from config.espn_config import DATA_DIR
-
-        summary_path = DATA_DIR / "model_accuracy_summary.csv"
-        if summary_path.exists():
-            s = pd.read_csv(summary_path).iloc[-1]
-
-            beat_pinn = s.get("beat_pinnacle_pct")
-            clv_pinn_n = s.get("clv_vs_pinnacle_n", 0)
-            clv_with = s.get("clv_with_sharp_mean")
-            ats_confirm = s.get("ats_market_confirmed")
-            confirm_n = s.get("market_confirmed_n", 0)
-
-            if float(clv_pinn_n or 0) >= 50:
-                if beat_pinn and float(beat_pinn) > 52:
-                    if spread_line is not None:
-                        gap = abs(pred_spread - float(spread_line))
-                        if gap > 2.0:
-                            is_alpha = True
-                            edge_types.append("CLV_VS_PINNACLE")
-                            reasoning.append(
-                                f"Model beats Pinnacle closing line {float(beat_pinn):.0f}% "
-                                f"of the time ({float(clv_pinn_n):.0f} games). "
-                                f"Current gap {gap:.1f}pts is signal."
-                            )
-
-                if clv_with and float(clv_with) > 0.3 and game_context.get("clv_direction") == "WITH_SHARP":
-                    reasoning.append(
-                        f"Model CLV +{float(clv_with):.2f}pts historically when aligned "
-                        "with line movement direction — this game is aligned."
-                    )
-
-                if (
-                    ats_confirm
-                    and float(ats_confirm) > 55
-                    and float(confirm_n or 0) >= 20
-                    and game_context.get("market_confirmed")
-                ):
-                    is_alpha = True
-                    edge_types.append("MARKET_CONFIRMED_HISTORICAL")
-                    reasoning.append(
-                        f"Market-confirmed picks: {float(ats_confirm):.0f}% ATS historically "
-                        f"(n={float(confirm_n):.0f}). This game has market confirmation."
-                    )
-    except Exception as e:
-        log.debug(f"CLV criterion skipped: {e}")
-
-    kelly *= float(result_adjustments.get("kelly_multiplier", 1.0))
-    return {
-        "kelly_fraction": round(kelly, 4),
-        "alpha_reasoning": " | ".join(reasoning),
-        "edge_types": "|".join(edge_types),
-        "is_alpha": bool(is_alpha),
-    }
-
-
-def _safe_float(val) -> Optional[float]:
-    try:
-        return float(val) if val is not None else None
+        if val is None:
+            return default
+        out = float(val)
+        return default if pd.isna(out) else out
     except (TypeError, ValueError):
-        return None
+        return default
 
 
 def _latest_team_context(
@@ -1086,6 +926,37 @@ def _latest_team_context(
 
     latest = rows.iloc[-1]
     out = latest.to_dict()
+
+    raw_conf = out.get("conference") or out.get("conf_id", "")
+    if str(raw_conf).strip().isdigit():
+        out["conference"] = conference_id_to_name(str(raw_conf).strip())
+
+    all_team_rows = all_data[
+        all_data["team_id"].astype(str) == str(team_id)
+    ].copy()
+    if cutoff_dt is not None:
+        all_team_rows = all_team_rows[
+            all_team_rows["game_datetime_utc"] < cutoff_dt
+        ]
+    if not all_team_rows.empty and "wins" in all_team_rows.columns:
+        per_game_wins = pd.to_numeric(
+            all_team_rows["wins"], errors="coerce"
+        ).fillna(0)
+        max_val = per_game_wins.max()
+        if max_val <= 1:
+            out["wins"] = int(per_game_wins.sum())
+            out["losses"] = int(len(all_team_rows) - per_game_wins.sum())
+        else:
+            out["wins"] = int(per_game_wins.iloc[-1])
+            out["losses"] = int(
+                pd.to_numeric(
+                    all_team_rows["losses"], errors="coerce"
+                ).fillna(0).iloc[-1]
+            )
+    else:
+        out.setdefault("wins", 0)
+        out.setdefault("losses", 0)
+
     for k in REQUIRED_TEAM_CONTEXT_FIELDS:
         out.setdefault(k, None)
     return out
