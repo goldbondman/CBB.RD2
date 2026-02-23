@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import re
 import time
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -62,16 +63,16 @@ def fetch_espn_scoreboard(game_date: date) -> list[dict]:
 
 
 def fetch_pinnacle_lines() -> list[dict]:
-    url = "https://guest.api.arcadia.pinnacle.com/0.1/leagues/487/matchups"
+    url = "https://guest.api.arcadia.pinnacle.com/0.1/leagues/487/markets/straight"
     try:
-        resp = requests.get(
-            url,
-            headers={**HEADERS, "X-API-Key": "CmX2KcMrXuFmNg6YFbmTxE0y9CRqvg"},
-            timeout=REQUEST_TIMEOUT,
-        )
+        resp = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
         resp.raise_for_status()
         payload = resp.json()
-        return payload if isinstance(payload, list) else []
+        if isinstance(payload, list):
+            return payload
+        if isinstance(payload, dict):
+            return payload.get("markets", [])
+        return []
     except Exception as exc:  # noqa: BLE001
         log.warning("Pinnacle fetch failed: %s", exc)
         return []
@@ -82,10 +83,90 @@ def fetch_draftkings_lines() -> list[dict]:
     try:
         resp = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
         resp.raise_for_status()
-        return resp.json().get("eventGroup", {}).get("events", [])
+        payload = resp.json()
+        if isinstance(payload, list):
+            return payload
+        if isinstance(payload, dict):
+            return payload.get("events", payload.get("eventGroup", {}).get("events", []))
+        return []
     except Exception as exc:  # noqa: BLE001
         log.warning("DraftKings fetch failed: %s", exc)
         return []
+
+
+def normalize_team_name(name: str) -> str:
+    cleaned = re.sub(r"[^a-z0-9 ]+", " ", str(name or "").lower())
+    tokens = [
+        token
+        for token in cleaned.split()
+        if token not in {"st", "state", "university", "college", "of", "the", "at", "and"}
+    ]
+    return " ".join(tokens)
+
+
+def _extract_team_names_from_market(book_game: dict) -> tuple[str, str]:
+    participants = book_game.get("participants") if isinstance(book_game, dict) else None
+    if isinstance(participants, list) and len(participants) >= 2:
+        home = next((p for p in participants if str(p.get("alignment", "")).lower() == "home"), participants[0])
+        away = next((p for p in participants if str(p.get("alignment", "")).lower() == "away"), participants[1])
+        return str(home.get("name", "")), str(away.get("name", ""))
+
+    home = book_game.get("homeTeam") or book_game.get("homeTeamName") or ""
+    away = book_game.get("awayTeam") or book_game.get("awayTeamName") or ""
+
+    if not home and not away:
+        name = str(book_game.get("name", ""))
+        if "@" in name:
+            away, home = [part.strip() for part in name.split("@", 1)]
+        elif " vs " in name.lower():
+            away, home = [part.strip() for part in re.split(r"\s+vs\.?\s+", name, maxsplit=1, flags=re.IGNORECASE)]
+
+    return str(home), str(away)
+
+
+def _extract_spread_from_market(book_game: dict) -> Optional[float]:
+    if not isinstance(book_game, dict):
+        return None
+
+    candidate_keys = ["spread", "homeSpread", "pointSpread", "line", "handicap"]
+    for key in candidate_keys:
+        value = book_game.get(key)
+        if isinstance(value, (float, int)):
+            return float(value)
+        if isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                continue
+
+    prices = book_game.get("prices")
+    if isinstance(prices, list):
+        home_price = next((p for p in prices if str(p.get("designation", "")).lower() == "home"), None)
+        value = home_price.get("points") if isinstance(home_price, dict) else None
+        if isinstance(value, (float, int)):
+            return float(value)
+
+    outcomes = book_game.get("outcomes")
+    if isinstance(outcomes, list):
+        home_outcome = next((o for o in outcomes if str(o.get("label", "")).lower() in {"home", "1", "h"}), None)
+        value = home_outcome.get("line") if isinstance(home_outcome, dict) else None
+        if isinstance(value, (float, int)):
+            return float(value)
+
+    return None
+
+
+def build_book_index(book_games: list[dict]) -> dict[tuple[str, str], dict]:
+    index: dict[tuple[str, str], dict] = {}
+    for game in book_games:
+        home, away = _extract_team_names_from_market(game)
+        if not home or not away:
+            continue
+
+        key = (normalize_team_name(home), normalize_team_name(away))
+        spread = _extract_spread_from_market(game)
+        index[key] = {"spread": spread, "home_team_name": home, "away_team_name": away, "raw": game}
+    return index
 
 
 def parse_action_network_game(game: dict) -> Optional[dict]:
@@ -134,10 +215,12 @@ def parse_espn_event(event: dict) -> Optional[dict]:
         if spread_raw in {"PK", "PICK", "PICKEM", "EVEN"}:
             home_spread_current = 0.0
         elif spread_raw:
-            try:
-                home_spread_current = float(spread_raw)
-            except ValueError:
-                home_spread_current = None
+            match = re.search(r"([+-]?\d+(?:\.\d+)?)", spread_raw)
+            if match:
+                try:
+                    home_spread_current = float(match.group(1))
+                except ValueError:
+                    home_spread_current = None
 
         total_current = odds.get("overUnder")
         try:
@@ -364,6 +447,9 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
     log.info("Fetching DraftKings...")
     dk_games = fetch_draftkings_lines()
 
+    pinnacle_by_team = build_book_index(pinnacle_games)
+    dk_by_team = build_book_index(dk_games)
+
     action_by_team: dict[tuple[str, str], dict] = {}
     for game in an_games:
         parsed = parse_action_network_game(game)
@@ -409,21 +495,33 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
             "all": "opening",
         }.get(mode, "pregame")
 
-        # TODO: add stronger team-name matching against pinn/dk payload shapes.
-        pinn_match = None if not pinnacle_games else None
-        dk_match = None if not dk_games else None
+        team_key = (
+            normalize_team_name(str(parsed.get("home_team_name", ""))),
+            normalize_team_name(str(parsed.get("away_team_name", ""))),
+        )
+        pinn_match = pinnacle_by_team.get(team_key)
+        dk_match = dk_by_team.get(team_key)
 
         row = build_market_row(event_id, capture_type, parsed, pinn_match, dk_match, existing)
         new_rows.append(row)
 
     inserted = append_market_rows(new_rows, market_path) if new_rows else 0
     rejected = max(len(espn_events) - matched, 0)
+    rows_with_pinnacle = sum(1 for row in new_rows if row.get("pinnacle_spread") is not None)
+    rows_with_dk = sum(1 for row in new_rows if row.get("draftkings_spread") is not None)
     log.info(
         "Market ingest summary: pulled=%s matched=%s inserted=%s rejected=%s",
         len(espn_events),
         matched,
         inserted,
         rejected,
+    )
+    log.info(
+        "Market integrity: pinnacle_spread_populated=%s/%s draftkings_spread_populated=%s/%s",
+        rows_with_pinnacle,
+        len(new_rows),
+        rows_with_dk,
+        len(new_rows),
     )
 
     steam_games = [r for r in new_rows if r.get("steam_flag")]
