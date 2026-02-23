@@ -253,6 +253,15 @@ class EnsembleResult:
             d[f"{name}_spread"] = round(mp.spread, 2)
             d[f"{name}_total"]  = round(mp.total, 1)
             d[f"{name}_conf"]   = round(mp.confidence, 3)
+
+        # Compatibility columns consumed by optimize_weights.py
+        # (historical M1–M5 naming contract used in graded predictions)
+        model_spreads = [round(mp.spread, 2) for mp in self.model_predictions]
+        d["model1_schedule_pred"] = model_spreads[0] if len(model_spreads) > 0 else np.nan
+        d["model2_four_factors_pred"] = model_spreads[1] if len(model_spreads) > 1 else np.nan
+        d["model3_bidirectional_pred"] = model_spreads[2] if len(model_spreads) > 2 else np.nan
+        d["model4_ats_pred"] = model_spreads[3] if len(model_spreads) > 3 else np.nan
+        d["model5_situational_pred"] = model_spreads[4] if len(model_spreads) > 4 else np.nan
         return d
 
 

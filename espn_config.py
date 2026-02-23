@@ -12,6 +12,7 @@ import pandas as pd
 # ── Paths ────────────────────────────────────────────────────────────────────
 BASE_DIR  = Path(__file__).parent.resolve()
 CSV_DIR   = BASE_DIR / "data"
+DATA_DIR  = CSV_DIR
 JSON_DIR  = BASE_DIR / "data" / "raw_json"
 
 CSV_DIR.mkdir(parents=True, exist_ok=True)
@@ -34,6 +35,9 @@ OUT_RANKINGS_CONF        = CSV_DIR / "cbb_rankings_by_conference.csv"
 OUT_PREDICTIONS_PRIMARY  = CSV_DIR / "predictions_primary.csv"
 OUT_PREDICTIONS_LATEST   = CSV_DIR / "predictions_latest.csv"
 OUT_PREDICTIONS_COMBINED = CSV_DIR / "predictions_combined_latest.csv"
+OUT_PREDICTIONS_GRADED   = CSV_DIR / "predictions_graded.csv"
+OUT_MODEL_WEIGHTS        = CSV_DIR / "model_weights.json"
+OUT_CONFIDENCE_CALIBRATION = CSV_DIR / "confidence_calibration.json"
 OUT_DIVERGENCE_LATEST    = CSV_DIR / "predictions_divergence_latest.csv"
 OUT_PREDICTIONS_GRADED   = CSV_DIR / "predictions_graded.csv"
 OUT_BIAS_TABLE           = CSV_DIR / "model_bias_table.csv"
