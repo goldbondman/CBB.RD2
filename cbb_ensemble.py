@@ -939,6 +939,13 @@ class EnsemblePredictor:
 
         # ── CAGE edge & barthag diff (metadata) ──────────────────────────
         cage_edge    = home.cage_em - away.cage_em
+        if cage_edge == 0.0 and home.cage_em == 0.0 and away.cage_em == 0.0:
+            log.debug(
+                "Both teams have cage_em=0.0 for %s vs %s — "
+                "6 of 8 sub-models will return pure HCA. "
+                "Check load_team_profiles() column mapping.",
+                home.team_name, away.team_name,
+            )
         barthag_diff = home.barthag - away.barthag
 
         # ── Edge flags ────────────────────────────────────────────────────
@@ -1032,7 +1039,30 @@ def load_team_profiles(
             df["game_datetime_utc"], utc=True, errors="coerce"
         )
         df = df.sort_values("game_datetime_utc")
+    df_all = df.copy()   # preserve full history for aggregation
     df = df.drop_duplicates("team_id", keep="last")
+
+    # Phase 1: compute season-aggregate net efficiency per team
+    # from all rows, then the per-row loop uses the aggregate
+    _team_agg: dict[str, float] = {}
+    if "net_eff" in df_all.columns and "team_id" in df_all.columns:
+        # df_all is the full dataset before deduplication
+        # Use weighted average of per-game net_eff as proxy for adj EM
+        _agg = (
+            pd.to_numeric(df_all["net_eff"], errors="coerce")
+            .groupby(df_all["team_id"].astype(str))
+            .mean()
+        )
+        _team_agg = _agg.dropna().to_dict()
+        _non_zero = sum(1 for v in _team_agg.values() if v != 0.0)
+        log.info(
+            "Computed season net_eff for %d teams (non-zero: %d) "
+            "(range: %.1f to %.1f)",
+            len(_team_agg),
+            _non_zero,
+            min(_team_agg.values()) if _team_agg else 0,
+            max(_team_agg.values()) if _team_agg else 0,
+        )
 
     profiles: Dict[str, TeamProfile] = {}
 
@@ -1066,8 +1096,9 @@ def load_team_profiles(
             games_before=int(g("games_played", 0)) or int(g("game_number", 0)),
 
             # Efficiency — try all known column name variants
-            cage_em=col(row, "adj_net_rtg", "net_eff", "net_rtg",
-                        "cage_em", "adj_em", default=0.0),
+            cage_em=_team_agg.get(tid) or col(
+                row, "adj_net_rtg", "cage_em", "adj_em", default=0.0
+            ),
             cage_o=col(row, "adj_ortg", "ortg", "off_rtg", "cage_o",
                        default=LEAGUE_AVG_ORTG),
             cage_d=col(row, "adj_drtg", "drtg", "def_rtg", "cage_d",
