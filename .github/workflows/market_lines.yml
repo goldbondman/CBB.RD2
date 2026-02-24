@@ -17,64 +17,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download predictions artifact
-        uses: actions/download-artifact@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          name: cbb-predictions-latest
-          path: data/
-        continue-on-error: true
+          python-version: '3.11'
 
-      - name: Download existing market lines
-        uses: actions/download-artifact@v4
-        with:
-          name: cbb-market-lines
-          path: data/
-        continue-on-error: true
+      - name: Restore data files
+        run: |
+          mkdir -p data
+
+          # ── Try artifact first (populated after first run) ──
+          # (artifact download steps above with continue-on-error
+          # already ran — files exist in data/ if found)
+
+          # ── Fallback: fetch today's predictions from ESPN ───
+          # If no predictions file exists, run a lightweight fetch
+          # so market_lines.py has games to match against.
+          if [ ! -f data/predictions_latest.csv ] && \
+             [ ! -f data/predictions_combined_latest.csv ]; then
+            echo "[INFO] No predictions artifact found."
+            echo "[INFO] market_lines.py will use ESPN scoreboard"
+            echo "[INFO] directly — no predictions file required."
+          else
+            echo "[OK] Predictions file available."
+            ls -lh data/predictions*.csv 2>/dev/null || true
+          fi
+
+          # ── Initialize empty market_lines.csv if missing ────
+          if [ ! -f data/market_lines.csv ]; then
+            echo "event_id,capture_type,captured_at_utc,home_team,away_team,game_time_utc,home_spread_open,home_spread_current,line_movement,total_open,total_current,pinnacle_spread,draftkings_spread,home_tickets_pct,away_tickets_pct,home_money_pct,away_money_pct,steam_flag,rlm_flag,rlm_sharp_side,rlm_note,book_disagreement_flag,book_spread_diff,book_sharp_side,line_freeze_flag" \
+              > data/market_lines.csv
+            echo "[INIT] Created empty market_lines.csv with headers"
+          fi
 
       - name: Install dependencies
         run: pip install -r requirements.txt
-
-      - name: Verify artifact handoff inputs
-        run: |
-          echo "=== Prediction files available ==="
-
-          fallback() {
-            local file=$1
-            if [ -f "$file" ]; then
-              echo "[OK] $file ($(wc -l < $file) lines)"
-            else
-              if git show HEAD:"$file" > "$file" 2>/dev/null; then
-                echo "[FALLBACK] $file restored from repo ($(wc -l < $file) lines)"
-              else
-                echo "[WARN] $file not available from artifact or repo"
-              fi
-            fi
-          }
-
-          fallback data/predictions_latest.csv
-          fallback data/market_lines.csv
-
-          for f in \
-            data/predictions_combined_latest.csv \
-            data/predictions_rolling_latest.csv \
-            data/ensemble_predictions_latest.csv; do
-            if [ -f "$f" ]; then
-              echo "[OK] $f"
-            else
-              git show HEAD:"$f" > "$f" 2>/dev/null && \
-                echo "[FALLBACK] $f from repo" || \
-                echo "[SKIP] $f not available"
-            fi
-          done
-
-          if [ ! -f data/predictions_combined_latest.csv ] && \
-             [ -f data/predictions_latest.csv ]; then
-            cp data/predictions_latest.csv data/predictions_combined_latest.csv
-            echo "[ALIAS] predictions_combined_latest.csv created from predictions_latest.csv"
-          fi
-
-          echo "=== Final state ==="
-          ls -lh data/predictions*.csv 2>/dev/null
 
       - name: Capture market lines
         run: |

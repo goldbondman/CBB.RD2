@@ -671,11 +671,11 @@ def run_predictions(
 
             # Required downstream team metadata
             "home_conference": home_ctx.get("conference"),
-            "home_wins": home_ctx.get("wins"),
-            "home_losses": home_ctx.get("losses"),
+            "home_wins": home_ctx.get("wins", 0),
+            "home_losses": home_ctx.get("losses", 0),
             "away_conference": away_ctx.get("conference"),
-            "away_wins": away_ctx.get("wins"),
-            "away_losses": away_ctx.get("losses"),
+            "away_wins": away_ctx.get("wins", 0),
+            "away_losses": away_ctx.get("losses", 0),
             "game_tier": get_game_tier(
                 home_ctx.get("conference", ""),
                 away_ctx.get("conference", ""),
@@ -945,40 +945,42 @@ def _latest_team_context(
     if str(raw_conf).strip().isdigit():
         out["conference"] = conference_id_to_name(str(raw_conf).strip())
 
-    all_team_rows = all_data[
-        all_data["team_id"].astype(str) == str(team_id)
-    ].copy()
-    if cutoff_dt is not None:
-        all_team_rows = all_team_rows[
-            all_team_rows["game_datetime_utc"] < cutoff_dt
-        ]
-    if not all_team_rows.empty:
-        per_game_wins = pd.to_numeric(
-            all_team_rows.get("wins", pd.Series(dtype=float)),
-            errors="coerce",
-        ).fillna(0)
-
-        # If "wins" is a dead/placeholder column (all zeros), fall back to
-        # per-game win flag and rebuild season totals deterministically.
-        if per_game_wins.max() <= 0 and "win" in all_team_rows.columns:
+    try:
+        all_team_rows = all_data[
+            all_data["team_id"].astype(str) == str(team_id)
+        ].copy()
+        if cutoff_dt is not None:
+            all_team_rows = all_team_rows[
+                all_team_rows["game_datetime_utc"] < cutoff_dt
+            ]
+        if not all_team_rows.empty:
             per_game_wins = pd.to_numeric(
-                all_team_rows["win"], errors="coerce"
+                all_team_rows.get(
+                    "wins",
+                    all_team_rows.get("win", pd.Series(dtype=float)),
+                ),
+                errors="coerce",
             ).fillna(0)
 
-        max_val = per_game_wins.max() if not per_game_wins.empty else 0
-        if max_val <= 1:
-            season_wins = float(per_game_wins.sum())
-            out["wins"] = int(season_wins)
-            out["losses"] = int(max(0, len(all_team_rows) - season_wins))
-        else:
-            out["wins"] = int(per_game_wins.iloc[-1])
-            out["losses"] = int(
-                pd.to_numeric(
+            max_val = per_game_wins.max()
+            if pd.isna(max_val) or max_val <= 1:
+                season_wins = int(per_game_wins.sum())
+                season_losses = int(len(all_team_rows) - season_wins)
+            else:
+                season_wins = int(per_game_wins.iloc[-1])
+                loss_col = pd.to_numeric(
                     all_team_rows.get("losses", pd.Series(dtype=float)),
                     errors="coerce",
-                ).fillna(0).iloc[-1]
-            )
-    else:
+                ).fillna(0)
+                season_losses = int(loss_col.iloc[-1])
+
+            out["wins"] = season_wins
+            out["losses"] = season_losses
+        else:
+            out["wins"] = 0
+            out["losses"] = 0
+    except Exception as e:  # noqa: BLE001
+        log.debug("Could not compute season record for %s: %s", team_id, e)
         out.setdefault("wins", 0)
         out.setdefault("losses", 0)
 
