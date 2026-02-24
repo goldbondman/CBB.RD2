@@ -882,35 +882,41 @@ def line_shopping_advisory(model_spread: float, closing_line: Optional[float]) -
 
 def model_total(team_a: dict, team_b: dict) -> dict:
     """Dedicated totals model using pace + ortg/drtg interaction."""
-    def get_metric(team: dict, col: str, default: float) -> float:
-        val = team.get(col, default)
-        return float(val) if val is not None and pd.notna(val) else default
+    LEAGUE_AVG_PACE = 67.2
+    LEAGUE_AVG_ORTG = 110.0
 
-    pace_a = get_metric(team_a, "poss_l10", get_metric(team_a, "pace_l10", 67.2))
-    pace_b = get_metric(team_b, "poss_l10", get_metric(team_b, "pace_l10", 67.2))
-    projected_poss = (pace_a + pace_b) / 2
+    def get_metric(team: dict, cols: List[str], default: float) -> float:
+        for col in cols:
+            val = team.get(col)
+            if val is not None and pd.notna(val):
+                try:
+                    return float(val)
+                except (TypeError, ValueError):
+                    continue
+        return default
 
-    ortg_a = get_metric(team_a, "ortg_l10", 110.0)
-    drtg_b = get_metric(team_b, "drtg_l10", 110.0)
-    ortg_b = get_metric(team_b, "ortg_l10", 110.0)
-    drtg_a = get_metric(team_a, "drtg_l10", 110.0)
+    _home_pace = get_metric(team_a, ["pace", "adj_pace", "cage_t"], LEAGUE_AVG_PACE)
+    _away_pace = get_metric(team_b, ["pace", "adj_pace", "cage_t"], LEAGUE_AVG_PACE)
+    projected_poss = round((_home_pace + _away_pace) / 2, 1)
 
-    adj_ortg_a = (ortg_a + drtg_b) / 2
-    adj_ortg_b = (ortg_b + drtg_a) / 2
+    _home_ortg = get_metric(team_a, ["ortg", "adj_ortg", "cage_o"], LEAGUE_AVG_ORTG)
+    _away_ortg = get_metric(team_b, ["ortg", "adj_ortg", "cage_o"], LEAGUE_AVG_ORTG)
+    projected_total = round(((_home_ortg + _away_ortg) * projected_poss) / 100, 1)
 
-    score_a = (adj_ortg_a / 100) * projected_poss
-    score_b = (adj_ortg_b / 100) * projected_poss
-    projected_total = score_a + score_b
+    _home_games = _safe_int(team_a.get("games_played") or team_a.get("game_number") or 0, default=0)
+    _away_games = _safe_int(team_b.get("games_played") or team_b.get("game_number") or 0, default=0)
+    _min_games = min(_home_games, _away_games)
+    total_confidence_adj = round(min(1.0, 0.6 + (_min_games / 25.0) * 0.4), 3)
 
-    pace_diff = abs(pace_a - pace_b)
-    total_confidence_adj = max(0.85, 1.0 - pace_diff / 40)
+    score_a = (_home_ortg / 100) * projected_poss
+    score_b = (_away_ortg / 100) * projected_poss
 
     return {
-        "projected_total": round(projected_total, 1),
+        "projected_total": projected_total,
         "projected_score_a": round(score_a, 1),
         "projected_score_b": round(score_b, 1),
-        "projected_poss": round(projected_poss, 1),
-        "total_confidence_adj": round(total_confidence_adj, 3),
+        "projected_poss": projected_poss,
+        "total_confidence_adj": total_confidence_adj,
     }
 
 
