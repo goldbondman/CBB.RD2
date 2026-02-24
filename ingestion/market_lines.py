@@ -346,12 +346,22 @@ def build_market_row(
 
     steam_flag = False
     prior = existing_rows[existing_rows["event_id"] == event_id].sort_values("captured_at_utc") if not existing_rows.empty else pd.DataFrame()
-    if len(prior) > 0 and home_spread is not None:
+    if len(prior[prior["event_id"] == event_id]) == 0:
+        steam_flag = False
+    elif home_spread is not None:
         last_row = prior.iloc[-1]
         last_spread = last_row.get("home_spread_current")
         last_time = pd.Timestamp(last_row["captured_at_utc"])
         hours_since = (pd.Timestamp.utcnow() - last_time).total_seconds() / 3600
-        steam_flag = detect_steam_move(home_spread, last_spread, hours_since)
+        try:
+            move = abs(float(home_spread) - float(last_spread))
+            steam_flag = (
+                move >= STEAM_MOVE_POINTS and
+                hours_since <= STEAM_MOVE_HOURS and
+                float(home_spread) != float(last_spread)
+            )
+        except (TypeError, ValueError):
+            steam_flag = False
 
     rlm = detect_reverse_line_movement(home_tickets, spread_open, home_spread)
 

@@ -582,6 +582,12 @@ jobs:
                   print(f"[OK] Divergence file: {len(diverged)} games → {div_path}")
           PY
 
+      - name: Run Monte Carlo simulation layer
+        continue-on-error: true
+        run: python cbb_monte_carlo.py
+               --input data/predictions_combined_latest.csv
+               --n-sims 5000
+
       # ── 8b. Player matchup analysis ─────────────────────────────────────────
       - name: Run player matchup analysis
         id: player_matchup
