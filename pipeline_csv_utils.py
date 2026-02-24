@@ -25,6 +25,29 @@ PRIMARY_KEYS_MAP: dict[str, list[str]] = {
 }
 
 
+COLUMN_ALIASES: dict[str, list[str]] = {
+    'event_id': ['game_id', 'eventId', 'gameId'],
+    'pred_spread': ['predicted_spread', 'prediction_spread'],
+    'home_ml': ['home_money_line', 'home_moneyline'],
+    'away_ml': ['away_money_line', 'away_moneyline'],
+    'cover': ['ats_cover', 'cover_result'],
+    'cover_margin': ['ats_margin', 'margin_vs_spread'],
+}
+
+
+def normalize_column_names(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize known aliases to canonical pipeline column names."""
+    out = df.copy()
+    for canonical, aliases in COLUMN_ALIASES.items():
+        if canonical in out.columns:
+            continue
+        for alias in aliases:
+            if alias in out.columns:
+                out = out.rename(columns={alias: canonical})
+                break
+    return out
+
+
 def dedupe_by_primary_key(df: pd.DataFrame, path: str | pathlib.Path) -> pd.DataFrame:
     """Drop duplicates for known CSVs using deterministic keep='last'."""
     fname = pathlib.Path(path).name
