@@ -29,6 +29,7 @@ Important:
 
 import argparse
 import json
+import math
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -170,6 +171,31 @@ def load_team_game_data() -> pd.DataFrame:
         "No team game data found. Run espn_pipeline.py first.\n"
         f"Looked for: {CSV_WEIGHTED}, {CSV_METRICS}, {CSV_LOGS}"
     )
+
+
+def load_team_context_data() -> pd.DataFrame:
+    """Load season-aggregated context rows (one latest row per team)."""
+    team_context_sources = [
+        CSV_SNAPSHOT,
+        CSV_WEIGHTED,
+        DATA_DIR / "team_pretournament_snapshot.csv",
+        DATA_DIR / "team_game_weighted.csv",
+    ]
+
+    for src in team_context_sources:
+        if src.exists() and src.stat().st_size > 100:
+            ctx_df = pd.read_csv(src, dtype=str, low_memory=False)
+            if "game_datetime_utc" in ctx_df.columns:
+                ctx_df["game_datetime_utc"] = pd.to_datetime(
+                    ctx_df["game_datetime_utc"], utc=True, errors="coerce"
+                )
+                ctx_df = ctx_df.sort_values("game_datetime_utc")
+            ctx_df = ctx_df.drop_duplicates("team_id", keep="last")
+            log.info("Team context: %d teams from %s", len(ctx_df), src)
+            return ctx_df
+
+    log.warning("No team context source found — predictions will use defaults")
+    return pd.DataFrame()
 
 
 def load_games_schedule() -> pd.DataFrame:
@@ -481,6 +507,7 @@ def get_matchups_in_window(start_local: datetime, end_local: datetime) -> List[D
 def run_predictions(
     matchups: List[Dict],
     all_data: pd.DataFrame,
+    context_df: pd.DataFrame,
     model: CBBPredictionModel,
     snapshot: Optional[pd.DataFrame],
     version: Dict,
@@ -531,8 +558,8 @@ def run_predictions(
             continue
 
         try:
-            home_ctx = _latest_team_context(all_data, str(home_id), cutoff_dt)
-            away_ctx = _latest_team_context(all_data, str(away_id), cutoff_dt)
+            home_ctx = _latest_team_context(all_data, context_df, str(home_id), cutoff_dt)
+            away_ctx = _latest_team_context(all_data, context_df, str(away_id), cutoff_dt)
             prediction = model.predict_game(
                 home_games=home_games,
                 away_games=away_games,
@@ -572,8 +599,16 @@ def run_predictions(
             uws_result = _compute_uws_for_matchup(matchup, snapshot, game_type=game_type)
 
         bd = prediction.get("breakdown", {})
-        home_ctx = _latest_team_context(all_data, str(home_id), cutoff_dt)
-        away_ctx = _latest_team_context(all_data, str(away_id), cutoff_dt)
+        home_ctx = _latest_team_context(all_data, context_df, str(home_id), cutoff_dt)
+        away_ctx = _latest_team_context(all_data, context_df, str(away_id), cutoff_dt)
+
+        _home_em = float(home_ctx.get("net_eff") or home_ctx.get("adj_net_rtg") or home_ctx.get("net_rtg") or 0.0)
+        _away_em = float(away_ctx.get("net_eff") or away_ctx.get("adj_net_rtg") or away_ctx.get("net_rtg") or 0.0)
+        _em_diff = _home_em - _away_em
+        _hca_boost = 3.5
+        home_win_prob = round(
+            1.0 / (1.0 + math.exp(-(_em_diff + _hca_boost) / 10.0)), 4
+        )
 
         game_date = str(matchup.get("game_datetime_utc") or "")
         trap_home = detect_trap_game(str(home_id), game_date, team_schedule_df, rankings_df)
@@ -656,6 +691,7 @@ def run_predictions(
 
             "home_games_used": len(home_games),
             "away_games_used": len(away_games),
+            "home_win_prob": home_win_prob,
 
             "game_type": game_type,
             "predicted_at_utc": pd.Timestamp.now("UTC").isoformat(),
@@ -926,14 +962,22 @@ def _safe_float(val, default: Optional[float] = None) -> Optional[float]:
 
 def _latest_team_context(
     all_data: pd.DataFrame,
+    context_df: pd.DataFrame,
     team_id: str,
     cutoff_dt: Optional[pd.Timestamp],
 ) -> Dict[str, Optional[object]]:
     """Get latest available team row before cutoff for output enrichment."""
-    rows = all_data[all_data["team_id"].astype(str) == str(team_id)].copy()
-    if cutoff_dt is not None:
-        rows = rows[rows["game_datetime_utc"] < cutoff_dt]
-    rows = rows.sort_values("game_datetime_utc")
+    rows = pd.DataFrame()
+    if not context_df.empty and "team_id" in context_df.columns:
+        rows = context_df[context_df["team_id"].astype(str) == str(team_id)].copy()
+        if "game_datetime_utc" in rows.columns and cutoff_dt is not None:
+            rows = rows[rows["game_datetime_utc"] < cutoff_dt]
+
+    if rows.empty:
+        rows = all_data[all_data["team_id"].astype(str) == str(team_id)].copy()
+        if cutoff_dt is not None:
+            rows = rows[rows["game_datetime_utc"] < cutoff_dt]
+        rows = rows.sort_values("game_datetime_utc")
 
     if rows.empty:
         return {k: None for k in REQUIRED_TEAM_CONTEXT_FIELDS}
@@ -1126,6 +1170,7 @@ def main():
     log.info(f"{'='*70}")
 
     all_data = load_team_game_data()
+    context_df = load_team_context_data()
     snapshot = load_tournament_snapshot()
 
     if args.date:
@@ -1166,6 +1211,7 @@ def main():
     results_df = run_predictions(
         matchups=matchups,
         all_data=all_data,
+        context_df=context_df,
         model=model,
         snapshot=snapshot,
         version=version,
