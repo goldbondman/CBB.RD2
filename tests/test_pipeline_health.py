@@ -85,3 +85,14 @@ def test_no_future_data_leakage():
                     "actual_away_score", "home_covered"]
     present = [c for c in leakage_cols if c in df.columns]
     assert not present, f"Potential data leakage columns in predictions: {present}"
+
+
+def test_steam_flag_default_fallback_is_vectorized_series():
+    df = pd.DataFrame({"line_movement": [0.0, 1.5]})
+
+    with pytest.raises(AttributeError):
+        df.get("steam_flag", False).astype(str)
+
+    steam_flag = df.get("steam_flag", pd.Series(False, index=df.index, dtype="bool"))
+    mask = steam_flag.astype(str).str.lower() == "true"
+    assert mask.tolist() == [False, False]
