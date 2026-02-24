@@ -581,11 +581,44 @@ def build_predictions_with_context(
         "pred_spread" if "pred_spread" in df.columns
         else "ens_ens_spread"
     )
-    if pred_col in df.columns and "home_spread_open" in df.columns:
-        df["clv_vs_open"] = (
-            pd.to_numeric(df[pred_col], errors="coerce") -
-            pd.to_numeric(df["home_spread_open"], errors="coerce")
-        ).round(3)
+    _pred = pd.to_numeric(df.get(pred_col), errors="coerce")
+    _line_src = "spread_line" if "spread_line" in df.columns else "home_spread_current"
+    _line = pd.to_numeric(df.get(_line_src), errors="coerce")
+    _open = pd.to_numeric(df.get("home_spread_open"), errors="coerce")
+    _home_net = pd.to_numeric(df.get("home_net_eff"), errors="coerce")
+    _away_net = pd.to_numeric(df.get("away_net_eff"), errors="coerce")
+
+    # 1. spread_diff_vs_line: how many pts model disagrees with market
+    #    Positive = model likes home more than market does
+    if "spread_diff_vs_line" not in df.columns or df["spread_diff_vs_line"].isna().all():
+        df["spread_diff_vs_line"] = (_line - _pred).round(2)
+
+    # 2. eff_edge: raw efficiency differential (home minus away net rtg)
+    #    Positive = home team efficiency advantage
+    if "eff_edge" not in df.columns or df["eff_edge"].isna().all():
+        df["eff_edge"] = (_home_net - _away_net).round(2)
+
+    # 3. clv_vs_open: model spread vs opening line
+    #    Measures whether model would have beaten the open
+    if _open.notna().any():
+        df["clv_vs_open"] = (_open - _pred).round(3)
+    else:
+        df["clv_vs_open"] = pd.NA
+
+    # 4. predicted_spread alias — required by config/schemas.py
+    if "predicted_spread" not in df.columns or df["predicted_spread"].isna().all():
+        df["predicted_spread"] = _pred
+
+    # Log coverage
+    n_diff = int(df["spread_diff_vs_line"].notna().sum())
+    n_eff = int(df["eff_edge"].notna().sum())
+    log.info(
+        "Computed context cols: spread_diff_vs_line=%d/%d, "
+        "eff_edge=%d/%d, clv_vs_open=%d/%d, predicted_spread=%d/%d",
+        n_diff, len(df), n_eff, len(df),
+        int(df["clv_vs_open"].notna().sum()), len(df),
+        int(df["predicted_spread"].notna().sum()), len(df),
+    )
 
     # Integrity normalization for downstream consumers.
     df = _normalize_conference_names(df)
