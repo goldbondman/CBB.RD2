@@ -1036,6 +1036,17 @@ def load_team_profiles(
 
     profiles: Dict[str, TeamProfile] = {}
 
+    def col(row, *names, default=0.0):
+        """Try column names in priority order, return first non-null."""
+        for name in names:
+            v = row.get(name)
+            try:
+                if v is not None and not pd.isna(float(v)):
+                    return float(v)
+            except (TypeError, ValueError):
+                continue
+        return default
+
     for _, row in df.iterrows():
         tid = str(row.get("team_id", ""))
         if not tid:
@@ -1052,73 +1063,142 @@ def load_team_profiles(
             team_id=tid,
             team_name=str(row.get("team", "")),
             conference=str(row.get("conference", "")),
-            games_before=int(g("games_played", 0))
-            or int(g("game_number", 0)),
-            cage_em=g("adj_net_rtg"),
-            cage_o=g("adj_ortg", LEAGUE_AVG_ORTG),
-            cage_d=g("adj_drtg", LEAGUE_AVG_DRTG),
-            cage_t=g("adj_pace", LEAGUE_AVG_PACE),
-            barthag=g("barthag", 0.5),
-            efg_pct=g("efg_pct", LEAGUE_AVG_EFG),
-            tov_pct=g("tov_pct", LEAGUE_AVG_TOV),
-            orb_pct=g("orb_pct", 30.0),
-            drb_pct=g("drb_pct", 70.0),
-            ftr=g("ftr", LEAGUE_AVG_FTR),
-            ft_pct=g("ft_pct", 71.0),
-            three_pct=g("three_pct", 33.5),
-            three_par=g("three_par", 35.0),
-            opp_efg_pct=g("opp_avg_efg_season", LEAGUE_AVG_EFG),
-            opp_tov_pct=g("opp_avg_tov_season", LEAGUE_AVG_TOV),
-            opp_ftr=g("opp_avg_ftr_season", LEAGUE_AVG_FTR),
-            efg_vs_opp=g("efg_vs_opp_season", 0.0),
-            tov_vs_opp=g("tov_vs_opp_season", 0.0),
-            orb_vs_opp=g("orb_vs_opp_season", 0.0),
-            ftr_vs_opp=g("ftr_vs_opp_season", 0.0),
-            net_rtg_l5=g("net_rtg_l5", 0.0),
-            net_rtg_l10=g("net_rtg_l10", 0.0),
-            ortg_l5=g("ortg_l5", LEAGUE_AVG_ORTG),
-            ortg_l10=g("ortg_l10", LEAGUE_AVG_ORTG),
-            drtg_l5=g("drtg_l5", LEAGUE_AVG_DRTG),
-            drtg_l10=g("drtg_l10", LEAGUE_AVG_DRTG),
-            pace_l5=g("pace_l5", LEAGUE_AVG_PACE),
-            pace_l10=g("pace_l10", LEAGUE_AVG_PACE),
-            efg_l5=g("efg_l5", LEAGUE_AVG_EFG),
-            efg_l10=g("efg_l10", LEAGUE_AVG_EFG),
-            tov_l5=g("tov_l5", LEAGUE_AVG_TOV),
-            tov_l10=g("tov_l10", LEAGUE_AVG_TOV),
-            three_pct_l5=g("three_pct_l5", 33.5),
-            three_pct_l10=g("three_pct_l10", 33.5),
-            net_rtg_std_l10=g("net_rtg_std_l10", 8.0),
-            efg_std_l10=g("efg_std_l10", 5.0),
-            consistency_score=g("consistency_score", 50.0),
-            suffocation=g("t_suffocation_rating", 50.0),
-            momentum=g("t_momentum_quality_rating", 50.0),
-            clutch_rating=g("clutch_rating", 50.0),
-            floor_em=g("floor_em", -8.0),
-            ceiling_em=g("ceiling_em", 8.0),
-            dna_score=g("t_tournament_dna_score", 50.0),
-            star_risk=g("t_star_reliance_risk", 50.0),
-            regression_risk=int(g("t_regression_risk_flag", 0)),
-            resume_score=g("resume_score", 50.0),
-            cage_power_index=g("cage_power_index", 50.0),
-            luck=g("luck_score", 0.0),
-            pythagorean_win_pct=g("pythagorean_win_pct", 0.5),
-            actual_win_pct=g("season_win_pct", 0.5),
-            home_wpct=g("home_win_pct", 0.65),
-            away_wpct=g("away_win_pct", 0.40),
-            close_wpct=g("close_game_win_pct", 0.50),
-            win_streak=g("win_streak", 0.0),
-            sos=g("opp_avg_net_rtg_season", 0.0),
-            opp_avg_net_rtg=g("opp_avg_net_rtg_season", 0.0),
-            wab=g("wab", 0.0),
-            opp_avg_ortg=g("opp_avg_ortg_season", LEAGUE_AVG_ORTG),
-            opp_avg_drtg=g("opp_avg_drtg_season", LEAGUE_AVG_DRTG),
-            opp_orb_pct=g("opp_avg_orb_season", 30.0),
-            fatigue_index=g("fatigue_index", 0.0),
+            games_before=int(g("games_played", 0)) or int(g("game_number", 0)),
+
+            # Efficiency — try all known column name variants
+            cage_em=col(row, "adj_net_rtg", "net_eff", "net_rtg",
+                        "cage_em", "adj_em", default=0.0),
+            cage_o=col(row, "adj_ortg", "ortg", "off_rtg", "cage_o",
+                       default=LEAGUE_AVG_ORTG),
+            cage_d=col(row, "adj_drtg", "drtg", "def_rtg", "cage_d",
+                       default=LEAGUE_AVG_DRTG),
+            cage_t=col(row, "adj_pace", "pace", "poss", "cage_t",
+                       default=LEAGUE_AVG_PACE),
+            barthag=col(row, "barthag", "barthag_score", default=0.5),
+
+            # Four factors — try both naming conventions
+            efg_pct=col(row, "efg_pct", "eff_fg_pct", default=LEAGUE_AVG_EFG),
+            tov_pct=col(row, "tov_pct", "to_pct", "tov_rate", default=LEAGUE_AVG_TOV),
+            orb_pct=col(row, "orb_pct", "off_reb_pct", default=30.0),
+            drb_pct=col(row, "drb_pct", "def_reb_pct", default=70.0),
+            ftr=col(row, "ftr", "ft_rate", "free_throw_rate", default=LEAGUE_AVG_FTR),
+            ft_pct=col(row, "ft_pct", "ftm_pct", default=71.0),
+            three_pct=col(row, "three_pct", "fg3_pct", "tp_pct", default=33.5),
+            three_par=col(row, "three_par", "fg3_rate", "tp_rate", default=35.0),
+
+            opp_efg_pct=col(row, "opp_avg_efg_season", "opp_efg_pct",
+                            "opp_eff_fg_pct", default=LEAGUE_AVG_EFG),
+            opp_tov_pct=col(row, "opp_avg_tov_season", "opp_tov_pct",
+                            "opp_to_pct", default=LEAGUE_AVG_TOV),
+            opp_ftr=col(row, "opp_avg_ftr_season", "opp_ftr",
+                        "opp_ft_rate", default=LEAGUE_AVG_FTR),
+
+            efg_vs_opp=col(row, "efg_vs_opp_season", "efg_vs_opp",
+                           "off_efg_vs_opp", default=0.0),
+            tov_vs_opp=col(row, "tov_vs_opp_season", "tov_vs_opp",
+                           "off_tov_vs_opp", default=0.0),
+            orb_vs_opp=col(row, "orb_vs_opp_season", "orb_vs_opp",
+                           "off_orb_vs_opp", default=0.0),
+            ftr_vs_opp=col(row, "ftr_vs_opp_season", "ftr_vs_opp",
+                           "off_ftr_vs_opp", default=0.0),
+
+            # Rolling windows — try l5/l10 suffixed variants
+            net_rtg_l5=col(row, "net_rtg_l5", "net_eff_l5",
+                           "adj_net_rtg_l5", default=0.0),
+            net_rtg_l10=col(row, "net_rtg_l10", "net_eff_l10",
+                            "adj_net_rtg_l10", default=0.0),
+            ortg_l5=col(row, "ortg_l5", "off_rtg_l5",
+                        default=LEAGUE_AVG_ORTG),
+            ortg_l10=col(row, "ortg_l10", "off_rtg_l10",
+                         default=LEAGUE_AVG_ORTG),
+            drtg_l5=col(row, "drtg_l5", "def_rtg_l5",
+                        default=LEAGUE_AVG_DRTG),
+            drtg_l10=col(row, "drtg_l10", "def_rtg_l10",
+                         default=LEAGUE_AVG_DRTG),
+            pace_l5=col(row, "pace_l5", "poss_l5", default=LEAGUE_AVG_PACE),
+            pace_l10=col(row, "pace_l10", "poss_l10", default=LEAGUE_AVG_PACE),
+            efg_l5=col(row, "efg_l5", "eff_fg_l5", default=LEAGUE_AVG_EFG),
+            efg_l10=col(row, "efg_l10", "eff_fg_l10", default=LEAGUE_AVG_EFG),
+            tov_l5=col(row, "tov_l5", "to_pct_l5", default=LEAGUE_AVG_TOV),
+            tov_l10=col(row, "tov_l10", "to_pct_l10", default=LEAGUE_AVG_TOV),
+            three_pct_l5=col(row, "three_pct_l5", "fg3_pct_l5", default=33.5),
+            three_pct_l10=col(row, "three_pct_l10", "fg3_pct_l10", default=33.5),
+
+            net_rtg_std_l10=col(row, "net_rtg_std_l10", "net_eff_std_l10",
+                                "net_rtg_std", default=8.0),
+            efg_std_l10=col(row, "efg_std_l10", "eff_fg_std", default=5.0),
+            consistency_score=col(row, "consistency_score",
+                                  "consistency", default=50.0),
+
+            # CAGE composites
+            suffocation=col(row, "t_suffocation_rating", "suffocation",
+                            "suffocation_rating", default=50.0),
+            momentum=col(row, "t_momentum_quality_rating", "momentum",
+                         "momentum_rating", "momentum_score", default=50.0),
+            clutch_rating=col(row, "clutch_rating", "clutch", default=50.0),
+            floor_em=col(row, "floor_em", "floor_net_rtg", default=-8.0),
+            ceiling_em=col(row, "ceiling_em", "ceiling_net_rtg", default=8.0),
+            dna_score=col(row, "t_tournament_dna_score", "dna_score",
+                          "tournament_dna", default=50.0),
+            star_risk=col(row, "t_star_reliance_risk", "star_risk",
+                          "star_reliance", default=50.0),
+            regression_risk=int(col(row, "t_regression_risk_flag",
+                                    "regression_risk", default=0)),
+            resume_score=col(row, "resume_score", "resume", default=50.0),
+            cage_power_index=col(row, "cage_power_index", "power_index",
+                                 "cage_pi", default=50.0),
+
+            # Luck & record
+            luck=col(row, "luck_score", "luck", default=0.0),
+            pythagorean_win_pct=col(row, "pythagorean_win_pct", "pyth_win_pct",
+                                    "pyth_wp", default=0.5),
+            actual_win_pct=col(row, "season_win_pct", "win_pct", default=0.5),
+            home_wpct=col(row, "home_win_pct", "home_wp", default=0.65),
+            away_wpct=col(row, "away_win_pct", "away_wp", default=0.40),
+            close_wpct=col(row, "close_game_win_pct", "close_wp", default=0.50),
+            win_streak=col(row, "win_streak", default=0.0),
+            sos=col(row, "opp_avg_net_rtg_season", "sos", "strength_of_schedule",
+                    default=0.0),
+            opp_avg_net_rtg=col(row, "opp_avg_net_rtg_season",
+                                "opp_avg_net_rtg", default=0.0),
+            wab=col(row, "wab", default=0.0),
+            opp_avg_ortg=col(row, "opp_avg_ortg_season", "opp_avg_ortg",
+                             default=LEAGUE_AVG_ORTG),
+            opp_avg_drtg=col(row, "opp_avg_drtg_season", "opp_avg_drtg",
+                             default=LEAGUE_AVG_DRTG),
+            opp_orb_pct=col(row, "opp_avg_orb_season", "opp_orb_pct", default=30.0),
+            fatigue_index=col(row, "fatigue_index", default=0.0),
+
+            # ATS
+            cover_rate_season=col(row, "cover_rate_season",
+                                  "ats_cover_rate", default=0.5),
+            cover_rate_l10=col(row, "cover_rate_l10", default=0.5),
+            ats_margin_l10=col(row, "ats_margin_l10", default=0.0),
+            cover_margin=col(row, "cover_margin", default=0.0),
+            cover_streak=col(row, "cover_streak", default=0.0),
+            momentum_tier=str(row.get("momentum_tier") or
+                              row.get("t_momentum_tier") or ""),
+            ha_net_rtg_l10=col(row, "ha_net_rtg_l10", "ha_net_eff_l10",
+                               default=0.0),
         )
         profiles[tid] = tp
 
-    log.info("Loaded %d team profiles", len(profiles))
+    # Log how many teams have non-default cage_em (detects column mismatch)
+    non_default = sum(1 for p in profiles.values() if p.cage_em != 0.0)
+    if non_default == 0:
+        log.warning(
+            "ALL %d team profiles have cage_em=0.0 — column name mismatch "
+            "likely. Expected 'adj_net_rtg' or 'net_eff' in source CSV. "
+            "Actual columns: %s",
+            len(profiles),
+            [c for c in df.columns if 'net' in c.lower() or 'eff' in c.lower()][:10],
+        )
+    else:
+        log.info(
+            "Loaded %d team profiles, %d with non-default cage_em",
+            len(profiles), non_default,
+        )
+
     return profiles
 
 
