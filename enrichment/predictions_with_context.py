@@ -672,7 +672,7 @@ def build_predictions_with_context(
                             pd.to_numeric(df.get(_gu_col), errors="coerce")
                         )
 
-        non_null = int(
+        n_mom = int(
             df.get("home_momentum_score", pd.Series(dtype=float)).notna().sum()
         )
         log.info(
