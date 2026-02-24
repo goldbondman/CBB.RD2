@@ -421,7 +421,23 @@ def build_predictions_with_context(
             market_cols = ["event_id"] + expected_market_cols
             available = [c for c in market_cols if c in market_latest.columns]
 
+            # Preserve pred_spread before dropping market columns.
+            # market_lines.csv has a 'spread' column that can collide
+            # with and wipe out the model's predicted spread.
+            _pred_spread_backup = None
+            _ens_spread_backup = None
+            if "pred_spread" in df.columns:
+                _pred_spread_backup = df["pred_spread"].copy()
+            if "ens_ens_spread" in df.columns:
+                _ens_spread_backup = df["ens_ens_spread"].copy()
+
             drop_cols = [c for c in expected_market_cols if c in df.columns]
+            # Never drop pred_spread or ens_ens_spread — they are model outputs,
+            # not market inputs, even if they share a name with a market column.
+            drop_cols = [
+                c for c in drop_cols
+                if c not in ("pred_spread", "ens_ens_spread", "predicted_spread")
+            ]
             df = df.drop(columns=drop_cols, errors="ignore")
 
             df["event_id"] = df["event_id"].astype(str).str.strip()
@@ -433,14 +449,30 @@ def build_predictions_with_context(
             df = df.merge(
                 market_latest[available], on="event_id", how="left"
             )
-            if "pred_spread" in df.columns:
-                null_rate = df["pred_spread"].isna().mean()
-                if null_rate > 0.5:
-                    log.error(
-                        "pred_spread is %.0f%% null after merge — "
-                        "likely column collision with market 'spread'",
-                        null_rate * 100,
+            # Restore pred_spread if the merge overwrote it
+            if _pred_spread_backup is not None:
+                if (
+                    "pred_spread" not in df.columns
+                    or df["pred_spread"].isna().mean() > 0.5
+                ):
+                    df["pred_spread"] = _pred_spread_backup.values
+                    log.info(
+                        "pred_spread restored from pre-merge backup (%d non-null)",
+                        int(_pred_spread_backup.notna().sum()),
                     )
+                else:
+                    null_rate = df["pred_spread"].isna().mean()
+                    if null_rate > 0.1:
+                        # Partially overwritten — fill nulls from backup
+                        df["pred_spread"] = df["pred_spread"].fillna(
+                            _pred_spread_backup
+                        )
+                        log.info("pred_spread partially restored (%d%% were null)",
+                                 int(null_rate * 100))
+
+            if _ens_spread_backup is not None and "ens_ens_spread" in df.columns:
+                if df["ens_ens_spread"].isna().mean() > 0.5:
+                    df["ens_ens_spread"] = _ens_spread_backup.values
             market_signal_cols = [
                 c for c in [
                     "home_spread_current", "home_spread_open", "line_movement",
