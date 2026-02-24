@@ -374,7 +374,33 @@ def build_predictions_with_context(
 
     df = pd.read_csv(predictions_path, dtype={"event_id": str})
     df = normalize_numeric_dtypes(df)
+
+    # Save model spread columns BEFORE normalize_column_names(),
+    # which may rename pred_spread -> spread or similar, causing
+    # it to be silently dropped by the market column drop loop.
+    _pred_spread_saved = None
+    _ens_spread_saved = None
+    if "pred_spread" in df.columns:
+        _pred_spread_saved = df["pred_spread"].copy()
+    if "ens_ens_spread" in df.columns:
+        _ens_spread_saved = df["ens_ens_spread"].copy()
+
     df = normalize_column_names(df)
+
+    # Restore after normalization in case it renamed them
+    if _pred_spread_saved is not None and (
+        "pred_spread" not in df.columns
+        or df["pred_spread"].isna().mean() > 0.5
+    ):
+        df["pred_spread"] = _pred_spread_saved.values
+        log.debug("pred_spread restored after normalize_column_names")
+    if _ens_spread_saved is not None and (
+        "ens_ens_spread" not in df.columns
+        or df["ens_ens_spread"].isna().mean() > 0.5
+    ):
+        df["ens_ens_spread"] = _ens_spread_saved.values
+        log.debug("ens_ens_spread restored after normalize_column_names")
+
     if "event_id" not in df.columns:
         if "game_id" in df.columns:
             df["event_id"] = df["game_id"].astype(str).str.strip()
@@ -437,6 +463,13 @@ def build_predictions_with_context(
             drop_cols = [
                 c for c in drop_cols
                 if c not in ("pred_spread", "ens_ens_spread", "predicted_spread")
+            # Drop market columns from df before merge — but NEVER drop
+            # model output columns even if they share a name with a market col.
+            _protected = {"pred_spread", "ens_ens_spread", "predicted_spread",
+                          "pred_total", "pred_home_score", "pred_away_score"}
+            drop_cols = [
+                c for c in expected_market_cols
+                if c in df.columns and c not in _protected
             ]
             df = df.drop(columns=drop_cols, errors="ignore")
 
@@ -587,10 +620,8 @@ def build_predictions_with_context(
                 "form_rating", "recent_form", "form_score",
                 "t_form_rating",
             ],
-            "momentum_tier":   [
-                "momentum_tier", "t_momentum_tier",
-                "momentum_category",
-            ],
+            # momentum_tier is derived from momentum_score after merge
+            # (not present in source CSV — see derivation block below)
             "luck_score":      ["luck_score", "luck"],
             "ha_net_rtg_l10":  [
                 "ha_net_rtg_l10", "ha_net_eff_l10",
@@ -620,7 +651,10 @@ def build_predictions_with_context(
 
         # Build slim lookup frame
         slim_data = {"team_id": _ctx_df["team_id"].astype(str).str.strip()}
+        _DERIVED_FIELDS = {"momentum_tier"}  # computed post-merge
         for field, candidates in _ctx_field_map.items():
+            if field in _DERIVED_FIELDS:
+                continue
             for cand in candidates:
                 if cand in _ctx_df.columns:
                     slim_data[field] = _ctx_df[cand].values
@@ -638,20 +672,24 @@ def build_predictions_with_context(
 
         slim = pd.DataFrame(slim_data)
 
-        # ── DROP pre-existing null collision columns before merge ──
-        # These columns exist in predictions_combined_latest.csv as
-        # nulls. Drop them so the merge writes clean values instead
-        # of creating _x/_y suffixed collision columns.
+        # Drop pre-existing null collision columns before the context merge.
+        # Also drop _x/_y suffixed variants — these appear when
+        # predictions_combined_latest.csv was already produced by a workflow
+        # merge that added suffixes (e.g. home_momentum_score_x from the
+        # runner+ensemble merge step). If left in place, the context merge
+        # adds a second _y column alongside the existing _x column.
         collision_cols = []
         for field in _ctx_field_map:
             for prefix in ["home_", "away_"]:
-                col = f"{prefix}{field}"
-                if col in df.columns and df[col].isna().all():
-                    collision_cols.append(col)
+                base = f"{prefix}{field}"
+                for variant in [base, f"{base}_x", f"{base}_y"]:
+                    if variant in df.columns and df[variant].isna().all():
+                        collision_cols.append(variant)
         if collision_cols:
             df = df.drop(columns=collision_cols)
             log.debug(
-                "Dropped %d pre-existing null columns before context merge: %s",
+                "Dropped %d pre-existing null columns before context merge "
+                "(including _x/_y variants): %s",
                 len(collision_cols), collision_cols
             )
 
@@ -672,6 +710,34 @@ def build_predictions_with_context(
         })
         df["away_team_id"] = df["away_team_id"].astype(str).str.strip()
         df = df.merge(away_slim, on="away_team_id", how="left")
+
+        # Derive momentum_tier from momentum_score when source
+        # CSV doesn't have a tier column directly
+        for _side in ["home", "away"]:
+            _tier_col = f"{_side}_momentum_tier"
+            _score_col = f"{_side}_momentum_score"
+            if _tier_col not in df.columns or df[_tier_col].isna().all():
+                if _score_col in df.columns:
+                    _score = pd.to_numeric(
+                        df[_score_col], errors="coerce"
+                    )
+                    df[_tier_col] = pd.cut(
+                        _score,
+                        bins=[-999, 40, 50, 60, 70, 999],
+                        labels=["COLD", "NEUTRAL", "WARM",
+                                "HOT", "ELITE"],
+                        right=True,
+                    ).astype(str).replace("nan", pd.NA)
+
+        n_mom = int(
+            df.get("home_momentum_score",
+                   pd.Series(dtype=float)).notna().sum()
+        )
+        log.info(
+            "Team profile context merged: %d/%d games have "
+            "home_momentum_score",
+            n_mom, len(df)
+        )
 
         # Fix games_used with season total when > 1
         for side in ["home", "away"]:
@@ -704,7 +770,7 @@ def build_predictions_with_context(
                             pd.to_numeric(df.get(_gu_col), errors="coerce")
                         )
 
-        non_null = int(
+        n_mom = int(
             df.get("home_momentum_score", pd.Series(dtype=float)).notna().sum()
         )
         log.info(
