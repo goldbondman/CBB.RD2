@@ -10,6 +10,80 @@ from espn_config import PIPELINE_RUN_ID
 
 logger = get_logger(__name__)
 
+ESPN_CONFERENCE_MAP: dict[str, str] = {
+    "1": "Atlantic Coast Conference",
+    "2": "Big East",
+    "3": "Big Ten",
+    "4": "Big 12",
+    "5": "Conference USA",
+    "7": "Pac-12",
+    "8": "Southeastern Conference",
+    "9": "Atlantic 10",
+    "10": "Western Athletic Conference",
+    "11": "Missouri Valley Conference",
+    "12": "Mountain West",
+    "13": "Metro Atlantic Athletic Conference",
+    "14": "Mid-American Conference",
+    "15": "Big Sky Conference",
+    "16": "Southern Conference",
+    "17": "Big South",
+    "18": "Ohio Valley Conference",
+    "19": "Sun Belt Conference",
+    "20": "Southland Conference",
+    "21": "Northeast Conference",
+    "22": "Independent",
+    "23": "Patriot League",
+    "24": "Colonial Athletic Association",
+    "25": "Horizon League",
+    "26": "Southwestern Athletic Conference",
+    "27": "Mid-Eastern Athletic Conference",
+    "28": "Summit League",
+    "29": "America East Conference",
+    "30": "Atlantic Sun Conference",
+    "31": "Big Ten",
+    "32": "American Athletic Conference",
+    "33": "Conference USA",
+    "34": "Ivy League",
+    "35": "West Coast Conference",
+    "36": "Western Athletic Conference",
+    "37": "Big West Conference",
+    "44": "Independents",
+    "45": "Horizon League",
+    "46": "Missouri Valley Conference",
+    "49": "Big Ten",
+    "50": "Mid-American Conference",
+    "62": "Atlantic Coast Conference",
+}
+
+
+def add_conference_name(df: pd.DataFrame) -> pd.DataFrame:
+    """Attach canonical conference_name values for all conference-like columns."""
+    if df.empty:
+        return df
+
+    out = df.copy()
+
+    def _translate(value: object) -> str:
+        if value is None or pd.isna(value):
+            return ""
+        text = str(value).strip()
+        if not text:
+            return ""
+        return ESPN_CONFERENCE_MAP.get(text, text)
+
+    for col in ("conference", "home_conference", "away_conference"):
+        if col in out.columns:
+            out[col] = out[col].apply(_translate)
+
+    if "conference_name" in out.columns:
+        out["conference_name"] = out["conference_name"].apply(_translate)
+    elif "conference" in out.columns:
+        out["conference_name"] = out["conference"].apply(_translate)
+    elif "home_conference" in out.columns:
+        out["conference_name"] = out["home_conference"].apply(_translate)
+
+    return out
+
 PRIMARY_KEYS_MAP: dict[str, list[str]] = {
     'team_game_metrics.csv': ['event_id', 'team_id'],
     'team_game_logs.csv': ['event_id', 'team_id'],
@@ -111,6 +185,7 @@ def safe_write_csv(
     """Apply deterministic dedupe, stamp run_id, validate schema, and persist atomically."""
     p = pathlib.Path(path)
     out = dedupe_by_primary_key(df, p)
+    out = add_conference_name(out)
 
     if out.empty and not allow_empty:
         logger.warning("%s is empty; skipping write to %s", label or p.stem, p)
