@@ -13,7 +13,17 @@ from typing import Optional
 import pandas as pd
 import requests
 
-from espn_gap_fillers import fill_market_row_gaps
+try:
+    from espn_gap_fillers import fill_market_row_gaps
+except ImportError:
+    logging.getLogger(__name__).warning(
+        "espn_gap_fillers not found — gap-fill enrichment disabled. "
+        "Market lines will capture ESPN data only."
+    )
+
+    def fill_market_row_gaps(row: dict) -> dict:  # noqa: E306
+        """No-op fallback when espn_gap_fillers is unavailable."""
+        return row
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(message)s")
