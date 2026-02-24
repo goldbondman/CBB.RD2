@@ -40,36 +40,22 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Verify artifact handoff inputs
+      - name: Initialize data directory
         run: |
           mkdir -p data
 
-          # ── Try artifact first (populated after first run) ──
-          # (artifact download steps above with continue-on-error
-          # already ran — files exist in data/ if found)
+          # Show what the artifact download provided
+          echo "=== Files available after artifact download ==="
+          ls -lh data/predictions*.csv 2>/dev/null || \
+            echo "[INFO] No prediction files found (market_lines.py will use ESPN directly)"
+          ls -lh data/market_lines.csv 2>/dev/null || \
+            echo "[INFO] No existing market_lines.csv found"
 
-          # ── Fallback: fetch today's predictions from ESPN ───
-          # If no predictions file exists, run a lightweight fetch
-          # so market_lines.py has games to match against.
-          if [ ! -f data/predictions_latest.csv ] && \
-             [ ! -f data/predictions_combined_latest.csv ]; then
-            echo "[INFO] No predictions artifact found."
-            echo "[INFO] market_lines.py will use ESPN scoreboard"
-            echo "[INFO] directly — no predictions file required."
-          else
-            echo "[OK] Predictions file available."
-            ls -lh data/predictions*.csv 2>/dev/null || true
-          fi
-
-          # ── Initialize empty market_lines.csv if missing ────
+          # Initialize empty market_lines.csv on first run
           if [ ! -f data/market_lines.csv ]; then
-            echo "event_id,capture_type,captured_at_utc,home_team,away_team,game_time_utc,home_spread_open,home_spread_current,line_movement,total_open,total_current,pinnacle_spread,draftkings_spread,home_tickets_pct,away_tickets_pct,home_money_pct,away_money_pct,steam_flag,rlm_flag,rlm_sharp_side,rlm_note,book_disagreement_flag,book_spread_diff,book_sharp_side,line_freeze_flag" \
-              > data/market_lines.csv
+            echo "event_id,capture_type,captured_at_utc,home_spread_open,\nhome_spread_current,line_movement,total_open,total_current,\npinnacle_spread,draftkings_spread,home_tickets_pct,away_tickets_pct,\nhome_money_pct,away_money_pct,steam_flag,rlm_flag,rlm_sharp_side,\nrlm_note,book_disagreement_flag,book_spread_diff,book_sharp_side,\nline_freeze_flag" > data/market_lines.csv
             echo "[INIT] Created empty market_lines.csv with headers"
           fi
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
 
       - name: Capture market lines
         run: |
