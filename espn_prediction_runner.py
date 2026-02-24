@@ -638,6 +638,8 @@ def run_predictions(
         totals_proj = model_total(home_ctx, away_ctx)
         line_advisory = line_shopping_advisory(pred_spread, spread_line)
 
+        _poss = totals_proj.get("projected_poss")
+
         row = {
             "game_id": game_id,
             "game_datetime_utc": matchup.get("game_datetime_utc"),
@@ -650,7 +652,8 @@ def run_predictions(
             "pred_spread": round(pred_spread, 2),
             "pred_total": round(prediction["predicted_total"], 2),
             "projected_total": totals_proj.get("projected_total"),
-            "projected_poss": totals_proj.get("projected_poss"),
+            "projected_poss": _poss,
+            "pace_projected": _poss,
             "total_confidence_adj": totals_proj.get("total_confidence_adj"),
             "pred_home_score": round(prediction["predicted_total"] / 2 - pred_spread / 2, 1),
             "pred_away_score": round(prediction["predicted_total"] / 2 + pred_spread / 2, 1),
@@ -660,8 +663,6 @@ def run_predictions(
             "kelly_multiplier": alpha["kelly_multiplier"],
             "market_evaluated": alpha["market_evaluated"],
             "edge_pts": alpha["edge_pts"],
-            "pace_projected": round(prediction["pace"], 1),
-
             "home_net_eff": round(prediction["home_net_eff"], 2),
             "away_net_eff": round(prediction["away_net_eff"], 2),
             "home_off_eff_vs_exp": round(prediction["home_off_eff_vs_exp"], 2),
