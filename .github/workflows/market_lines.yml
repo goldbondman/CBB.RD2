@@ -34,47 +34,22 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Verify artifact handoff inputs
+      - name: Initialize data directory
         run: |
-          echo "=== Prediction files available ==="
+          mkdir -p data
 
-          fallback() {
-            local file=$1
-            if [ -f "$file" ]; then
-              echo "[OK] $file ($(wc -l < $file) lines)"
-            else
-              if git show HEAD:"$file" > "$file" 2>/dev/null; then
-                echo "[FALLBACK] $file restored from repo ($(wc -l < $file) lines)"
-              else
-                echo "[WARN] $file not available from artifact or repo"
-              fi
-            fi
-          }
+          # Show what the artifact download provided
+          echo "=== Files available after artifact download ==="
+          ls -lh data/predictions*.csv 2>/dev/null || \
+            echo "[INFO] No prediction files found (market_lines.py will use ESPN directly)"
+          ls -lh data/market_lines.csv 2>/dev/null || \
+            echo "[INFO] No existing market_lines.csv found"
 
-          fallback data/predictions_latest.csv
-          fallback data/market_lines.csv
-
-          for f in \
-            data/predictions_combined_latest.csv \
-            data/predictions_rolling_latest.csv \
-            data/ensemble_predictions_latest.csv; do
-            if [ -f "$f" ]; then
-              echo "[OK] $f"
-            else
-              git show HEAD:"$f" > "$f" 2>/dev/null && \
-                echo "[FALLBACK] $f from repo" || \
-                echo "[SKIP] $f not available"
-            fi
-          done
-
-          if [ ! -f data/predictions_combined_latest.csv ] && \
-             [ -f data/predictions_latest.csv ]; then
-            cp data/predictions_latest.csv data/predictions_combined_latest.csv
-            echo "[ALIAS] predictions_combined_latest.csv created from predictions_latest.csv"
+          # Initialize empty market_lines.csv on first run
+          if [ ! -f data/market_lines.csv ]; then
+            echo "event_id,capture_type,captured_at_utc,home_spread_open,\nhome_spread_current,line_movement,total_open,total_current,\npinnacle_spread,draftkings_spread,home_tickets_pct,away_tickets_pct,\nhome_money_pct,away_money_pct,steam_flag,rlm_flag,rlm_sharp_side,\nrlm_note,book_disagreement_flag,book_spread_diff,book_sharp_side,\nline_freeze_flag" > data/market_lines.csv
+            echo "[INIT] Created empty market_lines.csv with headers"
           fi
-
-          echo "=== Final state ==="
-          ls -lh data/predictions*.csv 2>/dev/null
 
       - name: Capture market lines
         run: |
