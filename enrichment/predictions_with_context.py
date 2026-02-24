@@ -373,6 +373,7 @@ def build_predictions_with_context(
 
     df = pd.read_csv(predictions_path, dtype={"event_id": str})
     df = normalize_numeric_dtypes(df)
+    df = normalize_column_names(df)
     if "event_id" not in df.columns:
         if "game_id" in df.columns:
             df["event_id"] = df["game_id"].astype(str).str.strip()
@@ -397,6 +398,7 @@ def build_predictions_with_context(
     if market_path.exists():
         market = pd.read_csv(market_path, dtype={"event_id": str})
         market = normalize_numeric_dtypes(market)
+        market = normalize_column_names(market)
     else:
         market = _build_market_lines_fallback(df, market_path)
 

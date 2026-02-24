@@ -43,6 +43,40 @@ BOOK_DISAGREE_POINTS = 1.5
 PUBLIC_BET_THRESHOLD = 65
 RLM_LINE_MOVE_MIN = 0.5
 
+MARKET_LINES_SCHEMA_COLUMNS = [
+    "event_id", "capture_type", "captured_at_utc", "pulled_at_utc",
+    "verification_status", "verification_notes",
+    "home_spread_open", "home_spread_current", "line_movement",
+    "total_open", "total_current", "pinnacle_spread", "draftkings_spread",
+    "home_tickets_pct", "away_tickets_pct", "home_money_pct", "away_money_pct",
+    "steam_flag", "rlm_flag", "rlm_sharp_side", "rlm_note",
+    "book_disagreement_flag", "book_spread_diff", "book_sharp_side", "book_note",
+    "line_freeze_flag", "home_win_prob", "away_win_prob",
+    "home_ats_wins", "home_ats_losses", "away_ats_wins", "away_ats_losses",
+    "home_team_id", "away_team_id",
+]
+
+
+def bootstrap_market_lines_schema(data_dir: Path) -> Path:
+    """Ensure market_lines.csv exists and has required schema columns."""
+    market_path = data_dir / "market_lines.csv"
+    market_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if market_path.exists():
+        df = pd.read_csv(market_path, dtype={"event_id": str}, low_memory=False)
+    else:
+        df = pd.DataFrame(columns=MARKET_LINES_SCHEMA_COLUMNS)
+
+    for col in MARKET_LINES_SCHEMA_COLUMNS:
+        if col not in df.columns:
+            df[col] = pd.NA
+
+    ordered = [c for c in MARKET_LINES_SCHEMA_COLUMNS if c in df.columns]
+    remainder = [c for c in df.columns if c not in ordered]
+    df = df[ordered + remainder]
+    df.to_csv(market_path, index=False)
+    return market_path
+
 
 def fetch_action_network(game_date: date) -> list[dict]:
     date_str = game_date.strftime("%Y%m%d")
@@ -389,6 +423,9 @@ def build_market_row(
         "event_id": event_id,
         "capture_type": capture_type,
         "captured_at_utc": now,
+        "pulled_at_utc": now,
+        "verification_status": "verified",
+        "verification_notes": "matched_espn_event",
         "home_spread_open": spread_open,
         "home_spread_current": home_spread,
         "line_movement": line_movement,
@@ -427,11 +464,20 @@ def append_market_rows(new_rows: list[dict], output_path: Path) -> int:
         return 0
 
     df_new["event_id"] = df_new["event_id"].astype(str)
+    if "pulled_at_utc" not in df_new.columns:
+        df_new["pulled_at_utc"] = df_new.get("captured_at_utc")
+    if "verification_status" not in df_new.columns:
+        df_new["verification_status"] = "verified"
+    if "verification_notes" not in df_new.columns:
+        df_new["verification_notes"] = "matched_espn_event"
     df_new["capture_hour"] = pd.to_datetime(df_new["captured_at_utc"], utc=True).dt.floor("H")
 
     if output_path.exists():
         df_existing = pd.read_csv(output_path, dtype={"event_id": str})
         df_existing = normalize_numeric_dtypes(df_existing)
+        for col in MARKET_LINES_SCHEMA_COLUMNS:
+            if col not in df_existing.columns:
+                df_existing[col] = pd.NA
         if "capture_hour" not in df_existing.columns:
             df_existing["capture_hour"] = pd.to_datetime(df_existing["captured_at_utc"], utc=True).dt.floor("H").astype(str)
         df_existing["capture_hour"] = df_existing["capture_hour"].astype(str)
@@ -461,7 +507,7 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
     today = override_date or date.today()
     log.info("Market capture mode=%s date=%s", mode, today)
 
-    market_path = data_dir / "market_lines.csv"
+    market_path = bootstrap_market_lines_schema(data_dir)
     existing = pd.read_csv(market_path, dtype={"event_id": str}) if market_path.exists() else pd.DataFrame()
     existing = normalize_numeric_dtypes(existing)
 
@@ -545,6 +591,20 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
 
     inserted = append_market_rows(new_rows, market_path) if new_rows else 0
     rejected = max(len(espn_events) - matched, 0)
+
+    if not market_path.exists():
+        raise RuntimeError(f"Market lines write failed: file missing at {market_path}")
+    written_df = pd.read_csv(market_path, dtype={"event_id": str}, low_memory=False)
+    required_cols = ["event_id", "pulled_at_utc", "verification_status", "verification_notes"]
+    missing_cols = [c for c in required_cols if c not in written_df.columns]
+    if missing_cols:
+        raise RuntimeError(f"Market lines write failed: missing columns {missing_cols} in {market_path}")
+    log.info(
+        "Market post-write assertion passed: pulled=%s inserted=%s rejected=%s",
+        len(espn_events),
+        inserted,
+        rejected,
+    )
     rows_with_pinnacle = sum(1 for row in new_rows if row.get("pinnacle_spread") is not None)
     rows_with_dk = sum(1 for row in new_rows if row.get("draftkings_spread") is not None)
     log.info(
@@ -585,6 +645,8 @@ def main() -> None:
         from espn_config import DATA_DIR
     except ImportError:
         DATA_DIR = Path("data")
+
+    bootstrap_market_lines_schema(DATA_DIR)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["morning", "pregame", "postgame", "all"], default="pregame")

@@ -47,6 +47,26 @@ def normalize_numeric_dtypes(
     for col in cols:
         if col in out.columns:
             out[col] = pd.to_numeric(out[col], errors='coerce').astype('Float64')
+COLUMN_ALIASES: dict[str, list[str]] = {
+    'event_id': ['game_id', 'eventId', 'gameId'],
+    'pred_spread': ['predicted_spread', 'prediction_spread'],
+    'home_ml': ['home_money_line', 'home_moneyline'],
+    'away_ml': ['away_money_line', 'away_moneyline'],
+    'cover': ['ats_cover', 'cover_result'],
+    'cover_margin': ['ats_margin', 'margin_vs_spread'],
+}
+
+
+def normalize_column_names(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize known aliases to canonical pipeline column names."""
+    out = df.copy()
+    for canonical, aliases in COLUMN_ALIASES.items():
+        if canonical in out.columns:
+            continue
+        for alias in aliases:
+            if alias in out.columns:
+                out = out.rename(columns={alias: canonical})
+                break
     return out
 
 
