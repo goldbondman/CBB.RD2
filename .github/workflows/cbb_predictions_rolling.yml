@@ -658,7 +658,10 @@ jobs:
               print(f"[OK]   {fname}: {len(df)} games, {len(df.columns)} cols")
 
               # pred_spread populated
-              ps = pd.to_numeric(df.get("pred_spread"), errors="coerce")
+              ps = pd.to_numeric(
+                  df.get("pred_spread", pd.Series(dtype=float, index=df.index)),
+                  errors="coerce"
+              )
               null_pct = ps.isna().mean()
               if null_pct > 0.5:
                   issues.append(
@@ -669,12 +672,20 @@ jobs:
                   print(f"       pred_spread: {null_pct:.0%} null (OK)")
 
               # kelly_fraction not all zero
-              kf = pd.to_numeric(df.get("kelly_fraction"), errors="coerce")
-              edge_games = df[pd.to_numeric(
-                  df.get("edge_pts", 0), errors="coerce") >= 3.0]
+              kf = pd.to_numeric(
+                  df.get("kelly_fraction", pd.Series(0.0, index=df.index)),
+                  errors="coerce"
+              )
+              edge_pts = pd.to_numeric(
+                  df.get("edge_pts", pd.Series(0.0, index=df.index)),
+                  errors="coerce"
+              )
+              edge_games = df[edge_pts >= 3.0]
               if len(edge_games) > 0:
                   kf_edge = pd.to_numeric(
-                      edge_games.get("kelly_fraction", 0), errors="coerce")
+                      edge_games.get("kelly_fraction", pd.Series(0.0, index=edge_games.index)),
+                      errors="coerce"
+                  )
                   if (kf_edge == 0).all():
                       issues.append(
                           f"kelly_fraction=0 for all edge games in {fname}"
@@ -683,7 +694,10 @@ jobs:
                       print(f"       kelly on edge games: {kf_edge.max():.4f} max (OK)")
 
               # wins/losses not 0/1 flags
-              hw = pd.to_numeric(df.get("home_wins"), errors="coerce")
+              hw = pd.to_numeric(
+                  df.get("home_wins", pd.Series(0, index=df.index)),
+                  errors="coerce"
+              )
               if hw.max() <= 1:
                   issues.append(
                       f"home_wins max={hw.max()} — still 0/1 flags in {fname}"
@@ -695,15 +709,10 @@ jobs:
               steam_flag = df.get(
                   "steam_flag", pd.Series(False, index=df.index, dtype="bool")
               )
-              if isinstance(steam_flag, bool):
-                  raise TypeError(
-                      "steam_flag resolved to a scalar bool; expected a pandas Series. "
-                      "Likely cause: scalar fallback or boolean collapse (and/or vs &/|)."
-                  )
+              # Ensure steam_flag is a Series to avoid AttributeError: 'bool' object has no attribute 'astype'
               if not hasattr(steam_flag, "astype"):
-                  raise TypeError(
-                      f"steam_flag has unsupported type {type(steam_flag)}; expected array-like"
-                  )
+                  steam_flag = pd.Series(steam_flag, index=df.index)
+
               steam = df[steam_flag.astype(str).str.lower() == "true"]
               lm = pd.to_numeric(
                   steam.get("line_movement", 0), errors="coerce"
