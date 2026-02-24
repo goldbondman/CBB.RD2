@@ -555,10 +555,8 @@ def build_predictions_with_context(
                 "form_rating", "recent_form", "form_score",
                 "t_form_rating",
             ],
-            "momentum_tier":   [
-                "momentum_tier", "t_momentum_tier",
-                "momentum_category",
-            ],
+            # momentum_tier is derived from momentum_score after merge
+            # (not present in source CSV — see derivation block below)
             "luck_score":      ["luck_score", "luck"],
             "ha_net_rtg_l10":  [
                 "ha_net_rtg_l10", "ha_net_eff_l10",
@@ -588,7 +586,10 @@ def build_predictions_with_context(
 
         # Build slim lookup frame
         slim_data = {"team_id": _ctx_df["team_id"].astype(str).str.strip()}
+        _DERIVED_FIELDS = {"momentum_tier"}  # computed post-merge
         for field, candidates in _ctx_field_map.items():
+            if field in _DERIVED_FIELDS:
+                continue
             for cand in candidates:
                 if cand in _ctx_df.columns:
                     slim_data[field] = _ctx_df[cand].values
@@ -641,6 +642,34 @@ def build_predictions_with_context(
         df["away_team_id"] = df["away_team_id"].astype(str).str.strip()
         df = df.merge(away_slim, on="away_team_id", how="left")
 
+        # Derive momentum_tier from momentum_score when source
+        # CSV doesn't have a tier column directly
+        for _side in ["home", "away"]:
+            _tier_col = f"{_side}_momentum_tier"
+            _score_col = f"{_side}_momentum_score"
+            if _tier_col not in df.columns or df[_tier_col].isna().all():
+                if _score_col in df.columns:
+                    _score = pd.to_numeric(
+                        df[_score_col], errors="coerce"
+                    )
+                    df[_tier_col] = pd.cut(
+                        _score,
+                        bins=[-999, 40, 50, 60, 70, 999],
+                        labels=["COLD", "NEUTRAL", "WARM",
+                                "HOT", "ELITE"],
+                        right=True,
+                    ).astype(str).replace("nan", pd.NA)
+
+        n_mom = int(
+            df.get("home_momentum_score",
+                   pd.Series(dtype=float)).notna().sum()
+        )
+        log.info(
+            "Team profile context merged: %d/%d games have "
+            "home_momentum_score",
+            n_mom, len(df)
+        )
+
         # Fix games_used with season total when > 1
         for side in ["home", "away"]:
             gps_col = f"{side}_games_played_season"
@@ -672,14 +701,6 @@ def build_predictions_with_context(
                             pd.to_numeric(df.get(_gu_col), errors="coerce")
                         )
 
-        non_null = int(
-            df.get("home_momentum_score", pd.Series(dtype=float)).notna().sum()
-        )
-        log.info(
-            "Team profile context merged: %d/%d games have "
-            "home_momentum_score (0 = source column not found in CSV)",
-            n_mom, len(df)
-        )
     else:
         log.warning(
             "No team context source found. Checked: %s",
