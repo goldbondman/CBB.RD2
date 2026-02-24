@@ -664,8 +664,19 @@ jobs:
                   print(f"       home_wins: max={hw.max()} (OK — season totals)")
 
               # steam false positives
-              steam = df[df.get("steam_flag", False)
-                          .astype(str).str.lower() == "true"]
+              steam_flag = df.get(
+                  "steam_flag", pd.Series(False, index=df.index, dtype="bool")
+              )
+              if isinstance(steam_flag, bool):
+                  raise TypeError(
+                      "steam_flag resolved to a scalar bool; expected a pandas Series. "
+                      "Likely cause: scalar fallback or boolean collapse (and/or vs &/|)."
+                  )
+              if not hasattr(steam_flag, "astype"):
+                  raise TypeError(
+                      f"steam_flag has unsupported type {type(steam_flag)}; expected array-like"
+                  )
+              steam = df[steam_flag.astype(str).str.lower() == "true"]
               lm = pd.to_numeric(
                   steam.get("line_movement", 0), errors="coerce"
               ) if len(steam) > 0 else pd.Series(dtype=float)
