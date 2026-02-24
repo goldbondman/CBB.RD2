@@ -80,12 +80,30 @@ def _enrich_win_loss_records(df: pd.DataFrame) -> pd.DataFrame:
         log.warning("Skipping team record enrichment: missing home_team_id/away_team_id")
         return df
 
-    # Keep existing non-zero values if they already exist.
-    has_nonzero_records = False
     if {"home_wins", "away_wins"}.issubset(df.columns):
-        has_nonzero_records = bool(df["home_wins"].fillna(0).gt(0).any() or df["away_wins"].fillna(0).gt(0).any())
-    if has_nonzero_records:
-        return df
+        # A value of 0 or 1 is ambiguous — could be a binary game win flag.
+        # Only skip enrichment if values clearly represent season totals
+        # (i.e. at least one team has more than 1 win).
+        max_wins = max(
+            df["home_wins"].fillna(0).max(),
+            df["away_wins"].fillna(0).max(),
+        )
+        if max_wins > 1:
+            log.debug(
+                "Skipping team record enrichment: "
+                "home_wins max=%s (appears to be season totals already)", max_wins
+            )
+            return df
+        elif max_wins == 1:
+            log.info(
+                "home_wins max=1 — treating as binary game flag, not season total. "
+                "Overwriting with season W-L records."
+            )
+            # Drop the binary columns so the enrichment writes fresh season values
+            df = df.drop(
+                columns=["home_wins", "away_wins", "home_losses", "away_losses"],
+                errors="ignore",
+            )
 
     team_ids = sorted(
         {
