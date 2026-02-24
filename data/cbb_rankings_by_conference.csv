@@ -1,19 +1,13 @@
-conference,adj_net_rtg_mean,adj_net_rtg_median,adj_net_rtg_max,adj_net_rtg_min,adj_ortg_mean,adj_drtg_mean,barthag_mean,barthag_max,cage_power_index_mean,resume_score_mean,team_count
-22,,,,,,,0.5001166666666667,0.9151,40.31666666666667,50.0,6
-3,,,,,,,0.5,0.5,39.7,50.0,4
-Atlantic Coast Conference,,,,,,,0.50005,0.9698,40.7625,50.0,8
-Big 12,,,,,,,0.5,0.5,39.7,50.0,2
-Big East,,,,,,,0.4998125,0.6118,38.9375,50.0,8
-Horizon League,,,,,,,0.5002727272727273,0.8815,45.75909090909091,50.0,22
-Independents,,,,,,,0.5,0.5,39.7,50.0,8
-Metro Atlantic Athletic Conference,,,,,,,0.5000083333333333,0.986,42.05833333333333,50.0,12
-Mid-American Conference,,,,,,,0.5,0.5,39.7,50.0,12
-Mid-Eastern Athletic Conference,,,,,,,0.5,0.5,39.7,50.0,8
-Ohio Valley Conference,,,,,,,0.5,0.5,39.7,50.0,2
-Pac-12,,,,,,,0.5000166666666667,0.8738,39.15,50.0,12
-Patriot League,,,,,,,0.5,0.5,39.7,50.0,6
-Southeastern Conference,,,,,,,0.5000142857142857,0.917,40.15,50.0,14
-Southland Conference,,,,,,,0.5,0.5,39.7,50.0,2
-Southwestern Athletic Conference,,,,,,,0.49995,0.9663,59.3,50.0,2
-Sun Belt Conference,,,,,,,0.5,0.5,39.7,50.0,2
-Western Athletic Conference,,,,,,,0.50005,0.7427,37.75,50.0,2
+conference,adj_net_rtg_mean,adj_net_rtg_median,adj_net_rtg_max,adj_net_rtg_min,adj_ortg_mean,adj_drtg_mean,barthag_mean,barthag_max,cage_power_index_mean,resume_score_mean,team_count,conference_name
+Big Ten,,,,,,,0.5,0.9945,49.025,50.0,4,Big Ten
+Big 12,,,,,,,0.5,0.5,44.2,50.0,2,Big 12
+Big East,,,,,,,0.5,0.5,44.20000000000001,50.0,6,Big East
+Independents,,,,,,,0.5,0.5,44.2,50.0,8,Independents
+Mid-American Conference,,,,,,,0.49999166666666667,0.9938,43.400000000000006,50.0,12,Mid-American Conference
+Mid-Eastern Athletic Conference,,,,,,,0.5,0.5,44.2,50.0,8,Mid-Eastern Athletic Conference
+Ohio Valley Conference,,,,,,,0.5,0.5,44.2,50.0,2,Ohio Valley Conference
+Pac-12,,,,,,,0.5,0.9999,41.237500000000004,50.0,8,Pac-12
+Patriot League,,,,,,,0.5,0.5,44.20000000000001,50.0,6,Patriot League
+Southeastern Conference,,,,,,,0.5,0.5,44.20000000000001,50.0,12,Southeastern Conference
+Southland Conference,,,,,,,0.5,0.5,44.2,50.0,2,Southland Conference
+Sun Belt Conference,,,,,,,0.49994999999999995,0.945,46.25,50.0,2,Sun Belt Conference
