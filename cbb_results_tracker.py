@@ -54,7 +54,7 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pandas as pd
 
-from pipeline_csv_utils import safe_write_csv
+from pipeline_csv_utils import normalize_numeric_dtypes, safe_write_csv
 from config.logging_config import get_logger
 
 warnings.filterwarnings("ignore")
@@ -267,6 +267,7 @@ def load_predictions(date_filter: Optional[str] = None) -> pd.DataFrame:
         if path.exists() and path.stat().st_size > 50:
             log.info(f"Loading predictions: {path.name}")
             df = pd.read_csv(path, dtype=str, low_memory=False)
+            df = normalize_numeric_dtypes(df)
             for col in df.columns:
                 if col not in {"game_id","home_team","away_team","home_team_id",
                                "away_team_id","game_datetime_utc","neutral_site",
@@ -291,6 +292,7 @@ def load_games_results(game_ids: Optional[List[str]] = None) -> pd.DataFrame:
         return pd.DataFrame()
 
     df = pd.read_csv(games_path, dtype=str, low_memory=False)
+    df = normalize_numeric_dtypes(df)
     df["game_datetime_utc"] = pd.to_datetime(
         df.get("game_datetime_utc", pd.NaT), utc=True, errors="coerce"
     )
@@ -321,6 +323,7 @@ def load_results_log() -> pd.DataFrame:
     """Load existing results log, or return empty DataFrame with schema."""
     if RESULTS_LOG.exists() and RESULTS_LOG.stat().st_size > 50:
         df = pd.read_csv(RESULTS_LOG, dtype=str, low_memory=False)
+        df = normalize_numeric_dtypes(df)
         for col in df.columns:
             if col not in {"game_id","game_date","game_datetime_utc","home_team",
                            "away_team","home_team_id","away_team_id",
@@ -530,6 +533,44 @@ def _safe_mean(series: pd.Series) -> float:
     return round(float(vals.mean()), 3) if len(vals) > 0 else 0.0
 
 
+def compute_team_records(games_df: pd.DataFrame) -> pd.DataFrame:
+    """Deterministically derive team wins/losses from per-game win flag."""
+    games_df = normalize_numeric_dtypes(games_df)
+    if games_df is None or games_df.empty or "team_id" not in games_df.columns:
+        return pd.DataFrame(columns=["team_id", "wins", "losses", "games_count"])
+
+    df = games_df.copy()
+    if "win" in df.columns:
+        df["win_flag"] = pd.to_numeric(df["win"], errors="coerce")
+    elif {"home_won", "home_away"}.issubset(df.columns):
+        home_won = pd.to_numeric(df["home_won"], errors="coerce")
+        is_home = df["home_away"].astype(str).str.lower().eq("home")
+        df["win_flag"] = np.where(is_home, home_won, 1 - home_won)
+    else:
+        df["win_flag"] = pd.NA
+
+    key_cols = [c for c in ["team_id", "event_id", "game_id", "game_datetime_utc", "home_away"] if c in df.columns]
+    if key_cols:
+        df = df.drop_duplicates(subset=key_cols, keep="last")
+
+    coverage = float(df["win_flag"].notna().mean()) if len(df) else 0.0
+    if coverage < 0.80:
+        log.warning("win_flag coverage %.1f%% below 80%% for team record aggregation", coverage * 100)
+    assert coverage > 0.80, f"win_flag coverage too low for deterministic records: {coverage:.1%}"
+
+    valid = df.dropna(subset=["win_flag"]).copy()
+    valid["win_flag"] = valid["win_flag"].astype(int)
+    records = (
+        valid.groupby("team_id", as_index=False)
+        .agg(
+            wins=("win_flag", "sum"),
+            games_count=("win_flag", "count"),
+        )
+    )
+    records["losses"] = records["games_count"] - records["wins"]
+    return records[["team_id", "wins", "losses", "games_count"]]
+
+
 def compute_rolling_stats(
     log_df: pd.DataFrame,
     window_days: Optional[int] = None,
@@ -540,6 +581,7 @@ def compute_rolling_stats(
     Compute rolling accuracy stats over the last N days (or full season).
     source: which model's outcomes to use ("primary" or "ensemble").
     """
+    log_df = normalize_numeric_dtypes(log_df)
     df = log_df.copy()
 
     if window_days is not None:
@@ -618,6 +660,7 @@ def detect_alerts(log_df: pd.DataFrame) -> List[Alert]:
     Run all alert detection rules against the results log.
     Returns list of active Alert objects.
     """
+    log_df = normalize_numeric_dtypes(log_df)
     alerts   = []
     now_str  = datetime.now(TZ).isoformat()
 
@@ -756,6 +799,7 @@ def build_model_split_table(log_df: pd.DataFrame) -> pd.DataFrame:
     Per-model ATS accuracy across L7 / L30 / SEASON.
     This shows which models are currently hot vs. which are dragging.
     """
+    log_df = normalize_numeric_dtypes(log_df)
     rows = []
     windows = [
         ("L7",     7),

@@ -17,6 +17,7 @@ from espn_config import (
     conference_id_to_name,
 )
 from models.alpha_evaluator import evaluate_alpha
+from pipeline_csv_utils import normalize_numeric_dtypes
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(message)s")
@@ -371,6 +372,8 @@ def build_predictions_with_context(
         )
 
     df = pd.read_csv(predictions_path, dtype={"event_id": str})
+    df = normalize_numeric_dtypes(df)
+    df = normalize_column_names(df)
     if "event_id" not in df.columns:
         if "game_id" in df.columns:
             df["event_id"] = df["game_id"].astype(str).str.strip()
@@ -394,6 +397,8 @@ def build_predictions_with_context(
     market = pd.DataFrame()
     if market_path.exists():
         market = pd.read_csv(market_path, dtype={"event_id": str})
+        market = normalize_numeric_dtypes(market)
+        market = normalize_column_names(market)
     else:
         market = _build_market_lines_fallback(df, market_path)
 

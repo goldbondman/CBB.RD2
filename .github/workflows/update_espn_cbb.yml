@@ -83,6 +83,14 @@ jobs:
           path: data/
         continue-on-error: true   # OK to fail on first-ever run
 
+      - name: Fallback restore ESPN CSVs from git (update job)
+        run: |
+          for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv; do
+            if [ ! -s "$f" ]; then
+              git show HEAD:"$f" > "$f" 2>/dev/null || true
+            fi
+          done
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -510,7 +518,18 @@ jobs:
             data/team_travel_fatigue.csv
             data/player_rolling_l5.csv
             data/player_role_splits.csv
-          retention-days: 30
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Upload latest prediction CSV alias
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-predictions-latest
+          path: |
+            data/predictions_latest.csv
+            data/predictions_combined_latest.csv
+            data/ensemble_predictions_latest.csv
+          retention-days: 90
           if-no-files-found: warn
 
       - name: Upload raw JSON as artifact
@@ -636,6 +655,15 @@ jobs:
         with:
           name: espn-cbb-csvs
           path: data/
+        continue-on-error: true
+
+      - name: Fallback restore ESPN CSVs from git (rankings job)
+        run: |
+          for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv; do
+            if [ ! -s "$f" ]; then
+              git show HEAD:"$f" > "$f" 2>/dev/null || true
+            fi
+          done
 
       - name: Set up Python
         uses: actions/setup-python@v5

@@ -35,6 +35,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from collections import defaultdict
 import warnings
+from pipeline_csv_utils import normalize_numeric_dtypes
 warnings.filterwarnings('ignore')
 
 
@@ -631,6 +632,11 @@ class CBBPredictionModel:
         Returns dict with predicted_spread, predicted_total, confidence,
         and detailed breakdown.
         """
+        if isinstance(home_games, pd.DataFrame):
+            home_games = normalize_numeric_dtypes(home_games).to_dict(orient='records')
+        if isinstance(away_games, pd.DataFrame):
+            away_games = normalize_numeric_dtypes(away_games).to_dict(orient='records')
+
         # Allow per-call game_type override without mutating config
         effective_game_type = game_type or self.config.game_type
 

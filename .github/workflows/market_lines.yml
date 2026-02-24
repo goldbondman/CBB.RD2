@@ -35,6 +35,14 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
+      - name: Fallback restore predictions artifact from git
+        run: |
+          for f in data/predictions_latest.csv data/predictions_combined_latest.csv data/ensemble_predictions_latest.csv; do
+            if [ ! -s "$f" ]; then
+              git show HEAD:"$f" > "$f" 2>/dev/null || true
+            fi
+          done
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
