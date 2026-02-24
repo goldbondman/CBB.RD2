@@ -40,6 +40,7 @@ import numpy as np
 import pandas as pd
 
 from config.logging_config import get_logger
+from pipeline_csv_utils import add_conference_name
 
 from cbb_config import (
     LEAGUE_AVG_ORTG, LEAGUE_AVG_DRTG, LEAGUE_AVG_EFG, PYTH_EXP,
@@ -1127,7 +1128,7 @@ def run(output_dir: Path = OUT_RANKINGS.parent, top_n: int = 25) -> Path:
 
     # Build rankings
     rankings = build_rankings(snapshot, game_log)
-    formatted = format_rankings_csv(rankings)
+    formatted = add_conference_name(format_rankings_csv(rankings))
 
     # Print top-N to stdout
     print_top_n(formatted, n=top_n)
@@ -1144,7 +1145,7 @@ def run(output_dir: Path = OUT_RANKINGS.parent, top_n: int = 25) -> Path:
     log.info(f"Dated snapshot   → {out_dated}")
 
     # Conference summary
-    conf_table = compute_conference_strength(rankings)
+    conf_table = add_conference_name(compute_conference_strength(rankings))
     if not conf_table.empty:
         out_conf = output_dir / "cbb_rankings_by_conference.csv"
         conf_table.to_csv(out_conf, index=False)

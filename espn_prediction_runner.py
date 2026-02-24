@@ -58,7 +58,7 @@ import numpy as np
 import pandas as pd
 from config.logging_config import get_logger
 from config.model_version import compute_model_version, save_version_to_history
-from pipeline_csv_utils import safe_write_csv
+from pipeline_csv_utils import add_conference_name, safe_write_csv
 from models.alpha_evaluator import evaluate_alpha
 
 OUT_PREDICTIONS_LATEST = DATA_DIR / "predictions_latest.csv"
@@ -1063,6 +1063,8 @@ def write_predictions(df: pd.DataFrame, label: str) -> Path:
     if "predicted_spread" not in out_df.columns and "pred_spread" in out_df.columns:
         out_df["predicted_spread"] = out_df["pred_spread"]
         log.info("Normalized prediction output: added predicted_spread from pred_spread")
+
+    out_df = add_conference_name(out_df)
 
     if not out_df.empty:
         _validate_prediction_output_schema(out_df)

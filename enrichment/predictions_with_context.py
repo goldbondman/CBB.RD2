@@ -17,6 +17,7 @@ from espn_config import (
     conference_id_to_name,
 )
 from models.alpha_evaluator import evaluate_alpha
+from pipeline_csv_utils import add_conference_name
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(message)s")
@@ -881,6 +882,8 @@ def build_predictions_with_context(
         df["wins"] = df["home_wins"]
     if "losses" not in df.columns and "home_losses" in df.columns:
         df["losses"] = df["home_losses"]
+
+    df = add_conference_name(df)
 
     # Canonical single conference_name field for downstream DB/UI contracts.
     if "conference_name" not in df.columns:
