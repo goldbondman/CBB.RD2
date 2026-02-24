@@ -713,44 +713,91 @@ def build_predictions_with_context(
         "pred_spread" if "pred_spread" in df.columns
         else "ens_ens_spread"
     )
-    _pred = pd.to_numeric(df.get(pred_col), errors="coerce")
-    _line_src = "spread_line" if "spread_line" in df.columns else "home_spread_current"
-    _line = pd.to_numeric(df.get(_line_src), errors="coerce")
-    _open = pd.to_numeric(df.get("home_spread_open"), errors="coerce")
-    _home_net = pd.to_numeric(df.get("home_net_eff"), errors="coerce")
-    _away_net = pd.to_numeric(df.get("away_net_eff"), errors="coerce")
 
-    # 1. spread_diff_vs_line: how many pts model disagrees with market
-    #    Positive = model likes home more than market does
-    if "spread_diff_vs_line" not in df.columns or df["spread_diff_vs_line"].isna().all():
-        df["spread_diff_vs_line"] = (_line - _pred).round(2)
+    try:
+        _pred = pd.to_numeric(df[pred_col], errors="coerce") \
+            if pred_col in df.columns else pd.Series(dtype=float)
 
-    # 2. eff_edge: raw efficiency differential (home minus away net rtg)
-    #    Positive = home team efficiency advantage
-    if "eff_edge" not in df.columns or df["eff_edge"].isna().all():
-        df["eff_edge"] = (_home_net - _away_net).round(2)
+        # Build _line using fillna chaining — never use `or` with Series
+        _line = pd.Series(dtype=float)
+        for _lcol in ["spread_line", "home_spread_current"]:
+            if _lcol in df.columns:
+                _s = pd.to_numeric(df[_lcol], errors="coerce")
+                if _line.empty:
+                    _line = _s
+                else:
+                    _line = _line.fillna(_s)
 
-    # 3. clv_vs_open: model spread vs opening line
-    #    Measures whether model would have beaten the open
-    if _open.notna().any():
-        df["clv_vs_open"] = (_open - _pred).round(3)
-    else:
-        df["clv_vs_open"] = pd.NA
+        _open = pd.to_numeric(df["home_spread_open"], errors="coerce") \
+            if "home_spread_open" in df.columns \
+            else pd.Series(dtype=float)
 
-    # 4. predicted_spread alias — required by config/schemas.py
-    if "predicted_spread" not in df.columns or df["predicted_spread"].isna().all():
-        df["predicted_spread"] = _pred
+        # Build _home_net and _away_net with same safe pattern
+        _home_net = pd.Series(dtype=float)
+        for _nc in ["home_net_eff", "home_adj_net_rtg", "home_net_rtg"]:
+            if _nc in df.columns:
+                _home_net = pd.to_numeric(df[_nc], errors="coerce")
+                break
 
-    # Log coverage
-    n_diff = int(df["spread_diff_vs_line"].notna().sum())
-    n_eff = int(df["eff_edge"].notna().sum())
-    log.info(
-        "Computed context cols: spread_diff_vs_line=%d/%d, "
-        "eff_edge=%d/%d, clv_vs_open=%d/%d, predicted_spread=%d/%d",
-        n_diff, len(df), n_eff, len(df),
-        int(df["clv_vs_open"].notna().sum()), len(df),
-        int(df["predicted_spread"].notna().sum()), len(df),
-    )
+        _away_net = pd.Series(dtype=float)
+        for _nc in ["away_net_eff", "away_adj_net_rtg", "away_net_rtg"]:
+            if _nc in df.columns:
+                _away_net = pd.to_numeric(df[_nc], errors="coerce")
+                break
+
+        # 1. spread_diff_vs_line: how far model is from market
+        if len(_line) > 0 and len(_pred) > 0:
+            df["spread_diff_vs_line"] = (_line - _pred).round(2)
+        else:
+            df["spread_diff_vs_line"] = pd.NA
+
+        # 2. eff_edge: raw efficiency differential
+        if len(_home_net) > 0 and len(_away_net) > 0:
+            df["eff_edge"] = (_home_net - _away_net).round(2)
+        else:
+            df["eff_edge"] = pd.NA
+
+        # 3. clv_vs_open: model vs opening line
+        if len(_open) > 0 and _open.notna().any() and len(_pred) > 0:
+            df["clv_vs_open"] = (_open - _pred).round(3)
+        else:
+            df["clv_vs_open"] = pd.NA
+
+        # 4. predicted_spread alias (required by schema)
+        if len(_pred) > 0 and _pred.notna().any():
+            df["predicted_spread"] = _pred
+
+        # 5. pred_home_score / pred_away_score from spread + total
+        if "pred_total" in df.columns and len(_pred) > 0:
+            _total = pd.to_numeric(df["pred_total"], errors="coerce")
+            # spread = away - home; total = home + away
+            # home = (total - spread) / 2
+            # away = (total + spread) / 2
+            if _pred.notna().any() and _total.notna().any():
+                df["pred_home_score"] = ((_total - _pred) / 2).round(1)
+                df["pred_away_score"] = ((_total + _pred) / 2).round(1)
+
+        log.info(
+            "Computed context cols — "
+            "spread_diff_vs_line: %d/%d | eff_edge: %d/%d | "
+            "clv_vs_open: %d/%d | predicted_spread: %d/%d | "
+            "pred_home_score: %d/%d",
+            int(df["spread_diff_vs_line"].notna().sum()), len(df),
+            int(df["eff_edge"].notna().sum()), len(df),
+            int(df["clv_vs_open"].notna().sum()), len(df),
+            int(df["predicted_spread"].notna().sum())
+                if "predicted_spread" in df.columns else 0, len(df),
+            int(df["pred_home_score"].notna().sum())
+                if "pred_home_score" in df.columns else 0, len(df),
+        )
+
+    except Exception as _exc:
+        log.error(
+            "Computed columns block failed: %s — "
+            "spread_diff_vs_line/eff_edge/predicted_spread will be null",
+            _exc,
+            exc_info=True,
+        )
 
     # Integrity normalization for downstream consumers.
     df = _normalize_conference_names(df)
