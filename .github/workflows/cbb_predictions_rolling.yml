@@ -138,6 +138,14 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
+      - name: Download results log (for situational features)
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-results-log
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true  # Non-fatal: first run won't have this
+
       - name: Debug list data directory after artifact restore
         if: ${{ always() }}
         run: |
