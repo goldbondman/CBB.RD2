@@ -40,6 +40,8 @@ import numpy as np
 import pandas as pd
 from scipy import stats as scipy_stats
 
+from pipeline_csv_utils import normalize_numeric_dtypes
+
 from models.alpha_evaluator import evaluate_alpha as detect_alpha
 
 try:
@@ -1016,6 +1018,7 @@ def load_team_profiles(
         if path.exists() and path.stat().st_size > 100:
             log.info("Loading team profiles from %s", path.name)
             df = pd.read_csv(path, dtype=str, low_memory=False)
+            df = normalize_numeric_dtypes(df)
             break
 
     if df is None or df.empty:
