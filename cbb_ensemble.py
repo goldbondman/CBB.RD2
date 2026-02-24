@@ -1058,26 +1058,38 @@ def load_team_profiles(
     df_all = df.copy()   # preserve full history for aggregation
     df = df.drop_duplicates("team_id", keep="last")
 
-    # Phase 1: compute season-aggregate net efficiency per team
-    # from all rows, then the per-row loop uses the aggregate
+    # Try efficiency columns in confirmed priority order.
+    # team_game_weighted.csv uses adj_net_rtg (confirmed by run log).
+    # net_eff is the fallback for other source files.
     _team_agg: dict[str, float] = {}
-    if "net_eff" in df_all.columns and "team_id" in df_all.columns:
-        # df_all is the full dataset before deduplication
-        # Use weighted average of per-game net_eff as proxy for adj EM
+    _agg_col = next(
+        (c for c in ["adj_net_rtg", "net_eff", "net_rtg", "cage_em"]
+         if c in df_all.columns),
+        None
+    )
+    if _agg_col and "team_id" in df_all.columns:
         _agg = (
-            pd.to_numeric(df_all["net_eff"], errors="coerce")
+            pd.to_numeric(df_all[_agg_col], errors="coerce")
             .groupby(df_all["team_id"].astype(str))
             .mean()
         )
         _team_agg = _agg.dropna().to_dict()
         _non_zero = sum(1 for v in _team_agg.values() if v != 0.0)
         log.info(
-            "Computed season net_eff for %d teams (non-zero: %d) "
+            "Season %s aggregated: %d teams, %d non-zero "
             "(range: %.1f to %.1f)",
-            len(_team_agg),
-            _non_zero,
+            _agg_col, len(_team_agg), _non_zero,
             min(_team_agg.values()) if _team_agg else 0,
             max(_team_agg.values()) if _team_agg else 0,
+        )
+    else:
+        log.warning(
+            "No net efficiency column found for cage_em aggregation. "
+            "All cage_em will be 0.0. Columns checked: %s. Available: %s",
+            ["adj_net_rtg", "net_eff", "net_rtg", "cage_em"],
+            [c for c in df_all.columns
+             if any(x in c.lower() for x in
+                    ["net", "eff", "rtg", "em"])][:15],
         )
 
     profiles: Dict[str, TeamProfile] = {}
@@ -1116,9 +1128,13 @@ def load_team_profiles(
                 or 0
             ),
 
-            # Efficiency — try all known column name variants
-            cage_em=_team_agg.get(tid) or col(
-                row, "adj_net_rtg", "cage_em", "adj_em", default=0.0
+            # Use `tid in _team_agg` not `_team_agg.get(tid) or ...`
+            # A legitimately zero-efficiency team would be skipped by `or`.
+            cage_em=(
+                _team_agg[tid]
+                if tid in _team_agg
+                else col(row, "adj_net_rtg", "net_eff", "cage_em",
+                         "adj_em", default=0.0)
             ),
             cage_o=col(row, "adj_ortg", "ortg", "off_rtg", "cage_o",
                        default=LEAGUE_AVG_ORTG),
