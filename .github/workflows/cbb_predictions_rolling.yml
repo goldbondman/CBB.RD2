@@ -599,71 +599,111 @@ jobs:
           python - <<'PY'
           import pandas as pd, pathlib, sys
 
-          for fname, label in [
-              ("predictions_latest.csv",           "primary"),
-              ("predictions_combined_latest.csv",  "combined"),
-          ]:
-              p = pathlib.Path("data") / fname
-              if not p.exists():
-                  print(f"[WARN] {fname} not found")
-                  continue
+          data = pathlib.Path("data")
+          issues = []
 
+          # ── Core prediction files ─────────────────────────────────────────
+          for fname in ["predictions_latest.csv",
+                        "predictions_combined_latest.csv"]:
+              p = data / fname
+              if not p.exists():
+                  issues.append(f"MISSING: {fname}")
+                  continue
               df = pd.read_csv(p)
               if df.empty:
-                  print(f"[WARN] {fname} is empty — no games in window?")
+                  print(f"[WARN] {fname} is empty — no games in window")
                   continue
+              print(f"[OK]   {fname}: {len(df)} games, {len(df.columns)} cols")
 
-              print(f"[OK]   {fname}: {len(df)} games, {len(df.columns)} columns ({label})")
-
-              spread_col = "pred_spread" if "pred_spread" in df.columns else "ensemble_spread"
-              if spread_col in df.columns:
-                  spreads = pd.to_numeric(df[spread_col], errors="coerce").dropna()
-                  if (spreads.abs() > 40).any():
-                      print(f"[WARN] Outlier spreads in {fname}: {spreads[spreads.abs()>40].values}")
-
-              conf_col = "model_confidence" if "model_confidence" in df.columns else "ens_confidence"
-              if conf_col in df.columns:
-                  confs = pd.to_numeric(df[conf_col], errors="coerce").dropna()
-                  if not confs.empty:
-                      print(f"       Confidence: {confs.min():.0%} – {confs.max():.0%}")
-
-          combined = pathlib.Path("data/predictions_combined_latest.csv")
-          if combined.exists():
-              df = pd.read_csv(combined)
-              if not df.empty:
-                  if "edge_flag" in df.columns:
-                      edges = df[pd.to_numeric(df["edge_flag"], errors="coerce") == 1]
-                      if not edges.empty:
-                          print(f"\n⚡ {len(edges)} PRIMARY MODEL EDGE ALERT(s):")
-                          for _, row in edges.iterrows():
-                              print(f"   {row.get('home_team','?')} vs {row.get('away_team','?')}: "
-                                    f"Primary {row.get('pred_spread',float('nan')):+.1f} "
-                                    f"vs Line {row.get('spread_line','N/A')}")
-
-                  if "ens_model_agreement" in df.columns:
-                      splits = df[df["ens_model_agreement"] == "SPLIT"]
-                      if not splits.empty:
-                          print(f"\n🔀 {len(splits)} ENSEMBLE SPLIT game(s) (model disagreement ≥4 pts std):")
-                          for _, row in splits.iterrows():
-                              print(f"   {row.get('home_team','?')} vs {row.get('away_team','?')}: "
-                                    f"spread std = {row.get('ens_spread_std','?')}")
-
-                  # P3 FIX: handle UWS column naming conventions
-                  uws_col = next(
-                      (c for c in ["uws_total", "ens_uws_total"]
-                       if c in df.columns),
-                      None
+              # pred_spread populated
+              ps = pd.to_numeric(df.get("pred_spread"), errors="coerce")
+              null_pct = ps.isna().mean()
+              if null_pct > 0.5:
+                  issues.append(
+                      f"pred_spread is {null_pct:.0%} null in {fname} "
+                      f"— column collision likely"
                   )
-                  if uws_col:
-                      uws = pd.to_numeric(df[uws_col], errors="coerce")
-                      alerts = df[uws >= 55]
-                      if not alerts.empty:
-                          print(f"\n🚨 {len(alerts)} STRONG UPSET ALERT(s) (UWS ≥55):")
-                          for _, row in alerts.iterrows():
-                              print(f"   {row.get('home_team','?')} vs {row.get('away_team','?')}: "
-                                    f"UWS {row.get(uws_col,float('nan')):.0f}/70")
+              else:
+                  print(f"       pred_spread: {null_pct:.0%} null (OK)")
 
-          print("\n[OK] Validation complete")
+              # kelly_fraction not all zero
+              kf = pd.to_numeric(df.get("kelly_fraction"), errors="coerce")
+              edge_games = df[pd.to_numeric(
+                  df.get("edge_pts", 0), errors="coerce") >= 3.0]
+              if len(edge_games) > 0:
+                  kf_edge = pd.to_numeric(
+                      edge_games.get("kelly_fraction", 0), errors="coerce")
+                  if (kf_edge == 0).all():
+                      issues.append(
+                          f"kelly_fraction=0 for all edge games in {fname}"
+                      )
+                  else:
+                      print(f"       kelly on edge games: {kf_edge.max():.4f} max (OK)")
+
+              # wins/losses not 0/1 flags
+              hw = pd.to_numeric(df.get("home_wins"), errors="coerce")
+              if hw.max() <= 1:
+                  issues.append(
+                      f"home_wins max={hw.max()} — still 0/1 flags in {fname}"
+                  )
+              else:
+                  print(f"       home_wins: max={hw.max()} (OK — season totals)")
+
+              # steam false positives
+              steam = df[df.get("steam_flag", False)
+                          .astype(str).str.lower() == "true"]
+              lm = pd.to_numeric(
+                  steam.get("line_movement", 0), errors="coerce"
+              ) if len(steam) > 0 else pd.Series(dtype=float)
+              false_pos = int((lm.abs() < 0.5).sum())
+              if false_pos > 0:
+                  issues.append(
+                      f"{false_pos} steam false positives (0pt movement) in {fname}"
+                  )
+              else:
+                  print(f"       steam: {len(steam)} flags, {false_pos} false positives (OK)")
+
+          # ── Monte Carlo columns ───────────────────────────────────────────
+          mc_path = data / "predictions_combined_latest.csv"
+          if mc_path.exists():
+              df = pd.read_csv(mc_path)
+              if not df.empty:
+                  if "mc_confidence" not in df.columns:
+                      issues.append("Monte Carlo columns missing from combined output")
+                  else:
+                      mc_null = df["mc_confidence"].isna().mean()
+                      if mc_null > 0.5:
+                          issues.append(f"mc_confidence {mc_null:.0%} null — MC may not have run")
+                      else:
+                          print(f"[OK]   mc_confidence: {mc_null:.0%} null")
+
+          # ── Market lines ──────────────────────────────────────────────────
+          ml_path = data / "market_lines.csv"
+          if ml_path.exists():
+              ml = pd.read_csv(ml_path)
+              print(f"[OK]   market_lines.csv: {len(ml)} rows")
+          else:
+              print("[WARN] market_lines.csv not present (market workflow may not have run yet)")
+
+          # ── Situational features ──────────────────────────────────────────
+          ctx_path = data / "predictions_with_context.csv"
+          if ctx_path.exists():
+              ctx = pd.read_csv(ctx_path)
+              if "home_rest_days" in ctx.columns:
+                  rest_null = ctx["home_rest_days"].isna().mean()
+                  status = "OK" if rest_null < 0.9 else "WARN — situational features mostly null"
+                  print(f"[{status[:2]}]   home_rest_days: {rest_null:.0%} null")
+
+          # ── Summary ───────────────────────────────────────────────────────
+          print()
+          if issues:
+              print(f"⚠️  {len(issues)} issue(s) detected:")
+              for i in issues:
+                  print(f"   - {i}")
+              # Warn but don't fail — downstream consumers handle nulls
+              print("\n[WARN] Issues found but not blocking artifact upload")
+          else:
+              print("[OK] All pipeline validation checks passed")
           PY
 
       # ── 11. Display summary ─────────────────────────────────────────────────
