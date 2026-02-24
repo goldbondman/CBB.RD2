@@ -510,6 +510,120 @@ def build_predictions_with_context(
     else:
         log.warning("Situational file missing: %s", sit_path)
 
+    # ── Team profile context merge ─────────────────────────────────
+    # Fills momentum, form, luck, variance columns from the season
+    # aggregate CSV. Uses same fallback chain as load_team_profiles().
+    _ctx_sources = [
+        DATA_DIR / "team_pretournament_snapshot.csv",
+        DATA_DIR / "team_game_weighted.csv",
+        DATA_DIR / "csv" / "team_game_weighted.csv",
+    ]
+    _ctx_df = None
+    for _src in _ctx_sources:
+        if _src.exists() and _src.stat().st_size > 100:
+            try:
+                _ctx_df = pd.read_csv(_src, dtype={"team_id": str}, low_memory=False)
+                if "game_datetime_utc" in _ctx_df.columns:
+                    _ctx_df = _ctx_df.sort_values("game_datetime_utc")
+                _ctx_df = _ctx_df.drop_duplicates("team_id", keep="last")
+                log.info("Team context source: %s (%d teams)", _src.name, len(_ctx_df))
+                break
+            except Exception as exc:
+                log.debug("Could not load team context from %s: %s", _src, exc)
+
+    if _ctx_df is not None and "team_id" in _ctx_df.columns:
+        # Columns to pull through — name variants for each field
+        _ctx_field_map = {
+            "momentum_score": ["t_momentum_quality_rating", "momentum_score", "momentum_rating", "momentum"],
+            "form_rating": ["form_rating", "recent_form", "form_score"],
+            "momentum_tier": ["momentum_tier", "t_momentum_tier", "momentum_category"],
+            "luck_score": ["luck_score", "luck"],
+            "ha_net_rtg_l10": ["ha_net_rtg_l10", "ha_net_eff_l10", "home_away_net_l10"],
+            "net_rtg_std_l10": ["net_rtg_std_l10", "net_eff_std_l10", "net_rtg_std"],
+        }
+
+        # Build a slim lookup: team_id → {field: value}
+        slim_rows = {"team_id": _ctx_df["team_id"].astype(str).str.strip()}
+        for field, candidates in _ctx_field_map.items():
+            for cand in candidates:
+                if cand in _ctx_df.columns:
+                    slim_rows[field] = _ctx_df[cand]
+                    break
+            else:
+                slim_rows[field] = pd.NA
+
+        slim = pd.DataFrame(slim_rows)
+
+        # Also pull games_played for games_used fix
+        for gp_col in ["games_played", "game_number", "games_before"]:
+            if gp_col in _ctx_df.columns:
+                slim["games_played_season"] = pd.to_numeric(
+                    _ctx_df[gp_col], errors="coerce"
+                )
+                break
+
+        # Merge for home team
+        home_slim = slim.rename(
+            columns={
+                "team_id": "home_team_id",
+                **{f: f"home_{f}" for f in _ctx_field_map},
+                "games_played_season": "home_games_played_season",
+            }
+        )
+        df["home_team_id"] = df["home_team_id"].astype(str).str.strip()
+        df = df.merge(home_slim, on="home_team_id", how="left")
+
+        # Merge for away team
+        away_slim = slim.rename(
+            columns={
+                "team_id": "away_team_id",
+                **{f: f"away_{f}" for f in _ctx_field_map},
+                "games_played_season": "away_games_played_season",
+            }
+        )
+        df["away_team_id"] = df["away_team_id"].astype(str).str.strip()
+        df = df.merge(away_slim, on="away_team_id", how="left")
+
+        # Fix games_used with season total when available
+        if "home_games_played_season" in df.columns:
+            home_gp = pd.to_numeric(df["home_games_played_season"], errors="coerce")
+            if home_gp.max() > 1:
+                df["home_games_used"] = home_gp.combine_first(
+                    pd.to_numeric(df.get("home_games_used"), errors="coerce")
+                )
+        if "away_games_played_season" in df.columns:
+            away_gp = pd.to_numeric(df["away_games_played_season"], errors="coerce")
+            if away_gp.max() > 1:
+                df["away_games_used"] = away_gp.combine_first(
+                    pd.to_numeric(df.get("away_games_used"), errors="coerce")
+                )
+
+        non_null = int(
+            df.get("home_momentum_score", pd.Series(dtype=float)).notna().sum()
+        )
+        log.info(
+            "Team profile context merged: %d/%d games have home_momentum_score",
+            non_null,
+            len(df),
+        )
+
+        # Compute pred_home_score / pred_away_score from spread + total
+        if "pred_spread" in df.columns and "pred_total" in df.columns:
+            _spread = pd.to_numeric(df["pred_spread"], errors="coerce")
+            _total = pd.to_numeric(df["pred_total"], errors="coerce")
+            # spread = away_score - home_score (market convention)
+            # total = home_score + away_score
+            # => home = (total - spread) / 2
+            # => away = (total + spread) / 2
+            if "pred_home_score" not in df.columns or df["pred_home_score"].isna().all():
+                df["pred_home_score"] = ((_total - _spread) / 2).round(1)
+                df["pred_away_score"] = ((_total + _spread) / 2).round(1)
+    else:
+        log.warning(
+            "No team context source found — momentum/form/luck/variance columns will be null. Checked: %s",
+            [str(s) for s in _ctx_sources],
+        )
+
     for col in expected_market_cols:
         if col not in df.columns:
             df[col] = pd.NA
