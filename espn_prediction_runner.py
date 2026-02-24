@@ -58,7 +58,7 @@ import numpy as np
 import pandas as pd
 from config.logging_config import get_logger
 from config.model_version import compute_model_version, save_version_to_history
-from pipeline_csv_utils import safe_write_csv
+from pipeline_csv_utils import normalize_numeric_dtypes, safe_write_csv
 from models.alpha_evaluator import evaluate_alpha
 
 OUT_PREDICTIONS_LATEST = DATA_DIR / "predictions_latest.csv"
@@ -518,6 +518,9 @@ def run_predictions(
     Runs predictions for matchups.
     Leak-free: cutoff is per-game kickoff time if available, else default_cutoff_dt.
     """
+    all_data = normalize_numeric_dtypes(all_data)
+    context_df = normalize_numeric_dtypes(context_df)
+
     results: List[Dict] = []
     skipped = 0
     rankings_df = _load_rankings()

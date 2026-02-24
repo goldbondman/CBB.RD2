@@ -13,6 +13,8 @@ from typing import Optional
 import pandas as pd
 import requests
 
+from pipeline_csv_utils import normalize_numeric_dtypes
+
 try:
     from espn_gap_fillers import fill_market_row_gaps
 except ImportError:
@@ -429,6 +431,7 @@ def append_market_rows(new_rows: list[dict], output_path: Path) -> int:
 
     if output_path.exists():
         df_existing = pd.read_csv(output_path, dtype={"event_id": str})
+        df_existing = normalize_numeric_dtypes(df_existing)
         if "capture_hour" not in df_existing.columns:
             df_existing["capture_hour"] = pd.to_datetime(df_existing["captured_at_utc"], utc=True).dt.floor("H").astype(str)
         df_existing["capture_hour"] = df_existing["capture_hour"].astype(str)
@@ -460,6 +463,7 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
 
     market_path = data_dir / "market_lines.csv"
     existing = pd.read_csv(market_path, dtype={"event_id": str}) if market_path.exists() else pd.DataFrame()
+    existing = normalize_numeric_dtypes(existing)
 
     log.info("Fetching ESPN scoreboard...")
     espn_events = fetch_espn_scoreboard(today)

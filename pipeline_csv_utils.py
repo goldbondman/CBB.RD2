@@ -25,6 +25,31 @@ PRIMARY_KEYS_MAP: dict[str, list[str]] = {
 }
 
 
+PIPELINE_NUMERIC_COLS: list[str] = [
+    'pred_spread', 'pred_total', 'predicted_spread', 'predicted_total',
+    'spread', 'over_under', 'home_spread_open', 'home_spread_current',
+    'line_movement', 'home_ml', 'away_ml', 'home_win_prob', 'away_win_prob',
+    'home_score', 'away_score', 'actual_margin', 'actual_total', 'home_won',
+    'win', 'wins', 'losses', 'confidence', 'model_confidence',
+]
+
+
+def normalize_numeric_dtypes(
+    df: pd.DataFrame,
+    numeric_cols: list[str] | None = None,
+) -> pd.DataFrame:
+    """Coerce known numeric pipeline columns to nullable numeric dtypes."""
+    if df is None or df.empty:
+        return df
+
+    out = df.copy()
+    cols = numeric_cols or PIPELINE_NUMERIC_COLS
+    for col in cols:
+        if col in out.columns:
+            out[col] = pd.to_numeric(out[col], errors='coerce').astype('Float64')
+    return out
+
+
 def dedupe_by_primary_key(df: pd.DataFrame, path: str | pathlib.Path) -> pd.DataFrame:
     """Drop duplicates for known CSVs using deterministic keep='last'."""
     fname = pathlib.Path(path).name
