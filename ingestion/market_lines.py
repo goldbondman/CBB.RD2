@@ -41,6 +41,54 @@ BOOK_DISAGREE_POINTS = 1.5
 PUBLIC_BET_THRESHOLD = 65
 RLM_LINE_MOVE_MIN = 0.5
 
+MARKET_LINES_SCHEMA_COLUMNS = [
+    "event_id",
+    "capture_type",
+    "captured_at_utc",
+    "pulled_at_utc",
+    "verification_status",
+    "home_spread_open",
+    "home_spread_current",
+    "line_movement",
+    "total_open",
+    "total_current",
+    "pinnacle_spread",
+    "draftkings_spread",
+    "home_tickets_pct",
+    "away_tickets_pct",
+    "home_money_pct",
+    "away_money_pct",
+    "steam_flag",
+    "rlm_flag",
+    "rlm_sharp_side",
+    "rlm_note",
+    "book_disagreement_flag",
+    "book_spread_diff",
+    "book_sharp_side",
+    "book_note",
+    "line_freeze_flag",
+    "home_win_prob",
+    "away_win_prob",
+    "home_ats_wins",
+    "home_ats_losses",
+    "away_ats_wins",
+    "away_ats_losses",
+    "home_team_id",
+    "away_team_id",
+]
+
+
+def bootstrap_market_lines_schema(path: str | Path) -> None:
+    csv_path = Path(path)
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+
+    needs_bootstrap = (not csv_path.exists()) or csv_path.stat().st_size == 0
+    if not needs_bootstrap:
+        return
+
+    pd.DataFrame(columns=MARKET_LINES_SCHEMA_COLUMNS).to_csv(csv_path, index=False)
+    log.info("Bootstrapped market lines schema at %s", csv_path)
+
 
 def fetch_action_network(game_date: date) -> list[dict]:
     date_str = game_date.strftime("%Y%m%d")
@@ -387,6 +435,8 @@ def build_market_row(
         "event_id": event_id,
         "capture_type": capture_type,
         "captured_at_utc": now,
+        "pulled_at_utc": now,
+        "verification_status": "verified",
         "home_spread_open": spread_open,
         "home_spread_current": home_spread,
         "line_movement": line_movement,
@@ -459,6 +509,7 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
     log.info("Market capture mode=%s date=%s", mode, today)
 
     market_path = data_dir / "market_lines.csv"
+    bootstrap_market_lines_schema(market_path)
     existing = pd.read_csv(market_path, dtype={"event_id": str}) if market_path.exists() else pd.DataFrame()
 
     log.info("Fetching ESPN scoreboard...")
@@ -586,6 +637,8 @@ def main() -> None:
     parser.add_argument("--mode", choices=["morning", "pregame", "postgame", "all"], default="pregame")
     parser.add_argument("--backfill-days", type=int, default=0)
     args = parser.parse_args()
+
+    bootstrap_market_lines_schema(Path(DATA_DIR) / "market_lines.csv")
 
     if args.backfill_days > 0:
         for d in range(args.backfill_days, -1, -1):

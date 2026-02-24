@@ -26,13 +26,15 @@ on:
   schedule:
     - cron: "0 10 * * *"   # 10:00 AM UTC daily (2 AM PST / 3 AM PDT)
 
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   actions: write
 
-concurrency:
-  group: git-push-update-espn-${{ github.ref }}
-  cancel-in-progress: false
 
 jobs:
   # ════════════════════════════════════════════════════════════════════════════
@@ -542,10 +544,10 @@ jobs:
           fi
 
           MAX_RETRIES=5
-          for i in $(seq 1 $MAX_RETRIES); do
+          for i in $(seq 1 5); do
             echo "Push attempt $i/$MAX_RETRIES"
             git fetch origin main
-            git rebase origin/main -X ours --no-stat 2>&1 || {
+            git rebase -X ours origin/main --no-stat 2>&1 || {
               git rebase --abort 2>/dev/null || true
               git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
             }
@@ -558,11 +560,7 @@ jobs:
             fi
 
             git commit -m "pipeline: $(date +'%Y-%m-%d %H:%M UTC') — metrics + backtest [skip ci]" || true
-
-            if git push origin main; then
-              echo "[OK] Push succeeded on attempt $i"
-              exit 0
-            fi
+            git push origin HEAD:main && { echo "Push OK attempt $i"; exit 0; }
 
             echo "[RETRY] Push failed, waiting before retry..."
             sleep $((i * 3))
@@ -735,10 +733,10 @@ jobs:
           fi
 
           MAX_RETRIES=5
-          for i in $(seq 1 $MAX_RETRIES); do
+          for i in $(seq 1 5); do
             echo "Push attempt $i/$MAX_RETRIES"
             git fetch origin main
-            git rebase origin/main -X ours --no-stat 2>&1 || {
+            git rebase -X ours origin/main --no-stat 2>&1 || {
               git rebase --abort 2>/dev/null || true
               git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
             }
@@ -751,11 +749,7 @@ jobs:
             fi
 
             git commit -m "rankings: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]" || true
-
-            if git push origin main; then
-              echo "[OK] Push succeeded on attempt $i"
-              exit 0
-            fi
+            git push origin HEAD:main && { echo "Push OK attempt $i"; exit 0; }
 
             echo "[RETRY] Push failed, waiting before retry..."
             sleep $((i * 3))
