@@ -20,22 +20,9 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          name: cbb-predictions-rolling-latest
-          path: data/
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Download existing market lines
-        uses: actions/download-artifact@v4
-        with:
-          name: cbb-market-lines
-          path: data/
-        continue-on-error: true
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -72,6 +59,30 @@ jobs:
       - name: Build predictions with context
         run: python -m enrichment.predictions_with_context
 
+      - name: Verify capture outputs before upload
+        run: |
+          test -f data/market_lines.csv || { echo "[ERROR] data/market_lines.csv was not created"; exit 1; }
+
+          line_count=$(wc -l < data/market_lines.csv)
+          if [ "$line_count" -le 1 ]; then
+            echo "[ERROR] market_lines capture produced no data rows (line_count=$line_count)"
+            exit 1
+          fi
+
+          files_to_upload=0
+          for f in data/market_lines.csv data/market_lines_latest.csv data/odds_snapshot.csv; do
+            if [ -s "$f" ]; then
+              files_to_upload=$((files_to_upload + 1))
+            fi
+          done
+
+          if [ "$files_to_upload" -eq 0 ]; then
+            echo "[ERROR] No market-lines artifact files were generated"
+            exit 1
+          fi
+
+          ls -lah data/market_lines.csv data/market_lines_latest.csv data/odds_snapshot.csv 2>/dev/null || true
+
       - name: Upload market lines artifact
         uses: actions/upload-artifact@v4
         with:
@@ -80,8 +91,8 @@ jobs:
             data/market_lines.csv
             data/market_lines_latest.csv
             data/odds_snapshot.csv
-          retention-days: 90
-          if-no-files-found: warn
+          retention-days: 7
+          if-no-files-found: error
 
       - name: Upload predictions-with-context artifact
         uses: actions/upload-artifact@v4
