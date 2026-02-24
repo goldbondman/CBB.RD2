@@ -58,7 +58,7 @@ import numpy as np
 import pandas as pd
 from config.logging_config import get_logger
 from config.model_version import compute_model_version, save_version_to_history
-from pipeline_csv_utils import safe_write_csv
+from pipeline_csv_utils import normalize_column_names, safe_write_csv
 from models.alpha_evaluator import evaluate_alpha
 
 OUT_PREDICTIONS_LATEST = DATA_DIR / "predictions_latest.csv"
@@ -1052,7 +1052,7 @@ def _validate_prediction_output_schema(df: pd.DataFrame) -> None:
 
 def write_predictions(df: pd.DataFrame, label: str) -> Path:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    out_df = df.copy()
+    out_df = normalize_column_names(df)
 
     # Backward-compatible normalization for downstream schema + dedupe contracts.
     # Keep legacy columns (game_id/pred_spread) while adding canonical aliases
@@ -1069,6 +1069,18 @@ def write_predictions(df: pd.DataFrame, label: str) -> Path:
     dated_path = DATA_DIR / f"predictions_{label}.csv"
     safe_write_csv(out_df, dated_path, index=False, label="predictions_dated", allow_empty=True)
     safe_write_csv(out_df, OUT_PREDICTIONS_LATEST, index=False, label="predictions_latest", allow_empty=True)
+
+    for written_path in (dated_path, OUT_PREDICTIONS_LATEST):
+        if not written_path.exists():
+            raise RuntimeError(f"Predictions write failed: file was not created at {written_path}")
+        written_df = pd.read_csv(written_path, dtype={"event_id": str, "game_id": str}, low_memory=False)
+        if written_df.empty:
+            raise RuntimeError(f"Predictions write failed: file is empty at {written_path}")
+        missing_cols = [c for c in ["event_id", "game_id", "pred_spread"] if c not in written_df.columns]
+        if missing_cols:
+            raise RuntimeError(
+                f"Predictions write failed: missing required columns {missing_cols} in {written_path}"
+            )
 
     log.info(f"Wrote {len(out_df)} predictions -> {dated_path}")
     log.info("Updated predictions_latest.csv")
