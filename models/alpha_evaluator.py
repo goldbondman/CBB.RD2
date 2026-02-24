@@ -47,23 +47,32 @@ def _as_side(val: Optional[str]) -> Optional[str]:
 
 def kelly_fraction_calc(
     model_confidence: float,
+    edge_pts: float = 0.0,
     juice: float = -110,
     multiplier: float = 1.0,
 ) -> float:
     """
-    Quarter-Kelly bankroll fraction.
-    model_confidence is the model's estimated win probability (0–1).
-    multiplier is applied last (from market signal adjustments).
+    Quarter-Kelly fraction using edge-adjusted win probability.
+
+    model_confidence: data reliability score (0–1), NOT win prob.
+    edge_pts: |model_spread - market_spread| in points.
+
+    Win probability is estimated from edge size, then scaled
+    by model_confidence as a reliability discount.
     """
     if juice < 0:
         decimal_odds = 1 + (100 / abs(juice))
     else:
         decimal_odds = 1 + (juice / 100)
-
     b = decimal_odds - 1.0
-    p = float(model_confidence)
-    q = 1.0 - p
 
+    edge = max(0.0, float(edge_pts))
+    base_win_prob = 0.50 + min(edge * 0.015, 0.09)
+
+    conf = max(0.0, min(1.0, float(model_confidence)))
+    p = 0.50 + (base_win_prob - 0.50) * conf
+
+    q = 1.0 - p
     if b <= 0:
         return 0.0
 
@@ -136,6 +145,13 @@ def evaluate_alpha(
     if market_evaluated:
         steam = _as_bool(market_context.get("steam_flag", False))
         line_move = float(market_context.get("line_movement") or 0)
+        if steam and abs(line_move) < 0.5:
+            steam = False
+            log.debug(
+                "Steam flag overridden: line_movement=%.2f < 0.5 "
+                "(false positive from ingestion)", line_move
+            )
+
         if steam:
             steam_side = "home" if line_move > 0 else "away"
             if steam_side == model_side:
@@ -298,6 +314,7 @@ def evaluate_alpha(
 
     final_kelly = kelly_fraction_calc(
         model_confidence=model_confidence,
+        edge_pts=edge_pts,
         multiplier=kelly_mult,
     )
     kelly_units = round(final_kelly * 100, 2)

@@ -409,6 +409,14 @@ def build_predictions_with_context(
             df = df.merge(
                 market_latest[available], on="event_id", how="left"
             )
+            if "pred_spread" in df.columns:
+                null_rate = df["pred_spread"].isna().mean()
+                if null_rate > 0.5:
+                    log.error(
+                        "pred_spread is %.0f%% null after merge — "
+                        "likely column collision with market 'spread'",
+                        null_rate * 100,
+                    )
             market_signal_cols = [
                 c for c in [
                     "home_spread_current", "home_spread_open", "line_movement",
@@ -614,6 +622,21 @@ def build_predictions_with_context(
             df["conference_name"] = df["conference"]
         else:
             df["conference_name"] = ""
+
+    # Protect pred_spread from being overwritten by market spread.
+    if "pred_spread" not in df.columns or df["pred_spread"].isna().all():
+        if "ens_ens_spread" in df.columns:
+            df["pred_spread"] = df["ens_ens_spread"]
+            log.warning("pred_spread was null — recovered from ens_ens_spread")
+        elif "predicted_spread" in df.columns:
+            df["pred_spread"] = df["predicted_spread"]
+
+    if "spread" in df.columns and "pred_spread" in df.columns:
+        if df["pred_spread"].notna().any():
+            if "market_spread" not in df.columns:
+                df = df.rename(columns={"spread": "market_spread"})
+        elif df["spread"].notna().any():
+            pass
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_path, index=False)
