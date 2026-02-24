@@ -282,6 +282,13 @@ def load_game_log() -> pd.DataFrame:
         if path.exists() and path.stat().st_size > 100:
             log.info(f"Loading game log: {path.name}")
             df = pd.read_csv(path, dtype=str, low_memory=False)
+            required = {"team_id", "event_id", "game_datetime_utc", "home_away", "points_for", "points_against"}
+            missing = sorted(required - set(df.columns))
+            if missing:
+                raise ValueError(
+                    f"{path} is missing required columns for backtesting: {missing}. "
+                    f"Available columns: {sorted(df.columns)[:25]}..."
+                )
             df["game_datetime_utc"] = pd.to_datetime(
                 df.get("game_datetime_utc", pd.NaT), utc=True, errors="coerce"
             )
@@ -889,6 +896,11 @@ class BacktestEngine:
         cfg    = self.config
         records = []
         skipped = {"too_few_games": 0, "no_state": 0, "model_error": 0}
+        skip_samples = []
+
+        # History rows must be truly completed (same definition as completed_games)
+        history_log = game_log.dropna(subset=["points_for", "points_against"]).copy()
+        history_log = history_log[history_log["points_for"] > 0]
 
         # Apply date filters
         games = completed_games.copy()
@@ -902,9 +914,10 @@ class BacktestEngine:
         total = len(games)
         log.info(f"Backtesting {total:,} games...")
 
-        for idx, row in games.iterrows():
-            if (idx % 500) == 0 and idx > 0:
-                log.info(f"  Progress: {idx:,}/{total:,}  ({idx/total*100:.0f}%)")
+        for i, (_, row) in enumerate(games.iterrows(), start=1):
+            if (i % 500) == 0 or i == total:
+                pct = (i / total * 100.0) if total else 100.0
+                log.info(f"  Progress: {i:,}/{total:,} games ({pct:.0f}%)")
 
             game_dt    = row["game_datetime_utc"]
             home_id    = str(row["home_team_id"])
@@ -914,14 +927,26 @@ class BacktestEngine:
 
             # ── Build pre-game team states (ZERO LOOKAHEAD) ──────────────────
             home_state = build_team_state_before(
-                home_id, game_dt, game_log, cfg.min_games_required
+                home_id, game_dt, history_log, cfg.min_games_required
             )
             away_state = build_team_state_before(
-                away_id, game_dt, game_log, cfg.min_games_required
+                away_id, game_dt, history_log, cfg.min_games_required
             )
 
             if home_state is None or away_state is None:
                 skipped["too_few_games"] += 1
+                if len(skip_samples) < 10:
+                    home_prior = history_log[(history_log["team_id"].astype(str) == home_id) & (history_log["game_datetime_utc"] < game_dt)]
+                    away_prior = history_log[(history_log["team_id"].astype(str) == away_id) & (history_log["game_datetime_utc"] < game_dt)]
+                    skip_samples.append({
+                        "event_id": event_id,
+                        "game_datetime": str(game_dt),
+                        "home_team": str(row.get("home_team", "")),
+                        "away_team": str(row.get("away_team", "")),
+                        "home_prior_games": int(len(home_prior)),
+                        "away_prior_games": int(len(away_prior)),
+                        "reason": f"min_games_required={cfg.min_games_required}",
+                    })
                 continue
 
             # ── Run prediction ────────────────────────────────────────────────
@@ -962,6 +987,18 @@ class BacktestEngine:
                  f"skipped: {sum(skipped.values())} "
                  f"(insufficient history: {skipped['too_few_games']}, "
                  f"model errors: {skipped['model_error']})")
+
+        if not records:
+            eval_min = games["game_datetime_utc"].min() if not games.empty else pd.NaT
+            eval_max = games["game_datetime_utc"].max() if not games.empty else pd.NaT
+            hist_min = history_log["game_datetime_utc"].min() if not history_log.empty else pd.NaT
+            hist_max = history_log["game_datetime_utc"].max() if not history_log.empty else pd.NaT
+            log.error("No predictions produced diagnostics:")
+            log.error("  eval date range: %s → %s", eval_min, eval_max)
+            log.error("  history date range: %s → %s", hist_min, hist_max)
+            log.error("  min-games threshold: %s", cfg.min_games_required)
+            if skip_samples:
+                log.error("  first skipped games sample: %s", skip_samples)
 
         return pd.DataFrame(records)
 
@@ -1174,6 +1211,14 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
     tgm["ats_push"] = pd.to_numeric(tgm.get("ats_push"), errors="coerce").fillna(0)
     tgm["game_datetime_utc"] = pd.to_datetime(tgm.get("game_datetime_utc"), errors="coerce", utc=True)
 
+    required = {"team_id", "team", "wins", "losses", "points_for", "points_against"}
+    missing_required = sorted(required - set(tgm.columns))
+    if missing_required:
+        raise ValueError(
+            f"Cannot build team_season_summary.csv: missing required columns {missing_required}. "
+            f"Source file: {metrics_path}"
+        )
+
     grouped = tgm.groupby("team_id", dropna=False)
 
     def _series(col_name: str, default=np.nan) -> pd.Series:
@@ -1181,38 +1226,58 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
             return tgm[col_name]
         return pd.Series(default, index=tgm.index)
 
+    agg_spec = {
+        "team": ("team", "last"),
+        "conference": ("conference", "last"),
+        "wins": ("wins", "last"),
+        "losses": ("losses", "last"),
+        "home_wins": ("home_wins", "last"),
+        "away_wins": ("away_wins", "last"),
+        "neutral_wins": ("neutral_wins", "sum") if "neutral_wins" in tgm.columns else ("neutral_site", "sum"),
+        "ats_wins": ("cover", lambda s: int((s == 1).sum())),
+        "ats_losses": ("cover", lambda s: int((s == 0).sum())),
+        "ats_pushes": ("ats_push", "sum"),
+        "avg_total_scored": ("points_for", "mean"),
+        "avg_ou_line": ("over_under", "mean"),
+        "h2_avg_pts": ("h2_pts", "mean"),
+        "h2_avg_pts_against": ("h2_pts_against", "mean"),
+        "ortg_l5": ("ortg_l5", "last"),
+        "ortg_l10": ("ortg_l10", "last"),
+        "drtg_l5": ("drtg_l5", "last"),
+        "drtg_l10": ("drtg_l10", "last"),
+        "net_rtg_l5": ("net_rtg_l5", "last"),
+        "net_rtg_l10": ("net_rtg_l10", "last"),
+        "net_rtg_std": ("net_rtg_std_l10", "last"),
+        "luck_score": ("luck_score", "last"),
+        "pyth_win_pct": ("pyth_win_pct_season", "last"),
+        "avg_margin_l10": ("margin_l10", "last"),
+        "avg_margin_l5": ("margin_l5", "last"),
+        "avg_opp_net_rtg": ("opp_avg_net_rtg_season", "last"),
+        "data_through_date": ("game_datetime_utc", "max"),
+        "cover_streak": ("cover_streak", "last"),
+    }
+    missing_optional = []
+    resolved_agg = {}
+    for out_col, agg in agg_spec.items():
+        source_col = agg[0]
+        if source_col in tgm.columns:
+            resolved_agg[out_col] = agg
+        elif out_col == "avg_opp_net_rtg" and "opp_avg_ortg_season" in tgm.columns:
+            resolved_agg[out_col] = ("opp_avg_ortg_season", "last")
+            log.warning("Using fallback column opp_avg_ortg_season for avg_opp_net_rtg")
+        else:
+            missing_optional.append(source_col)
+
+    if missing_optional:
+        log.warning("build_team_backtest_csv missing optional columns: %s", sorted(set(missing_optional)))
+
     base = grouped.agg(
-        team=("team", "last"),
-        conference=("conference", "last"),
-        wins=("wins", "last"),
-        losses=("losses", "last"),
-        home_wins=("home_wins", "last"),
-        away_wins=("away_wins", "last"),
-        neutral_wins=("neutral_wins", "sum") if "neutral_wins" in tgm.columns else ("neutral_site", "sum"),
-        ats_wins=("cover", lambda s: int((s == 1).sum())),
-        ats_losses=("cover", lambda s: int((s == 0).sum())),
-        ats_pushes=("ats_push", "sum"),
-        avg_total_scored=("points_for", "mean"),
-        avg_ou_line=("over_under", "mean"),
-        h2_avg_pts=("h2_pts", "mean"),
-        h2_avg_pts_against=("h2_pts_against", "mean"),
-        ortg_l5=("ortg_l5", "last"),
-        ortg_l10=("ortg_l10", "last"),
-        drtg_l5=("drtg_l5", "last"),
-        drtg_l10=("drtg_l10", "last"),
-        net_rtg_l5=("net_rtg_l5", "last"),
-        net_rtg_l10=("net_rtg_l10", "last"),
-        net_rtg_std=("net_rtg_std_l10", "last"),
-        luck_score=("luck_score", "last"),
-        pyth_win_pct=("pyth_win_pct_season", "last"),
-        avg_margin_l10=("margin_l10", "last"),
-        avg_margin_l5=("margin_l5", "last"),
-        avg_opp_net_rtg=("opp_avg_net_rtg_season", "last"),
-        data_through_date=("game_datetime_utc", "max"),
-        cover_streak=("cover_streak", "last"),
+        **resolved_agg,
     ).reset_index()
 
     base["ats_sample"] = base["ats_wins"] + base["ats_losses"]
+    if "avg_opp_net_rtg" not in base.columns:
+        base["avg_opp_net_rtg"] = np.nan
     base["ats_pct"] = _safe_rate(base["ats_wins"], base["ats_sample"])
     base["avg_ou_margin"] = base["avg_total_scored"] - base["avg_ou_line"]
 
