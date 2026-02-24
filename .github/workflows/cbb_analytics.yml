@@ -86,22 +86,25 @@ jobs:
         run: |
           python3 - <<'PY'
           import os
+          from datetime import datetime, timezone
 
-          event         = os.getenv("GITHUB_EVENT_NAME", "schedule")
-          mode          = os.getenv("INPUT_MODE", "")
-          event_schedule= os.getenv("INPUT_EVENT_SCHEDULE", "").strip()
+          event = os.getenv("GITHUB_EVENT_NAME", "schedule")
+          mode  = os.getenv("INPUT_MODE", "")
 
-          # workflow_dispatch: honor explicit mode selection
           if event == "workflow_dispatch":
               tracker  = mode in ("tracker_only",  "both", "tracker_summary")
               backtest = mode in ("backtest_only", "both")
 
-          # Scheduled: prefer GitHub's triggering cron string (deterministic)
           elif event == "schedule":
-              tracker  = (event_schedule == "0 8 * * *")
-              backtest = (event_schedule == "0 10 * * 1")
+              # Use UTC hour as the authoritative trigger signal.
+              # github.event.schedule is unreliable across GitHub runner versions.
+              hour    = datetime.now(timezone.utc).hour
+              weekday = datetime.now(timezone.utc).weekday()  # 0=Monday
 
-              # Safety fallback when schedule string is unavailable
+              tracker  = (hour == 8)                    # daily 8 AM UTC
+              backtest = (hour == 10 and weekday == 0)  # Monday 10 AM UTC
+
+              # Safety fallback when neither matches
               if not tracker and not backtest:
                   tracker = True
 
@@ -113,11 +116,11 @@ jobs:
               f.write(f"run_tracker={'true' if tracker else 'false'}\n")
               f.write(f"run_backtest={'true' if backtest else 'false'}\n")
 
-          print(f"run_tracker={tracker}  run_backtest={backtest}")
+          print(f"run_tracker={tracker}  run_backtest={backtest}  "
+                f"(event={event}, hour={datetime.now(timezone.utc).hour})")
           PY
         env:
           INPUT_MODE: ${{ github.event.inputs.run_mode || '' }}
-          INPUT_EVENT_SCHEDULE: ${{ github.event.schedule || '' }}
 
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 1 — RESULTS TRACKER
