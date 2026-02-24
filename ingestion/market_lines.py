@@ -49,6 +49,7 @@ MARKET_LINES_SCHEMA_COLUMNS = [
     "captured_at_utc",
     "pulled_at_utc",
     "verification_status",
+    "verification_notes",
     "home_spread_open",
     "home_spread_current",
     "line_movement",
@@ -77,39 +78,25 @@ MARKET_LINES_SCHEMA_COLUMNS = [
     "away_ats_losses",
     "home_team_id",
     "away_team_id",
+    "home_ml",
+    "away_ml",
+    "spread",
+    "dk_spread",
+    "total",
+    "over_under",
 ]
 
 
-def bootstrap_market_lines_schema(path: str | Path) -> None:
+def bootstrap_market_lines_schema(path: str | Path) -> Path:
+    """Ensure market_lines.csv exists and has required schema columns."""
     csv_path = Path(path)
+    if csv_path.is_dir():
+        csv_path = csv_path / "market_lines.csv"
+
     csv_path.parent.mkdir(parents=True, exist_ok=True)
 
-    needs_bootstrap = (not csv_path.exists()) or csv_path.stat().st_size == 0
-    if not needs_bootstrap:
-        return
-
-    pd.DataFrame(columns=MARKET_LINES_SCHEMA_COLUMNS).to_csv(csv_path, index=False)
-    log.info("Bootstrapped market lines schema at %s", csv_path)
-    "event_id", "capture_type", "captured_at_utc", "pulled_at_utc",
-    "verification_status", "verification_notes",
-    "home_spread_open", "home_spread_current", "line_movement",
-    "total_open", "total_current", "pinnacle_spread", "draftkings_spread",
-    "home_tickets_pct", "away_tickets_pct", "home_money_pct", "away_money_pct",
-    "steam_flag", "rlm_flag", "rlm_sharp_side", "rlm_note",
-    "book_disagreement_flag", "book_spread_diff", "book_sharp_side", "book_note",
-    "line_freeze_flag", "home_win_prob", "away_win_prob",
-    "home_ats_wins", "home_ats_losses", "away_ats_wins", "away_ats_losses",
-    "home_team_id", "away_team_id",
-]
-
-
-def bootstrap_market_lines_schema(data_dir: Path) -> Path:
-    """Ensure market_lines.csv exists and has required schema columns."""
-    market_path = data_dir / "market_lines.csv"
-    market_path.parent.mkdir(parents=True, exist_ok=True)
-
-    if market_path.exists():
-        df = pd.read_csv(market_path, dtype={"event_id": str}, low_memory=False)
+    if csv_path.exists() and csv_path.stat().st_size > 0:
+        df = pd.read_csv(csv_path, dtype={"event_id": str}, low_memory=False)
     else:
         df = pd.DataFrame(columns=MARKET_LINES_SCHEMA_COLUMNS)
 
@@ -120,8 +107,9 @@ def bootstrap_market_lines_schema(data_dir: Path) -> Path:
     ordered = [c for c in MARKET_LINES_SCHEMA_COLUMNS if c in df.columns]
     remainder = [c for c in df.columns if c not in ordered]
     df = df[ordered + remainder]
-    df.to_csv(market_path, index=False)
-    return market_path
+    df.to_csv(csv_path, index=False)
+    log.info("Bootstrapped market lines schema at %s", csv_path)
+    return csv_path
 
 
 def fetch_action_network(game_date: date) -> list[dict]:
@@ -269,12 +257,17 @@ def parse_action_network_game(game: dict) -> Optional[dict]:
         if len(teams) < 2:
             return None
 
-        home_team = next((t for t in teams if t.get("meta", {}).get("home")), teams[0])
-        away_team = next((t for t in teams if not t.get("meta", {}).get("home")), teams[1])
+        home_team = next((t for t in teams if t.get("meta", {}).get("home")), None)
+        away_team = next((t for t in teams if not t.get("meta", {}).get("home")), None)
+
+        if not home_team or not away_team:
+            # Fallback if meta.home is not present
+            away_team = teams[0]
+            home_team = teams[1]
         odds = game.get("odds", [{}])[0] if game.get("odds") else {}
 
-        home_pct_tickets = game.get("home_pct")
-        home_pct_money = game.get("home_money_pct")
+        home_pct_tickets = game.get("home_pct") or odds.get("home_pct")
+        home_pct_money = game.get("home_money_pct") or odds.get("home_money_pct")
 
         return {
             "an_game_id": str(game.get("id", "")),
@@ -324,6 +317,8 @@ def parse_espn_event(event: dict) -> Optional[dict]:
 
         return {
             "event_id": str(event.get("id", "")).strip(),
+            "home_team_id": str(home_team.get("id", "")).strip(),
+            "away_team_id": str(away_team.get("id", "")).strip(),
             "home_team_name": home_team.get("team", {}).get("displayName", ""),
             "away_team_name": away_team.get("team", {}).get("displayName", ""),
             "game_time_utc": comp.get("date"),
@@ -437,8 +432,12 @@ def build_market_row(
     home_tickets = market_data.get("home_tickets_pct")
 
     steam_flag = False
-    prior = existing_rows[existing_rows["event_id"] == event_id].sort_values("captured_at_utc") if not existing_rows.empty else pd.DataFrame()
-    if len(prior[prior["event_id"] == event_id]) == 0:
+    if not existing_rows.empty and "event_id" in existing_rows.columns:
+        prior = existing_rows[existing_rows["event_id"] == event_id].sort_values("captured_at_utc")
+    else:
+        prior = pd.DataFrame()
+
+    if prior.empty:
         steam_flag = False
     elif home_spread is not None:
         last_row = prior.iloc[-1]
@@ -553,9 +552,7 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
     today = override_date or date.today()
     log.info("Market capture mode=%s date=%s", mode, today)
 
-    market_path = data_dir / "market_lines.csv"
-    bootstrap_market_lines_schema(market_path)
-    market_path = bootstrap_market_lines_schema(data_dir)
+    market_path = bootstrap_market_lines_schema(data_dir / "market_lines.csv")
     existing = pd.read_csv(market_path, dtype={"event_id": str}) if market_path.exists() else pd.DataFrame()
     existing = normalize_numeric_dtypes(existing)
 
@@ -583,13 +580,14 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
         if not parsed:
             continue
         key = (
-            str(parsed.get("home_team_name", "")).strip().lower(),
-            str(parsed.get("away_team_name", "")).strip().lower(),
+            normalize_team_name(parsed.get("home_team_name", "")),
+            normalize_team_name(parsed.get("away_team_name", "")),
         )
         action_by_team[key] = parsed
 
     new_rows: list[dict] = []
     matched = 0
+    an_matched = 0
     unmatched = 0
 
     for event in espn_events:
@@ -602,17 +600,21 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
             unmatched += 1
             continue
 
-        an_enrichment = action_by_team.get(
-            (
-                str(parsed.get("home_team_name", "")).strip().lower(),
-                str(parsed.get("away_team_name", "")).strip().lower(),
-            )
+        espn_key = (
+            normalize_team_name(parsed.get("home_team_name", "")),
+            normalize_team_name(parsed.get("away_team_name", "")),
         )
+        an_enrichment = action_by_team.get(espn_key) or action_by_team.get((espn_key[1], espn_key[0]))
         if an_enrichment:
+            an_matched += 1
             parsed["home_tickets_pct"] = an_enrichment.get("home_tickets_pct")
             parsed["away_tickets_pct"] = an_enrichment.get("away_tickets_pct")
             parsed["home_money_pct"] = an_enrichment.get("home_money_pct")
             parsed["away_money_pct"] = an_enrichment.get("away_money_pct")
+            if parsed.get("home_spread_open") is None:
+                parsed["home_spread_open"] = an_enrichment.get("home_spread_open")
+            if parsed.get("total_open") is None:
+                parsed["total_open"] = an_enrichment.get("total_open")
 
         matched += 1
         capture_type = {
@@ -626,8 +628,8 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
             normalize_team_name(str(parsed.get("home_team_name", ""))),
             normalize_team_name(str(parsed.get("away_team_name", ""))),
         )
-        pinn_match = pinnacle_by_team.get(team_key)
-        dk_match = dk_by_team.get(team_key)
+        pinn_match = pinnacle_by_team.get(team_key) or pinnacle_by_team.get((team_key[1], team_key[0]))
+        dk_match = dk_by_team.get(team_key) or dk_by_team.get((team_key[1], team_key[0]))
 
         row = build_market_row(event_id, capture_type, parsed, pinn_match, dk_match, existing)
         row["home_team_id"] = parsed.get("home_team_id")
@@ -656,9 +658,10 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
     rows_with_pinnacle = sum(1 for row in new_rows if row.get("pinnacle_spread") is not None)
     rows_with_dk = sum(1 for row in new_rows if row.get("draftkings_spread") is not None)
     log.info(
-        "Market ingest summary: pulled=%s matched=%s inserted=%s rejected=%s",
+        "Market ingest summary: pulled=%s matched=%s an_matched=%s inserted=%s rejected=%s",
         len(espn_events),
         matched,
+        an_matched,
         inserted,
         rejected,
     )
@@ -694,14 +697,12 @@ def main() -> None:
     except ImportError:
         DATA_DIR = Path("data")
 
-    bootstrap_market_lines_schema(DATA_DIR)
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["morning", "pregame", "postgame", "all"], default="pregame")
     parser.add_argument("--backfill-days", type=int, default=0)
     args = parser.parse_args()
 
-    bootstrap_market_lines_schema(Path(DATA_DIR) / "market_lines.csv")
+    bootstrap_market_lines_schema(DATA_DIR)
 
     if args.backfill_days > 0:
         for d in range(args.backfill_days, -1, -1):
