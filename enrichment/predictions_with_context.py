@@ -374,7 +374,33 @@ def build_predictions_with_context(
 
     df = pd.read_csv(predictions_path, dtype={"event_id": str})
     df = normalize_numeric_dtypes(df)
+
+    # Save model spread columns BEFORE normalize_column_names(),
+    # which may rename pred_spread -> spread or similar, causing
+    # it to be silently dropped by the market column drop loop.
+    _pred_spread_saved = None
+    _ens_spread_saved = None
+    if "pred_spread" in df.columns:
+        _pred_spread_saved = df["pred_spread"].copy()
+    if "ens_ens_spread" in df.columns:
+        _ens_spread_saved = df["ens_ens_spread"].copy()
+
     df = normalize_column_names(df)
+
+    # Restore after normalization in case it renamed them
+    if _pred_spread_saved is not None and (
+        "pred_spread" not in df.columns
+        or df["pred_spread"].isna().mean() > 0.5
+    ):
+        df["pred_spread"] = _pred_spread_saved.values
+        log.debug("pred_spread restored after normalize_column_names")
+    if _ens_spread_saved is not None and (
+        "ens_ens_spread" not in df.columns
+        or df["ens_ens_spread"].isna().mean() > 0.5
+    ):
+        df["ens_ens_spread"] = _ens_spread_saved.values
+        log.debug("ens_ens_spread restored after normalize_column_names")
+
     if "event_id" not in df.columns:
         if "game_id" in df.columns:
             df["event_id"] = df["game_id"].astype(str).str.strip()
@@ -421,7 +447,14 @@ def build_predictions_with_context(
             market_cols = ["event_id"] + expected_market_cols
             available = [c for c in market_cols if c in market_latest.columns]
 
-            drop_cols = [c for c in expected_market_cols if c in df.columns]
+            # Drop market columns from df before merge — but NEVER drop
+            # model output columns even if they share a name with a market col.
+            _protected = {"pred_spread", "ens_ens_spread", "predicted_spread",
+                          "pred_total", "pred_home_score", "pred_away_score"}
+            drop_cols = [
+                c for c in expected_market_cols
+                if c in df.columns and c not in _protected
+            ]
             df = df.drop(columns=drop_cols, errors="ignore")
 
             df["event_id"] = df["event_id"].astype(str).str.strip()
