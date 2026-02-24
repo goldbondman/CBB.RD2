@@ -49,14 +49,16 @@ on:
         type: choice
         options: ["true", "false"]
 
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   actions: write
 
 # Prevent overlapping runs from clobbering latest outputs/artifacts
-concurrency:
-  group: git-push-predictions-${{ github.ref }}
-  cancel-in-progress: false
 
 jobs:
   predict:
@@ -875,10 +877,10 @@ jobs:
           fi
 
           MAX_RETRIES=5
-          for i in $(seq 1 $MAX_RETRIES); do
+          for i in $(seq 1 5); do
             echo "Push attempt $i/$MAX_RETRIES"
             git fetch origin main
-            git rebase origin/main -X ours --no-stat 2>&1 || {
+            git rebase -X ours origin/main --no-stat 2>&1 || {
               git rebase --abort 2>/dev/null || true
               git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
             }
@@ -899,12 +901,7 @@ jobs:
           print(len(pd.read_csv(p)) if p.exists() else 0)
           " 2>/dev/null || echo "?")
             git commit -m "predictions: $(date +'%Y-%m-%d %H:%M UTC') — ${GAME_COUNT} games [skip ci]" || true
-
-            if git push origin main; then
-              echo "[OK] Push succeeded on attempt $i"
-              echo "[OK] CSVs committed to repository"
-              exit 0
-            fi
+            git push origin HEAD:main && { echo "Push OK attempt $i"; exit 0; }
 
             echo "[RETRY] Push failed, waiting before retry..."
             sleep $((i * 3))
