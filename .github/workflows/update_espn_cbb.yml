@@ -397,6 +397,61 @@ jobs:
                       print("[WARN] Data is more than 36 hours old — check pipeline schedule")
           PY
 
+      - name: Audit ensemble column availability
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          import pandas as pd, pathlib, sys
+
+          ENSEMBLE_REQUIRED = {
+              "cage_em":   ["adj_net_rtg", "net_eff", "net_rtg"],
+              "cage_o":    ["adj_ortg", "ortg", "off_rtg"],
+              "cage_d":    ["adj_drtg", "drtg", "def_rtg"],
+              "cage_t":    ["adj_pace", "pace"],
+              "efg_vs_opp": ["efg_vs_opp_season", "efg_vs_opp"],
+              "net_rtg_l5": ["net_rtg_l5", "net_eff_l5"],
+              "net_rtg_l10": ["net_rtg_l10", "net_eff_l10"],
+              "pythagorean_win_pct": ["pythagorean_win_pct", "pyth_win_pct"],
+              "cage_power_index": ["cage_power_index", "power_index"],
+          }
+
+          for fname in ["team_game_weighted.csv",
+                        "team_pretournament_snapshot.csv"]:
+              p = pathlib.Path("data") / fname
+              if not p.exists():
+                  print(f"[SKIP] {fname} not found")
+                  continue
+
+              df = pd.read_csv(p, nrows=5)
+              cols = set(df.columns)
+              print(f"\n[{fname}] — {len(df.columns)} columns total")
+              print(f"{'PROFILE FIELD':<22} {'STATUS':<10} MATCHED COLUMN")
+              print("-" * 60)
+
+              any_missing = False
+              for field, candidates in ENSEMBLE_REQUIRED.items():
+                  found = next((c for c in candidates if c in cols), None)
+                  if found:
+                      print(f"  {field:<20} {'OK':<10} {found}")
+                  else:
+                      print(f"  {field:<20} {'MISSING':<10} "
+                            f"(tried: {candidates})")
+                      any_missing = True
+
+              if any_missing:
+                  # Show actual column names that might be the right ones
+                  eff_cols = [c for c in cols if any(
+                      x in c.lower() for x in
+                      ['net', 'eff', 'rtg', 'ortg', 'drtg', 'pace',
+                       'efg', 'tov', 'pyth']
+                  )]
+                  print(f"\n  Actual efficiency-related columns in {fname}:")
+                  for c in sorted(eff_cols)[:20]:
+                      print(f"    {c}")
+              else:
+                  print(f"\n  [OK] All ensemble-required columns present")
+          PY
+
       - name: Show output sizes
         if: always()
         run: ls -lh data/*.csv 2>/dev/null || echo "No CSVs found"
