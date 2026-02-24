@@ -95,7 +95,16 @@ jobs:
           path: data/
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: false
+        continue-on-error: true
+
+      - name: Fallback restore ESPN CSVs from git (workflow_run)
+        if: github.event_name == 'workflow_run'
+        run: |
+          for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv; do
+            if [ ! -s "$f" ]; then
+              git show HEAD:"$f" > "$f" 2>/dev/null || true
+            fi
+          done
 
       # ── 2b. Fallback for workflow_run if artifact files are missing ────────────
       - name: "Fallback: Ensure required pipeline outputs exist (workflow_run)"
@@ -138,6 +147,15 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
+      - name: Fallback restore ESPN CSVs from git (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv; do
+            if [ ! -s "$f" ]; then
+              git show HEAD:"$f" > "$f" 2>/dev/null || true
+            fi
+          done
+
       - name: Download results log (for situational features)
         uses: actions/download-artifact@v4
         with:
@@ -145,6 +163,14 @@ jobs:
           path: data/
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true  # Non-fatal: first run won't have this
+
+      - name: Fallback restore results log from git
+        run: |
+          for f in data/results_log.csv data/results_log_graded.csv; do
+            if [ ! -s "$f" ]; then
+              git show HEAD:"$f" > "$f" 2>/dev/null || true
+            fi
+          done
 
       - name: Debug list data directory after artifact restore
         if: ${{ always() }}
@@ -787,7 +813,7 @@ jobs:
             data/player_condition_profiles.csv
             data/player_archetype_matchup_matrix.csv
             data/team_travel_fatigue.csv
-          retention-days: 30
+          retention-days: 90
           if-no-files-found: warn
 
       # Stable artifact name for downstream "latest" downloads (tracker, Supabase sync, etc.)
@@ -807,7 +833,7 @@ jobs:
             data/player_condition_profiles.csv
             data/player_archetype_matchup_matrix.csv
             data/team_travel_fatigue.csv
-          retention-days: 30
+          retention-days: 90
           if-no-files-found: warn
 
       - name: Upload prediction artifacts (legacy latest alias)
@@ -819,7 +845,7 @@ jobs:
             data/predictions_latest.csv
             data/predictions_combined_latest.csv
             data/ensemble_predictions_latest.csv
-          retention-days: 30
+          retention-days: 90
           if-no-files-found: warn
 
       # ── 13. Copy CSVs to data/csv/ and commit back to repo ────────────────────
