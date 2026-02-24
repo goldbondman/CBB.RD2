@@ -511,8 +511,6 @@ def build_predictions_with_context(
         log.warning("Situational file missing: %s", sit_path)
 
     # ── Team profile context merge ─────────────────────────────────
-    # Fills momentum, form, luck, variance columns from the season
-    # aggregate CSV. Uses same fallback chain as load_team_profiles().
     _ctx_sources = [
         DATA_DIR / "team_pretournament_snapshot.csv",
         DATA_DIR / "team_game_weighted.csv",
@@ -528,77 +526,126 @@ def build_predictions_with_context(
                 if "game_datetime_utc" in _ctx_df.columns:
                     _ctx_df = _ctx_df.sort_values("game_datetime_utc")
                 _ctx_df = _ctx_df.drop_duplicates("team_id", keep="last")
-                log.info("Team context source: %s (%d teams)", _src.name, len(_ctx_df))
+                log.info(
+                    "Team context source: %s (%d teams, cols: %s)",
+                    _src.name, len(_ctx_df),
+                    [c for c in _ctx_df.columns
+                     if any(x in c for x in
+                            ['momentum','luck','form','rtg_std','ha_net',
+                             'net_eff','adj_net','cage_em'])][:8]
+                )
                 break
-            except Exception as exc:
-                log.debug("Could not load team context from %s: %s", _src, exc)
+            except Exception as _exc:
+                log.debug("Could not load %s: %s", _src, _exc)
 
     if _ctx_df is not None and "team_id" in _ctx_df.columns:
-        # Columns to pull through — name variants for each field
+        # Map output field name -> ordered list of source column candidates
         _ctx_field_map = {
-            "momentum_score": ["t_momentum_quality_rating", "momentum_score", "momentum_rating", "momentum"],
-            "form_rating": ["form_rating", "recent_form", "form_score"],
-            "momentum_tier": ["momentum_tier", "t_momentum_tier", "momentum_category"],
-            "luck_score": ["luck_score", "luck"],
-            "ha_net_rtg_l10": ["ha_net_rtg_l10", "ha_net_eff_l10", "home_away_net_l10"],
-            "net_rtg_std_l10": ["net_rtg_std_l10", "net_eff_std_l10", "net_rtg_std"],
+            "momentum_score":  [
+                "t_momentum_quality_rating", "momentum_score",
+                "momentum_rating", "momentum",
+            ],
+            "form_rating":     [
+                "form_rating", "recent_form", "form_score",
+                "t_form_rating",
+            ],
+            "momentum_tier":   [
+                "momentum_tier", "t_momentum_tier",
+                "momentum_category",
+            ],
+            "luck_score":      ["luck_score", "luck"],
+            "ha_net_rtg_l10":  [
+                "ha_net_rtg_l10", "ha_net_eff_l10",
+                "home_away_net_l10",
+            ],
+            "net_rtg_std_l10": [
+                "net_rtg_std_l10", "net_eff_std_l10", "net_rtg_std",
+            ],
         }
 
-        # Build a slim lookup: team_id → {field: value}
-        slim_rows = {"team_id": _ctx_df["team_id"].astype(str).str.strip()}
+        # Log which candidates were actually found
+        for field, candidates in _ctx_field_map.items():
+            found = next(
+                (c for c in candidates if c in _ctx_df.columns), None
+            )
+            if found:
+                log.debug("Context field '%s' → source col '%s'", field, found)
+            else:
+                log.warning(
+                    "Context field '%s' not found in %s. "
+                    "Tried: %s. Available: %s",
+                    field, _src.name, candidates,
+                    [c for c in _ctx_df.columns
+                     if any(x in c.lower() for x in
+                            ['momentum','luck','form','std','ha_'])][:10]
+                )
+
+        # Build slim lookup frame
+        slim_data = {"team_id": _ctx_df["team_id"].astype(str).str.strip()}
         for field, candidates in _ctx_field_map.items():
             for cand in candidates:
                 if cand in _ctx_df.columns:
-                    slim_rows[field] = _ctx_df[cand]
+                    slim_data[field] = _ctx_df[cand].values
                     break
             else:
-                slim_rows[field] = pd.NA
+                slim_data[field] = pd.NA
 
-        slim = pd.DataFrame(slim_rows)
-
-        # Also pull games_played for games_used fix
-        for gp_col in ["games_played", "game_number", "games_before"]:
+        for gp_col in ["games_played", "game_number",
+                        "games_before", "n_games"]:
             if gp_col in _ctx_df.columns:
-                slim["games_played_season"] = pd.to_numeric(
+                slim_data["_games_played_season"] = pd.to_numeric(
                     _ctx_df[gp_col], errors="coerce"
-                )
+                ).values
                 break
 
+        slim = pd.DataFrame(slim_data)
+
+        # ── DROP pre-existing null collision columns before merge ──
+        # These columns exist in predictions_combined_latest.csv as
+        # nulls. Drop them so the merge writes clean values instead
+        # of creating _x/_y suffixed collision columns.
+        collision_cols = []
+        for field in _ctx_field_map:
+            for prefix in ["home_", "away_"]:
+                col = f"{prefix}{field}"
+                if col in df.columns and df[col].isna().all():
+                    collision_cols.append(col)
+        if collision_cols:
+            df = df.drop(columns=collision_cols)
+            log.debug(
+                "Dropped %d pre-existing null columns before context merge: %s",
+                len(collision_cols), collision_cols
+            )
+
         # Merge for home team
-        home_slim = slim.rename(
-            columns={
-                "team_id": "home_team_id",
-                **{f: f"home_{f}" for f in _ctx_field_map},
-                "games_played_season": "home_games_played_season",
-            }
-        )
+        home_slim = slim.rename(columns={
+            "team_id": "home_team_id",
+            "_games_played_season": "home_games_played_season",
+            **{f: f"home_{f}" for f in _ctx_field_map},
+        })
         df["home_team_id"] = df["home_team_id"].astype(str).str.strip()
         df = df.merge(home_slim, on="home_team_id", how="left")
 
         # Merge for away team
-        away_slim = slim.rename(
-            columns={
-                "team_id": "away_team_id",
-                **{f: f"away_{f}" for f in _ctx_field_map},
-                "games_played_season": "away_games_played_season",
-            }
-        )
+        away_slim = slim.rename(columns={
+            "team_id": "away_team_id",
+            "_games_played_season": "away_games_played_season",
+            **{f: f"away_{f}" for f in _ctx_field_map},
+        })
         df["away_team_id"] = df["away_team_id"].astype(str).str.strip()
         df = df.merge(away_slim, on="away_team_id", how="left")
 
-        # Fix games_used with season total when available
-        if "home_games_played_season" in df.columns:
-            home_gp = pd.to_numeric(df["home_games_played_season"], errors="coerce")
-            if home_gp.max() > 1:
-                df["home_games_used"] = home_gp.combine_first(
-                    pd.to_numeric(df.get("home_games_used"), errors="coerce")
-                )
-        if "away_games_played_season" in df.columns:
-            away_gp = pd.to_numeric(df["away_games_played_season"], errors="coerce")
-            if away_gp.max() > 1:
-                df["away_games_used"] = away_gp.combine_first(
-                    pd.to_numeric(df.get("away_games_used"), errors="coerce")
-                )
+        # Fix games_used with season total when > 1
+        for side in ["home", "away"]:
+            gps_col = f"{side}_games_played_season"
+            gu_col  = f"{side}_games_used"
+            if gps_col in df.columns:
+                _gps = pd.to_numeric(df[gps_col], errors="coerce")
+                if _gps.max() > 1:
+                    df[gu_col] = _gps.combine_first(
+                        pd.to_numeric(df.get(gu_col), errors="coerce")
+                    )
+                    df = df.drop(columns=[gps_col], errors="ignore")
 
         # Additional fallback: count rows per team_id in weighted CSV
         # to fix home/away_games_used = 1 from single game rows
@@ -623,26 +670,14 @@ def build_predictions_with_context(
             df.get("home_momentum_score", pd.Series(dtype=float)).notna().sum()
         )
         log.info(
-            "Team profile context merged: %d/%d games have home_momentum_score",
-            non_null,
-            len(df),
+            "Team profile context merged: %d/%d games have "
+            "home_momentum_score (0 = source column not found in CSV)",
+            n_mom, len(df)
         )
-
-        # Compute pred_home_score / pred_away_score from spread + total
-        if "pred_spread" in df.columns and "pred_total" in df.columns:
-            _spread = pd.to_numeric(df["pred_spread"], errors="coerce")
-            _total = pd.to_numeric(df["pred_total"], errors="coerce")
-            # spread = away_score - home_score (market convention)
-            # total = home_score + away_score
-            # => home = (total - spread) / 2
-            # => away = (total + spread) / 2
-            if "pred_home_score" not in df.columns or df["pred_home_score"].isna().all():
-                df["pred_home_score"] = ((_total - _spread) / 2).round(1)
-                df["pred_away_score"] = ((_total + _spread) / 2).round(1)
     else:
         log.warning(
-            "No team context source found — momentum/form/luck/variance columns will be null. Checked: %s",
-            [str(s) for s in _ctx_sources],
+            "No team context source found. Checked: %s",
+            [str(s) for s in _ctx_sources]
         )
 
     for col in expected_market_cols:
@@ -734,44 +769,91 @@ def build_predictions_with_context(
         "pred_spread" if "pred_spread" in df.columns
         else "ens_ens_spread"
     )
-    _pred = pd.to_numeric(df.get(pred_col), errors="coerce")
-    _line_src = "spread_line" if "spread_line" in df.columns else "home_spread_current"
-    _line = pd.to_numeric(df.get(_line_src), errors="coerce")
-    _open = pd.to_numeric(df.get("home_spread_open"), errors="coerce")
-    _home_net = pd.to_numeric(df.get("home_net_eff"), errors="coerce")
-    _away_net = pd.to_numeric(df.get("away_net_eff"), errors="coerce")
 
-    # 1. spread_diff_vs_line: how many pts model disagrees with market
-    #    Positive = model likes home more than market does
-    if "spread_diff_vs_line" not in df.columns or df["spread_diff_vs_line"].isna().all():
-        df["spread_diff_vs_line"] = (_line - _pred).round(2)
+    try:
+        _pred = pd.to_numeric(df[pred_col], errors="coerce") \
+            if pred_col in df.columns else pd.Series(dtype=float)
 
-    # 2. eff_edge: raw efficiency differential (home minus away net rtg)
-    #    Positive = home team efficiency advantage
-    if "eff_edge" not in df.columns or df["eff_edge"].isna().all():
-        df["eff_edge"] = (_home_net - _away_net).round(2)
+        # Build _line using fillna chaining — never use `or` with Series
+        _line = pd.Series(dtype=float)
+        for _lcol in ["spread_line", "home_spread_current"]:
+            if _lcol in df.columns:
+                _s = pd.to_numeric(df[_lcol], errors="coerce")
+                if _line.empty:
+                    _line = _s
+                else:
+                    _line = _line.fillna(_s)
 
-    # 3. clv_vs_open: model spread vs opening line
-    #    Measures whether model would have beaten the open
-    if _open.notna().any():
-        df["clv_vs_open"] = (_open - _pred).round(3)
-    else:
-        df["clv_vs_open"] = pd.NA
+        _open = pd.to_numeric(df["home_spread_open"], errors="coerce") \
+            if "home_spread_open" in df.columns \
+            else pd.Series(dtype=float)
 
-    # 4. predicted_spread alias — required by config/schemas.py
-    if "predicted_spread" not in df.columns or df["predicted_spread"].isna().all():
-        df["predicted_spread"] = _pred
+        # Build _home_net and _away_net with same safe pattern
+        _home_net = pd.Series(dtype=float)
+        for _nc in ["home_net_eff", "home_adj_net_rtg", "home_net_rtg"]:
+            if _nc in df.columns:
+                _home_net = pd.to_numeric(df[_nc], errors="coerce")
+                break
 
-    # Log coverage
-    n_diff = int(df["spread_diff_vs_line"].notna().sum())
-    n_eff = int(df["eff_edge"].notna().sum())
-    log.info(
-        "Computed context cols: spread_diff_vs_line=%d/%d, "
-        "eff_edge=%d/%d, clv_vs_open=%d/%d, predicted_spread=%d/%d",
-        n_diff, len(df), n_eff, len(df),
-        int(df["clv_vs_open"].notna().sum()), len(df),
-        int(df["predicted_spread"].notna().sum()), len(df),
-    )
+        _away_net = pd.Series(dtype=float)
+        for _nc in ["away_net_eff", "away_adj_net_rtg", "away_net_rtg"]:
+            if _nc in df.columns:
+                _away_net = pd.to_numeric(df[_nc], errors="coerce")
+                break
+
+        # 1. spread_diff_vs_line: how far model is from market
+        if len(_line) > 0 and len(_pred) > 0:
+            df["spread_diff_vs_line"] = (_line - _pred).round(2)
+        else:
+            df["spread_diff_vs_line"] = pd.NA
+
+        # 2. eff_edge: raw efficiency differential
+        if len(_home_net) > 0 and len(_away_net) > 0:
+            df["eff_edge"] = (_home_net - _away_net).round(2)
+        else:
+            df["eff_edge"] = pd.NA
+
+        # 3. clv_vs_open: model vs opening line
+        if len(_open) > 0 and _open.notna().any() and len(_pred) > 0:
+            df["clv_vs_open"] = (_open - _pred).round(3)
+        else:
+            df["clv_vs_open"] = pd.NA
+
+        # 4. predicted_spread alias (required by schema)
+        if len(_pred) > 0 and _pred.notna().any():
+            df["predicted_spread"] = _pred
+
+        # 5. pred_home_score / pred_away_score from spread + total
+        if "pred_total" in df.columns and len(_pred) > 0:
+            _total = pd.to_numeric(df["pred_total"], errors="coerce")
+            # spread = away - home; total = home + away
+            # home = (total - spread) / 2
+            # away = (total + spread) / 2
+            if _pred.notna().any() and _total.notna().any():
+                df["pred_home_score"] = ((_total - _pred) / 2).round(1)
+                df["pred_away_score"] = ((_total + _pred) / 2).round(1)
+
+        log.info(
+            "Computed context cols — "
+            "spread_diff_vs_line: %d/%d | eff_edge: %d/%d | "
+            "clv_vs_open: %d/%d | predicted_spread: %d/%d | "
+            "pred_home_score: %d/%d",
+            int(df["spread_diff_vs_line"].notna().sum()), len(df),
+            int(df["eff_edge"].notna().sum()), len(df),
+            int(df["clv_vs_open"].notna().sum()), len(df),
+            int(df["predicted_spread"].notna().sum())
+                if "predicted_spread" in df.columns else 0, len(df),
+            int(df["pred_home_score"].notna().sum())
+                if "pred_home_score" in df.columns else 0, len(df),
+        )
+
+    except Exception as _exc:
+        log.error(
+            "Computed columns block failed: %s — "
+            "spread_diff_vs_line/eff_edge/predicted_spread will be null",
+            _exc,
+            exc_info=True,
+        )
 
     # Integrity normalization for downstream consumers.
     df = _normalize_conference_names(df)
