@@ -639,20 +639,24 @@ def build_predictions_with_context(
 
         slim = pd.DataFrame(slim_data)
 
-        # ── DROP pre-existing null collision columns before merge ──
-        # These columns exist in predictions_combined_latest.csv as
-        # nulls. Drop them so the merge writes clean values instead
-        # of creating _x/_y suffixed collision columns.
+        # Drop pre-existing null collision columns before the context merge.
+        # Also drop _x/_y suffixed variants — these appear when
+        # predictions_combined_latest.csv was already produced by a workflow
+        # merge that added suffixes (e.g. home_momentum_score_x from the
+        # runner+ensemble merge step). If left in place, the context merge
+        # adds a second _y column alongside the existing _x column.
         collision_cols = []
         for field in _ctx_field_map:
             for prefix in ["home_", "away_"]:
-                col = f"{prefix}{field}"
-                if col in df.columns and df[col].isna().all():
-                    collision_cols.append(col)
+                base = f"{prefix}{field}"
+                for variant in [base, f"{base}_x", f"{base}_y"]:
+                    if variant in df.columns and df[variant].isna().all():
+                        collision_cols.append(variant)
         if collision_cols:
             df = df.drop(columns=collision_cols)
             log.debug(
-                "Dropped %d pre-existing null columns before context merge: %s",
+                "Dropped %d pre-existing null columns before context merge "
+                "(including _x/_y variants): %s",
                 len(collision_cols), collision_cols
             )
 
