@@ -121,6 +121,9 @@ def normalize_numeric_dtypes(
     for col in cols:
         if col in out.columns:
             out[col] = pd.to_numeric(out[col], errors='coerce').astype('Float64')
+    return out
+
+
 COLUMN_ALIASES: dict[str, list[str]] = {
     'event_id': ['game_id', 'eventId', 'gameId'],
     'pred_spread': ['predicted_spread', 'prediction_spread'],
