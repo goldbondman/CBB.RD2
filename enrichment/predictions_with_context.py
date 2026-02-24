@@ -517,12 +517,12 @@ def build_predictions_with_context(
         DATA_DIR / "csv" / "team_game_weighted.csv",
     ]
     _ctx_df = None
+    _ctx_df_full = None
     for _src in _ctx_sources:
         if _src.exists() and _src.stat().st_size > 100:
             try:
-                _ctx_df = pd.read_csv(
-                    _src, dtype={"team_id": str}, low_memory=False
-                )
+                _ctx_df_full = pd.read_csv(_src, dtype={"team_id": str}, low_memory=False)
+                _ctx_df = _ctx_df_full
                 if "game_datetime_utc" in _ctx_df.columns:
                     _ctx_df = _ctx_df.sort_values("game_datetime_utc")
                 _ctx_df = _ctx_df.drop_duplicates("team_id", keep="last")
@@ -647,9 +647,27 @@ def build_predictions_with_context(
                     )
                     df = df.drop(columns=[gps_col], errors="ignore")
 
-        n_mom = int(
-            df.get("home_momentum_score",
-                    pd.Series(dtype=float)).notna().sum()
+        # Additional fallback: count rows per team_id in weighted CSV
+        # to fix home/away_games_used = 1 from single game rows
+        if _ctx_df_full is not None and "team_id" in _ctx_df_full.columns:
+            for _side, _id_col in [("home", "home_team_id"), ("away", "away_team_id")]:
+                _gu_col = f"{_side}_games_used"
+                if _id_col in df.columns:
+                    _counts = (
+                        _ctx_df_full.groupby("team_id")
+                        .size()
+                        .reset_index(name="_n_games")
+                    )
+                    _counts["team_id"] = _counts["team_id"].astype(str).str.strip()
+                    _count_map = _counts.set_index("team_id")["_n_games"].to_dict()
+                    _mapped = df[_id_col].astype(str).str.strip().map(_count_map)
+                    if _mapped.max() > 1:
+                        df[_gu_col] = _mapped.combine_first(
+                            pd.to_numeric(df.get(_gu_col), errors="coerce")
+                        )
+
+        non_null = int(
+            df.get("home_momentum_score", pd.Series(dtype=float)).notna().sum()
         )
         log.info(
             "Team profile context merged: %d/%d games have "

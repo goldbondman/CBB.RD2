@@ -1033,6 +1033,19 @@ def load_team_profiles(
         if col not in str_cols:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
+    # Count actual games per team from full history
+    _team_game_count: dict[str, int] = {}
+    df_all = df.copy()
+    if "team_id" in df_all.columns:
+        _counts = df_all["team_id"].astype(str).value_counts()
+        _team_game_count = _counts.to_dict()
+        log.info(
+            "Game counts: %d teams, median %d games, max %d games",
+            len(_team_game_count),
+            int(_counts.median()) if len(_counts) > 0 else 0,
+            int(_counts.max()) if len(_counts) > 0 else 0,
+        )
+
     # Keep last row per team (most recent game)
     if "game_datetime_utc" in df.columns:
         df["game_datetime_utc"] = pd.to_datetime(
@@ -1093,7 +1106,12 @@ def load_team_profiles(
             team_id=tid,
             team_name=str(row.get("team", "")),
             conference=str(row.get("conference", "")),
-            games_before=int(g("games_played", 0)) or int(g("game_number", 0)),
+            games_before=(
+                _team_game_count.get(tid)
+                or int(g("games_played", 0))
+                or int(g("game_number", 0))
+                or 0
+            ),
 
             # Efficiency — try all known column name variants
             cage_em=_team_agg.get(tid) or col(
