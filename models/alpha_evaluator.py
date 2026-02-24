@@ -52,13 +52,27 @@ def kelly_fraction_calc(
     multiplier: float = 1.0,
 ) -> float:
     """
-    Quarter-Kelly fraction using edge-adjusted win probability.
+    Quarter-Kelly bankroll fraction using edge-adjusted win probability.
 
-    model_confidence: data reliability score (0–1), NOT win prob.
+    model_confidence: data reliability score (0–1), NOT win probability.
     edge_pts: |model_spread - market_spread| in points.
 
-    Win probability is estimated from edge size, then scaled
-    by model_confidence as a reliability discount.
+    Win probability is estimated from edge size, then scaled by
+    model_confidence as a reliability discount.
+
+    Edge → base win probability:
+      0.0 pts → 50.0%  (no edge)
+      1.0 pts → 51.5%
+      2.0 pts → 53.0%
+      3.0 pts → 54.5%
+      4.0 pts → 56.0%
+      5.0 pts → 57.0%
+      6.0 pts → 58.0%
+      7.0+ pts → 59.0% (cap)
+
+    Scaled by model_confidence:
+      Low confidence → regress win prob toward 50%
+      High confidence → use full edge-implied prob
     """
     if juice < 0:
         decimal_odds = 1 + (100 / abs(juice))
@@ -66,9 +80,11 @@ def kelly_fraction_calc(
         decimal_odds = 1 + (juice / 100)
     b = decimal_odds - 1.0
 
+    # Edge → base win probability (capped at 59%)
     edge = max(0.0, float(edge_pts))
     base_win_prob = 0.50 + min(edge * 0.015, 0.09)
 
+    # Confidence discount: regress toward 50% when uncertain
     conf = max(0.0, min(1.0, float(model_confidence)))
     p = 0.50 + (base_win_prob - 0.50) * conf
 
@@ -145,11 +161,16 @@ def evaluate_alpha(
     if market_evaluated:
         steam = _as_bool(market_context.get("steam_flag", False))
         line_move = float(market_context.get("line_movement") or 0)
+
+        # Guard: real steam requires actual line movement.
+        # Reject false positives from ingestion where line_movement=0.0
         if steam and abs(line_move) < 0.5:
             steam = False
             log.debug(
-                "Steam flag overridden: line_movement=%.2f < 0.5 "
-                "(false positive from ingestion)", line_move
+                "Steam flag overridden for game_id=%s: "
+                "line_movement=%.2f < 0.5 (ingestion false positive)",
+                game_id,
+                line_move,
             )
 
         if steam:
