@@ -374,7 +374,33 @@ def build_predictions_with_context(
 
     df = pd.read_csv(predictions_path, dtype={"event_id": str})
     df = normalize_numeric_dtypes(df)
+
+    # Save model spread columns BEFORE normalize_column_names(),
+    # which may rename pred_spread -> spread or similar, causing
+    # it to be silently dropped by the market column drop loop.
+    _pred_spread_saved = None
+    _ens_spread_saved = None
+    if "pred_spread" in df.columns:
+        _pred_spread_saved = df["pred_spread"].copy()
+    if "ens_ens_spread" in df.columns:
+        _ens_spread_saved = df["ens_ens_spread"].copy()
+
     df = normalize_column_names(df)
+
+    # Restore after normalization in case it renamed them
+    if _pred_spread_saved is not None and (
+        "pred_spread" not in df.columns
+        or df["pred_spread"].isna().mean() > 0.5
+    ):
+        df["pred_spread"] = _pred_spread_saved.values
+        log.debug("pred_spread restored after normalize_column_names")
+    if _ens_spread_saved is not None and (
+        "ens_ens_spread" not in df.columns
+        or df["ens_ens_spread"].isna().mean() > 0.5
+    ):
+        df["ens_ens_spread"] = _ens_spread_saved.values
+        log.debug("ens_ens_spread restored after normalize_column_names")
+
     if "event_id" not in df.columns:
         if "game_id" in df.columns:
             df["event_id"] = df["game_id"].astype(str).str.strip()
@@ -421,7 +447,14 @@ def build_predictions_with_context(
             market_cols = ["event_id"] + expected_market_cols
             available = [c for c in market_cols if c in market_latest.columns]
 
-            drop_cols = [c for c in expected_market_cols if c in df.columns]
+            # Drop market columns from df before merge — but NEVER drop
+            # model output columns even if they share a name with a market col.
+            _protected = {"pred_spread", "ens_ens_spread", "predicted_spread",
+                          "pred_total", "pred_home_score", "pred_away_score"}
+            drop_cols = [
+                c for c in expected_market_cols
+                if c in df.columns and c not in _protected
+            ]
             df = df.drop(columns=drop_cols, errors="ignore")
 
             df["event_id"] = df["event_id"].astype(str).str.strip()
@@ -607,20 +640,24 @@ def build_predictions_with_context(
 
         slim = pd.DataFrame(slim_data)
 
-        # ── DROP pre-existing null collision columns before merge ──
-        # These columns exist in predictions_combined_latest.csv as
-        # nulls. Drop them so the merge writes clean values instead
-        # of creating _x/_y suffixed collision columns.
+        # Drop pre-existing null collision columns before the context merge.
+        # Also drop _x/_y suffixed variants — these appear when
+        # predictions_combined_latest.csv was already produced by a workflow
+        # merge that added suffixes (e.g. home_momentum_score_x from the
+        # runner+ensemble merge step). If left in place, the context merge
+        # adds a second _y column alongside the existing _x column.
         collision_cols = []
         for field in _ctx_field_map:
             for prefix in ["home_", "away_"]:
-                col = f"{prefix}{field}"
-                if col in df.columns and df[col].isna().all():
-                    collision_cols.append(col)
+                base = f"{prefix}{field}"
+                for variant in [base, f"{base}_x", f"{base}_y"]:
+                    if variant in df.columns and df[variant].isna().all():
+                        collision_cols.append(variant)
         if collision_cols:
             df = df.drop(columns=collision_cols)
             log.debug(
-                "Dropped %d pre-existing null columns before context merge: %s",
+                "Dropped %d pre-existing null columns before context merge "
+                "(including _x/_y variants): %s",
                 len(collision_cols), collision_cols
             )
 
@@ -701,6 +738,14 @@ def build_predictions_with_context(
                             pd.to_numeric(df.get(_gu_col), errors="coerce")
                         )
 
+        n_mom = int(
+            df.get("home_momentum_score", pd.Series(dtype=float)).notna().sum()
+        )
+        log.info(
+            "Team profile context merged: %d/%d games have "
+            "home_momentum_score (0 = source column not found in CSV)",
+            n_mom, len(df)
+        )
     else:
         log.warning(
             "No team context source found. Checked: %s",
