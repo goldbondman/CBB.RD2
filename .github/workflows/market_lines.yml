@@ -2,9 +2,9 @@ name: Market Lines Capture
 
 on:
   schedule:
-    - cron: '0 11 * * *'
-    - cron: '0 15-23,0-4 * * *'
-    - cron: '0 5 * * *'
+    - cron: '0 14 * * *'         # 6 AM PST — opening lines posted by now
+    - cron: '0 15-23,0-4 * * *'  # hourly pregame window
+    - cron: '0 5 * * *'          # 9 PM PST — postgame/closing
   workflow_dispatch:
     inputs:
       mode:
@@ -81,7 +81,7 @@ jobs:
           MODE="${{ github.event.inputs.mode }}"
           if [ -z "$MODE" ]; then
             HOUR=$(date -u +%H)
-            if [ "$HOUR" = "11" ]; then MODE="morning"
+            if [ "$HOUR" = "14" ]; then MODE="morning"
             elif [ "$HOUR" = "05" ]; then MODE="postgame"
             else MODE="pregame"
             fi
@@ -108,3 +108,45 @@ jobs:
           name: cbb-predictions-with-context
           path: data/predictions_with_context.csv
           retention-days: 30
+
+      - name: Commit market lines to repository
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin \
+            https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+          git add data/market_lines.csv \
+                  data/predictions_with_context.csv \
+                  2>/dev/null || true
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No market line changes to commit"
+            exit 0
+          fi
+
+          MAX_RETRIES=3
+          for i in $(seq 1 $MAX_RETRIES); do
+            git fetch origin main
+            git rebase origin/main -X ours --no-stat 2>&1 || {
+              git rebase --abort 2>/dev/null || true
+              git merge origin/main -X ours --no-edit 2>/dev/null || true
+            }
+            git add data/market_lines.csv \
+                    data/predictions_with_context.csv \
+                    2>/dev/null || true
+            if git diff --staged --quiet; then
+              echo "[SKIP] Nothing to commit after merge"
+              exit 0
+            fi
+            git commit -m "market: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]" || true
+            if git push origin main; then
+              echo "[OK] Market lines committed"
+              exit 0
+            fi
+            sleep $((i * 3))
+          done
+          echo "[WARN] Could not push market lines — will retry next capture"
