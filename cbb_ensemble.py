@@ -893,6 +893,9 @@ class EnsemblePredictor:
         ens_spread = spread_sum / spread_w if spread_w > 0 else 0.0
         ens_total  = total_sum  / total_w  if total_w  > 0 else 140.0
 
+        # pre_correction: 5-model blend stored for compatibility columns
+        # ens_spread: 8-model weighted average from config.spread_weights
+        # (ens_spread from spread_sum/spread_w above is the authoritative output)
         model_map = {mp.model_name: mp.spread for mp in preds}
         m1 = model_map.get("Situational", ens_spread)
         m2 = model_map.get("FourFactors", ens_spread)
@@ -907,15 +910,9 @@ class EnsemblePredictor:
             + w.get("w_ats", DEFAULT_WEIGHTS["w_ats"]) * m4
             + w.get("w_situational", DEFAULT_WEIGHTS["w_situational"]) * m5
         )
-        ens_spread = pre_correction
-
-        corrected_pred, bias_corrections = _apply_bias_corrections(
-            ens_spread,
-            home_conf=home.conference,
-            away_conf=away.conference,
-            home_momentum_tier=home.momentum_tier,
-        )
-        ens_spread = corrected_pred
+        # NOTE: ens_spread retains the 8-model weighted average.
+        # pre_correction is stored in EnsembleResult for diagnostic
+        # use and backward-compat columns only.
 
         # ── Confidence & agreement ────────────────────────────────────────
         spreads = np.array([mp.spread for mp in preds])
@@ -982,7 +979,7 @@ class EnsemblePredictor:
             edge_flag_total=edge_total,
             spread_edge_pts=round(spread_edge_pts, 2),
             total_edge_pts=round(total_edge_pts, 2),
-            bias_corrections_applied=bias_corrections,
+            bias_corrections_applied=bias_applied,
             pre_correction_prediction=round(pre_correction, 2),
         )
 
