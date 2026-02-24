@@ -59,6 +59,11 @@ on:
         type: choice
         options: ["true", "false"]
 
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   actions: write
@@ -66,9 +71,6 @@ permissions:
 env:
   TZ: "America/Los_Angeles"
 
-concurrency:
-  group: git-push-analytics-${{ github.ref }}
-  cancel-in-progress: false
 
 jobs:
   # ════════════════════════════════════════════════════════════════════════════
@@ -218,6 +220,16 @@ jobs:
           path: data/
           run-id: ${{ steps.get_espn_run_id.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Fallback restore ESPN CSVs from git
+        if: steps.artifact_check.outputs.espn_csvs == 'true'
+        run: |
+          for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv; do
+            if [ ! -s "$f" ]; then
+              git show HEAD:"$f" > "$f" 2>/dev/null || true
+            fi
+          done
 
       - name: Skip ESPN CSV download (artifact missing)
         if: steps.artifact_check.outputs.espn_csvs != 'true'
@@ -251,6 +263,16 @@ jobs:
           name: cbb-results-log
           path: data/
           github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Fallback restore results log from git
+        if: steps.artifact_check.outputs.results_log == 'true'
+        run: |
+          for f in data/results_log.csv data/results_summary.csv data/results_model_split.csv; do
+            if [ ! -s "$f" ]; then
+              git show HEAD:"$f" > "$f" 2>/dev/null || true
+            fi
+          done
 
       - name: Skip previous results log download (artifact missing)
         if: steps.artifact_check.outputs.results_log != 'true'
@@ -281,6 +303,16 @@ jobs:
           path: data/
           run-id: ${{ steps.get_predictions_run_id.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Fallback restore latest predictions from git
+        if: steps.artifact_check.outputs.rolling_predictions == 'true'
+        run: |
+          for f in data/predictions_latest.csv data/predictions_combined_latest.csv data/ensemble_predictions_latest.csv; do
+            if [ ! -s "$f" ]; then
+              git show HEAD:"$f" > "$f" 2>/dev/null || true
+            fi
+          done
 
       - name: Skip latest predictions download (artifact missing)
         if: steps.artifact_check.outputs.rolling_predictions != 'true'
@@ -568,7 +600,7 @@ jobs:
           echo "has_results_files=${existing}" >> "$GITHUB_OUTPUT"
 
       - name: Upload results log artifact
-        if: always() && steps.upload_results.outputs.has_results_files == '1'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cbb-results-log
@@ -588,9 +620,6 @@ jobs:
           retention-days: 90       # Keep longer — this is your performance history
           if-no-files-found: warn
 
-      - name: Skip results log upload (no files generated)
-        if: always() && steps.upload_results.outputs.has_results_files != '1'
-        run: echo "[INFO] No results files found; skipping upload for this run."
 
       - name: Commit results tracker CSVs to repository
         if: always()
@@ -615,10 +644,10 @@ jobs:
           fi
 
           MAX_RETRIES=5
-          for i in $(seq 1 $MAX_RETRIES); do
+          for i in $(seq 1 5); do
             echo "Push attempt $i/$MAX_RETRIES"
             git fetch origin main
-            git rebase origin/main -X ours --no-stat 2>&1 || {
+            git rebase -X ours origin/main --no-stat 2>&1 || {
               git rebase --abort 2>/dev/null || true
               git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
             }
@@ -639,12 +668,7 @@ jobs:
             fi
 
             git commit -m "tracker: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]" || true
-
-            if git push origin main; then
-              echo "[OK] Push succeeded on attempt $i"
-              echo "[OK] Results tracker CSVs committed to repository"
-              exit 0
-            fi
+            git push origin HEAD:main && { echo "Push OK attempt $i"; exit 0; }
 
             echo "[RETRY] Push failed, waiting before retry..."
             sleep $((i * 3))
@@ -680,6 +704,14 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
+      - name: Fallback restore previous results log from git
+        run: |
+          for f in data/results_log.csv data/results_log_graded.csv; do
+            if [ ! -s "$f" ]; then
+              git show HEAD:"$f" > "$f" 2>/dev/null || true
+            fi
+          done
+
       - name: Ensure data directories exist and are git-tracked
         run: |
           mkdir -p data/csv
@@ -702,7 +734,7 @@ jobs:
         run: python -m pip install -r requirements.txt
 
       # ── Generate required game log inputs ───────────────────────────────────
-      # actions/download-artifact can only pull from the *current* workflow run
+      # artifact downloads can only pull from the *current* workflow run
       # unless you provide a run-id (workflow_run trigger). For scheduled/dispatch
       # analytics runs, we generate the inputs directly.
       - name: Run ESPN pipeline (required for backtester)
@@ -1013,10 +1045,10 @@ jobs:
           fi
 
           MAX_RETRIES=5
-          for i in $(seq 1 $MAX_RETRIES); do
+          for i in $(seq 1 5); do
             echo "Push attempt $i/$MAX_RETRIES"
             git fetch origin main
-            git rebase origin/main -X ours --no-stat 2>&1 || {
+            git rebase -X ours origin/main --no-stat 2>&1 || {
               git rebase --abort 2>/dev/null || true
               git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
             }
@@ -1036,12 +1068,7 @@ jobs:
           print(f'{pct*100:.1f}' if pct < 1 else f'{pct:.1f}')
           " 2>/dev/null || echo "?")
             git commit -m "weights: optimized $(date +'%Y-%m-%d') — season ATS ${SEASON_PCT}% [skip ci]" || true
-
-            if git push origin main; then
-              echo "[OK] Push succeeded on attempt $i"
-              echo "[OK] Optimized weights committed to repository"
-              exit 0
-            fi
+            git push origin HEAD:main && { echo "Push OK attempt $i"; exit 0; }
 
             echo "[RETRY] Push failed, waiting before retry..."
             sleep $((i * 3))

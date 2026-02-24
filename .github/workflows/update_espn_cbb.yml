@@ -26,13 +26,15 @@ on:
   schedule:
     - cron: "0 10 * * *"   # 10:00 AM UTC daily (2 AM PST / 3 AM PDT)
 
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   actions: write
 
-concurrency:
-  group: git-push-update-espn-${{ github.ref }}
-  cancel-in-progress: false
 
 jobs:
   # ════════════════════════════════════════════════════════════════════════════
@@ -80,6 +82,14 @@ jobs:
           name: espn-cbb-csvs
           path: data/
         continue-on-error: true   # OK to fail on first-ever run
+
+      - name: Fallback restore ESPN CSVs from git (update job)
+        run: |
+          for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv; do
+            if [ ! -s "$f" ]; then
+              git show HEAD:"$f" > "$f" 2>/dev/null || true
+            fi
+          done
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -508,7 +518,18 @@ jobs:
             data/team_travel_fatigue.csv
             data/player_rolling_l5.csv
             data/player_role_splits.csv
-          retention-days: 30
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Upload latest prediction CSV alias
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-predictions-latest
+          path: |
+            data/predictions_latest.csv
+            data/predictions_combined_latest.csv
+            data/ensemble_predictions_latest.csv
+          retention-days: 90
           if-no-files-found: warn
 
       - name: Upload raw JSON as artifact
@@ -542,10 +563,10 @@ jobs:
           fi
 
           MAX_RETRIES=5
-          for i in $(seq 1 $MAX_RETRIES); do
+          for i in $(seq 1 5); do
             echo "Push attempt $i/$MAX_RETRIES"
             git fetch origin main
-            git rebase origin/main -X ours --no-stat 2>&1 || {
+            git rebase -X ours origin/main --no-stat 2>&1 || {
               git rebase --abort 2>/dev/null || true
               git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
             }
@@ -558,11 +579,7 @@ jobs:
             fi
 
             git commit -m "pipeline: $(date +'%Y-%m-%d %H:%M UTC') — metrics + backtest [skip ci]" || true
-
-            if git push origin main; then
-              echo "[OK] Push succeeded on attempt $i"
-              exit 0
-            fi
+            git push origin HEAD:main && { echo "Push OK attempt $i"; exit 0; }
 
             echo "[RETRY] Push failed, waiting before retry..."
             sleep $((i * 3))
@@ -638,6 +655,15 @@ jobs:
         with:
           name: espn-cbb-csvs
           path: data/
+        continue-on-error: true
+
+      - name: Fallback restore ESPN CSVs from git (rankings job)
+        run: |
+          for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv; do
+            if [ ! -s "$f" ]; then
+              git show HEAD:"$f" > "$f" 2>/dev/null || true
+            fi
+          done
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -735,10 +761,10 @@ jobs:
           fi
 
           MAX_RETRIES=5
-          for i in $(seq 1 $MAX_RETRIES); do
+          for i in $(seq 1 5); do
             echo "Push attempt $i/$MAX_RETRIES"
             git fetch origin main
-            git rebase origin/main -X ours --no-stat 2>&1 || {
+            git rebase -X ours origin/main --no-stat 2>&1 || {
               git rebase --abort 2>/dev/null || true
               git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
             }
@@ -751,11 +777,7 @@ jobs:
             fi
 
             git commit -m "rankings: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]" || true
-
-            if git push origin main; then
-              echo "[OK] Push succeeded on attempt $i"
-              exit 0
-            fi
+            git push origin HEAD:main && { echo "Push OK attempt $i"; exit 0; }
 
             echo "[RETRY] Push failed, waiting before retry..."
             sleep $((i * 3))
