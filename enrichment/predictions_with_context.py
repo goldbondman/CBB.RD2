@@ -869,17 +869,27 @@ def build_predictions_with_context(
         else:
             df["eff_edge"] = pd.NA
 
+        _close = pd.to_numeric(df["home_spread_current"], errors="coerce") \
+            if "home_spread_current" in df.columns \
+            else pd.Series(dtype=float)
+
         # 3. clv_vs_open: model vs opening line
         if len(_open) > 0 and _open.notna().any() and len(_pred) > 0:
             df["clv_vs_open"] = (_open - _pred).round(3)
         else:
             df["clv_vs_open"] = pd.NA
 
-        # 4. predicted_spread alias (required by schema)
+        # 4. clv_vs_close: model vs current/closing line
+        if len(_close) > 0 and _close.notna().any() and len(_pred) > 0:
+            df["clv_vs_close"] = (_close - _pred).round(3)
+        else:
+            df["clv_vs_close"] = pd.NA
+
+        # 5. predicted_spread alias (required by schema)
         if len(_pred) > 0 and _pred.notna().any():
             df["predicted_spread"] = _pred
 
-        # 5. pred_home_score / pred_away_score from spread + total
+        # 6. pred_home_score / pred_away_score from spread + total
         if "pred_total" in df.columns and len(_pred) > 0:
             _total = pd.to_numeric(df["pred_total"], errors="coerce")
             # spread = away - home; total = home + away
@@ -892,15 +902,24 @@ def build_predictions_with_context(
         log.info(
             "Computed context cols — "
             "spread_diff_vs_line: %d/%d | eff_edge: %d/%d | "
-            "clv_vs_open: %d/%d | predicted_spread: %d/%d | "
+            "clv_vs_open: %d/%d | clv_vs_close: %d/%d | predicted_spread: %d/%d | "
             "pred_home_score: %d/%d",
             int(df["spread_diff_vs_line"].notna().sum()), len(df),
             int(df["eff_edge"].notna().sum()), len(df),
             int(df["clv_vs_open"].notna().sum()), len(df),
+            int(df["clv_vs_close"].notna().sum()), len(df),
             int(df["predicted_spread"].notna().sum())
                 if "predicted_spread" in df.columns else 0, len(df),
             int(df["pred_home_score"].notna().sum())
                 if "pred_home_score" in df.columns else 0, len(df),
+        )
+
+        clv_open_null_rate = float(df["clv_vs_open"].isna().mean()) if "clv_vs_open" in df.columns else 1.0
+        clv_close_null_rate = float(df["clv_vs_close"].isna().mean()) if "clv_vs_close" in df.columns else 1.0
+        log.info(
+            "CLV null rates — clv_vs_open: %.2f%% | clv_vs_close: %.2f%%",
+            clv_open_null_rate * 100.0,
+            clv_close_null_rate * 100.0,
         )
 
     except Exception as _exc:
