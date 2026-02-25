@@ -43,8 +43,13 @@ def load_graded(path: Path, rolling_days: int) -> pd.DataFrame:
         raise ValueError("No graded predictions found")
 
     if rolling_days and "game_datetime_utc" in graded.columns:
-        cutoff = pd.Timestamp.utcnow().tz_localize(None) - pd.Timedelta(days=rolling_days)
-        graded["game_datetime_utc"] = pd.to_datetime(graded["game_datetime_utc"], errors="coerce").dt.tz_localize(None)
+        # pd.Timestamp.now('UTC') is preferred over utcnow() in modern pandas
+        now_utc = pd.Timestamp.now('UTC')
+        cutoff = (now_utc - pd.Timedelta(days=rolling_days)).tz_localize(None)
+        # Use tz_convert(None) for aware series, tz_localize(None) for naive
+        graded["game_datetime_utc"] = pd.to_datetime(graded["game_datetime_utc"], errors="coerce").apply(
+            lambda x: x.tz_convert(None) if x.tzinfo else x
+        )
         graded = graded[graded["game_datetime_utc"] >= cutoff]
         log.info("Rolling %sd window: %s graded rows", rolling_days, len(graded))
 
@@ -122,7 +127,7 @@ def analyze_conference_bias(df: pd.DataFrame, min_sample: int, sig_level: float)
                     "p_value": round(p_val, 4),
                     "actionable": p_val < sig_level and abs(bias) > 0.5,
                     "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                    "ats_pct": round(grp["home_covered_pred"].mean() * 100, 1),
+                    "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
                     "mae": round(grp["abs_spread_error"].mean(), 2),
                 }
             )
@@ -142,7 +147,7 @@ def analyze_conference_bias(df: pd.DataFrame, min_sample: int, sig_level: float)
                 "p_value": round(p_val, 4),
                 "actionable": p_val < sig_level and abs(bias) > 0.5,
                 "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                "ats_pct": round(grp["home_covered_pred"].mean() * 100, 1),
+                "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
                 "mae": round(grp["abs_spread_error"].mean(), 2),
             }
         )
@@ -186,7 +191,7 @@ def analyze_variance_tier_bias(df: pd.DataFrame, min_sample: int, sig_level: flo
                 "p_value": round(p_val, 4),
                 "actionable": p_val < sig_level and abs(bias) > 0.5,
                 "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                "ats_pct": round(grp["home_covered_pred"].mean() * 100, 1),
+                "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
                 "mae": round(grp["abs_spread_error"].mean(), 2),
             }
         )
@@ -221,7 +226,7 @@ def analyze_rest_bias(df: pd.DataFrame, min_sample: int, sig_level: float) -> li
                 "p_value": round(p_val, 4),
                 "actionable": p_val < sig_level and abs(bias) > 0.5,
                 "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                "ats_pct": round(grp["home_covered_pred"].mean() * 100, 1),
+                "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
                 "mae": round(grp["abs_spread_error"].mean(), 2),
             }
         )
@@ -268,7 +273,7 @@ def analyze_luck_bias(df: pd.DataFrame, min_sample: int, sig_level: float) -> li
                 "p_value": round(p_val, 4),
                 "actionable": p_val < sig_level and abs(bias) > 0.3,
                 "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                "ats_pct": round(grp["home_covered_pred"].mean() * 100, 1),
+                "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
                 "mae": round(grp["abs_spread_error"].mean(), 2),
             }
         )
@@ -302,7 +307,7 @@ def analyze_line_size_bias(df: pd.DataFrame, min_sample: int, sig_level: float) 
         if len(grp) < min_sample:
             continue
         bias, p_val, ci_lo, ci_hi = _mean_bias_stats(grp["spread_error"])
-        ats = grp["home_covered_pred"].mean() * 100
+        hcr = grp["home_covered_pred"].mean() * 100
         results.append(
             {
                 "dimension": "line_size",
@@ -314,9 +319,9 @@ def analyze_line_size_bias(df: pd.DataFrame, min_sample: int, sig_level: float) 
                 "p_value": round(p_val, 4),
                 "actionable": p_val < sig_level and abs(bias) > 0.5,
                 "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                "ats_pct": round(ats, 1),
+                "home_cover_rate": round(hcr, 1),
                 "mae": round(grp["abs_spread_error"].mean(), 2),
-                "note": "Large favorites ATS caution" if (bucket == "large_14plus" and ats < 48) else "",
+                "note": "Large favorites home cover rate caution" if (bucket == "large_14plus" and hcr < 48) else "",
             }
         )
     return results
@@ -355,7 +360,7 @@ def analyze_momentum_bias(df: pd.DataFrame, min_sample: int, sig_level: float) -
                 "p_value": round(p_val, 4),
                 "actionable": p_val < sig_level and abs(bias) > 0.5,
                 "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                "ats_pct": round(grp["home_covered_pred"].mean() * 100, 1),
+                "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
                 "mae": round(grp["abs_spread_error"].mean(), 2),
             }
         )
@@ -370,7 +375,7 @@ def analyze_cross_tier_bias(df: pd.DataFrame, min_sample: int, sig_level: float)
             continue
 
         bias, p_val, ci_lo, ci_hi = _mean_bias_stats(grp["spread_error"])
-        ats = grp["home_covered_pred"].mean() * 100
+        hcr = grp["home_covered_pred"].mean() * 100
         direction = "home_underdog_outperforms" if bias > 0 else "home_favorite_covers_more"
         results.append(
             {
@@ -383,7 +388,7 @@ def analyze_cross_tier_bias(df: pd.DataFrame, min_sample: int, sig_level: float)
                 "p_value": round(p_val, 4),
                 "actionable": p_val < sig_level and abs(bias) > 0.5,
                 "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                "ats_pct": round(ats, 1),
+                "home_cover_rate": round(hcr, 1),
                 "mae": round(grp["abs_spread_error"].mean(), 2),
                 "error_direction": direction,
                 "note": f"⚠️ Systematic {abs(bias):.1f}pt error on {tier} games — {direction}" if p_val < sig_level else "",
@@ -423,7 +428,7 @@ def write_bias_report(all_biases: list[dict], df_graded: pd.DataFrame, report_pa
     report = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "graded_total": len(df_graded),
-        "overall_ats_pct": round(df_graded["home_covered_pred"].mean() * 100, 1),
+        "overall_home_cover_rate": round(df_graded["home_covered_pred"].mean() * 100, 1),
         "overall_mae": round(df_graded["abs_spread_error"].mean(), 2),
         "actionable_biases": len(actionable),
         "bias_by_tier": tier_ats,
@@ -442,7 +447,7 @@ def append_bias_history(all_biases: list[dict], history_path: Path) -> None:
         return
 
     df_new = pd.DataFrame(all_biases)
-    df_new["week_of"] = datetime.now().strftime("%Y-%m-%d")
+    df_new["week_of"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     if history_path.exists():
         df_existing = pd.read_csv(history_path)
@@ -455,8 +460,6 @@ def append_bias_history(all_biases: list[dict], history_path: Path) -> None:
 
 
 def main() -> None:
-    global SIG_LEVEL
-
     try:
         from espn_config import (
             OUT_PREDICTIONS_GRADED as graded_path,
@@ -476,8 +479,6 @@ def main() -> None:
     parser.add_argument("--sig-level", type=float, default=SIG_LEVEL)
     args = parser.parse_args()
 
-    SIG_LEVEL = args.sig_level
-
     try:
         df = load_graded(Path(graded_path), args.window)
     except Exception as exc:
@@ -494,7 +495,7 @@ def main() -> None:
                 "p_value",
                 "actionable",
                 "correction",
-                "ats_pct",
+                "home_cover_rate",
                 "mae",
                 "computed_at_utc",
             ]

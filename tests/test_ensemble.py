@@ -3,7 +3,7 @@ tests/test_ensemble.py — Tests for cbb_ensemble.py
 
 Validates:
   - TeamProfile creation and field completeness
-  - Each of the 7 sub-models produces valid output
+  - Each of the 8 sub-models produces valid output
   - EnsemblePredictor aggregation (weighted averaging, agreement, edge flags)
   - EnsembleConfig.from_optimized() with and without weights file
   - to_flat_dict() serialisation
@@ -33,6 +33,9 @@ from cbb_ensemble import (
     SituationalModel,
     CAGERankingsModel,
     RegressedEfficiencyModel,
+    LuckRegressionModel,
+    VarianceModel,
+    HomeAwayFormModel,
     load_team_profiles,
     results_to_csv,
 )
@@ -159,6 +162,9 @@ class TestSubModels:
         SituationalModel,
         CAGERankingsModel,
         RegressedEfficiencyModel,
+        LuckRegressionModel,
+        VarianceModel,
+        HomeAwayFormModel,
     ]
 
     @pytest.mark.parametrize("ModelClass", MODELS)
@@ -223,9 +229,10 @@ class TestEnsemblePredictor:
         assert 0.0 <= result.confidence <= 1.0
         assert result.model_agreement in ("STRONG", "MODERATE", "SPLIT")
 
-    def test_eight_model_predictions(self, strong_home, weak_away):
+    def test_model_count_check(self, strong_home, weak_away):
         predictor = EnsemblePredictor()
         result = predictor.predict(strong_home, weak_away)
+        # Current EnsemblePredictor.MODELS has 8 models
         assert len(result.model_predictions) == 8
 
     def test_model_diversity(self, strong_home, weak_away):
@@ -314,21 +321,19 @@ class TestEnsembleResult:
         assert "ens_total" in flat
         assert "ens_confidence" in flat
         assert "ens_agreement" in flat
-        assert "fourfactors_spread" in flat
-        assert "adjefficiency_spread" in flat
-        assert "pythagorean_spread" in flat
-        assert "momentum_spread" in flat
-        assert "situational_spread" in flat
-        assert "cagerankings_spread" in flat
-        assert "regressedeff_spread" in flat
+
+        # Check for model keys (using current MODEL list)
+        models = ["fourfactors", "adjefficiency", "pythagorean", "situational", "cagerankings", "luckregression", "variance", "homeawayform"]
+        for m in models:
+            assert f"{m}_spread" in flat
 
     def test_to_flat_dict_model_totals(self, strong_home, weak_away):
         predictor = EnsemblePredictor()
         result = predictor.predict(strong_home, weak_away)
         flat = result.to_flat_dict()
 
-        for name in ["fourfactors", "adjefficiency", "pythagorean",
-                      "momentum", "situational", "cagerankings", "regressedeff"]:
+        models = ["fourfactors", "adjefficiency", "pythagorean", "situational", "cagerankings", "luckregression", "variance", "homeawayform"]
+        for name in models:
             assert f"{name}_total" in flat
             assert f"{name}_conf" in flat
 
@@ -338,7 +343,7 @@ class TestEnsembleResult:
 class TestEnsembleConfig:
     def test_default_weights(self):
         config = EnsembleConfig()
-        assert len(config.spread_weights) == 7
+        assert len(config.spread_weights) == 8
         assert abs(sum(config.spread_weights.values()) - 1.0) < 0.01
 
     def test_from_optimized_no_file(self, tmp_path, monkeypatch):
@@ -347,7 +352,7 @@ class TestEnsembleConfig:
             "cbb_ensemble.WEIGHTS_PATH", tmp_path / "nonexistent.json"
         )
         config = EnsembleConfig.from_optimized()
-        assert len(config.spread_weights) == 7
+        assert len(config.spread_weights) == 8
 
     def test_from_optimized_with_file(self, tmp_path, monkeypatch):
         """from_optimized() should load weights from JSON."""
@@ -359,8 +364,8 @@ class TestEnsembleConfig:
         config = EnsembleConfig.from_optimized()
         assert config.spread_weights["FourFactors"] == 0.30
         assert config.spread_weights["AdjEfficiency"] == 0.25
-        # Others should keep defaults
-        assert config.spread_weights["Pythagorean"] == 0.14
+        # Others should keep defaults (0.125)
+        assert config.spread_weights["Pythagorean"] == 0.125
 
 
 # ── Integration Tests ─────────────────────────────────────────────────────────
@@ -380,3 +385,4 @@ class TestIntegration:
         assert len(df) == 1
         assert "ens_spread" in df.columns
         assert "game_id" in df.columns
+        assert "pred_spread" in df.columns

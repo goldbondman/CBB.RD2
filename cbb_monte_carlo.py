@@ -453,14 +453,14 @@ def simulate_slate(
 
     for i, game in enumerate(games, 1):
         if verbose:
-            print(f"[SIM] Game {i}/{total}: {game.home_team} vs {game.away_team}")
+            log.info(f"[SIM] Game {i}/{total}: {game.home_team} vs {game.away_team}")
         result = simulate_game(game, n_sims=n_sims)
         results.append(result)
 
     elapsed = time.time() - t0
     total_draws = total * n_sims
     if verbose:
-        print(
+        log.info(
             f"[SIM] {total} games × {n_sims:,} sims = "
             f"{total_draws:,} draws ({elapsed:.1f}s)"
         )
@@ -506,6 +506,13 @@ def load_team_profiles_for_sim(
         print("[WARN] No team_id column found in rankings CSV")
         return profiles
 
+    def _g(row, col, default=0.0):
+        v = row.get(col, default)
+        try:
+            return float(v) if pd.notna(v) else default
+        except (TypeError, ValueError):
+            return default
+
     for _, row in df.iterrows():
         raw_id = row.get(id_col, "")
         # Handle numeric IDs that pandas reads as float (1.0 → "1")
@@ -519,21 +526,14 @@ def load_team_profiles_for_sim(
         if not tid or tid == "nan":
             continue
 
-        def _g(col, default=0.0):
-            v = row.get(col, default)
-            try:
-                return float(v) if pd.notna(v) else default
-            except (TypeError, ValueError):
-                return default
-
         profiles[tid] = {
-            "consistency_score": _g("consistency_score", LEAGUE_AVG_PROFILES["consistency_score"]),
-            "cage_em": _g("cage_em", LEAGUE_AVG_PROFILES["cage_em"]),
-            "floor_em": _g("floor_em", LEAGUE_AVG_PROFILES["floor_em"]),
-            "ceiling_em": _g("ceiling_em", LEAGUE_AVG_PROFILES["ceiling_em"]),
-            "net_rtg_l5": _g("net_rtg_l5", LEAGUE_AVG_PROFILES["net_rtg_l5"]),
-            "cage_t": _g("cage_t", LEAGUE_AVG_PROFILES["cage_t"]),
-            "suffocation": _g("suffocation", LEAGUE_AVG_PROFILES["suffocation"]),
+            "consistency_score": _g(row, "consistency_score", LEAGUE_AVG_PROFILES["consistency_score"]),
+            "cage_em": _g(row, "cage_em", LEAGUE_AVG_PROFILES["cage_em"]),
+            "floor_em": _g(row, "floor_em", LEAGUE_AVG_PROFILES["floor_em"]),
+            "ceiling_em": _g(row, "ceiling_em", LEAGUE_AVG_PROFILES["ceiling_em"]),
+            "net_rtg_l5": _g(row, "net_rtg_l5", LEAGUE_AVG_PROFILES["net_rtg_l5"]),
+            "cage_t": _g(row, "cage_t", LEAGUE_AVG_PROFILES["cage_t"]),
+            "suffocation": _g(row, "suffocation", LEAGUE_AVG_PROFILES["suffocation"]),
         }
 
     print(f"[INFO] Loaded {len(profiles)} team profiles for MC simulation")
@@ -714,7 +714,16 @@ def build_mc_calibration_report(
     required = {"mc_home_win_pct", "actual_margin"}
     missing = required - set(df.columns)
     if missing:
-        raise ValueError(f"Missing required columns in {accuracy_path}: {sorted(missing)}")
+        log.warning(f"Missing columns {sorted(missing)} in {accuracy_path} — returning empty metrics")
+        return {
+            "n_games": 0,
+            "mce_before": np.nan,
+            "mce_after": np.nan,
+            "sigma_empirical": np.nan,
+            "sigma_current": SIGMA,
+            "sigma_recommended": None,
+            "updated": False,
+        }
 
     df["mc_home_win_pct"] = pd.to_numeric(df["mc_home_win_pct"], errors="coerce")
     df["actual_margin"] = pd.to_numeric(df["actual_margin"], errors="coerce")
@@ -829,7 +838,7 @@ def build_game_cards(
     if "game_id" not in combined_df.columns or "game_id" not in mc_df.columns:
         return pd.DataFrame()
 
-    merged = combined_df.merge(mc_df, on="game_id", how="inner")
+    merged = combined_df.merge(mc_df, on="game_id", how="left")
     if merged.empty:
         return pd.DataFrame()
 
@@ -1071,6 +1080,10 @@ def main() -> None:
         df["game_id"] = df["game_id"].astype(str)
         mc_df["game_id"] = mc_df["game_id"].astype(str)
         enriched = df.merge(mc_df, on="game_id", how="left")
+
+        missing_mc = enriched["mc_n_sims"].isna().sum()
+        if missing_mc > 0:
+            log.warning(f"[MC] {missing_mc} games missing MC results after join")
     else:
         enriched = pd.concat([df.reset_index(drop=True), mc_df.reset_index(drop=True)], axis=1)
 
