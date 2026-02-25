@@ -1,4 +1,16 @@
 conference,adj_net_rtg_mean,adj_net_rtg_median,adj_net_rtg_max,adj_net_rtg_min,adj_ortg_mean,adj_drtg_mean,barthag_mean,barthag_max,cage_power_index_mean,resume_score_mean,team_count,conference_name
+Big Ten,,,,,,,0.5,0.9945,49.025,50.0,4,Big Ten
+Big 12,,,,,,,0.5,0.5,44.2,50.0,2,Big 12
+Big East,,,,,,,0.5,0.5,44.20000000000001,50.0,6,Big East
+Independents,,,,,,,0.5,0.5,44.2,50.0,8,Independents
+Mid-American Conference,,,,,,,0.49999166666666667,0.9938,43.400000000000006,50.0,12,Mid-American Conference
+Mid-Eastern Athletic Conference,,,,,,,0.5,0.5,44.2,50.0,8,Mid-Eastern Athletic Conference
+Ohio Valley Conference,,,,,,,0.5,0.5,44.2,50.0,2,Ohio Valley Conference
+Pac-12,,,,,,,0.5,0.9999,41.237500000000004,50.0,8,Pac-12
+Patriot League,,,,,,,0.5,0.5,44.20000000000001,50.0,6,Patriot League
+Southeastern Conference,,,,,,,0.5,0.5,44.20000000000001,50.0,12,Southeastern Conference
+Southland Conference,,,,,,,0.5,0.5,44.2,50.0,2,Southland Conference
+Sun Belt Conference,,,,,,,0.49994999999999995,0.945,46.25,50.0,2,Sun Belt Conference
 Independent,,,,,,,0.50007,0.9151,50.68,50.0,10,Independent
 Big Ten,,,,,,,0.5088125,0.9711,50.975,50.0,8,Big Ten
 America East Conference,,,,,,,0.5,0.5,50.3,50.0,10,America East Conference
