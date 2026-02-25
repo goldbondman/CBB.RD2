@@ -1062,11 +1062,9 @@ def load_team_profiles(
     # team_game_weighted.csv uses adj_net_rtg (confirmed by run log).
     # net_eff is the fallback for other source files.
     _team_agg: dict[str, float] = {}
-    _agg_col = next(
-        (c for c in ["adj_net_rtg", "net_eff", "net_rtg", "cage_em"]
-         if c in df_all.columns),
-        None
-    )
+    _agg_candidates = ["adj_net_rtg", "net_eff", "net_rtg", "cage_em"]
+    _agg_col = next((c for c in _agg_candidates if c in df_all.columns), None)
+
     if _agg_col and "team_id" in df_all.columns:
         _agg = (
             pd.to_numeric(df_all[_agg_col], errors="coerce")
@@ -1086,7 +1084,7 @@ def load_team_profiles(
         log.warning(
             "No net efficiency column found for cage_em aggregation. "
             "All cage_em will be 0.0. Columns checked: %s. Available: %s",
-            ["adj_net_rtg", "net_eff", "net_rtg", "cage_em"],
+            _agg_candidates,
             [c for c in df_all.columns
              if any(x in c.lower() for x in
                     ["net", "eff", "rtg", "em"])][:15],
@@ -1133,7 +1131,7 @@ def load_team_profiles(
             cage_em=(
                 _team_agg[tid]
                 if tid in _team_agg
-                else col(row, "adj_net_rtg", "net_eff", "cage_em",
+                else col(row, "adj_net_rtg", "net_eff", "net_rtg", "cage_em",
                          "adj_em", default=0.0)
             ),
             cage_o=col(row, "adj_ortg", "ortg", "off_rtg", "cage_o",
@@ -1262,9 +1260,10 @@ def load_team_profiles(
             [c for c in df.columns if 'net' in c.lower() or 'eff' in c.lower()][:10],
         )
     else:
+        _em_vals = [p.cage_em for p in profiles.values()]
         log.info(
-            "Loaded %d team profiles, %d with non-default cage_em",
-            len(profiles), non_default,
+            "Loaded %d team profiles, %d with non-zero cage_em (range: %.1f to %.1f)",
+            len(profiles), non_default, min(_em_vals), max(_em_vals)
         )
 
     return profiles
