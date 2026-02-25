@@ -1447,6 +1447,48 @@ def load_team_profiles(
     return profiles
 
 
+
+
+def _coalesce_pred_spread(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Guarantee pred_spread is populated before write.
+    Tries aliases in priority order — first non-null wins.
+    Logs a warning if recovery was needed so it is visible in run logs.
+    Never silently writes a fully-null pred_spread column.
+    """
+    if "pred_spread" not in df.columns or df["pred_spread"].isna().all():
+        for alias in ["ens_ens_spread", "predicted_spread", "ensemble_spread"]:
+            if alias in df.columns and df[alias].notna().any():
+                df["pred_spread"] = df[alias]
+                log.warning(
+                    "[INTEGRITY] pred_spread was null — recovered from '%s' (%d rows)",
+                    alias, df["pred_spread"].notna().sum()
+                )
+                break
+        else:
+            log.error(
+                "[INTEGRITY] pred_spread is null and no alias found. "
+                "Aliases checked: ens_ens_spread, predicted_spread, ensemble_spread. "
+                "Available columns: %s",
+                sorted(df.columns.tolist())
+            )
+
+    # Final gate — raise if still null after recovery attempts
+    if df["pred_spread"].isna().all():
+        raise RuntimeError(
+            "pred_spread is fully null after all recovery attempts. "
+            "Cannot write predictions file with no spread values."
+        )
+
+    null_pct = df["pred_spread"].isna().mean() * 100
+    if null_pct > 10:
+        log.warning(
+            "[INTEGRITY] pred_spread is %.0f%% null after coalesce — "
+            "check model output for games with insufficient history",
+            null_pct
+        )
+    return df
+
 def results_to_csv(
     results: List[EnsembleResult],
     path: Path,
@@ -1461,5 +1503,6 @@ def results_to_csv(
         rows.append(flat)
 
     if rows:
-        pd.DataFrame(rows).to_csv(path, index=False)
+        out_df = _coalesce_pred_spread(pd.DataFrame(rows))
+        out_df.to_csv(path, index=False)
         log.info("Wrote %d ensemble predictions to %s", len(rows), path)
