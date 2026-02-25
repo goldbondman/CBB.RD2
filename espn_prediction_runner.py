@@ -527,9 +527,11 @@ def run_predictions(
     results: List[Dict] = []
     _first_call = True
     skipped = 0
+    skipped_records: List[Dict[str, str]] = []
     rankings_df = _load_rankings()
     schedule_df = load_games_schedule()
     team_schedule_df = build_team_schedule_index(schedule_df)
+    args_min_games = int(getattr(getattr(model, "config", None), "min_games_for_full_confidence", 0) or 0)
 
     for i, matchup in enumerate(matchups):
         home_id = matchup.get("home_team_id")
@@ -561,6 +563,18 @@ def run_predictions(
                 f"    Skipping {home_name} vs {away_name}. Insufficient history "
                 f"(home={len(home_games)}, away={len(away_games)})"
             )
+            skipped_records.append({
+                "game_id": str(game_id or ""),
+                "home_team": str(home_name or ""),
+                "away_team": str(away_name or ""),
+                "game_datetime_utc": str(matchup.get("game_datetime_utc") or ""),
+                "skip_reason": "insufficient_history",
+                "skip_detail": (
+                    f"home={len(home_games)} games, away={len(away_games)} games, "
+                    f"min={args_min_games}"
+                ),
+                "skipped_at_utc": pd.Timestamp.now("UTC").isoformat(),
+            })
             skipped += 1
             continue
 
@@ -577,6 +591,15 @@ def run_predictions(
             )
         except Exception as exc:
             log.error(f"    Prediction failed for {game_id}: {exc}")
+            skipped_records.append({
+                "game_id": str(game_id or ""),
+                "home_team": str(home_name or ""),
+                "away_team": str(away_name or ""),
+                "game_datetime_utc": str(matchup.get("game_datetime_utc") or ""),
+                "skip_reason": "prediction_exception",
+                "skip_detail": str(exc),
+                "skipped_at_utc": pd.Timestamp.now("UTC").isoformat(),
+            })
             skipped += 1
             continue
 
@@ -804,6 +827,24 @@ def run_predictions(
 
         if unique_totals <= 1 and len(res_df) > 1:
             log.warning("[DIAG] projected_total unique count is %d for %d games", unique_totals, len(res_df))
+
+    if skipped_records:
+        dq_path = DATA_DIR / "dq_skipped_games.csv"
+        dq_df = pd.DataFrame(skipped_records)
+        if dq_path.exists():
+            existing = pd.read_csv(dq_path)
+            dq_df = pd.concat([existing, dq_df], ignore_index=True)
+            dq_df["skipped_at_utc"] = pd.to_datetime(dq_df["skipped_at_utc"], utc=True, errors="coerce")
+            cutoff = pd.Timestamp.now("UTC") - pd.Timedelta(days=30)
+            dq_df = dq_df[dq_df["skipped_at_utc"] > cutoff]
+
+        dq_df.to_csv(dq_path, index=False)
+        log.warning(
+            "[DQ] %d games skipped this run — reasons: %s | written to %s",
+            len(skipped_records),
+            dq_df["skip_reason"].value_counts().to_dict(),
+            dq_path,
+        )
 
     log.info(f"Predictions complete: {len(results)} generated, {skipped} skipped")
     log.info(
