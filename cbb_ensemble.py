@@ -815,23 +815,45 @@ class EnsemblePredictor:
 
         try:
             bt = pd.read_csv(bias_table_path)
-            actionable = bt[bt["actionable"] == True]
+            actionable = bt[
+                bt["actionable"].astype(str).str.strip().str.lower().isin({"true", "1", "yes", "y"})
+            ]
         except Exception as exc:
             log.debug("Unable to load bias table %s: %s", bias_table_path, exc)
             return prediction, []
 
         game_tier = get_game_tier(home.conference, away.conference)
-        momentum_tier = pd.cut(
-            pd.Series([home.momentum]),
-            bins=[-999, -10, -4, 4, 10, 999],
-            labels=["COLD", "COOLING", "STEADY", "RISING", "HOT"],
-        ).astype(str).iloc[0]
+        if str(home.momentum_tier).strip():
+            momentum_tier = str(home.momentum_tier).strip().upper()
+        else:
+            momentum_tier = pd.cut(
+                pd.Series([home.momentum]),
+                bins=[-999, -10, -2, 4, 10, 999],
+                labels=["COLD", "NEUTRAL", "WARM", "HOT", "ELITE"],
+            ).astype(str).iloc[0]
+
+        line_for_bias = getattr(self, "_current_spread_line", None)
+        if line_for_bias is None or pd.isna(line_for_bias):
+            line_for_bias = prediction
+
+        spread_abs = abs(float(line_for_bias))
+        if spread_abs < 3:
+            spread_bucket = "0-3"
+        elif spread_abs < 6:
+            spread_bucket = "3-6"
+        elif spread_abs < 10:
+            spread_bucket = "6-10"
+        else:
+            spread_bucket = "10+"
+
+        favorite_side = "home_fav" if float(line_for_bias) < 0 else "away_fav"
 
         game_features = {
-            "conference": home.conference,
             "conference_tier": game_tier,
-            "cross_tier_matchup": game_tier,
+            "spread_bucket": spread_bucket,
+            "game_tier": game_tier,
             "momentum_tier": momentum_tier,
+            "favorite_side": favorite_side,
         }
 
         applied: List[str] = []
@@ -968,12 +990,14 @@ class EnsemblePredictor:
                 total_edge_pts >= self.config.edge_threshold_total
             )
 
+        self._current_spread_line = spread_line
         corrected_spread, bias_applied = self._apply_bias_corrections(
             ens_spread,
             home,
             away,
             bias_table_path=DATA_DIR / "model_bias_table.csv",
         )
+        self._current_spread_line = None
 
         return EnsembleResult(
             spread=round(corrected_spread, 2),
