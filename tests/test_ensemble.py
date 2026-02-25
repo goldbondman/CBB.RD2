@@ -242,6 +242,13 @@ class TestEnsemblePredictor:
         spreads = [mp.spread for mp in result.model_predictions]
         assert len(set(spreads)) > 1, "All models produced identical spread"
 
+    def test_total_diversity(self, strong_home, weak_away):
+        """Models should not collapse to one identical total projection."""
+        predictor = EnsemblePredictor()
+        result = predictor.predict(strong_home, weak_away)
+        totals = [mp.total for mp in result.model_predictions]
+        assert len(set(totals)) > 1, "All models produced identical total"
+
     def test_strong_agreement_label(self, strong_home, weak_away):
         """Clear mismatch should produce STRONG agreement."""
         predictor = EnsemblePredictor()

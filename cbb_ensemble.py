@@ -338,6 +338,19 @@ class _BaseModel:
         return (home_off + away_off) * pace / 100.0
 
     @staticmethod
+    def _off_vs_def_total(
+        home_off: float,
+        away_off: float,
+        home_def: float,
+        away_def: float,
+        pace: float,
+    ) -> float:
+        """Estimate total using each offense blended against opponent defense."""
+        home_pp100 = (home_off + away_def) / 2.0
+        away_pp100 = (away_off + home_def) / 2.0
+        return (home_pp100 + away_pp100) * pace / 100.0
+
+    @staticmethod
     def _confidence_from_games(
         home: TeamProfile, away: TeamProfile
     ) -> float:
@@ -424,7 +437,13 @@ class FourFactorsModel(_BaseModel):
         spread = -margin
 
         pace  = self._expected_pace(home, away)
-        total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        total = self._off_vs_def_total(
+            home_off=home.cage_o,
+            away_off=away.cage_o,
+            home_def=home.cage_d,
+            away_def=away.cage_d,
+            pace=pace,
+        )
 
         sample_conf = self._confidence_from_games(home, away)
         consistency = 1.0 - (
@@ -462,7 +481,9 @@ class AdjustedEfficiencyModel(_BaseModel):
         margin = eff_edge * (pace / 100.0) + self._hca(neutral)
         spread = -margin
 
-        total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        base_total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        luck_drag = (abs(home.luck) + abs(away.luck)) * 0.15
+        total = base_total - luck_drag
 
         sample_conf = self._confidence_from_games(home, away)
         variance_penalty = min(
@@ -503,7 +524,8 @@ class PythagoreanModel(_BaseModel):
         spread = -margin
 
         pace  = self._expected_pace(home, away)
-        total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        style_adj = (home.cover_margin + away.cover_margin) * 0.15
+        total = self._eff_to_total(home.cage_o, away.cage_o, pace) + style_adj
 
         luck_penalty = (abs(home.luck) + abs(away.luck)) / 20.0
         sample_conf = self._confidence_from_games(home, away)
@@ -599,7 +621,8 @@ class ATSIntelligenceModel(_BaseModel):
         )
         spread = -margin
         pace = self._expected_pace(home, away)
-        total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        pace_adj = (home.momentum + away.momentum - 100.0) * 0.03
+        total = self._eff_to_total(home.cage_o, away.cage_o, pace) + pace_adj
         conf = max(0.10, min(0.90, self._confidence_from_games(home, away)))
         return ModelPrediction(self.name, round(spread, 2), round(total, 1), round(conf, 3))
 
@@ -644,7 +667,13 @@ class SituationalModel(_BaseModel):
             margin += HCA * 0.5
         spread = -margin
 
-        total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        total = self._off_vs_def_total(
+            home_off=home.cage_o,
+            away_off=away.cage_o,
+            home_def=home.cage_d,
+            away_def=away.cage_d,
+            pace=pace,
+        )
 
         sample_conf = self._confidence_from_games(home, away)
         conf = max(0.10, min(0.90, sample_conf * 0.8))
@@ -715,7 +744,9 @@ class CAGERankingsModel(_BaseModel):
         spread = -margin
 
         pace = self._expected_pace(home, away)
-        total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        h_form_off = home.ortg_l10 if abs(home.ortg_l10) > 1e-6 else home.cage_o
+        a_form_off = away.ortg_l10 if abs(away.ortg_l10) > 1e-6 else away.cage_o
+        total = self._eff_to_total(h_form_off, a_form_off, pace)
 
         sample_conf = self._confidence_from_games(home, away)
         risk_penalty = (home.star_risk + away.star_risk - 100.0) / 200.0
@@ -799,7 +830,8 @@ class LuckRegressionModel(_BaseModel):
             + self._hca(neutral)
         )
         spread = -margin
-        total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        luck_drag = (abs(home.luck) + abs(away.luck)) * 0.2
+        total = self._eff_to_total(home.cage_o, away.cage_o, pace) - luck_drag
         conf = max(0.10, min(0.90, self._confidence_from_games(home, away)))
         return ModelPrediction(self.name, round(spread, 2), round(total, 1), round(conf, 3))
 
@@ -822,7 +854,8 @@ class VarianceModel(_BaseModel):
         confidence_adj = float(np.clip(1.0 - (h_std + a_std) / 40.0, 0.35, 1.0))
         margin = eff_edge * confidence_adj * (pace / 100.0) + self._hca(neutral)
         spread = -margin
-        total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        volatility_drag = (h_std + a_std) * 0.12
+        total = self._eff_to_total(home.cage_o, away.cage_o, pace) - volatility_drag
         conf = max(0.10, min(0.90, self._confidence_from_games(home, away) * confidence_adj))
         return ModelPrediction(self.name, round(spread, 2), round(total, 1), round(conf, 3))
 
@@ -846,7 +879,9 @@ class HomeAwayFormModel(_BaseModel):
         if not neutral:
             margin += HCA * 0.5
         spread = -margin
-        total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        h_form_off = home.ortg_l10 if abs(home.ortg_l10) > 1e-6 else home.cage_o
+        a_form_off = away.ortg_l10 if abs(away.ortg_l10) > 1e-6 else away.cage_o
+        total = self._eff_to_total(h_form_off, a_form_off, pace)
         conf = max(0.10, min(0.85, self._confidence_from_games(home, away)))
         return ModelPrediction(self.name, round(spread, 2), round(total, 1), round(conf, 3))
 
@@ -1508,5 +1543,23 @@ def results_to_csv(
 
     if rows:
         out_df = _coalesce_pred_spread(pd.DataFrame(rows))
+
+        model_spread_cols = [c for c in out_df.columns if c.endswith("_spread") and c not in {"ens_spread", "pred_spread"}]
+        model_total_cols = [c for c in out_df.columns if c.endswith("_total") and c != "ens_total"]
+        if model_spread_cols:
+            same_spread_ratio = float((out_df[model_spread_cols].nunique(axis=1) <= 1).mean())
+            if same_spread_ratio >= 0.90:
+                log.warning(
+                    "[INTEGRITY] %.0f%% of rows have identical per-model spreads. Check profile lookup/id normalization.",
+                    same_spread_ratio * 100,
+                )
+        if model_total_cols:
+            same_total_ratio = float((out_df[model_total_cols].nunique(axis=1) <= 1).mean())
+            if same_total_ratio >= 0.90:
+                log.warning(
+                    "[INTEGRITY] %.0f%% of rows have identical per-model totals. Check model input diversity.",
+                    same_total_ratio * 100,
+                )
+
         out_df.to_csv(path, index=False)
         log.info("Wrote %d ensemble predictions to %s", len(rows), path)
