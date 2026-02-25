@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: "0 8 * * *"     # Results tracker — daily 8 AM UTC
     - cron: "0 10 * * 1"    # Backtester — weekly Monday 10 AM UTC
+  workflow_run:
+    workflows: ["Market Lines Capture"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       run_mode:
@@ -37,12 +40,41 @@ jobs:
           cache: "pip"
 
       # Step 3: Download all required artifacts. Standardized names used.
+      # Pattern: Use gh CLI to find latest successful run-id for cross-workflow downloads
+      - name: Get latest Market Lines run ID
+        id: get_ml_run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_id=$(gh run list \
+            --workflow=market_lines.yml \
+            --status=success \
+            --limit=1 \
+            --json=databaseId \
+            --jq='.[0].databaseId')
+          echo "run_id=$run_id" >> $GITHUB_OUTPUT
+
+      - name: Get latest ESPN data run ID
+        id: get_espn_run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_id=$(gh run list \
+            --workflow=update_espn_cbb.yml \
+            --status=success \
+            --limit=1 \
+            --json=databaseId \
+            --jq='.[0].databaseId')
+          echo "run_id=$run_id" >> $GITHUB_OUTPUT
+
       # Handoff from market_lines.yml
       - name: Download market lines
         uses: actions/download-artifact@v4
         with:
           name: cbb-market-lines
           path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.get_ml_run.outputs.run_id }}
         continue-on-error: true
 
       - name: Download predictions with context
@@ -50,6 +82,8 @@ jobs:
         with:
           name: cbb-predictions-with-context
           path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.get_ml_run.outputs.run_id }}
         continue-on-error: true
 
       # Handoff from update_espn_cbb.yml
@@ -58,6 +92,8 @@ jobs:
         with:
           name: cbb-espn-data
           path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.get_espn_run.outputs.run_id }}
         continue-on-error: true
 
       # Pattern 1: Verify artifacts or bootstrap from git history to prevent silent failures
