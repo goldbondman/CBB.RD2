@@ -1,0 +1,4 @@
+run_timestamp_utc,trigger,days_back,dates_fetched,games_found,games_parsed,games_failed,team_rows_written,player_rows_written,parse_version,dry_run,status
+2026-02-24T23:33:25Z,unknown,1,2,36,36,0,72,102,v1.0.0,False,ok
+2026-02-24T23:34:06Z,unknown,1,2,36,36,0,72,133,v1.0.0,False,ok
+2026-02-24T23:51:07Z,unknown,1,2,36,36,0,72,133,v1.0.0,False,ok

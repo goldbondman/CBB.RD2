@@ -114,9 +114,10 @@ def bootstrap_market_lines_schema(path: str | Path) -> Path:
 
 def fetch_action_network(game_date: date) -> list[dict]:
     date_str = game_date.strftime("%Y%m%d")
+    # bookIds: 15=Pinnacle(Action), 30=Action, 68=DraftKings, 69=FanDuel, 75=BetMGM, 76=PointsBet
     url = (
         "https://api.actionnetwork.com/web/v1/scoreboard/ncaab"
-        f"?period=game&bookIds=15,30,76,123&date={date_str}"
+        f"?period=game&bookIds=15,30,68,69,76,123&date={date_str}"
     )
     try:
         resp = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
@@ -145,31 +146,53 @@ def fetch_espn_scoreboard(game_date: date) -> list[dict]:
 
 
 def fetch_pinnacle_lines() -> list[dict]:
-    url = "https://guest.api.arcadia.pinnacle.com/0.1/leagues/487/markets/straight"
+    """Fetch Pinnacle lines. League 493 = NCAAB (487 was NBA)."""
+    league_id = 493
+    base_url = "https://guest.api.arcadia.pinnacle.com/0.1/leagues"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
-        resp.raise_for_status()
-        payload = resp.json()
-        if isinstance(payload, list):
-            return payload
-        if isinstance(payload, dict):
-            return payload.get("markets", [])
-        return []
+        # 1. Fetch matchups to get team names
+        m_resp = requests.get(f"{base_url}/{league_id}/matchups", headers=HEADERS, timeout=REQUEST_TIMEOUT)
+        m_resp.raise_for_status()
+        matchups = m_resp.json()
+
+        # 2. Fetch markets to get the actual lines
+        l_resp = requests.get(f"{base_url}/{league_id}/markets/straight", headers=HEADERS, timeout=REQUEST_TIMEOUT)
+        l_resp.raise_for_status()
+        markets = l_resp.json()
+
+        matchup_map = {m["id"]: m for m in matchups if isinstance(m, dict) and "id" in m}
+
+        combined = []
+        for market in markets:
+            if not isinstance(market, dict):
+                continue
+            mid = market.get("matchupId")
+            if mid in matchup_map:
+                # Merge matchup info (participants) into the market object for the indexer
+                merged = {**market, **matchup_map[mid]}
+                combined.append(merged)
+
+        log.info("Pinnacle: matched %d markets with matchups", len(combined))
+        return combined
     except Exception as exc:  # noqa: BLE001
         log.warning("Pinnacle fetch failed: %s", exc)
         return []
 
 
 def fetch_draftkings_lines() -> list[dict]:
-    url = "https://sportsbook.draftkings.com/api/odds/v1/leagues/ncaab/"
+    # NCAAB Event Group ID
+    event_group_id = 92483
+    url = f"https://sportsbook.draftkings.com/sites/US-SB/api/v1/eventgroups/{event_group_id}?format=json"
+    headers = {
+        **HEADERS,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    }
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
+        resp = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
         resp.raise_for_status()
         payload = resp.json()
-        if isinstance(payload, list):
-            return payload
         if isinstance(payload, dict):
-            return payload.get("events", payload.get("eventGroup", {}).get("events", []))
+            return payload.get("eventGroup", {}).get("events", [])
         return []
     except Exception as exc:  # noqa: BLE001
         log.warning("DraftKings fetch failed: %s", exc)
@@ -264,24 +287,43 @@ def parse_action_network_game(game: dict) -> Optional[dict]:
             # Fallback if meta.home is not present
             away_team = teams[0]
             home_team = teams[1]
-        odds = game.get("odds", [{}])[0] if game.get("odds") else {}
 
-        home_pct_tickets = game.get("home_pct") or odds.get("home_pct")
-        home_pct_money = game.get("home_money_pct") or odds.get("home_money_pct")
+        all_odds = game.get("odds", [])
+        book_ids = [o.get("book_id") for o in all_odds]
+        log.debug("AN Game %s book IDs: %s", game.get("id"), book_ids)
+
+        # Preferred books in order: 30(Action), then anything else
+        primary_odds = next((o for o in all_odds if o.get("book_id") == 30), all_odds[0] if all_odds else {})
+        dk_odds = next((o for o in all_odds if o.get("book_id") == 68), None)
+        # Fallback to book 69 (FanDuel) if DraftKings not found
+        if not dk_odds:
+            dk_odds = next((o for o in all_odds if o.get("book_id") == 69), None)
+
+        pinn_odds = next((o for o in all_odds if o.get("book_id") == 15), None)
+        if not pinn_odds:
+            pinn_odds = next((o for o in all_odds if o.get("book_id") == 123), None)
+
+        home_pct_tickets = game.get("home_pct") or primary_odds.get("home_pct")
+        home_pct_money = game.get("home_money_pct") or primary_odds.get("home_money_pct")
 
         return {
             "an_game_id": str(game.get("id", "")),
             "home_team_name": home_team.get("full_name", ""),
             "away_team_name": away_team.get("full_name", ""),
             "game_time_utc": game.get("scheduled_time"),
-            "home_spread_open": odds.get("spread_open_home"),
-            "home_spread_current": odds.get("spread_current_home"),
-            "total_open": odds.get("total_open"),
-            "total_current": odds.get("total_current"),
+            "home_spread_open": primary_odds.get("spread_open_home"),
+            "home_spread_current": primary_odds.get("spread_current_home"),
+            "total_open": primary_odds.get("total_open"),
+            "total_current": primary_odds.get("total_current"),
             "home_tickets_pct": home_pct_tickets,
             "away_tickets_pct": 100 - home_pct_tickets if home_pct_tickets is not None else None,
             "home_money_pct": home_pct_money,
             "away_money_pct": 100 - home_pct_money if home_pct_money is not None else None,
+            # Extra book data
+            "dk_spread": dk_odds.get("spread_home") if dk_odds else None,
+            "dk_total": dk_odds.get("total") if dk_odds else None,
+            "pinn_spread": pinn_odds.get("spread_home") if pinn_odds else None,
+            "pinn_total": pinn_odds.get("total") if pinn_odds else None,
         }
     except Exception as exc:  # noqa: BLE001
         log.debug("Parse error on AN game: %s", exc)
@@ -630,6 +672,15 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
         )
         pinn_match = pinnacle_by_team.get(team_key) or pinnacle_by_team.get((team_key[1], team_key[0]))
         dk_match = dk_by_team.get(team_key) or dk_by_team.get((team_key[1], team_key[0]))
+
+        # Fallback to Action Network's version of these books if direct fetch failed
+        if an_enrichment:
+            if not pinn_match and an_enrichment.get("pinn_spread") is not None:
+                log.debug("Using Pinnacle fallback for %s: %s", event_id, an_enrichment["pinn_spread"])
+                pinn_match = {"spread": an_enrichment["pinn_spread"], "total": an_enrichment.get("pinn_total")}
+            if not dk_match and an_enrichment.get("dk_spread") is not None:
+                log.debug("Using DraftKings fallback for %s: %s", event_id, an_enrichment["dk_spread"])
+                dk_match = {"spread": an_enrichment["dk_spread"], "total": an_enrichment.get("dk_total")}
 
         row = build_market_row(event_id, capture_type, parsed, pinn_match, dk_match, existing)
         row["home_team_id"] = parsed.get("home_team_id")
