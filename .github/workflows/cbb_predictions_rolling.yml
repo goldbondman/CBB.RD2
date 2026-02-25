@@ -76,6 +76,22 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
+
+      - name: Pre-flight compile check
+        run: |
+          python -m py_compile             espn_prediction_runner.py             espn_config.py             pipeline_csv_utils.py             cbb_ensemble.py             cbb_prediction_model.py 2>&1
+          if [ $? -ne 0 ]; then
+            echo "FAIL — compile error in core module. Aborting pipeline run."
+            exit 1
+          fi
+          # Check for conflict markers
+          if grep -rl "<<<<<<" --include="*.py" . | grep -v .git | grep -q .; then
+            echo "FAIL — unresolved merge conflicts detected"
+            grep -rl "<<<<<<" --include="*.py" . | grep -v .git
+            exit 1
+          fi
+          echo "PASS — pre-flight checks clean"
+
       # Download primary data from the ESPN pipeline. Using standardized name cbb-espn-data.
       - name: Download ESPN CSVs
         uses: actions/download-artifact@v4
