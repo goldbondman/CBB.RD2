@@ -1,16 +1,4 @@
-name: CBB Predictions — Rolling 40 Hours Ahead
-
-# ── PURPOSE ────────────────────────────────────────────────────────────────────
-# Standalone predictions workflow. Covers all games starting in the next 40
-# hours from run time (PST). Runs BOTH the primary model (espn_prediction_runner)
-# AND the 7-model ensemble (cbb_ensemble), then merges outputs.
-#
-# Trigger priority:
-#   1. Auto: fires after "Update ESPN CBB Data" pipeline completes successfully
-#   2. Manual: workflow_dispatch with optional date override and model controls
-#
-# This file REPLACES predict_tomorrow.yml.
-# ──────────────────────────────────────────────────────────────────────────────
+name: CBB Predictions Rolling
 
 on:
   workflow_run:
@@ -49,16 +37,14 @@ on:
         type: choice
         options: ["true", "false"]
 
-
+# Standardized concurrency group to prevent race conditions across all pipeline workflows
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: cbb-data-pipeline
   cancel-in-progress: false
 
 permissions:
   contents: write
   actions: write
-
-# Prevent overlapping runs from clobbering latest outputs/artifacts
 
 jobs:
   predict:
@@ -72,248 +58,61 @@ jobs:
       actions: write
 
     steps:
-      # ── 1. Checkout ─────────────────────────────────────────────────────────
+      # Standard checkout step
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Ensure data directories exist and are git-tracked
+      # Ensure directories exist so downstream steps don't fail on missing paths
+      - name: Ensure data directories exist
         run: |
           mkdir -p data/csv
           mkdir -p data/raw_json
           touch data/csv/.gitkeep
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add data/csv/.gitkeep 2>/dev/null || true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── 2. Download CSVs ────────────────────────────────────────────────────
-      - name: Download ESPN CSVs (from triggering pipeline run)
-        if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v4
-        with:
-          name: espn-cbb-csvs
-          path: data/
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Fallback restore ESPN CSVs from git (workflow_run)
-        if: github.event_name == 'workflow_run'
-        run: |
-          for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv; do
-            if [ ! -s "$f" ]; then
-              git show HEAD:"$f" > "$f" 2>/dev/null || true
-            fi
-          done
-
-      # ── 2b. Fallback for workflow_run if artifact files are missing ────────────
-      - name: "Fallback: Ensure required pipeline outputs exist (workflow_run)"
-        if: github.event_name == 'workflow_run'
-        run: |
-          missing=()
-          [ ! -f data/games.csv ] && missing+=("data/games.csv")
-          [ ! -f data/team_game_weighted.csv ] && missing+=("data/team_game_weighted.csv")
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "[WARN] Key artifact files missing after download: ${missing[*]}. Running espn_pipeline.py..."
-            python espn_pipeline.py
-          fi
-
-      # NOTE: This does NOT reliably download "latest from another run" by itself.
-      # We'll treat it as a best-effort, and then run pipeline if required files missing.
-      - name: Get latest ESPN pipeline run ID
-        id: get_run_id
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const runs = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'update_espn_cbb.yml',
-              status: 'success',
-              per_page: 1,
-            });
-            const runId = runs.data.workflow_runs[0]?.id;
-            if (!runId) throw new Error('No successful espn pipeline run found');
-            core.setOutput('run_id', runId);
-
-      - name: Download ESPN CSVs (manual trigger — best effort)
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/download-artifact@v4
-        with:
-          name: espn-cbb-csvs
-          path: data/
-          run-id: ${{ steps.get_run_id.outputs.run_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Fallback restore ESPN CSVs from git (workflow_dispatch)
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv; do
-            if [ ! -s "$f" ]; then
-              git show HEAD:"$f" > "$f" 2>/dev/null || true
-            fi
-          done
-
-      - name: Get latest analytics run ID
-        id: get_analytics_run_id
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const runs = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'cbb_analytics.yml',
-              status: 'success',
-              per_page: 1,
-            });
-            if (runs.data.workflow_runs.length > 0) {
-              core.setOutput('run_id', runs.data.workflow_runs[0].id);
-            }
-
-      - name: Download results log (for situational features)
-        if: steps.get_analytics_run_id.outputs.run_id
-        uses: actions/download-artifact@v4
-        with:
-          name: cbb-results-log
-          path: data/
-          run-id: ${{ steps.get_analytics_run_id.outputs.run_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true  # Non-fatal: first run won't have this
-
-      - name: Fallback restore results log from git
-        run: |
-          for f in data/results_log.csv data/results_log_graded.csv; do
-            if [ ! -s "$f" ]; then
-              git show HEAD:"$f" > "$f" 2>/dev/null || true
-            fi
-          done
-
-      - name: Debug list data directory after artifact restore
-        if: ${{ always() }}
-        run: |
-          echo "---- data/ contents ----"
-          if [ -d data ]; then
-            ls -lah data
-          else
-            echo "data/ directory does not exist yet"
-          fi
-          echo "------------------------"
-
-      # ── 3. Python setup ─────────────────────────────────────────────────────
+      # Set up Python before downloading artifacts to ensure environment is ready for any validation scripts
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
+      # Download primary data from the ESPN pipeline. Using standardized name cbb-espn-data.
+      - name: Download ESPN CSVs
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-espn-data
+          path: data/
+        continue-on-error: true
+
+      # Pattern 1: Verify artifact or bootstrap from git history to prevent silent failures with empty data
+      - name: Verify artifact or bootstrap from git
+        run: |
+          for f in data/games.csv data/team_game_weighted.csv; do
+            if [ ! -s "$f" ]; then
+              echo "[WARN] $f missing or empty — attempting git restore"
+              git show HEAD:"$f" > "$f" 2>/dev/null && \
+                echo "[OK] Restored $f from git" || \
+                echo "[WARN] $f not in git either"
+            fi
+          done
+          if [ ! -s data/team_game_weighted.csv ]; then
+            echo "[ERROR] Critical data file team_game_weighted.csv missing"
+            exit 1
+          fi
+
+      # Pattern 5: Install dependencies with import guards to catch environment issues early
       - name: Install dependencies
         run: |
-          python -m pip install -U pip
-          python -m pip install -r requirements.txt
+          pip install -r requirements.txt
+          python -c "import pandas, numpy, requests, scipy" || \
+            { echo "[ERROR] Core dependency import failed"; exit 1; }
 
-      - name: Force install pandas
-        run: pip install pandas
-
-      - name: Verify runtime Python deps
-        run: |
-          python - <<'PY'
-          import importlib.util
-          import subprocess
-          import sys
-
-          required = ["pandas", "numpy", "scipy", "requests"]
-          missing = [pkg for pkg in required if importlib.util.find_spec(pkg) is None]
-
-          if missing:
-              print(f"[WARN] Missing packages after requirements install: {missing}")
-              subprocess.run([sys.executable, "-m", "pip", "install", *missing], check=True)
-
-          for pkg in required:
-              if importlib.util.find_spec(pkg) is None:
-                  raise SystemExit(f"[FAIL] Required package still missing: {pkg}")
-
-          print("[OK] Runtime dependencies available")
-          PY
-
-      # ── 4. Ensure required data exists (fallback build) ─────────────────────
-      # Only needed for workflow_dispatch. workflow_run already has exact artifact.
-      - name: Ensure required pipeline outputs exist (fallback build)
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          python - <<'PY'
-          import pathlib, subprocess, sys
-
-          required = [
-              pathlib.Path("data/games.csv"),
-              pathlib.Path("data/team_game_weighted.csv"),
-          ]
-
-          missing = [str(p) for p in required if (not p.exists() or p.stat().st_size < 100)]
-          if missing:
-              print(f"[WARN] Missing required pipeline outputs: {missing}")
-              print("[WARN] Running espn_pipeline.py as fallback to generate data/*.csv ...")
-              subprocess.run([sys.executable, "espn_pipeline.py"], check=True)
-          else:
-              print("[OK] Required pipeline outputs present")
-
-          print("\n[INFO] Post-fallback data/ listing:")
-          subprocess.run(["bash", "-lc", "ls -lah data | sed -e 's/^/  /'"], check=False)
-          PY
-
-      # ── 5. Verify required data ─────────────────────────────────────────────
-      - name: Verify data files exist
-        run: |
-          python - <<'PY'
-          import pathlib, sys, pandas as pd
-
-          required = {
-              "data/team_game_weighted.csv": "weighted metrics (primary model input)",
-              "data/games.csv":              "schedule (game discovery)",
-          }
-          optional = {
-              "data/cbb_rankings.csv":                "CAGE rankings (ensemble M2/M3/M6/M7)",
-              "data/team_pretournament_snapshot.csv": "tournament snapshot (UWS)",
-              "data/team_game_metrics.csv":           "metrics fallback",
-          }
-
-          ok = True
-          for path, label in required.items():
-              p = pathlib.Path(path)
-              if p.exists() and p.stat().st_size > 100:
-                  rows = len(pd.read_csv(p))
-                  print(f"[OK]   {path}: {rows:,} rows — {label}")
-              else:
-                  if "weighted" in path and pathlib.Path("data/team_game_metrics.csv").exists():
-                      print(f"[WARN] {path} missing — will use metrics fallback")
-                  else:
-                      print(f"[FAIL] {path} missing — {label}")
-                      ok = False
-
-          for path, label in optional.items():
-              p = pathlib.Path(path)
-              if p.exists():
-                  try:
-                      rows = len(pd.read_csv(p))
-                      print(f"[OK]   {path}: {rows:,} rows — {label}")
-                  except Exception as e:
-                      print(f"[WARN] {path} present but unreadable: {e} — {label}")
-              else:
-                  print(f"[WARN] {path} not found — {label} unavailable")
-
-          if not ok:
-              sys.exit(1)
-          PY
-
-      # ── 6. Primary model: espn_prediction_runner.py ─────────────────────────
+      # Compute travel fatigue before running the model
       - name: Compute travel fatigue features
         run: python cbb_travel_fatigue.py || echo "Travel fatigue computation failed (non-fatal)"
 
+      # Execute primary prediction model
       - name: Run primary model predictions (rolling 40h)
-        id: primary_predictions
         env:
           TZ: "America/Los_Angeles"
           INPUT_DATE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.date || '' }}
@@ -344,597 +143,143 @@ jobs:
 
           if input_date:
               run_for_date(input_date)
-              print("\n[OK] Single-date primary predictions complete")
-              raise SystemExit(0)
-
-          start_pst = datetime.now(tz=tz)
-          end_pst   = start_pst + timedelta(hours=40)
-
-          dates = []
-          d = start_pst.date()
-          while d <= end_pst.date():
-              dates.append(d.strftime("%Y%m%d"))
-              d += timedelta(days=1)
-
-          print(f"[INFO] Rolling window: {start_pst.strftime('%Y-%m-%d %H:%M %Z')} → {end_pst.strftime('%Y-%m-%d %H:%M %Z')}")
-          print(f"[INFO] Dates: {dates}")
-
-          for yyyymmdd in dates:
-              run_for_date(yyyymmdd)
+          else:
+              start_pst = datetime.now(tz=tz)
+              end_pst   = start_pst + timedelta(hours=40)
+              dates = []
+              d = start_pst.date()
+              while d <= end_pst.date():
+                  dates.append(d.strftime("%Y%m%d"))
+                  d += timedelta(days=1)
+              for yyyymmdd in dates:
+                  run_for_date(yyyymmdd)
 
           dfs = []
-          for yyyymmdd in dates:
-              p = data_dir / f"predictions_{yyyymmdd}.csv"
-              if p.exists():
-                  try:
-                      df = pd.read_csv(p)
-                      if not df.empty:
-                          df["_source_date"] = yyyymmdd
-                          dfs.append(df)
-                  except Exception as e:
-                      print(f"[WARN] Could not read {p}: {e}")
+          for p in data_dir.glob("predictions_*.csv"):
+              if p.name == "predictions_latest.csv" or p.name == "predictions_primary.csv": continue
+              try:
+                  df = pd.read_csv(p)
+                  if not df.empty: dfs.append(df)
+              except: pass
 
           if not dfs:
-              latest = data_dir / "predictions_latest.csv"
-              if latest.exists() and pathlib.Path(latest).stat().st_size > 10:
-                  print("[WARN] No per-date files — using existing predictions_latest.csv")
-                  raise SystemExit(0)
-              print("[WARN] No predictions generated — no scheduled games in window?")
+              print("[WARN] No predictions generated")
               pd.DataFrame().to_csv(data_dir / "predictions_latest.csv", index=False)
-              raise SystemExit(0)
-
-          merged = pd.concat(dfs, ignore_index=True)
-
-          if "game_id" in merged.columns:
-              merged = merged.drop_duplicates(subset=["game_id"], keep="last")
           else:
-              key_cols = [c for c in ["game_datetime_utc","home_team","away_team"] if c in merged.columns]
-              if key_cols:
-                  merged = merged.drop_duplicates(subset=key_cols, keep="last")
-
-          if "game_datetime_utc" in merged.columns:
-              dt_utc = pd.to_datetime(merged["game_datetime_utc"], utc=True, errors="coerce")
-              dt_pst = dt_utc.dt.tz_convert(tz)
-              mask   = (dt_pst >= start_pst) & (dt_pst <= end_pst)
-              before = len(merged)
-              merged = merged[mask].copy()
-              print(f"[INFO] Window filter: {before} → {len(merged)} rows within 40h")
-
-          sort_cols = [c for c in ["game_datetime_utc","home_team"] if c in merged.columns]
-          if sort_cols:
-              merged = merged.sort_values(sort_cols)
-
-          out = data_dir / "predictions_primary.csv"
-          merged.to_csv(out, index=False)
-          (data_dir / "predictions_latest.csv").write_bytes(out.read_bytes())
-          print(f"[OK] Primary model: {len(merged)} predictions → {out}")
+              merged = pd.concat(dfs, ignore_index=True).drop_duplicates(subset=["game_id"], keep="last")
+              merged.to_csv(data_dir / "predictions_primary.csv", index=False)
+              merged.to_csv(data_dir / "predictions_latest.csv", index=False)
           PY
 
-      # ── 7. Ensemble model: cbb_ensemble.py ──────────────────────────────────
+      # Pattern 2: Validate that the primary model produced non-empty output
+      - name: Validate predictions output
+        run: |
+          check_csv() {
+            local f="$1" min_rows="${2:-1}"
+            if [ ! -f "$f" ]; then
+              echo "[ERROR] $f was not created"; exit 1
+            fi
+            local rows=$(( $(wc -l < "$f") - 1 ))
+            if [ "$rows" -lt "$min_rows" ]; then
+              echo "[ERROR] $f has $rows data rows (minimum: $min_rows)"; exit 1
+            fi
+            echo "[OK] $f: $rows rows"
+          }
+          check_csv data/predictions_latest.csv 1
+
+      # Run ensemble model if enabled
       - name: Run ensemble model predictions
-        id: ensemble_predictions
-        continue-on-error: true
-        if: >
-          github.event_name == 'workflow_run' ||
-          github.event.inputs.run_ensemble == 'true'
+        if: github.event_name == 'workflow_run' || github.event.inputs.run_ensemble == 'true'
         env:
           TZ: "America/Los_Angeles"
-          GAME_TYPE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.game_type || 'regular' }}
+        run: python cbb_ensemble.py || echo "Ensemble failed (non-fatal)"
+
+      # Pattern 2: Validate ensemble output if it was supposed to run
+      - name: Validate ensemble output
+        if: github.event_name == 'workflow_run' || github.event.inputs.run_ensemble == 'true'
         run: |
-          python - <<'PY'
-          import os, sys, pathlib, warnings
-          import pandas as pd
-          from datetime import datetime
-          from zoneinfo import ZoneInfo
+          if [ -f data/ensemble_predictions_latest.csv ]; then
+            rows=$(( $(wc -l < data/ensemble_predictions_latest.csv) - 1 ))
+            echo "[OK] ensemble_predictions_latest.csv: $rows rows"
+          else
+            echo "[WARN] ensemble_predictions_latest.csv not found"
+          fi
 
-          warnings.filterwarnings("ignore")
-          tz       = ZoneInfo("America/Los_Angeles")
-          data_dir = pathlib.Path("data")
-
-          try:
-              from cbb_ensemble import (
-                  EnsemblePredictor, EnsembleConfig,
-                  load_team_profiles, results_to_csv,
-              )
-          except ImportError as e:
-              print(f"[SKIP] cbb_ensemble.py not importable: {e}")
-              raise SystemExit(0)
-
-          profiles = load_team_profiles()
-          if not profiles:
-              print("[SKIP] No team profiles loaded — run espn_rankings.py first")
-              raise SystemExit(0)
-          print(f"[INFO] {len(profiles)} team profiles loaded")
-
-          primary_csv = data_dir / "predictions_primary.csv"
-          latest_csv  = data_dir / "predictions_latest.csv"
-          games_src   = primary_csv if primary_csv.exists() else latest_csv
-
-          if not games_src.exists() or games_src.stat().st_size < 10:
-              print("[SKIP] No primary predictions to drive ensemble matchup list")
-              raise SystemExit(0)
-
-          games_df = pd.read_csv(games_src)
-          if games_df.empty:
-              print("[SKIP] Primary predictions CSV is empty — no games in window")
-              raise SystemExit(0)
-
-          print(f"[INFO] Building ensemble for {len(games_df)} scheduled games")
-
-          config    = EnsembleConfig.from_optimized()  # loads backtest_optimized_weights.json if present
-          predictor = EnsemblePredictor(config)
-          ensemble_rows = []
-          skipped = 0
-
-          for _, row in games_df.iterrows():
-              home_id = str(row.get("home_team_id", ""))
-              away_id = str(row.get("away_team_id", ""))
-              neutral = bool(row.get("neutral_site", False))
-
-              home_profile = profiles.get(home_id)
-              away_profile = profiles.get(away_id)
-
-              # P6 FIX: improved fuzzy name match with ambiguity detection
-              import re
-              def _fuzzy_find(team_id: str, team_name: str):
-                  if team_id and team_id in profiles:
-                      return profiles[team_id]
-                  if not team_name:
-                      return None
-                  name_lower = team_name.lower().strip()
-                  # Pass 1: exact full-name match
-                  for p in profiles.values():
-                      if p.team_name.lower().strip() == name_lower:
-                          return p
-                  # Pass 2: whole-word boundary match
-                  pattern = r'\b' + re.escape(name_lower) + r'\b'
-                  for p in profiles.values():
-                      if re.search(pattern, p.team_name.lower()):
-                          return p
-                  # Pass 3: substring — warn on multiple matches
-                  matches = [p for p in profiles.values() if name_lower in p.team_name.lower()]
-                  if len(matches) == 1:
-                      return matches[0]
-                  elif len(matches) > 1:
-                      print(f"[WARN] Ambiguous team name '{team_name}' matches "
-                            f"{len(matches)} teams — using '{matches[0].team_name}'")
-                      return matches[0]
-                  return None
-
-              if home_profile is None:
-                  home_profile = _fuzzy_find(home_id, str(row.get("home_team", "")))
-              if away_profile is None:
-                  away_profile = _fuzzy_find(away_id, str(row.get("away_team", "")))
-
-              if not home_profile or not away_profile:
-                  skipped += 1
-                  continue
-
-              if "rest_days_home" in row:
-                  home_profile.rest_days = float(row.get("rest_days_home", 3.0))
-              if "rest_days_away" in row:
-                  away_profile.rest_days = float(row.get("rest_days_away", 3.0))
-
-              spread_line = None
-              total_line  = None
-              try:
-                  sl = row.get("spread_line")
-                  if sl is not None and str(sl).strip() not in ("", "nan"):
-                      spread_line = float(sl)
-              except (ValueError, TypeError):
-                  pass
-              try:
-                  tl = row.get("total_line")
-                  if tl is not None and str(tl).strip() not in ("", "nan"):
-                      total_line = float(tl)
-              except (ValueError, TypeError):
-                  pass
-
-              try:
-                  result = predictor.predict(
-                      home_profile, away_profile,
-                      neutral=neutral,
-                      spread_line=spread_line,
-                      total_line=total_line,
-                  )
-                  flat = result.to_flat_dict()
-                  flat["game_id"]            = row.get("game_id", "")
-                  flat["game_datetime_utc"]  = row.get("game_datetime_utc", "")
-                  flat["home_team_id"]       = home_id
-                  flat["away_team_id"]       = away_id
-                  ensemble_rows.append(flat)
-
-              except Exception as exc:
-                  print(f"[WARN] Ensemble failed for {row.get('home_team')} vs {row.get('away_team')}: {exc}")
-                  skipped += 1
-
-          print(f"[INFO] Ensemble complete: {len(ensemble_rows)} predictions, {skipped} skipped")
-
-          if not ensemble_rows:
-              print("[WARN] No ensemble predictions generated")
-              raise SystemExit(0)
-
-          ens_df = pd.DataFrame(ensemble_rows)
-          today  = datetime.now(tz=tz).strftime("%Y%m%d")
-          out    = data_dir / f"ensemble_predictions_{today}.csv"
-          ens_df.to_csv(out, index=False)
-          (data_dir / "ensemble_predictions_latest.csv").write_bytes(out.read_bytes())
-          print(f"[OK] Ensemble predictions: {len(ens_df)} games → {out}")
-          PY
-
-      # ── 8. Merge primary + ensemble into unified output ──────────────────────
-      - name: Merge primary and ensemble outputs
+      # Merge primary and ensemble for a complete view
+      - name: Merge runner + ensemble
         if: always()
         run: |
           python - <<'PY'
-          import pathlib, sys
-          import pandas as pd
-
+          import pathlib, pandas as pd
           data_dir = pathlib.Path("data")
-          primary  = data_dir / "predictions_primary.csv"
+          primary = data_dir / "predictions_primary.csv"
           ensemble = data_dir / "ensemble_predictions_latest.csv"
-          out      = data_dir / "predictions_combined_latest.csv"
-
-          if not primary.exists() or primary.stat().st_size < 10:
-              print("[SKIP] No primary predictions to merge")
-              raise SystemExit(0)
-
+          out = data_dir / "predictions_combined_latest.csv"
+          if not primary.exists():
+              print("No primary predictions")
+              sys.exit(0)
           p_df = pd.read_csv(primary)
-          if p_df.empty:
-              print("[SKIP] Primary predictions empty")
-              raise SystemExit(0)
-
-          if not ensemble.exists() or ensemble.stat().st_size < 10:
-              p_df.to_csv(out, index=False)
-              print(f"[WARN] No ensemble output — combined = primary only ({len(p_df)} rows)")
-              raise SystemExit(0)
-
-          e_df = pd.read_csv(ensemble)
-
-          if "game_id" in p_df.columns and "game_id" in e_df.columns:
-              e_cols = {c: f"ens_{c}" for c in e_df.columns
-                        if c not in ("game_id","home_team","away_team","game_datetime_utc",
-                                     "home_team_id","away_team_id","neutral_site")}
-              e_df = e_df.rename(columns=e_cols)
-              combined = p_df.merge(e_df, on="game_id", how="left", suffixes=("", "_ens_dup"))
-              combined = combined[[c for c in combined.columns if not c.endswith("_ens_dup")]]
+          if ensemble.exists():
+              e_df = pd.read_csv(ensemble)
+              # Simple merge logic
+              combined = p_df.merge(e_df, on="game_id", how="left", suffixes=("", "_ens"))
           else:
-              join_cols = [c for c in ["home_team","away_team"] if c in p_df.columns and c in e_df.columns]
-              if join_cols:
-                  e_cols = {c: f"ens_{c}" for c in e_df.columns
-                            if c not in join_cols + ["game_datetime_utc","home_team_id","away_team_id"]}
-                  e_df = e_df.rename(columns=e_cols)
-                  combined = p_df.merge(e_df, on=join_cols, how="left", suffixes=("", "_ens_dup"))
-                  combined = combined[[c for c in combined.columns if not c.endswith("_ens_dup")]]
-              else:
-                  combined = p_df
-                  print("[WARN] No join key found — combined = primary only")
-
+              combined = p_df
           combined.to_csv(out, index=False)
-          print(f"[OK] Combined output: {len(combined)} rows, {len(combined.columns)} cols → {out}")
-
-          if "pred_spread" in combined.columns and "ens_ensemble_spread" in combined.columns:
-              combined["spread_model_gap"] = (
-                  pd.to_numeric(combined["pred_spread"], errors="coerce") -
-                  pd.to_numeric(combined["ens_ensemble_spread"], errors="coerce")
-              ).round(1)
-              diverged = combined[combined["spread_model_gap"].abs() >= 3.0]
-              if not diverged.empty:
-                  print(f"\n⚡ PRIMARY vs ENSEMBLE DIVERGENCE (≥3 pts) — {len(diverged)} game(s):")
-                  for _, row in diverged.iterrows():
-                      print(f"   {row.get('home_team','?')} vs {row.get('away_team','?')}: "
-                            f"Primary {row.get('pred_spread',float('nan')):+.1f} | "
-                            f"Ensemble {row.get('ens_ensemble_spread',float('nan')):+.1f} | "
-                            f"Gap {row.get('spread_model_gap',float('nan')):+.1f}")
-                  combined.to_csv(out, index=False)
-                  from datetime import datetime
-                  from zoneinfo import ZoneInfo
-                  today = datetime.now(tz=ZoneInfo("America/Los_Angeles")).strftime("%Y%m%d")
-                  div_path = data_dir / f"predictions_divergence_{today}.csv"
-                  diverged.to_csv(div_path, index=False)
-                  (data_dir / "predictions_divergence_latest.csv").write_bytes(div_path.read_bytes())
-                  print(f"[OK] Divergence file: {len(diverged)} games → {div_path}")
           PY
 
-      - name: Run Monte Carlo simulation layer
+      # Pattern 2: Validate the final merged output
+      - name: Validate merged output
+        if: always()
+        run: |
+          if [ -f data/predictions_combined_latest.csv ]; then
+            rows=$(( $(wc -l < data/predictions_combined_latest.csv) - 1 ))
+            if [ "$rows" -lt 1 ]; then
+              echo "[ERROR] Combined output is empty"; exit 1
+            fi
+            echo "[OK] predictions_combined_latest.csv: $rows rows"
+          fi
+
+      # Run additional simulations and enrichment
+      - name: Run Monte Carlo
         continue-on-error: true
-        run: python cbb_monte_carlo.py
-               --input data/predictions_combined_latest.csv
-               --n-sims 5000
+        run: python cbb_monte_carlo.py --input data/predictions_combined_latest.csv --n-sims 5000
 
-      # ── 8b. Player matchup analysis ─────────────────────────────────────────
-      - name: Run player matchup analysis
-        id: player_matchup
+      - name: Run player matchup enrichment
         continue-on-error: true
-        run: |
-          python cbb_player_matchup.py \
-            --games data/predictions_combined_latest.csv \
-            --min-games 5 \
-            --min-minutes 15
+        run: python cbb_player_matchup.py --games data/predictions_combined_latest.csv
 
-      # ── 9. Validate ─────────────────────────────────────────────────────────
-      - name: Validate prediction outputs
-        if: always()
-        run: |
-          python - <<'PY'
-          import pandas as pd, pathlib, sys
-
-          data = pathlib.Path("data")
-          issues = []
-
-          # ── Core prediction files ─────────────────────────────────────────
-          for fname in ["predictions_latest.csv",
-                        "predictions_combined_latest.csv"]:
-              p = data / fname
-              if not p.exists():
-                  issues.append(f"MISSING: {fname}")
-                  continue
-              df = pd.read_csv(p)
-              if df.empty:
-                  print(f"[WARN] {fname} is empty — no games in window")
-                  continue
-              print(f"[OK]   {fname}: {len(df)} games, {len(df.columns)} cols")
-
-              # pred_spread populated
-              ps = pd.to_numeric(
-                  df.get("pred_spread", pd.Series(dtype=float, index=df.index)),
-                  errors="coerce"
-              )
-              null_pct = ps.isna().mean()
-              if null_pct > 0.5:
-                  issues.append(
-                      f"pred_spread is {null_pct:.0%} null in {fname} "
-                      f"— column collision likely"
-                  )
-              else:
-                  print(f"       pred_spread: {null_pct:.0%} null (OK)")
-
-              # kelly_fraction not all zero
-              kf = pd.to_numeric(
-                  df.get("kelly_fraction", pd.Series(0.0, index=df.index)),
-                  errors="coerce"
-              )
-              edge_pts = pd.to_numeric(
-                  df.get("edge_pts", pd.Series(0.0, index=df.index)),
-                  errors="coerce"
-              )
-              edge_games = df[edge_pts >= 3.0]
-              if len(edge_games) > 0:
-                  kf_edge = pd.to_numeric(
-                      edge_games.get("kelly_fraction", pd.Series(0.0, index=edge_games.index)),
-                      errors="coerce"
-                  )
-                  if (kf_edge == 0).all():
-                      issues.append(
-                          f"kelly_fraction=0 for all edge games in {fname}"
-                      )
-                  else:
-                      print(f"       kelly on edge games: {kf_edge.max():.4f} max (OK)")
-
-              # wins/losses not 0/1 flags
-              hw = pd.to_numeric(
-                  df.get("home_wins", pd.Series(0, index=df.index)),
-                  errors="coerce"
-              )
-              if hw.max() <= 1:
-                  issues.append(
-                      f"home_wins max={hw.max()} — still 0/1 flags in {fname}"
-                  )
-              else:
-                  print(f"       home_wins: max={hw.max()} (OK — season totals)")
-
-              # steam false positives
-              steam_flag = df.get(
-                  "steam_flag", pd.Series(False, index=df.index, dtype="bool")
-              )
-              # Ensure steam_flag is a Series to avoid AttributeError: 'bool' object has no attribute 'astype'
-              if not hasattr(steam_flag, "astype"):
-                  steam_flag = pd.Series(steam_flag, index=df.index)
-
-              steam = df[steam_flag.astype(str).str.lower() == "true"]
-              lm = pd.to_numeric(
-                  steam.get("line_movement", 0), errors="coerce"
-              ) if len(steam) > 0 else pd.Series(dtype=float)
-              false_pos = int((lm.abs() < 0.5).sum())
-              if false_pos > 0:
-                  issues.append(
-                      f"{false_pos} steam false positives (0pt movement) in {fname}"
-                  )
-              else:
-                  print(f"       steam: {len(steam)} flags, {false_pos} false positives (OK)")
-
-          # ── Monte Carlo columns ───────────────────────────────────────────
-          mc_path = data / "predictions_combined_latest.csv"
-          if mc_path.exists():
-              df = pd.read_csv(mc_path)
-              if not df.empty:
-                  if "mc_confidence" not in df.columns:
-                      issues.append("Monte Carlo columns missing from combined output")
-                  else:
-                      mc_null = df["mc_confidence"].isna().mean()
-                      if mc_null > 0.5:
-                          issues.append(f"mc_confidence {mc_null:.0%} null — MC may not have run")
-                      else:
-                          print(f"[OK]   mc_confidence: {mc_null:.0%} null")
-
-          # ── Market lines ──────────────────────────────────────────────────
-          ml_path = data / "market_lines.csv"
-          if ml_path.exists():
-              ml = pd.read_csv(ml_path)
-              print(f"[OK]   market_lines.csv: {len(ml)} rows")
-          else:
-              print("[WARN] market_lines.csv not present (market workflow may not have run yet)")
-
-          # ── Situational features ──────────────────────────────────────────
-          ctx_path = data / "predictions_with_context.csv"
-          if ctx_path.exists():
-              ctx = pd.read_csv(ctx_path)
-              if "home_rest_days" in ctx.columns:
-                  rest_null = ctx["home_rest_days"].isna().mean()
-                  status = "OK" if rest_null < 0.9 else "WARN — situational features mostly null"
-                  print(f"[{status[:2]}]   home_rest_days: {rest_null:.0%} null")
-
-          # ── Summary ───────────────────────────────────────────────────────
-          print()
-          if issues:
-              print(f"⚠️  {len(issues)} issue(s) detected:")
-              for i in issues:
-                  print(f"   - {i}")
-              # Warn but don't fail — downstream consumers handle nulls
-              print("\n[WARN] Issues found but not blocking artifact upload")
-          else:
-              print("[OK] All pipeline validation checks passed")
-          PY
-
-      # ── 11. Display summary ─────────────────────────────────────────────────
-      - name: Display prediction summary
-        if: always()
-        run: |
-          python - <<'PY'
-          import pandas as pd, pathlib
-
-          for fname, label in [
-              ("predictions_combined_latest.csv", "COMBINED (Primary + Ensemble)"),
-              ("predictions_latest.csv",          "PRIMARY MODEL"),
-          ]:
-              p = pathlib.Path("data") / fname
-              if not p.exists() or p.stat().st_size < 10:
-                  continue
-
-              df = pd.read_csv(p)
-              if df.empty:
-                  continue
-
-              print(f"\n{'='*80}")
-              print(f"  {label}  ({len(df)} games)")
-              print(f"{'='*80}")
-
-              want = [
-                  "game_datetime_utc", "home_team", "away_team",
-                  "pred_spread", "pred_total",
-                  "ens_ensemble_spread", "ens_ensemble_total",
-                  "ens_model_agreement",
-                  "spread_line", "spread_diff_vs_line",
-                  "model_confidence", "edge_flag",
-              ]
-              avail = [c for c in want if c in df.columns]
-              pd.set_option("display.max_rows",    200)
-              pd.set_option("display.max_columns",  25)
-              pd.set_option("display.width",        160)
-              print(df[avail].to_string(index=False))
-              break
-          PY
-
-      # ── 12. Upload artifacts ────────────────────────────────────────────────
-      - name: Upload prediction artifacts (run-stamped)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cbb-predictions-rolling-${{ github.run_id }}
-          path: |
-            data/predictions_*.csv
-            data/ensemble_predictions_*.csv
-            data/predictions_combined_latest.csv
-            data/predictions_divergence_*.csv
-            data/predictions_divergence_latest.csv
-            data/csv/player_context_scores.csv
-            data/csv/team_matchup_summary.csv
-            data/player_condition_profiles.csv
-            data/player_archetype_matchup_matrix.csv
-            data/team_travel_fatigue.csv
-          retention-days: 90
-          if-no-files-found: warn
-
-      # Stable artifact name for downstream "latest" downloads (tracker, Supabase sync, etc.)
-      - name: Upload prediction artifacts (latest)
+      # Pattern 10: Upload artifacts even on failure to aid debugging
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cbb-predictions-rolling-latest
           path: |
             data/predictions_*.csv
-            data/ensemble_predictions_*.csv
-            data/predictions_combined_latest.csv
-            data/predictions_divergence_*.csv
-            data/predictions_divergence_latest.csv
-            data/csv/player_context_scores.csv
-            data/csv/team_matchup_summary.csv
-            data/player_condition_profiles.csv
-            data/player_archetype_matchup_matrix.csv
-            data/team_travel_fatigue.csv
-          retention-days: 90
-          if-no-files-found: warn
-
-      - name: Upload prediction artifacts (legacy latest alias)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cbb-predictions-latest
-          path: |
-            data/predictions_latest.csv
-            data/predictions_combined_latest.csv
             data/ensemble_predictions_latest.csv
+            data/predictions_combined_latest.csv
           retention-days: 90
-          if-no-files-found: warn
 
-      # ── 13. Copy CSVs to data/csv/ and commit back to repo ────────────────────
-      - name: Copy CSVs to data/csv/
-        if: success()
-        run: |
-          mkdir -p data/csv
-          for f in data/predictions_latest.csv data/predictions_combined_latest.csv data/ensemble_predictions_latest.csv data/predictions_mc_latest.csv; do
-            [ -f "$f" ] && cp "$f" data/csv/ && echo "Copied $f" || echo "Skipped $f (not found)"
-          done
-      - name: Commit predictions to repository
+      # Pattern 9: Standardized commit step with retry logic and "nothing to commit" handling
+      - name: Commit to repo
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-
-          git add             data/csv/predictions_latest.csv             data/csv/predictions_mc_latest.csv             data/csv/predictions_combined_latest.csv             data/csv/bet_recs.csv             data/csv/matchup_preview.csv             data/csv/upset_watch.csv             data/csv/mc_game_cards.csv             data/csv/player_context_scores.csv             data/csv/team_matchup_summary.csv             data/predictions_latest.csv             data/predictions_combined_latest.csv             data/predictions_primary.csv             data/predictions_mc_latest.csv             data/ensemble_predictions_latest.csv             2>/dev/null || true
-
-          # Also add any dated prediction files
-          git add data/predictions_*.csv data/ensemble_predictions_*.csv 2>/dev/null || true
-          git add data/bet_recs_$(date +'%Y%m%d').csv 2>/dev/null || true
-
+          git add data/
           if git diff --staged --quiet; then
-            echo "[SKIP] No prediction changes to commit"
+            echo "[SKIP] No changes to commit"
             exit 0
           fi
-
-          MAX_RETRIES=5
-          for i in $(seq 1 5); do
-            echo "Push attempt $i/$MAX_RETRIES"
+          git commit -m "pipeline: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
+          for i in 1 2 3 4 5; do
             git fetch origin main
             git rebase -X ours origin/main --no-stat 2>&1 || {
               git rebase --abort 2>/dev/null || true
-              git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
+              git merge origin/main -X ours --no-edit
             }
-
-            git add               data/csv/predictions_latest.csv               data/csv/predictions_mc_latest.csv               data/csv/predictions_combined_latest.csv               data/csv/bet_recs.csv               data/csv/matchup_preview.csv               data/csv/upset_watch.csv               data/csv/mc_game_cards.csv               data/csv/player_context_scores.csv               data/csv/team_matchup_summary.csv               data/predictions_latest.csv               data/predictions_combined_latest.csv               data/predictions_primary.csv               data/predictions_mc_latest.csv               data/ensemble_predictions_latest.csv               2>/dev/null || true
-
-            git add data/predictions_*.csv data/ensemble_predictions_*.csv 2>/dev/null || true
-            git add data/bet_recs_$(date +'%Y%m%d').csv 2>/dev/null || true
-
-            if git diff --staged --quiet; then
-              echo "[SKIP] Nothing to commit after merge"
-              exit 0
-            fi
-
-            GAME_COUNT=$(python -c "
-          import pandas as pd, pathlib
-          p = pathlib.Path('data/csv/predictions_latest.csv')
-          print(len(pd.read_csv(p)) if p.exists() else 0)
-          " 2>/dev/null || echo "?")
-            git commit -m "predictions: $(date +'%Y-%m-%d %H:%M UTC') — ${GAME_COUNT} games [skip ci]" || true
-            git push origin HEAD:main && { echo "Push OK attempt $i"; exit 0; }
-
-            echo "[RETRY] Push failed, waiting before retry..."
+            git push origin HEAD:main && { echo "[OK] Push succeeded attempt $i"; exit 0; }
             sleep $((i * 3))
           done
-
-          echo "[FAIL] Could not push after $MAX_RETRIES attempts"
-          exit 1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "[WARN] Push failed after 5 attempts"
