@@ -97,27 +97,6 @@ OUT_VENUE_GEOCODES = CSV_DIR / "venue_geocodes.csv"
 OUT_PLAYER_ROLLING_L5  = CSV_DIR / "player_rolling_l5.csv"
 OUT_PLAYER_ROLE_SPLITS = CSV_DIR / "player_role_splits.csv"
 
-# ── Conference tier classification ────────────────────────
-CONFERENCE_TIERS = {
-    "HIGH": {
-        "ACC", "Big Ten", "Big 12", "SEC",
-        "Big East", "Pac-12",
-    },
-    "MID": {
-        "American Athletic", "Mountain West", "Atlantic 10",
-        "Missouri Valley", "West Coast", "Conference USA",
-        "Sun Belt", "MAC", "Colonial Athletic",
-    },
-    "LOW": {
-        "Big South", "Horizon", "Ivy League", "MAAC",
-        "Metro Atlantic", "Northeast", "Ohio Valley",
-        "Patriot", "Southern", "Southland", "SWAC",
-        "MEAC", "NEC", "Big Sky", "WAC",
-        "America East", "Summit League", "Atlantic Sun",
-    },
-}
-
-
 ESPN_CONFERENCE_MAP = {
     "1": "Atlantic Coast Conference",
     "2": "Big East",
@@ -168,44 +147,6 @@ def conference_id_to_name(conference_id) -> str:
     cid = str(conference_id).strip()
     return ESPN_CONFERENCE_MAP.get(cid, cid)
 
-
-def get_conference_tier(conference: str) -> str:
-    """
-    Returns HIGH / MID / LOW / UNKNOWN.
-    Case-insensitive partial match handles ESPN name variations
-    (e.g. 'Southeastern Conference' matches 'SEC').
-    """
-    import pandas as _pd
-
-    if not conference or (
-        isinstance(conference, float) and _pd.isna(conference)
-    ):
-        return "UNKNOWN"
-    conf_clean = str(conference).strip().lower()
-    for tier, conf_set in CONFERENCE_TIERS.items():
-        for name in conf_set:
-            if name.lower() in conf_clean or conf_clean in name.lower():
-                return tier
-    return "UNKNOWN"
-
-
-def get_game_tier(home_conference: str,
-                  away_conference: str) -> str:
-    """
-    Classify the matchup tier.
-    Returns: HIGH | MID | LOW |
-             CROSS_HIGH_MID | CROSS_HIGH_LOW | CROSS_MID_LOW | UNKNOWN
-    """
-    tier_h = get_conference_tier(home_conference)
-    tier_a = get_conference_tier(away_conference)
-    if tier_h == tier_a:
-        return tier_h
-    cross_map = {
-        ("HIGH", "LOW"): "CROSS_HIGH_LOW",
-        ("HIGH", "MID"): "CROSS_HIGH_MID",
-        ("LOW", "MID"): "CROSS_MID_LOW",
-    }
-    return cross_map.get(tuple(sorted([tier_h, tier_a])), "UNKNOWN")
 
 # ── ESPN API ─────────────────────────────────────────────────────────────────
 ESPN_SCOREBOARD_URL = (
@@ -275,11 +216,11 @@ CONFERENCE_TIERS = {
     "MID": {
         "American Athletic", "Mountain West", "Atlantic 10",
         "Missouri Valley", "West Coast", "Conference USA",
-        "Sun Belt", "MAC", "Colonial Athletic",
+        "Sun Belt", "MAC", "Mid-American", "Colonial Athletic",
     },
     "LOW": {
         "Big South", "Horizon", "Ivy League", "MAAC",
-        "Metro Atlantic", "Mid-American", "Northeast",
+        "Metro Atlantic", "Northeast",
         "Ohio Valley", "Patriot", "Southern", "Southland",
         "SWAC", "MEAC", "NEC", "Big Sky", "WAC",
         "America East", "Summit League", "Atlantic Sun",

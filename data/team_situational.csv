@@ -1,73 +1,199 @@
 event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away,rest_days,games_l7,games_l14,fatigue_index,win_streak,cover_streak,close_win_pct_season,close_game_win_pct,scoring_consistency_l5,blowout_flag,close_game_flag,margin,margin_capped
-401814582,113,Massachusetts Minutemen,2050,Ball State Cardinals,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401827700,12,Arizona Wildcats,239,Baylor Bears,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401825537,130,Michigan Wolverines,135,Minnesota Golden Gophers,2026-02-25T01:30:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401825537,135,Minnesota Golden Gophers,130,Michigan Wolverines,2026-02-25T01:30:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401828443,139,Saint Louis Billikens,2168,Dayton Flyers,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401808257,142,Missouri Tigers,2633,Tennessee Volunteers,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401820767,150,Duke Blue Devils,87,Notre Dame Fighting Irish,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401820763,152,NC State Wolfpack,258,Virginia Cavaliers,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401825538,164,Rutgers Scarlet Knights,264,Washington Huskies,2026-02-24T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-12.0,-12.0
-401829320,167,New Mexico Lobos,2440,Nevada Wolf Pack,2026-02-25T04:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401814585,189,Bowling Green Falcons,2711,Western Michigan Broncos,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401814583,193,Miami (OH) RedHawks,2199,Eastern Michigan Eagles,2026-02-24T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
-401827702,197,Oklahoma State Cowboys,277,West Virginia Mountaineers,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401808262,2,Auburn Tigers,201,Oklahoma Sooners,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401820573,2005,Air Force Falcons,23,San José State Spartans,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401814580,2006,Akron Zips,2084,Buffalo Bulls,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401808262,201,Oklahoma Sooners,2,Auburn Tigers,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401808690,2032,Arkansas State Red Wolves,2572,Southern Miss Golden Eagles,2026-02-25T01:30:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401814582,2050,Ball State Cardinals,113,Massachusetts Minutemen,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401814580,2084,Buffalo Bulls,2006,Akron Zips,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401827701,2116,UCF Knights,252,BYU Cougars,2026-02-25T04:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401814581,2117,Central Michigan Chippewas,2309,Kent State Golden Flashes,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401827704,2132,Cincinnati Bearcats,2641,Texas Tech Red Raiders,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401828443,2168,Dayton Flyers,139,Saint Louis Billikens,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401814583,2199,Eastern Michigan Eagles,193,Miami (OH) RedHawks,2026-02-24T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
-401808688,2247,Georgia State Panthers,324,Coastal Carolina Chanticleers,2026-02-25T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401820573,23,San José State Spartans,2005,Air Force Falcons,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401814581,2309,Kent State Golden Flashes,2117,Central Michigan Chippewas,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401828444,2325,La Salle Explorers,45,George Washington Revolutionaries,2026-02-24T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-8.0,-8.0
-401827700,239,Baylor Bears,12,Arizona Wildcats,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401820766,2390,Miami Hurricanes,52,Florida State Seminoles,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401806502,2413,Morehead State Eagles,88,Southern Indiana Screaming Eagles,2026-02-25T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401829320,2440,Nevada Wolf Pack,167,New Mexico Lobos,2026-02-25T04:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401858739,2441,New Haven Chargers,2598,Saint Francis Red Flash,2026-02-24T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-9.0,-9.0
-401814584,2459,Northern Illinois Huskies,2649,Toledo Rockets,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401827701,252,BYU Cougars,2116,UCF Knights,2026-02-25T04:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401827705,254,Utah Utes,66,Iowa State Cyclones,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401808690,2572,Southern Miss Golden Eagles,2032,Arkansas State Red Wolves,2026-02-25T01:30:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401808260,2579,South Carolina Gamecocks,96,Kentucky Wildcats,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401820763,258,Virginia Cavaliers,152,NC State Wolfpack,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401858739,2598,Saint Francis Red Flash,2441,New Haven Chargers,2026-02-24T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,9.0,9.0
-401825539,26,UCLA Bruins,30,USC Trojans,2026-02-25T04:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401827703,2628,TCU Horned Frogs,9,Arizona State Sun Devils,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401808257,2633,Tennessee Volunteers,142,Missouri Tigers,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401825538,264,Washington Huskies,164,Rutgers Scarlet Knights,2026-02-24T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,12.0,12.0
-401827704,2641,Texas Tech Red Raiders,2132,Cincinnati Bearcats,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401814584,2649,Toledo Rockets,2459,Northern Illinois Huskies,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401808691,2653,Troy Trojans,309,Louisiana Ragin' Cajuns,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401822957,269,Marquette Golden Eagles,46,Georgetown Hoyas,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401814585,2711,Western Michigan Broncos,189,Bowling Green Falcons,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401823832,2751,Wyoming Cowboys,68,Boise State Broncos,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401808689,276,Marshall Thundering Herd,295,Old Dominion Monarchs,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401827702,277,West Virginia Mountaineers,197,Oklahoma State Cowboys,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401828935,278,Fresno State Bulldogs,36,Colorado State Rams,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401808689,295,Old Dominion Monarchs,276,Marshall Thundering Herd,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401825539,30,USC Trojans,26,UCLA Bruins,2026-02-25T04:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401808691,309,Louisiana Ragin' Cajuns,2653,Troy Trojans,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401808688,324,Coastal Carolina Chanticleers,2247,Georgia State Panthers,2026-02-25T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401828935,36,Colorado State Rams,278,Fresno State Bulldogs,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401828444,45,George Washington Revolutionaries,2325,La Salle Explorers,2026-02-24T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,8.0,8.0
-401822957,46,Georgetown Hoyas,269,Marquette Golden Eagles,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401820766,52,Florida State Seminoles,2390,Miami Hurricanes,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401827705,66,Iowa State Cyclones,254,Utah Utes,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401823832,68,Boise State Broncos,2751,Wyoming Cowboys,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401830222,71,Bradley Braves,82,UIC Flames,2026-02-25T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401825536,77,Northwestern Wildcats,84,Indiana Hoosiers,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401830222,82,UIC Flames,71,Bradley Braves,2026-02-25T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401825536,84,Indiana Hoosiers,77,Northwestern Wildcats,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401820767,87,Notre Dame Fighting Irish,150,Duke Blue Devils,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
-401806502,88,Southern Indiana Screaming Eagles,2413,Morehead State Eagles,2026-02-25T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401827703,9,Arizona State Sun Devils,2628,TCU Horned Frogs,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
-401808260,96,Kentucky Wildcats,2579,South Carolina Gamecocks,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401820764,103,Boston College Eagles,154,Wake Forest Demon Deacons,2026-02-25T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401824376,104,Boston University Terriers,107,Holy Cross Crusaders,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401824376,107,Holy Cross Crusaders,104,Boston University Terriers,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401814582,113,Massachusetts Minutemen,2050,Ball State Cardinals,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
+401827700,12,Arizona Wildcats,239,Baylor Bears,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,7.0,7.0
+401825541,120,Maryland Terrapins,158,Nebraska Cornhuskers,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401825537,130,Michigan Wolverines,135,Minnesota Golden Gophers,2026-02-25T01:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,10.0,10.0
+401825537,135,Minnesota Golden Gophers,130,Michigan Wolverines,2026-02-25T01:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-10.0,-10.0
+401828443,139,Saint Louis Billikens,2168,Dayton Flyers,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-15.0,-15.0
+401808257,142,Missouri Tigers,2633,Tennessee Volunteers,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,4.0,4.0
+401808258,145,Ole Miss Rebels,99,LSU Tigers,2026-02-26T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401820767,150,Duke Blue Devils,87,Notre Dame Fighting Irish,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,44.0,15.0
+401828245,151,East Carolina Pirates,2636,UTSA Roadrunners,2026-02-26T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401820763,152,NC State Wolfpack,258,Virginia Cavaliers,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-29.0,-15.0
+401820762,153,North Carolina Tar Heels,97,Louisville Cardinals,2026-02-24T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
+401820764,154,Wake Forest Demon Deacons,103,Boston College Eagles,2026-02-25T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401822960,156,Creighton Bluejays,305,DePaul Blue Demons,2026-02-26T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401825541,158,Nebraska Cornhuskers,120,Maryland Terrapins,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401825538,164,Rutgers Scarlet Knights,264,Washington Huskies,2026-02-24T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-7.0,-7.0
+401829320,167,New Mexico Lobos,2440,Nevada Wolf Pack,2026-02-25T04:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-7.0,-7.0
+401814585,189,Bowling Green Falcons,2711,Western Michigan Broncos,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-9.0,-9.0
+401814583,193,Miami (OH) RedHawks,2199,Eastern Michigan Eagles,2026-02-24T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,10.0,10.0
+401825540,194,Ohio State Buckeyes,2294,Iowa Hawkeyes,2026-02-26T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401827702,197,Oklahoma State Cowboys,277,West Virginia Mountaineers,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,7.0,7.0
+401808262,2,Auburn Tigers,201,Oklahoma Sooners,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-12.0,-12.0
+401820573,2005,Air Force Falcons,23,San José State Spartans,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-6.0,-6.0
+401814580,2006,Akron Zips,2084,Buffalo Bulls,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,14.0,14.0
+401808262,201,Oklahoma Sooners,2,Auburn Tigers,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,12.0,12.0
+401828248,202,Tulsa Golden Hurricane,2655,Tulane Green Wave,2026-02-26T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401808690,2032,Arkansas State Red Wolves,2572,Southern Miss Golden Eagles,2026-02-25T01:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
+401829261,204,Oregon State Beavers,301,San Diego Toreros,2026-02-26T03:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401807759,2046,Austin Peay Governors,2110,Central Arkansas Bears,2026-02-26T01:30:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401814582,2050,Ball State Cardinals,113,Massachusetts Minutemen,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
+401830216,2057,Belmont Bruins,339,Evansville Purple Aces,2026-02-26T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401826824,2083,Bucknell Bison,349,Army Black Knights,2026-02-25T16:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401814580,2084,Buffalo Bulls,2006,Akron Zips,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-14.0,-14.0
+401822961,2086,Butler Bulldogs,222,Villanova Wildcats,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401823784,21,San Diego State Aztecs,328,Utah State Aggies,2026-02-26T04:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401807759,2110,Central Arkansas Bears,2046,Austin Peay Governors,2026-02-26T01:30:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401827701,2116,UCF Knights,252,BYU Cougars,2026-02-25T04:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,13.0,13.0
+401814581,2117,Central Michigan Chippewas,2309,Kent State Golden Flashes,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-2.0,-2.0
+401827704,2132,Cincinnati Bearcats,2641,Texas Tech Red Raiders,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-12.0,-12.0
+401829410,2142,Colgate Raiders,322,Lafayette Leopards,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401828445,2166,Davidson Wildcats,2184,Duquesne Dukes,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401828443,2168,Dayton Flyers,139,Saint Louis Billikens,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,15.0,15.0
+401817683,2174,Detroit Mercy Titans,2523,Robert Morris Colonials,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401830314,2181,Drake Bulldogs,2674,Valparaiso Beacons,2026-02-26T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401828445,2184,Duquesne Dukes,2166,Davidson Wildcats,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401809383,2193,East Tennessee State Buccaneers,2747,Wofford Terriers,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401807757,2198,Eastern Kentucky Colonels,2511,Queens University Royals,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401814583,2199,Eastern Michigan Eagles,193,Miami (OH) RedHawks,2026-02-24T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-10.0,-10.0
+401820768,221,Pittsburgh Panthers,24,Stanford Cardinal,2026-02-26T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401822961,222,Villanova Wildcats,2086,Butler Bulldogs,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401828446,2244,George Mason Patriots,2603,Saint Joseph's Hawks,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401808688,2247,Georgia State Panthers,324,Coastal Carolina Chanticleers,2026-02-25T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
+401829260,2250,Gonzaga Bulldogs,2501,Portland Pilots,2026-02-26T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401823804,2253,Grand Canyon Lopes,2439,UNLV Rebels,2026-02-26T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401808721,2277,Houston Christian Huskies,2837,East Texas A&M Lions,2026-02-24T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
+401830312,2287,Illinois State Redbirds,2460,Northern Iowa Panthers,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401825540,2294,Iowa Hawkeyes,194,Ohio State Buckeyes,2026-02-26T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401820573,23,San José State Spartans,2005,Air Force Falcons,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,6.0,6.0
+401820820,2305,Kansas Jayhawks,248,Houston Cougars,2026-02-24T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,13.0,13.0
+401827706,2306,Kansas State Wildcats,38,Colorado Buffaloes,2026-02-26T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401814581,2309,Kent State Golden Flashes,2117,Central Michigan Chippewas,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,2.0,2.0
+401809384,231,Furman Paladins,2643,The Citadel Bulldogs,2026-02-25T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401808932,2320,Lamar Cardinals,2447,Nicholls Colonels,2026-02-24T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
+401828444,2325,La Salle Explorers,45,George Washington Revolutionaries,2026-02-24T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-27.0,-15.0
+401828680,2329,Lehigh Mountain Hawks,44,American University Eagles,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401818434,233,South Dakota Coyotes,2437,Omaha Mavericks,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401829264,2351,Loyola Marymount Lions,265,Washington State Cougars,2026-02-26T04:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401820176,2352,Loyola Maryland Greyhounds,2426,Navy Midshipmen,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401808887,2377,McNeese Cowboys,292,UT Rio Grande Valley Vaqueros,2026-02-24T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,7.0,7.0
+401808261,238,Vanderbilt Commodores,61,Georgia Bulldogs,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401809385,2382,Mercer Bears,2717,Western Carolina Catamounts,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401827700,239,Baylor Bears,12,Arizona Wildcats,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-7.0,-7.0
+401820766,2390,Miami Hurricanes,52,Florida State Seminoles,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,10.0,10.0
+401820768,24,Stanford Cardinal,221,Pittsburgh Panthers,2026-02-26T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401827098,2400,Mississippi Valley State Delta Devils,2755,Grambling Tigers,2026-02-24T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-21.0,-15.0
+401806502,2413,Morehead State Eagles,88,Southern Indiana Screaming Eagles,2026-02-25T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
+401861277,2415,Morgan State Bears,2569,South Carolina State Bulldogs,2026-02-25T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401828247,242,Rice Owls,58,South Florida Bulls,2026-02-26T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401820176,2426,Navy Midshipmen,2352,Loyola Maryland Greyhounds,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401828244,2429,Charlotte 49ers,249,North Texas Mean Green,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401808693,2433,UL Monroe Warhawks,6,South Alabama Jaguars,2026-02-26T01:30:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401818434,2437,Omaha Mavericks,233,South Dakota Coyotes,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401823804,2439,UNLV Rebels,2253,Grand Canyon Lopes,2026-02-26T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401829320,2440,Nevada Wolf Pack,167,New Mexico Lobos,2026-02-25T04:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,7.0,7.0
+401858739,2441,New Haven Chargers,2598,Saint Francis Red Flash,2026-02-24T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-6.0,-6.0
+401808916,2443,New Orleans Privateers,2617,Stephen F. Austin Lumberjacks,2026-02-24T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,4.0,4.0
+401808932,2447,Nicholls Colonels,2320,Lamar Cardinals,2026-02-24T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
+401808259,245,Texas A&M Aggies,8,Arkansas Razorbacks,2026-02-26T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401807758,2453,North Alabama Lions,91,Bellarmine Knights,2026-02-26T01:45:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401814584,2459,Northern Illinois Huskies,2649,Toledo Rockets,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-10.0,-10.0
+401830312,2460,Northern Iowa Panthers,2287,Illinois State Redbirds,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401808945,2466,Northwestern State Demons,2916,Incarnate Word Cardinals,2026-02-24T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
+401817684,2473,Oakland Golden Grizzlies,85,IU Indianapolis Jaguars,2026-02-25T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401820820,248,Houston Cougars,2305,Kansas Jayhawks,2026-02-24T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-13.0,-13.0
+401825542,2483,Oregon Ducks,275,Wisconsin Badgers,2026-02-26T04:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401828244,249,North Texas Mean Green,2429,Charlotte 49ers,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401829263,2492,Pepperdine Waves,2547,Seattle U Redhawks,2026-02-26T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401820765,25,California Golden Bears,2567,SMU Mustangs,2026-02-26T03:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401829260,2501,Portland Pilots,2250,Gonzaga Bulldogs,2026-02-26T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401822958,2507,Providence Friars,2752,Xavier Musketeers,2026-02-26T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401808264,251,Texas Longhorns,57,Florida Gators,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401807757,2511,Queens University Royals,2198,Eastern Kentucky Colonels,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401827701,252,BYU Cougars,2116,UCF Knights,2026-02-25T04:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-13.0,-13.0
+401817683,2523,Robert Morris Colonials,2174,Detroit Mercy Titans,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401827705,254,Utah Utes,66,Iowa State Cyclones,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-16.0,-15.0
+401829262,2541,Santa Clara Broncos,2608,Saint Mary's Gaels,2026-02-26T04:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401808965,2545,SE Louisiana Lions,357,Texas A&M-Corpus Christi Islanders,2026-02-24T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
+401829263,2547,Seattle U Redhawks,2492,Pepperdine Waves,2026-02-26T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401808692,256,James Madison Dukes,290,Georgia Southern Eagles,2026-02-26T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401820765,2567,SMU Mustangs,25,California Golden Bears,2026-02-26T03:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401861277,2569,South Carolina State Bulldogs,2415,Morgan State Bears,2026-02-25T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401808690,2572,Southern Miss Golden Eagles,2032,Arkansas State Red Wolves,2026-02-25T01:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
+401808260,2579,South Carolina Gamecocks,96,Kentucky Wildcats,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-9.0,-9.0
+401820763,258,Virginia Cavaliers,152,NC State Wolfpack,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,29.0,15.0
+401858739,2598,Saint Francis Red Flash,2441,New Haven Chargers,2026-02-24T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,6.0,6.0
+401822959,2599,St. John's Red Storm,41,UConn Huskies,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401825539,26,UCLA Bruins,30,USC Trojans,2026-02-25T04:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,19.0,15.0
+401828446,2603,Saint Joseph's Hawks,2244,George Mason Patriots,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401829262,2608,Saint Mary's Gaels,2541,Santa Clara Broncos,2026-02-26T04:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401808916,2617,Stephen F. Austin Lumberjacks,2443,New Orleans Privateers,2026-02-24T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
+401827703,2628,TCU Horned Frogs,9,Arizona State Sun Devils,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,12.0,12.0
+401808257,2633,Tennessee Volunteers,142,Missouri Tigers,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
+401828245,2636,UTSA Roadrunners,151,East Carolina Pirates,2026-02-26T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401825538,264,Washington Huskies,164,Rutgers Scarlet Knights,2026-02-24T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,7.0,7.0
+401827704,2641,Texas Tech Red Raiders,2132,Cincinnati Bearcats,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,12.0,12.0
+401809384,2643,The Citadel Bulldogs,231,Furman Paladins,2026-02-25T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401814584,2649,Toledo Rockets,2459,Northern Illinois Huskies,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,10.0,10.0
+401829264,265,Washington State Cougars,2351,Loyola Marymount Lions,2026-02-26T04:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401808691,2653,Troy Trojans,309,Louisiana Ragin' Cajuns,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,19.0,15.0
+401828248,2655,Tulane Green Wave,202,Tulsa Golden Hurricane,2026-02-26T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401830314,2674,Valparaiso Beacons,2181,Drake Bulldogs,2026-02-26T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401822957,269,Marquette Golden Eagles,46,Georgetown Hoyas,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,16.0,15.0
+401807761,2698,West Georgia Wolves,288,Lipscomb Bisons,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401817685,270,Milwaukee Panthers,2754,Youngstown State Penguins,2026-02-26T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401814585,2711,Western Michigan Broncos,189,Bowling Green Falcons,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,9.0,9.0
+401809385,2717,Western Carolina Catamounts,2382,Mercer Bears,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401809383,2747,Wofford Terriers,2193,East Tennessee State Buccaneers,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401825542,275,Wisconsin Badgers,2483,Oregon Ducks,2026-02-26T04:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401817682,2750,Wright State Raiders,2870,Purdue Fort Wayne Mastodons,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401823832,2751,Wyoming Cowboys,68,Boise State Broncos,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-10.0,-10.0
+401822958,2752,Xavier Musketeers,2507,Providence Friars,2026-02-26T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401817685,2754,Youngstown State Penguins,270,Milwaukee Panthers,2026-02-26T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401827098,2755,Grambling Tigers,2400,Mississippi Valley State Delta Devils,2026-02-24T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,21.0,15.0
+401808689,276,Marshall Thundering Herd,295,Old Dominion Monarchs,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,9.0,9.0
+401827702,277,West Virginia Mountaineers,197,Oklahoma State Cowboys,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-7.0,-7.0
+401828935,278,Fresno State Bulldogs,36,Colorado State Rams,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
+401830313,282,Indiana State Sycamores,79,Southern Illinois Salukis,2026-02-26T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401808721,2837,East Texas A&M Lions,2277,Houston Christian Huskies,2026-02-24T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
+401817682,2870,Purdue Fort Wayne Mastodons,2750,Wright State Raiders,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401807761,288,Lipscomb Bisons,2698,West Georgia Wolves,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401808692,290,Georgia Southern Eagles,256,James Madison Dukes,2026-02-26T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401808945,2916,Incarnate Word Cardinals,2466,Northwestern State Demons,2026-02-24T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
+401808887,292,UT Rio Grande Valley Vaqueros,2377,McNeese Cowboys,2026-02-24T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-7.0,-7.0
+401808689,295,Old Dominion Monarchs,276,Marshall Thundering Herd,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-9.0,-9.0
+401825539,30,USC Trojans,26,UCLA Bruins,2026-02-25T04:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-19.0,-15.0
+401829261,301,San Diego Toreros,204,Oregon State Beavers,2026-02-26T03:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401822960,305,DePaul Blue Demons,156,Creighton Bluejays,2026-02-26T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401808691,309,Louisiana Ragin' Cajuns,2653,Troy Trojans,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-19.0,-15.0
+401829410,322,Lafayette Leopards,2142,Colgate Raiders,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401808688,324,Coastal Carolina Chanticleers,2247,Georgia State Panthers,2026-02-25T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
+401817681,325,Cleveland State Vikings,94,Northern Kentucky Norse,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401823784,328,Utah State Aggies,21,San Diego State Aztecs,2026-02-26T04:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401808263,333,Alabama Crimson Tide,344,Mississippi State Bulldogs,2026-02-26T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401830216,339,Evansville Purple Aces,2057,Belmont Bruins,2026-02-26T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401808263,344,Mississippi State Bulldogs,333,Alabama Crimson Tide,2026-02-26T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401826824,349,Army Black Knights,2083,Bucknell Bison,2026-02-25T16:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401808965,357,Texas A&M-Corpus Christi Islanders,2545,SE Louisiana Lions,2026-02-24T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
+401828935,36,Colorado State Rams,278,Fresno State Bulldogs,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,4.0,4.0
+401827706,38,Colorado Buffaloes,2306,Kansas State Wildcats,2026-02-26T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401822959,41,UConn Huskies,2599,St. John's Red Storm,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401828680,44,American University Eagles,2329,Lehigh Mountain Hawks,2026-02-26T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401828444,45,George Washington Revolutionaries,2325,La Salle Explorers,2026-02-24T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,27.0,15.0
+401822957,46,Georgetown Hoyas,269,Marquette Golden Eagles,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-16.0,-15.0
+401820766,52,Florida State Seminoles,2390,Miami Hurricanes,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-10.0,-10.0
+401808264,57,Florida Gators,251,Texas Longhorns,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401828247,58,South Florida Bulls,242,Rice Owls,2026-02-26T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401808693,6,South Alabama Jaguars,2433,UL Monroe Warhawks,2026-02-26T01:30:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401808261,61,Georgia Bulldogs,238,Vanderbilt Commodores,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401827705,66,Iowa State Cyclones,254,Utah Utes,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,16.0,15.0
+401823832,68,Boise State Broncos,2751,Wyoming Cowboys,2026-02-25T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,10.0,10.0
+401830222,71,Bradley Braves,82,UIC Flames,2026-02-25T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-7.0,-7.0
+401825536,77,Northwestern Wildcats,84,Indiana Hoosiers,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,4.0,4.0
+401830313,79,Southern Illinois Salukis,282,Indiana State Sycamores,2026-02-26T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401808259,8,Arkansas Razorbacks,245,Texas A&M Aggies,2026-02-26T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401830222,82,UIC Flames,71,Bradley Braves,2026-02-25T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,7.0,7.0
+401825536,84,Indiana Hoosiers,77,Northwestern Wildcats,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
+401817684,85,IU Indianapolis Jaguars,2473,Oakland Golden Grizzlies,2026-02-25T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,,,,
+401820767,87,Notre Dame Fighting Irish,150,Duke Blue Devils,2026-02-25T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-44.0,-15.0
+401806502,88,Southern Indiana Screaming Eagles,2413,Morehead State Eagles,2026-02-25T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
+401827703,9,Arizona State Sun Devils,2628,TCU Horned Frogs,2026-02-25T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-12.0,-12.0
+401807758,91,Bellarmine Knights,2453,North Alabama Lions,2026-02-26T01:45:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401817681,94,Northern Kentucky Norse,325,Cleveland State Vikings,2026-02-26T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,
+401808260,96,Kentucky Wildcats,2579,South Carolina Gamecocks,2026-02-25T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,9.0,9.0
+401820762,97,Louisville Cardinals,153,North Carolina Tar Heels,2026-02-24T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-3.0,-3.0
+401808258,99,LSU Tigers,145,Ole Miss Rebels,2026-02-26T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,,,,

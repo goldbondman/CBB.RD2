@@ -659,6 +659,23 @@ def build_team_situational(output_path: Path = TEAM_SITUATIONAL_CSV) -> pd.DataF
     df["game_datetime_utc"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
     df = df.dropna(subset=["game_datetime_utc", "team_id", "event_id"]).copy()
 
+    # ── Attempt to load pre-computed metrics ──
+    metrics_df = _safe_read_with_fallback(TEAM_METRICS_CSV)
+    precomputed_cols = [
+        "rest_days", "games_l7", "games_l14", "win_streak",
+        "cover_streak", "close_win_pct_season", "close_game_win_pct"
+    ]
+    if not metrics_df.empty and all(c in metrics_df.columns for c in precomputed_cols):
+        metrics_subset = metrics_df[["event_id", "team_id"] + precomputed_cols].copy()
+        metrics_subset["event_id"] = metrics_subset["event_id"].astype(str).str.strip()
+        metrics_subset["team_id"] = metrics_subset["team_id"].astype(str).str.strip()
+        df = df.merge(metrics_subset, on=["event_id", "team_id"], how="left")
+        log.info("Using pre-computed rolling columns from team_game_metrics.csv")
+        use_precomputed = True
+    else:
+        log.info("Pre-computed rolling columns not found or incomplete; falling back to re-computation")
+        use_precomputed = False
+
     # Attach spread line if weighted input is missing it.
     if "spread" not in df.columns and "spread_line" not in df.columns:
         games = _safe_read_with_fallback(GAMES_CSV)
@@ -719,64 +736,74 @@ def build_team_situational(output_path: Path = TEAM_SITUATIONAL_CSV) -> pd.DataF
         hist = team_histories.get(tid, pd.DataFrame())
         prior = hist[hist["game_datetime_utc"] < game_dt]
 
-        # rest/games window
-        if prior.empty:
-            rest_days = 7.0
+        # ── Check for pre-computed columns ──
+        if use_precomputed and pd.notna(row.get("rest_days")):
+            rest_days = float(row["rest_days"])
+            games_l7 = int(row["games_l7"])
+            games_l14 = int(row["games_l14"])
+            win_streak = int(row["win_streak"])
+            cover_streak = int(row["cover_streak"])
+            close_win_pct_season = row["close_win_pct_season"]
+            close_game_win_pct = row["close_game_win_pct"]
         else:
-            last_game_dt = prior["game_datetime_utc"].iloc[-1]
-            rest_days = min(round((game_dt - last_game_dt).total_seconds() / 86400, 1), 14.0)
-        cutoff_7 = game_dt - pd.Timedelta(days=7)
-        cutoff_14 = game_dt - pd.Timedelta(days=14)
-        games_l7 = int((prior["game_datetime_utc"] >= cutoff_7).sum())
-        games_l14 = int((prior["game_datetime_utc"] >= cutoff_14).sum())
+            # rest/games window
+            if prior.empty:
+                rest_days = 7.0
+            else:
+                last_game_dt = prior["game_datetime_utc"].iloc[-1]
+                rest_days = min(round((game_dt - last_game_dt).total_seconds() / 86400, 1), 14.0)
+            cutoff_7 = game_dt - pd.Timedelta(days=7)
+            cutoff_14 = game_dt - pd.Timedelta(days=14)
+            games_l7 = int((prior["game_datetime_utc"] >= cutoff_7).sum())
+            games_l14 = int((prior["game_datetime_utc"] >= cutoff_14).sum())
 
-        # win streak
-        outcomes = [o for o in prior.apply(_extract_outcome, axis=1).tolist() if o is not None]
-        win_streak = _compute_streak(outcomes)
+            # win streak
+            outcomes = [o for o in prior.apply(_extract_outcome, axis=1).tolist() if o is not None]
+            win_streak = _compute_streak(outcomes)
 
-        # cover streak
-        cover_outcomes: list[int] = []
-        if spread_col:
-            for _, g in prior.iterrows():
-                spread_val = pd.to_numeric(g.get(spread_col), errors="coerce")
-                pf = pd.to_numeric(g.get("points_for"), errors="coerce")
-                pa = pd.to_numeric(g.get("points_against"), errors="coerce")
-                if pd.isna(spread_val) or pd.isna(pf) or pd.isna(pa):
-                    continue
-                if str(g.get("home_away", "")).strip().lower() == "home":
-                    covered = (pf - pa) > float(spread_val)
-                else:
-                    covered = (pa - pf) > -float(spread_val)
-                cover_outcomes.append(1 if covered else -1)
-            spread_available += int(prior[spread_col].notna().any())
-        cover_streak = _compute_streak(cover_outcomes)
+            # cover streak
+            cover_outcomes: list[int] = []
+            if spread_col:
+                for _, g in prior.iterrows():
+                    spread_val = pd.to_numeric(g.get(spread_col), errors="coerce")
+                    pf = pd.to_numeric(g.get("points_for"), errors="coerce")
+                    pa = pd.to_numeric(g.get("points_against"), errors="coerce")
+                    if pd.isna(spread_val) or pd.isna(pf) or pd.isna(pa):
+                        continue
+                    if str(g.get("home_away", "")).strip().lower() == "home":
+                        covered = (pf - pa) > float(spread_val)
+                    else:
+                        covered = (pa - pf) > -float(spread_val)
+                    cover_outcomes.append(1 if covered else -1)
+                spread_available += int(prior[spread_col].notna().any())
+            cover_streak = _compute_streak(cover_outcomes)
 
-        # close game percentages
-        season_prior = prior[prior["game_datetime_utc"] >= _season_start(game_dt)]
-        season_margin = (pd.to_numeric(season_prior.get("points_for"), errors="coerce") -
-                         pd.to_numeric(season_prior.get("points_against"), errors="coerce"))
-        close_games = season_prior[season_margin.abs() <= 5]
-        if len(close_games) < 3:
-            close_win_pct_season = None
-        else:
-            close_wins = (
-                pd.to_numeric(close_games.get("points_for"), errors="coerce") >
-                pd.to_numeric(close_games.get("points_against"), errors="coerce")
-            ).sum()
-            close_win_pct_season = round(float(close_wins / len(close_games)), 3)
+            # close game percentages
+            season_prior = prior[prior["game_datetime_utc"] >= _season_start(game_dt)]
+            season_margin = (pd.to_numeric(season_prior.get("points_for"), errors="coerce") -
+                             pd.to_numeric(season_prior.get("points_against"), errors="coerce"))
+            close_games = season_prior[season_margin.abs() <= 5]
+            if len(close_games) < 3:
+                close_win_pct_season = None
+            else:
+                close_wins = (
+                    pd.to_numeric(close_games.get("points_for"), errors="coerce") >
+                    pd.to_numeric(close_games.get("points_against"), errors="coerce")
+                ).sum()
+                close_win_pct_season = round(float(close_wins / len(close_games)), 3)
 
-        recent_10 = prior.tail(10)
-        recent_margin = (pd.to_numeric(recent_10.get("points_for"), errors="coerce") -
-                         pd.to_numeric(recent_10.get("points_against"), errors="coerce"))
-        close_l10 = recent_10[recent_margin.abs() <= 5]
-        if len(close_l10) < 2:
-            close_game_win_pct = None
-        else:
-            close_l10_wins = (
-                pd.to_numeric(close_l10.get("points_for"), errors="coerce") >
-                pd.to_numeric(close_l10.get("points_against"), errors="coerce")
-            ).sum()
-            close_game_win_pct = round(float(close_l10_wins / len(close_l10)), 3)
+            recent_10 = prior.tail(10)
+            recent_margin = (pd.to_numeric(recent_10.get("points_for"), errors="coerce") -
+                             pd.to_numeric(recent_10.get("points_against"), errors="coerce"))
+            close_l10 = recent_10[recent_margin.abs() <= 5]
+            if len(close_l10) < 2:
+                close_game_win_pct = None
+            else:
+                close_l10_wins = (
+                    pd.to_numeric(close_l10.get("points_for"), errors="coerce") >
+                    pd.to_numeric(close_l10.get("points_against"), errors="coerce")
+                ).sum()
+                close_game_win_pct = round(float(close_l10_wins / len(close_l10)), 3)
 
         recent_5 = prior.tail(5)
         if len(recent_5) < 3:
