@@ -329,13 +329,14 @@ def load_completed_games(game_log: pd.DataFrame) -> pd.DataFrame:
                    "opponent_id", "opponent", "points_for", "points_against",
                    "actual_margin"]].drop_duplicates("event_id")
 
+    # Avoid duplicate columns by dropping existing ones before rename
+    drop_cols = ["home_team_id", "away_team_id", "home_team", "away_team", "home_score", "away_score"]
+    home = home.drop(columns=[c for c in drop_cols if c in home.columns])
+
     home = home.rename(columns={
         "team_id": "home_team_id", "team": "home_team",
         "opponent_id": "away_team_id", "opponent": "away_team",
         "points_for": "home_score", "points_against": "away_score",
-    })
-    away = away.rename(columns={
-        "team_id": "away_team_id_check",
     })
 
     games = home[["event_id", "game_datetime_utc",
@@ -350,6 +351,15 @@ def load_completed_games(game_log: pd.DataFrame) -> pd.DataFrame:
 
     games = games.drop_duplicates("event_id")
     log.info(f"Completed games: {len(games):,}")
+
+    log.info(
+        "load_completed_games: %d rows loaded | %d unique home_team_ids | "
+        "%d unique away_team_ids | sample home_team_id values: %s",
+        len(games),
+        games["home_team_id"].nunique(),
+        games["away_team_id"].nunique(),
+        games["home_team_id"].dropna().astype(str).head(3).tolist(),
+    )
     return games.reset_index(drop=True)
 
 
@@ -1210,6 +1220,14 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
     tgm["cover"] = pd.to_numeric(tgm.get("cover"), errors="coerce")
     tgm["ats_push"] = pd.to_numeric(tgm.get("ats_push"), errors="coerce").fillna(0)
     tgm["game_datetime_utc"] = pd.to_datetime(tgm.get("game_datetime_utc"), errors="coerce", utc=True)
+    tgm["win"] = pd.to_numeric(tgm.get("win"), errors="coerce").fillna(0)
+    tgm["loss_flag"] = (tgm["win"] == 0).astype(int)
+    tgm["neutral_site"] = pd.to_numeric(tgm.get("neutral_site"), errors="coerce").fillna(0)
+
+    # Calculate win flags for aggregation (Q2)
+    tgm["home_win_flag"] = ((tgm["home_away_norm"] == "home") & (tgm["win"] == 1)).astype(int)
+    tgm["away_win_flag"] = ((tgm["home_away_norm"] == "away") & (tgm["win"] == 1)).astype(int)
+    tgm["neutral_win_flag"] = ((tgm["neutral_site"] == 1) & (tgm["win"] == 1)).astype(int)
 
     required = {"team_id", "team", "wins", "losses", "points_for", "points_against"}
     missing_required = sorted(required - set(tgm.columns))
@@ -1229,11 +1247,11 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
     agg_spec = {
         "team": ("team", "last"),
         "conference": ("conference", "last"),
-        "wins": ("wins", "last"),
-        "losses": ("losses", "last"),
-        "home_wins": ("home_wins", "last"),
-        "away_wins": ("away_wins", "last"),
-        "neutral_wins": ("neutral_wins", "sum") if "neutral_wins" in tgm.columns else ("neutral_site", "sum"),
+        "wins": ("win", "sum"),
+        "losses": ("loss_flag", "sum"),
+        "home_wins": ("home_win_flag", "sum"),
+        "away_wins": ("away_win_flag", "sum"),
+        "neutral_wins": ("neutral_win_flag", "sum"),
         "ats_wins": ("cover", lambda s: int((s == 1).sum())),
         "ats_losses": ("cover", lambda s: int((s == 0).sum())),
         "ats_pushes": ("ats_push", "sum"),
@@ -1269,7 +1287,8 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
             missing_optional.append(source_col)
 
     if missing_optional:
-        log.warning("build_team_backtest_csv missing optional columns: %s", sorted(set(missing_optional)))
+        # Q5: Downgrade to debug; some columns like opp_avg_net_rtg_season may be joined later
+        log.debug("build_team_backtest_csv missing optional columns (may be available post-merge): %s", sorted(set(missing_optional)))
 
     base = grouped.agg(
         **resolved_agg,
@@ -1502,7 +1521,11 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
     safe_write_csv(records, results_path, index=False, label="backtest_results", allow_empty=False)
     latest_results_path = output_dir / "backtest_results_latest.csv"
     safe_write_csv(records, latest_results_path, index=False, label="backtest_results_latest", allow_empty=False)
-    safe_write_csv(records, output_dir / "team_season_summary.csv", index=False, label="team_season_summary", allow_empty=False)
+
+    # Prediction records also go to predictions_with_context.csv (Q4)
+    context_path = output_dir / "predictions_with_context.csv"
+    safe_write_csv(records, context_path, index=False, label="predictions_with_context", allow_empty=False)
+
     outputs["results"] = results_path
     outputs["results_latest"] = latest_results_path
     log.info(f"Results -> {results_path}  ({len(records):,} rows)")
