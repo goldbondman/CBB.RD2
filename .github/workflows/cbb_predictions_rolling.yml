@@ -259,6 +259,7 @@ jobs:
             data/predictions_*.csv
             data/ensemble_predictions_latest.csv
             data/predictions_combined_latest.csv
+            data/dq_skipped_games.csv
           retention-days: 90
 
       # Pattern 9: Standardized commit step with retry logic and "nothing to commit" handling
