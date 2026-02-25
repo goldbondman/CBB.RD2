@@ -79,6 +79,8 @@ METRICS_CSV  = DATA_DIR / "team_game_metrics.csv"
 GAMES_CSV    = DATA_DIR / "games.csv"
 GRADED_RESULTS_CSV = DATA_DIR / "results_log_graded.csv"
 TIER_CLASSIFICATIONS_CSV = DATA_DIR / "tier_classifications.csv"
+MODEL_ACCURACY_REPORT_CSV = DATA_DIR / "model_accuracy_report.csv"
+MODEL_ACCURACY_BY_DIMENSION_CSV = DATA_DIR / "model_accuracy_by_dimension.csv"
 
 
 def _resolve_data_path(primary: Path) -> Path:
@@ -117,6 +119,15 @@ CONFERENCE_BASE_TIER = {
     "MID": 2,
     "LOW": 1,
     "UNKNOWN": 0,
+}
+
+HIGH_TIER_CONFERENCES = {
+    "atlantic coast conference", "acc", "big ten", "big 12", "big east",
+    "southeastern conference", "sec", "pac-12", "pac 12", "pac-10", "pac 10",
+}
+MID_TIER_CONFERENCES = {
+    "american athletic conference", "aac", "atlantic 10", "a-10", "a10",
+    "mountain west", "west coast conference", "wcc", "missouri valley conference", "mvc",
 }
 
 
@@ -354,13 +365,6 @@ def load_completed_games(game_log: pd.DataFrame) -> pd.DataFrame:
     games["neutral_site"]  = home.get("neutral_site", pd.Series(0, index=home.index)).values
 
     games = games.drop_duplicates("event_id")
-    log.info(
-        "load_completed_games: %d rows | %d unique home_team_ids | "
-        "sample: %s",
-        len(games),
-        games["home_team_id"].nunique(),
-    log.info(f"Completed games: {len(games):,}")
-
     log.info(
         "load_completed_games: %d rows loaded | %d unique home_team_ids | "
         "%d unique away_team_ids | sample home_team_id values: %s",
@@ -1653,6 +1657,251 @@ def verify_backtest_output(path: Path) -> bool:
     return True
 
 
+def _write_empty_accuracy_outputs(report_path: Path, dimension_path: Path) -> None:
+    report_cols = [
+        "game_id", "game_datetime_utc", "home_team", "away_team", "pred_spread", "actual_margin",
+        "spread_error", "abs_error", "covered", "correct_side", "model_confidence", "game_tier",
+        "home_conference", "away_conference", "total_line", "pred_total", "actual_total",
+    ]
+    dim_cols = [
+        "dimension", "group", "n_games", "ats_wins", "ats_losses", "ats_pushes", "ats_win_rate",
+        "mean_abs_error", "mean_signed_error", "correct_side_rate", "mean_confidence", "sufficient_sample",
+    ]
+    safe_write_csv(pd.DataFrame(columns=report_cols), report_path, index=False, label="model_accuracy_report", allow_empty=True)
+    safe_write_csv(pd.DataFrame(columns=dim_cols), dimension_path, index=False, label="model_accuracy_by_dimension", allow_empty=True)
+
+
+def _normalize_conference_tier(home_conference: object, away_conference: object) -> str:
+    confs = []
+    for conf in (home_conference, away_conference):
+        if pd.isna(conf):
+            continue
+        conf_txt = str(conf).strip().lower()
+        if not conf_txt or conf_txt in {"nan", "none"}:
+            continue
+        confs.append(conf_txt)
+
+    if not confs:
+        return "UNKNOWN"
+    if any(c in HIGH_TIER_CONFERENCES for c in confs):
+        return "HIGH"
+    if any(c in MID_TIER_CONFERENCES for c in confs):
+        return "MID"
+    return "LOW"
+
+
+def _build_dimension_rows(report_df: pd.DataFrame) -> pd.DataFrame:
+    dims: List[pd.DataFrame] = []
+
+    def _agg_dimension(df: pd.DataFrame, dim_name: str, group_col: str) -> None:
+        grouped = df.groupby(group_col, dropna=False)
+        out = grouped.agg(
+            n_games=("game_id", "size"),
+            ats_wins=("ats_result", lambda s: int((s == "W").sum())),
+            ats_losses=("ats_result", lambda s: int((s == "L").sum())),
+            ats_pushes=("ats_result", lambda s: int((s == "P").sum())),
+            mean_abs_error=("abs_error", "mean"),
+            mean_signed_error=("spread_error", "mean"),
+            correct_side_rate=("correct_side", "mean"),
+            mean_confidence=("model_confidence", "mean"),
+        ).reset_index()
+
+        out = out[out["n_games"] >= 5].copy()
+        if out.empty:
+            return
+
+        denom = out["ats_wins"] + out["ats_losses"]
+        out["ats_win_rate"] = np.where(denom > 0, out["ats_wins"] / denom, np.nan)
+        out["dimension"] = dim_name
+        out["group"] = out[group_col].astype(str)
+        out["sufficient_sample"] = out["n_games"] >= 20
+        dims.append(out[[
+            "dimension", "group", "n_games", "ats_wins", "ats_losses", "ats_pushes", "ats_win_rate",
+            "mean_abs_error", "mean_signed_error", "correct_side_rate", "mean_confidence", "sufficient_sample",
+        ]])
+
+    _agg_dimension(report_df, "conference_tier", "conference_tier")
+    _agg_dimension(report_df, "spread_bucket", "spread_bucket")
+    _agg_dimension(report_df, "favorite_side", "favorite_side")
+    _agg_dimension(report_df, "day_of_week", "day_of_week")
+    _agg_dimension(report_df, "month", "month")
+
+    if not dims:
+        return pd.DataFrame(columns=[
+            "dimension", "group", "n_games", "ats_wins", "ats_losses", "ats_pushes", "ats_win_rate",
+            "mean_abs_error", "mean_signed_error", "correct_side_rate", "mean_confidence", "sufficient_sample",
+        ])
+
+    return pd.concat(dims, ignore_index=True).sort_values(["dimension", "group"]).reset_index(drop=True)
+
+
+def grade_historical_predictions(data_dir: Path = DATA_DIR) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    prediction_files = sorted(data_dir.glob("predictions_*.csv"))
+    report_path = data_dir / "model_accuracy_report.csv"
+    dimension_path = data_dir / "model_accuracy_by_dimension.csv"
+
+    if not prediction_files:
+        log.warning("No predictions_*.csv files found in %s", data_dir)
+        _write_empty_accuracy_outputs(report_path, dimension_path)
+        return pd.DataFrame(), pd.DataFrame()
+
+    pred_frames = []
+    for p in prediction_files:
+        try:
+            df = pd.read_csv(p, low_memory=False)
+            df["prediction_file"] = p.name
+            pred_frames.append(df)
+        except Exception as exc:
+            log.warning("Skipping unreadable prediction file %s: %s", p, exc)
+
+    if not pred_frames:
+        _write_empty_accuracy_outputs(report_path, dimension_path)
+        return pd.DataFrame(), pd.DataFrame()
+
+    predictions = pd.concat(pred_frames, ignore_index=True)
+    total_predictions = len(predictions)
+
+    weighted_path = _resolve_data_path(WEIGHTED_CSV)
+    if not weighted_path.exists():
+        log.warning("Missing weighted game file at %s", weighted_path)
+        _write_empty_accuracy_outputs(report_path, dimension_path)
+        return pd.DataFrame(), pd.DataFrame()
+
+    wg = pd.read_csv(weighted_path, low_memory=False)
+    wg["event_id"] = wg["event_id"].astype(str)
+    wg["game_datetime_utc"] = pd.to_datetime(wg["game_datetime_utc"], errors="coerce", utc=True)
+
+    home_rows = wg[wg.get("home_away", "").astype(str).str.lower().eq("home")].copy()
+    if home_rows.empty:
+        home_rows = wg.copy()
+
+    games = home_rows.sort_values("game_datetime_utc").drop_duplicates(subset=["event_id"], keep="last").copy()
+    games["home_score"] = pd.to_numeric(games.get("points_for"), errors="coerce")
+    games["away_score"] = pd.to_numeric(games.get("points_against"), errors="coerce")
+    games = games.rename(columns={"event_id": "game_id"})
+
+    predictions["game_id"] = predictions.get("game_id", pd.Series(index=predictions.index, dtype=object)).astype(str)
+    predictions["game_datetime_utc"] = pd.to_datetime(predictions.get("game_datetime_utc"), errors="coerce", utc=True)
+    predictions["pred_spread"] = pd.to_numeric(predictions.get("pred_spread"), errors="coerce")
+    predictions["pred_total"] = pd.to_numeric(predictions.get("pred_total"), errors="coerce")
+    predictions["model_confidence"] = pd.to_numeric(predictions.get("model_confidence"), errors="coerce")
+    predictions["total_line"] = pd.to_numeric(predictions.get("total_line"), errors="coerce")
+
+    merged = predictions.merge(
+        games[["game_id", "game_datetime_utc", "home_team", "away_team", "home_conference", "away_conference", "home_score", "away_score"]],
+        on="game_id",
+        how="left",
+        suffixes=("_pred", ""),
+    )
+
+    now_utc = pd.Timestamp.now(tz="UTC")
+    merged["game_datetime_utc_final"] = merged["game_datetime_utc"].combine_first(merged["game_datetime_utc_pred"])
+    merged["actual_margin"] = merged["home_score"] - merged["away_score"]
+    merged["actual_total"] = merged["home_score"] + merged["away_score"]
+
+    gradeable_mask = (
+        merged["pred_spread"].notna()
+        & merged["game_datetime_utc_final"].notna()
+        & (merged["game_datetime_utc_final"] < now_utc)
+        & merged["home_score"].notna()
+        & merged["away_score"].notna()
+    )
+    gradeable = merged[gradeable_mask].copy()
+
+    if gradeable.empty or len(gradeable) < 10:
+        log.warning("Found %s gradeable games (<10). Writing empty accuracy outputs.", len(gradeable))
+        _write_empty_accuracy_outputs(report_path, dimension_path)
+        log.info("Total predictions found: %s", total_predictions)
+        log.info("Total gradeable games: %s", len(gradeable))
+        return pd.DataFrame(), pd.DataFrame()
+
+    mae_neg_home_favored = (-gradeable["pred_spread"] - gradeable["actual_margin"]).abs().mean()
+    mae_pos_home_favored = (gradeable["pred_spread"] - gradeable["actual_margin"]).abs().mean()
+    use_negative_home_favored = mae_neg_home_favored <= mae_pos_home_favored
+    if not use_negative_home_favored:
+        gradeable["pred_spread"] = -gradeable["pred_spread"]
+    log.info(
+        "Detected spread sign convention: %s (mae_neg=%.3f, mae_pos=%.3f)",
+        "negative=home_favored" if use_negative_home_favored else "positive=home_favored",
+        mae_neg_home_favored,
+        mae_pos_home_favored,
+    )
+
+    gradeable["spread_error"] = gradeable["pred_spread"] - (-gradeable["actual_margin"])
+    gradeable["abs_error"] = gradeable["spread_error"].abs()
+    margin_plus_spread = gradeable["actual_margin"] + gradeable["pred_spread"]
+    gradeable["covered"] = margin_plus_spread > 0
+
+    pred_sign = np.sign(gradeable["pred_spread"])
+    actual_sign = np.sign(-gradeable["actual_margin"])
+    gradeable["correct_side"] = (pred_sign == actual_sign) & (pred_sign != 0) & (actual_sign != 0)
+    gradeable["ats_result"] = np.where(
+        margin_plus_spread > 0,
+        "W",
+        np.where(margin_plus_spread < 0, "L", "P"),
+    )
+
+    gradeable["game_tier"] = gradeable.get("game_tier", gradeable.get("game_type", "UNKNOWN")).fillna("UNKNOWN")
+    gradeable["conference_tier"] = gradeable.apply(
+        lambda r: _normalize_conference_tier(r.get("home_conference"), r.get("away_conference")), axis=1
+    )
+    abs_spread = gradeable["pred_spread"].abs()
+    gradeable["spread_bucket"] = np.select(
+        [abs_spread < 3, abs_spread < 6, abs_spread < 10, abs_spread >= 10],
+        ["0-3", "3-6", "6-10", "10+"],
+        default="UNKNOWN",
+    )
+    gradeable["favorite_side"] = np.where(gradeable["pred_spread"] < 0, "home_fav", "away_fav")
+    dt = pd.to_datetime(gradeable["game_datetime_utc_final"], utc=True)
+    gradeable["day_of_week"] = dt.dt.strftime("%a")
+    gradeable["month"] = dt.dt.strftime("%b")
+
+    report_df = gradeable[[
+        "game_id", "game_datetime_utc_final", "home_team", "away_team", "pred_spread", "actual_margin",
+        "spread_error", "abs_error", "covered", "correct_side", "model_confidence", "game_tier",
+        "home_conference", "away_conference", "total_line", "pred_total", "actual_total",
+        "conference_tier", "spread_bucket", "favorite_side", "day_of_week", "month", "ats_result",
+    ]].rename(columns={"game_datetime_utc_final": "game_datetime_utc"})
+
+    safe_write_csv(
+        report_df[[
+            "game_id", "game_datetime_utc", "home_team", "away_team", "pred_spread", "actual_margin", "spread_error",
+            "abs_error", "covered", "correct_side", "model_confidence", "game_tier", "home_conference",
+            "away_conference", "total_line", "pred_total", "actual_total",
+        ]],
+        report_path,
+        index=False,
+        label="model_accuracy_report",
+        allow_empty=True,
+    )
+
+    dim_df = _build_dimension_rows(report_df)
+    safe_write_csv(dim_df, dimension_path, index=False, label="model_accuracy_by_dimension", allow_empty=True)
+
+    ats_wins = int((report_df["ats_result"] == "W").sum())
+    ats_losses = int((report_df["ats_result"] == "L").sum())
+    ats_pushes = int((report_df["ats_result"] == "P").sum())
+    overall_mae = float(report_df["abs_error"].mean())
+
+    best_group = "N/A"
+    worst_group = "N/A"
+    eligible = dim_df[dim_df["n_games"] >= 10]
+    if not eligible.empty:
+        best_row = eligible.loc[eligible["mean_abs_error"].idxmin()]
+        worst_row = eligible.loc[eligible["mean_abs_error"].idxmax()]
+        best_group = f"{best_row['dimension']}:{best_row['group']} (MAE={best_row['mean_abs_error']:.3f}, n={int(best_row['n_games'])})"
+        worst_group = f"{worst_row['dimension']}:{worst_row['group']} (MAE={worst_row['mean_abs_error']:.3f}, n={int(worst_row['n_games'])})"
+
+    log.info("Total predictions found: %s", total_predictions)
+    log.info("Total gradeable games: %s", len(report_df))
+    log.info("Overall ATS record (W-L-P): %s-%s-%s", ats_wins, ats_losses, ats_pushes)
+    log.info("Overall mean absolute error: %.4f", overall_mae)
+    log.info("Best performing dimension group: %s", best_group)
+    log.info("Worst performing dimension group: %s", worst_group)
+
+    return report_df, dim_df
+
+
 def main():
     parser = argparse.ArgumentParser(description="CBB Prediction Backtester")
     parser.add_argument("--min-games",    type=int, default=5)
@@ -1682,6 +1931,8 @@ def main():
     verify_path = args.output_dir / "backtest_results_latest.csv"
     if not verify_backtest_output(verify_path):
         sys.exit(1)
+
+    grade_historical_predictions(DATA_DIR)
 
 
 if __name__ == "__main__":
