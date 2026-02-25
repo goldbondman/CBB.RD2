@@ -1,397 +1,366 @@
 team_id,team,conference,games_played,actual_win_pct,pythagorean_win_pct,luck_score,luck_rank,luck_percentile,regression_risk_flag,expected_future_win_pct,luck_trend_l5,updated_at
-2,Auburn Tigers,Patriot League,1,0.0,0.164,-0.164,170,14.6,0,0.164,0.0,2026-02-25T22:51:01Z
-6,South Alabama Jaguars,Mid-Eastern Athletic Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-8,Arkansas Razorbacks,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-9,Arizona State Sun Devils,Southeastern Conference,1,0.0,0.162,-0.162,169,15.2,0,0.162,0.0,2026-02-25T22:51:01Z
-12,Arizona Wildcats,Southeastern Conference,1,1.0,0.724,0.276,17,91.9,0,0.724,0.0,2026-02-25T22:51:01Z
-21,San Diego State Aztecs,Independents,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-23,San José State Spartans,Independents,1,1.0,0.697,0.303,14,93.4,0,0.697,0.0,2026-02-25T22:51:01Z
-24,Stanford Cardinal,Big East,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-25,California Golden Bears,Big East,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-26,UCLA Bruins,Pac-12,1,1.0,0.956,0.044,40,80.3,0,0.956,0.0,2026-02-25T22:51:01Z
-30,USC Trojans,Pac-12,1,0.0,0.044,-0.044,159,20.2,0,0.044,0.0,2026-02-25T22:51:01Z
-36,Colorado State Rams,Independents,1,1.0,0.655,0.345,8,96.5,0,0.655,0.0,2026-02-25T22:51:01Z
-38,Colorado Buffaloes,Southeastern Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-41,UConn Huskies,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-44,American University Eagles,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-45,George Washington Revolutionaries,Big Ten,1,1.0,0.969,0.031,43,78.8,0,0.969,0.0,2026-02-25T22:51:01Z
-46,Georgetown Hoyas,Big 12,1,0.0,0.062,-0.062,161,19.2,0,0.062,0.0,2026-02-25T22:51:01Z
-52,Florida State Seminoles,Big East,1,0.0,0.186,-0.186,174,12.6,0,0.186,0.0,2026-02-25T22:51:01Z
-57,Florida Gators,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-58,South Florida Bulls,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-61,Georgia Bulldogs,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-66,Iowa State Cyclones,Southeastern Conference,1,1.0,0.94,0.06,39,80.8,0,0.94,0.0,2026-02-25T22:51:01Z
-68,Boise State Broncos,Independents,1,1.0,0.848,0.152,33,83.8,0,0.848,0.0,2026-02-25T22:51:01Z
-71,Bradley Braves,Ohio Valley Conference,1,0.0,0.289,-0.289,184,7.6,0,0.289,0.0,2026-02-25T22:51:01Z
-77,Northwestern Wildcats,Pac-12,1,1.0,0.659,0.341,10,95.5,0,0.659,0.0,2026-02-25T22:51:01Z
-79,Southern Illinois Salukis,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-82,UIC Flames,Ohio Valley Conference,1,1.0,0.711,0.289,15,92.9,0,0.711,0.0,2026-02-25T22:51:01Z
-84,Indiana Hoosiers,Pac-12,1,0.0,0.341,-0.341,189,5.1,0,0.341,0.0,2026-02-25T22:51:01Z
-85,IU Indianapolis Jaguars,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-87,Notre Dame Fighting Irish,Big East,1,0.0,0.001,-0.001,154,22.7,0,0.001,0.0,2026-02-25T22:51:01Z
-88,Southern Indiana Screaming Eagles,Southland Conference,1,0.0,0.455,-0.455,196,1.5,0,0.455,0.0,2026-02-25T22:51:01Z
-91,Bellarmine Knights,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-94,Northern Kentucky Norse,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-96,Kentucky Wildcats,Patriot League,1,1.0,0.823,0.177,26,87.4,0,0.823,0.0,2026-02-25T22:51:01Z
-97,Louisville Cardinals,Big East,1,0.0,0.388,-0.388,193,3.0,0,0.388,0.0,2026-02-25T22:51:01Z
-99,LSU Tigers,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-103,Boston College Eagles,Big East,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-104,Boston University Terriers,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-107,Holy Cross Crusaders,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-113,Massachusetts Minutemen,Mid-American Conference,1,0.0,0.461,-0.461,198,0.5,0,0.461,0.0,2026-02-25T22:51:01Z
-120,Maryland Terrapins,Pac-12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-130,Michigan Wolverines,Pac-12,1,1.0,0.832,0.168,28,86.4,0,0.832,0.0,2026-02-25T22:51:01Z
-135,Minnesota Golden Gophers,Pac-12,1,0.0,0.168,-0.168,171,14.1,0,0.168,0.0,2026-02-25T22:51:01Z
-139,Saint Louis Billikens,Big Ten,1,0.0,0.076,-0.076,162,18.7,0,0.076,0.0,2026-02-25T22:51:01Z
-142,Missouri Tigers,Patriot League,1,1.0,0.657,0.343,9,96.0,0,0.657,0.0,2026-02-25T22:51:01Z
-145,Ole Miss Rebels,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-150,Duke Blue Devils,Big East,1,1.0,0.999,0.001,45,77.8,0,0.999,0.0,2026-02-25T22:51:01Z
-151,East Carolina Pirates,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-152,NC State Wolfpack,Big East,1,0.0,0.011,-0.011,155,22.2,0,0.011,0.0,2026-02-25T22:51:01Z
-153,North Carolina Tar Heels,Big East,1,1.0,0.612,0.388,6,97.5,0,0.612,0.0,2026-02-25T22:51:01Z
-154,Wake Forest Demon Deacons,Big East,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-156,Creighton Bluejays,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-158,Nebraska Cornhuskers,Pac-12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-164,Rutgers Scarlet Knights,Pac-12,1,0.0,0.256,-0.256,180,9.6,0,0.256,0.0,2026-02-25T22:51:01Z
-167,New Mexico Lobos,Independents,1,0.0,0.219,-0.219,175,12.1,0,0.219,0.0,2026-02-25T22:51:01Z
-189,Bowling Green Falcons,Mid-American Conference,1,0.0,0.224,-0.224,176,11.6,0,0.224,0.0,2026-02-25T22:51:01Z
-193,Miami (OH) RedHawks,Mid-American Conference,1,1.0,0.842,0.158,32,84.3,0,0.842,0.0,2026-02-25T22:51:01Z
-194,Ohio State Buckeyes,Pac-12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-197,Oklahoma State Cowboys,Southeastern Conference,1,1.0,0.715,0.285,16,92.4,0,0.715,0.0,2026-02-25T22:51:01Z
-201,Oklahoma Sooners,Patriot League,1,1.0,0.836,0.164,29,85.9,0,0.836,0.0,2026-02-25T22:51:01Z
-202,Tulsa Golden Hurricane,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-204,Oregon State Beavers,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-221,Pittsburgh Panthers,Big East,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-222,Villanova Wildcats,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-231,Furman Paladins,Colonial Athletic Association,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-233,South Dakota Coyotes,Big Ten,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-238,Vanderbilt Commodores,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-239,Baylor Bears,Southeastern Conference,1,0.0,0.276,-0.276,182,8.6,0,0.276,0.0,2026-02-25T22:51:01Z
-242,Rice Owls,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-245,Texas A&M Aggies,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-248,Houston Cougars,Southeastern Conference,1,0.0,0.083,-0.083,163,18.2,0,0.083,0.0,2026-02-25T22:51:01Z
-249,North Texas Mean Green,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-251,Texas Longhorns,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-252,BYU Cougars,Southeastern Conference,1,0.0,0.16,-0.16,168,15.7,0,0.16,0.0,2026-02-25T22:51:01Z
-254,Utah Utes,Southeastern Conference,1,0.0,0.06,-0.06,160,19.7,0,0.06,0.0,2026-02-25T22:51:01Z
-256,James Madison Dukes,Mid-Eastern Athletic Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-258,Virginia Cavaliers,Big East,1,1.0,0.989,0.011,44,78.3,0,0.989,0.0,2026-02-25T22:51:01Z
-264,Washington Huskies,Pac-12,1,1.0,0.744,0.256,19,90.9,0,0.744,0.0,2026-02-25T22:51:01Z
-265,Washington State Cougars,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-269,Marquette Golden Eagles,Big 12,1,1.0,0.938,0.062,38,81.3,0,0.938,0.0,2026-02-25T22:51:01Z
-270,Milwaukee Panthers,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-275,Wisconsin Badgers,Pac-12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-276,Marshall Thundering Herd,Mid-Eastern Athletic Conference,1,1.0,0.754,0.246,20,90.2,0,0.754,0.0,2026-02-25T22:51:01Z
-277,West Virginia Mountaineers,Southeastern Conference,1,0.0,0.285,-0.285,183,8.1,0,0.285,0.0,2026-02-25T22:51:01Z
-278,Fresno State Bulldogs,Independents,1,0.0,0.345,-0.345,191,4.0,0,0.345,0.0,2026-02-25T22:51:01Z
-282,Indiana State Sycamores,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-288,Lipscomb Bisons,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-290,Georgia Southern Eagles,Mid-Eastern Athletic Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-292,UT Rio Grande Valley Vaqueros,Horizon League,1,0.0,0.245,-0.245,177,11.1,0,0.245,0.0,2026-02-25T22:51:01Z
-295,Old Dominion Monarchs,Mid-Eastern Athletic Conference,1,0.0,0.246,-0.246,178,10.4,0,0.246,0.0,2026-02-25T22:51:01Z
-301,San Diego Toreros,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-305,DePaul Blue Demons,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-309,Louisiana Ragin' Cajuns,Mid-Eastern Athletic Conference,1,0.0,0.039,-0.039,158,20.7,0,0.039,0.0,2026-02-25T22:51:01Z
-322,Lafayette Leopards,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-324,Coastal Carolina Chanticleers,Mid-Eastern Athletic Conference,1,1.0,0.686,0.314,12,94.4,0,0.686,0.0,2026-02-25T22:51:01Z
-325,Cleveland State Vikings,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-328,Utah State Aggies,Independents,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-333,Alabama Crimson Tide,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-339,Evansville Purple Aces,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-344,Mississippi State Bulldogs,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-349,Army Black Knights,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-357,Texas A&M-Corpus Christi Islanders,Horizon League,1,1.0,0.693,0.307,13,93.9,0,0.693,0.0,2026-02-25T22:51:01Z
-2005,Air Force Falcons,Independents,1,0.0,0.303,-0.303,185,7.1,0,0.303,0.0,2026-02-25T22:51:01Z
-2006,Akron Zips,Mid-American Conference,1,1.0,0.852,0.148,34,83.3,0,0.852,0.0,2026-02-25T22:51:01Z
-2032,Arkansas State Red Wolves,Mid-Eastern Athletic Conference,1,1.0,0.66,0.34,11,94.9,0,0.66,0.0,2026-02-25T22:51:01Z
-2046,Austin Peay Governors,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2050,Ball State Cardinals,Mid-American Conference,1,1.0,0.539,0.461,1,100.0,0,0.539,0.0,2026-02-25T22:51:01Z
-2057,Belmont Bruins,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2083,Bucknell Bison,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2084,Buffalo Bulls,Mid-American Conference,1,0.0,0.148,-0.148,165,17.2,0,0.148,0.0,2026-02-25T22:51:01Z
-2086,Butler Bulldogs,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2110,Central Arkansas Bears,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2116,UCF Knights,Southeastern Conference,1,1.0,0.84,0.16,31,84.8,0,0.84,0.0,2026-02-25T22:51:01Z
-2117,Central Michigan Chippewas,Mid-American Conference,1,0.0,0.43,-0.43,194,2.5,0,0.43,0.0,2026-02-25T22:51:01Z
-2132,Cincinnati Bearcats,Southeastern Conference,1,0.0,0.134,-0.134,164,17.7,0,0.134,0.0,2026-02-25T22:51:01Z
-2142,Colgate Raiders,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2166,Davidson Wildcats,Big Ten,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2168,Dayton Flyers,Big Ten,1,1.0,0.924,0.076,37,81.8,0,0.924,0.0,2026-02-25T22:51:01Z
-2174,Detroit Mercy Titans,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2181,Drake Bulldogs,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2184,Duquesne Dukes,Big Ten,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2193,East Tennessee State Buccaneers,Colonial Athletic Association,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2198,Eastern Kentucky Colonels,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2199,Eastern Michigan Eagles,Mid-American Conference,1,0.0,0.158,-0.158,167,16.2,0,0.158,0.0,2026-02-25T22:51:01Z
-2244,George Mason Patriots,Big Ten,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2247,Georgia State Panthers,Mid-Eastern Athletic Conference,1,0.0,0.314,-0.314,187,6.1,0,0.314,0.0,2026-02-25T22:51:01Z
-2250,Gonzaga Bulldogs,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2253,Grand Canyon Lopes,Independents,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2277,Houston Christian Huskies,Horizon League,1,1.0,0.542,0.458,2,99.5,0,0.542,0.0,2026-02-25T22:51:01Z
-2287,Illinois State Redbirds,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2294,Iowa Hawkeyes,Pac-12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2305,Kansas Jayhawks,Southeastern Conference,1,1.0,0.917,0.083,36,82.3,0,0.917,0.0,2026-02-25T22:51:01Z
-2306,Kansas State Wildcats,Southeastern Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2309,Kent State Golden Flashes,Mid-American Conference,1,1.0,0.57,0.43,5,98.0,0,0.57,0.0,2026-02-25T22:51:01Z
-2320,Lamar Cardinals,Horizon League,1,0.0,0.445,-0.445,195,2.0,0,0.445,0.0,2026-02-25T22:51:01Z
-2325,La Salle Explorers,Big Ten,1,0.0,0.031,-0.031,156,21.7,0,0.031,0.0,2026-02-25T22:51:01Z
-2329,Lehigh Mountain Hawks,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2351,Loyola Marymount Lions,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2352,Loyola Maryland Greyhounds,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2377,McNeese Cowboys,Horizon League,1,1.0,0.755,0.245,22,89.4,0,0.755,0.0,2026-02-25T22:51:01Z
-2382,Mercer Bears,Colonial Athletic Association,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2390,Miami Hurricanes,Big East,1,1.0,0.814,0.186,25,87.9,0,0.814,0.0,2026-02-25T22:51:01Z
-2400,Mississippi Valley State Delta Devils,Southwestern Athletic Conference,1,0.0,0.034,-0.034,157,21.2,0,0.034,0.0,2026-02-25T22:51:01Z
-2413,Morehead State Eagles,Southland Conference,1,1.0,0.545,0.455,3,99.0,0,0.545,0.0,2026-02-25T22:51:01Z
-2415,Morgan State Bears,Southern Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2426,Navy Midshipmen,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2429,Charlotte 49ers,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2433,UL Monroe Warhawks,Mid-Eastern Athletic Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2437,Omaha Mavericks,Big Ten,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2439,UNLV Rebels,Independents,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2440,Nevada Wolf Pack,Independents,1,1.0,0.781,0.219,24,88.4,0,0.781,0.0,2026-02-25T22:51:01Z
-2441,New Haven Chargers,Sun Belt Conference,1,0.0,0.272,-0.272,181,9.1,0,0.272,0.0,2026-02-25T22:51:01Z
-2443,New Orleans Privateers,Horizon League,1,1.0,0.649,0.351,7,97.0,0,0.649,0.0,2026-02-25T22:51:01Z
-2447,Nicholls Colonels,Horizon League,1,1.0,0.555,0.445,4,98.5,0,0.555,0.0,2026-02-25T22:51:01Z
-2453,North Alabama Lions,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2459,Northern Illinois Huskies,Mid-American Conference,1,0.0,0.174,-0.174,172,13.6,0,0.174,0.0,2026-02-25T22:51:01Z
-2460,Northern Iowa Panthers,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2466,Northwestern State Demons,Horizon League,1,1.0,0.754,0.246,20,90.2,0,0.754,0.0,2026-02-25T22:51:01Z
-2473,Oakland Golden Grizzlies,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2483,Oregon Ducks,Pac-12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2492,Pepperdine Waves,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2501,Portland Pilots,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2507,Providence Friars,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2511,Queens University Royals,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2523,Robert Morris Colonials,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2541,Santa Clara Broncos,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2545,SE Louisiana Lions,Horizon League,1,0.0,0.307,-0.307,186,6.6,0,0.307,0.0,2026-02-25T22:51:01Z
-2547,Seattle U Redhawks,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2567,SMU Mustangs,Big East,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2569,South Carolina State Bulldogs,Southern Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2572,Southern Miss Golden Eagles,Mid-Eastern Athletic Conference,1,0.0,0.34,-0.34,188,5.6,0,0.34,0.0,2026-02-25T22:51:01Z
-2579,South Carolina Gamecocks,Patriot League,1,0.0,0.177,-0.177,173,13.1,0,0.177,0.0,2026-02-25T22:51:01Z
-2598,Saint Francis Red Flash,Sun Belt Conference,1,1.0,0.728,0.272,18,91.4,0,0.728,0.0,2026-02-25T22:51:01Z
-2599,St. John's Red Storm,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2603,Saint Joseph's Hawks,Big Ten,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2608,Saint Mary's Gaels,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2617,Stephen F. Austin Lumberjacks,Horizon League,1,0.0,0.351,-0.351,192,3.5,0,0.351,0.0,2026-02-25T22:51:01Z
-2628,TCU Horned Frogs,Southeastern Conference,1,1.0,0.838,0.162,30,85.4,0,0.838,0.0,2026-02-25T22:51:01Z
-2633,Tennessee Volunteers,Patriot League,1,0.0,0.343,-0.343,190,4.5,0,0.343,0.0,2026-02-25T22:51:01Z
-2636,UTSA Roadrunners,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2641,Texas Tech Red Raiders,Southeastern Conference,1,1.0,0.866,0.134,35,82.8,0,0.866,0.0,2026-02-25T22:51:01Z
-2643,The Citadel Bulldogs,Colonial Athletic Association,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2649,Toledo Rockets,Mid-American Conference,1,1.0,0.826,0.174,27,86.9,0,0.826,0.0,2026-02-25T22:51:01Z
-2653,Troy Trojans,Mid-Eastern Athletic Conference,1,1.0,0.961,0.039,41,79.8,0,0.961,0.0,2026-02-25T22:51:01Z
-2655,Tulane Green Wave,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2674,Valparaiso Beacons,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2698,West Georgia Wolves,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2711,Western Michigan Broncos,Mid-American Conference,1,1.0,0.776,0.224,23,88.9,0,0.776,0.0,2026-02-25T22:51:01Z
-2717,Western Carolina Catamounts,Colonial Athletic Association,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2747,Wofford Terriers,Colonial Athletic Association,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2750,Wright State Raiders,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2751,Wyoming Cowboys,Independents,1,0.0,0.152,-0.152,166,16.7,0,0.152,0.0,2026-02-25T22:51:01Z
-2752,Xavier Musketeers,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2754,Youngstown State Penguins,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2755,Grambling Tigers,Southwestern Athletic Conference,1,1.0,0.966,0.034,42,79.3,0,0.966,0.0,2026-02-25T22:51:01Z
-2837,East Texas A&M Lions,Horizon League,1,0.0,0.458,-0.458,197,1.0,0,0.458,0.0,2026-02-25T22:51:01Z
-2870,Purdue Fort Wayne Mastodons,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:51:01Z
-2916,Incarnate Word Cardinals,Horizon League,1,0.0,0.246,-0.246,178,10.4,0,0.246,0.0,2026-02-25T22:51:01Z
-2,Auburn Tigers,Patriot League,1,0.0,0.164,-0.164,170,14.6,0,0.164,0.0,2026-02-25T22:44:04Z
-6,South Alabama Jaguars,Mid-Eastern Athletic Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-8,Arkansas Razorbacks,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-9,Arizona State Sun Devils,Southeastern Conference,1,0.0,0.162,-0.162,169,15.2,0,0.162,0.0,2026-02-25T22:44:04Z
-12,Arizona Wildcats,Southeastern Conference,1,1.0,0.724,0.276,17,91.9,0,0.724,0.0,2026-02-25T22:44:04Z
-21,San Diego State Aztecs,Independents,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-23,San José State Spartans,Independents,1,1.0,0.697,0.303,14,93.4,0,0.697,0.0,2026-02-25T22:44:04Z
-24,Stanford Cardinal,Big East,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-25,California Golden Bears,Big East,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-26,UCLA Bruins,Pac-12,1,1.0,0.956,0.044,40,80.3,0,0.956,0.0,2026-02-25T22:44:04Z
-30,USC Trojans,Pac-12,1,0.0,0.044,-0.044,159,20.2,0,0.044,0.0,2026-02-25T22:44:04Z
-36,Colorado State Rams,Independents,1,1.0,0.655,0.345,8,96.5,0,0.655,0.0,2026-02-25T22:44:04Z
-38,Colorado Buffaloes,Southeastern Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-41,UConn Huskies,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-44,American University Eagles,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-45,George Washington Revolutionaries,Big Ten,1,1.0,0.969,0.031,43,78.8,0,0.969,0.0,2026-02-25T22:44:04Z
-46,Georgetown Hoyas,Big 12,1,0.0,0.062,-0.062,161,19.2,0,0.062,0.0,2026-02-25T22:44:04Z
-52,Florida State Seminoles,Big East,1,0.0,0.186,-0.186,174,12.6,0,0.186,0.0,2026-02-25T22:44:04Z
-57,Florida Gators,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-58,South Florida Bulls,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-61,Georgia Bulldogs,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-66,Iowa State Cyclones,Southeastern Conference,1,1.0,0.94,0.06,39,80.8,0,0.94,0.0,2026-02-25T22:44:04Z
-68,Boise State Broncos,Independents,1,1.0,0.848,0.152,33,83.8,0,0.848,0.0,2026-02-25T22:44:04Z
-71,Bradley Braves,Ohio Valley Conference,1,0.0,0.289,-0.289,184,7.6,0,0.289,0.0,2026-02-25T22:44:04Z
-77,Northwestern Wildcats,Pac-12,1,1.0,0.659,0.341,10,95.5,0,0.659,0.0,2026-02-25T22:44:04Z
-79,Southern Illinois Salukis,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-82,UIC Flames,Ohio Valley Conference,1,1.0,0.711,0.289,15,92.9,0,0.711,0.0,2026-02-25T22:44:04Z
-84,Indiana Hoosiers,Pac-12,1,0.0,0.341,-0.341,189,5.1,0,0.341,0.0,2026-02-25T22:44:04Z
-85,IU Indianapolis Jaguars,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-87,Notre Dame Fighting Irish,Big East,1,0.0,0.001,-0.001,154,22.7,0,0.001,0.0,2026-02-25T22:44:04Z
-88,Southern Indiana Screaming Eagles,Southland Conference,1,0.0,0.455,-0.455,196,1.5,0,0.455,0.0,2026-02-25T22:44:04Z
-91,Bellarmine Knights,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-94,Northern Kentucky Norse,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-96,Kentucky Wildcats,Patriot League,1,1.0,0.823,0.177,26,87.4,0,0.823,0.0,2026-02-25T22:44:04Z
-97,Louisville Cardinals,Big East,1,0.0,0.388,-0.388,193,3.0,0,0.388,0.0,2026-02-25T22:44:04Z
-99,LSU Tigers,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-103,Boston College Eagles,Big East,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-104,Boston University Terriers,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-107,Holy Cross Crusaders,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-113,Massachusetts Minutemen,Mid-American Conference,1,0.0,0.461,-0.461,198,0.5,0,0.461,0.0,2026-02-25T22:44:04Z
-120,Maryland Terrapins,Pac-12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-130,Michigan Wolverines,Pac-12,1,1.0,0.832,0.168,28,86.4,0,0.832,0.0,2026-02-25T22:44:04Z
-135,Minnesota Golden Gophers,Pac-12,1,0.0,0.168,-0.168,171,14.1,0,0.168,0.0,2026-02-25T22:44:04Z
-139,Saint Louis Billikens,Big Ten,1,0.0,0.076,-0.076,162,18.7,0,0.076,0.0,2026-02-25T22:44:04Z
-142,Missouri Tigers,Patriot League,1,1.0,0.657,0.343,9,96.0,0,0.657,0.0,2026-02-25T22:44:04Z
-145,Ole Miss Rebels,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-150,Duke Blue Devils,Big East,1,1.0,0.999,0.001,45,77.8,0,0.999,0.0,2026-02-25T22:44:04Z
-151,East Carolina Pirates,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-152,NC State Wolfpack,Big East,1,0.0,0.011,-0.011,155,22.2,0,0.011,0.0,2026-02-25T22:44:04Z
-153,North Carolina Tar Heels,Big East,1,1.0,0.612,0.388,6,97.5,0,0.612,0.0,2026-02-25T22:44:04Z
-154,Wake Forest Demon Deacons,Big East,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-156,Creighton Bluejays,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-158,Nebraska Cornhuskers,Pac-12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-164,Rutgers Scarlet Knights,Pac-12,1,0.0,0.256,-0.256,180,9.6,0,0.256,0.0,2026-02-25T22:44:04Z
-167,New Mexico Lobos,Independents,1,0.0,0.219,-0.219,175,12.1,0,0.219,0.0,2026-02-25T22:44:04Z
-189,Bowling Green Falcons,Mid-American Conference,1,0.0,0.224,-0.224,176,11.6,0,0.224,0.0,2026-02-25T22:44:04Z
-193,Miami (OH) RedHawks,Mid-American Conference,1,1.0,0.842,0.158,32,84.3,0,0.842,0.0,2026-02-25T22:44:04Z
-194,Ohio State Buckeyes,Pac-12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-197,Oklahoma State Cowboys,Southeastern Conference,1,1.0,0.715,0.285,16,92.4,0,0.715,0.0,2026-02-25T22:44:04Z
-201,Oklahoma Sooners,Patriot League,1,1.0,0.836,0.164,29,85.9,0,0.836,0.0,2026-02-25T22:44:04Z
-202,Tulsa Golden Hurricane,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-204,Oregon State Beavers,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-221,Pittsburgh Panthers,Big East,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-222,Villanova Wildcats,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-231,Furman Paladins,Colonial Athletic Association,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-233,South Dakota Coyotes,Big Ten,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-238,Vanderbilt Commodores,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-239,Baylor Bears,Southeastern Conference,1,0.0,0.276,-0.276,182,8.6,0,0.276,0.0,2026-02-25T22:44:04Z
-242,Rice Owls,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-245,Texas A&M Aggies,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-248,Houston Cougars,Southeastern Conference,1,0.0,0.083,-0.083,163,18.2,0,0.083,0.0,2026-02-25T22:44:04Z
-249,North Texas Mean Green,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-251,Texas Longhorns,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-252,BYU Cougars,Southeastern Conference,1,0.0,0.16,-0.16,168,15.7,0,0.16,0.0,2026-02-25T22:44:04Z
-254,Utah Utes,Southeastern Conference,1,0.0,0.06,-0.06,160,19.7,0,0.06,0.0,2026-02-25T22:44:04Z
-256,James Madison Dukes,Mid-Eastern Athletic Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-258,Virginia Cavaliers,Big East,1,1.0,0.989,0.011,44,78.3,0,0.989,0.0,2026-02-25T22:44:04Z
-264,Washington Huskies,Pac-12,1,1.0,0.744,0.256,19,90.9,0,0.744,0.0,2026-02-25T22:44:04Z
-265,Washington State Cougars,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-269,Marquette Golden Eagles,Big 12,1,1.0,0.938,0.062,38,81.3,0,0.938,0.0,2026-02-25T22:44:04Z
-270,Milwaukee Panthers,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-275,Wisconsin Badgers,Pac-12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-276,Marshall Thundering Herd,Mid-Eastern Athletic Conference,1,1.0,0.754,0.246,20,90.2,0,0.754,0.0,2026-02-25T22:44:04Z
-277,West Virginia Mountaineers,Southeastern Conference,1,0.0,0.285,-0.285,183,8.1,0,0.285,0.0,2026-02-25T22:44:04Z
-278,Fresno State Bulldogs,Independents,1,0.0,0.345,-0.345,191,4.0,0,0.345,0.0,2026-02-25T22:44:04Z
-282,Indiana State Sycamores,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-288,Lipscomb Bisons,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-290,Georgia Southern Eagles,Mid-Eastern Athletic Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-292,UT Rio Grande Valley Vaqueros,Horizon League,1,0.0,0.245,-0.245,177,11.1,0,0.245,0.0,2026-02-25T22:44:04Z
-295,Old Dominion Monarchs,Mid-Eastern Athletic Conference,1,0.0,0.246,-0.246,178,10.4,0,0.246,0.0,2026-02-25T22:44:04Z
-301,San Diego Toreros,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-305,DePaul Blue Demons,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-309,Louisiana Ragin' Cajuns,Mid-Eastern Athletic Conference,1,0.0,0.039,-0.039,158,20.7,0,0.039,0.0,2026-02-25T22:44:04Z
-322,Lafayette Leopards,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-324,Coastal Carolina Chanticleers,Mid-Eastern Athletic Conference,1,1.0,0.686,0.314,12,94.4,0,0.686,0.0,2026-02-25T22:44:04Z
-325,Cleveland State Vikings,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-328,Utah State Aggies,Independents,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-333,Alabama Crimson Tide,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-339,Evansville Purple Aces,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-344,Mississippi State Bulldogs,Patriot League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-349,Army Black Knights,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-357,Texas A&M-Corpus Christi Islanders,Horizon League,1,1.0,0.693,0.307,13,93.9,0,0.693,0.0,2026-02-25T22:44:04Z
-2005,Air Force Falcons,Independents,1,0.0,0.303,-0.303,185,7.1,0,0.303,0.0,2026-02-25T22:44:04Z
-2006,Akron Zips,Mid-American Conference,1,1.0,0.852,0.148,34,83.3,0,0.852,0.0,2026-02-25T22:44:04Z
-2032,Arkansas State Red Wolves,Mid-Eastern Athletic Conference,1,1.0,0.66,0.34,11,94.9,0,0.66,0.0,2026-02-25T22:44:04Z
-2046,Austin Peay Governors,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2050,Ball State Cardinals,Mid-American Conference,1,1.0,0.539,0.461,1,100.0,0,0.539,0.0,2026-02-25T22:44:04Z
-2057,Belmont Bruins,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2083,Bucknell Bison,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2084,Buffalo Bulls,Mid-American Conference,1,0.0,0.148,-0.148,165,17.2,0,0.148,0.0,2026-02-25T22:44:04Z
-2086,Butler Bulldogs,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2110,Central Arkansas Bears,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2116,UCF Knights,Southeastern Conference,1,1.0,0.84,0.16,31,84.8,0,0.84,0.0,2026-02-25T22:44:04Z
-2117,Central Michigan Chippewas,Mid-American Conference,1,0.0,0.43,-0.43,194,2.5,0,0.43,0.0,2026-02-25T22:44:04Z
-2132,Cincinnati Bearcats,Southeastern Conference,1,0.0,0.134,-0.134,164,17.7,0,0.134,0.0,2026-02-25T22:44:04Z
-2142,Colgate Raiders,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2166,Davidson Wildcats,Big Ten,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2168,Dayton Flyers,Big Ten,1,1.0,0.924,0.076,37,81.8,0,0.924,0.0,2026-02-25T22:44:04Z
-2174,Detroit Mercy Titans,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2181,Drake Bulldogs,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2184,Duquesne Dukes,Big Ten,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2193,East Tennessee State Buccaneers,Colonial Athletic Association,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2198,Eastern Kentucky Colonels,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2199,Eastern Michigan Eagles,Mid-American Conference,1,0.0,0.158,-0.158,167,16.2,0,0.158,0.0,2026-02-25T22:44:04Z
-2244,George Mason Patriots,Big Ten,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2247,Georgia State Panthers,Mid-Eastern Athletic Conference,1,0.0,0.314,-0.314,187,6.1,0,0.314,0.0,2026-02-25T22:44:04Z
-2250,Gonzaga Bulldogs,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2253,Grand Canyon Lopes,Independents,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2277,Houston Christian Huskies,Horizon League,1,1.0,0.542,0.458,2,99.5,0,0.542,0.0,2026-02-25T22:44:04Z
-2287,Illinois State Redbirds,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2294,Iowa Hawkeyes,Pac-12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2305,Kansas Jayhawks,Southeastern Conference,1,1.0,0.917,0.083,36,82.3,0,0.917,0.0,2026-02-25T22:44:04Z
-2306,Kansas State Wildcats,Southeastern Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2309,Kent State Golden Flashes,Mid-American Conference,1,1.0,0.57,0.43,5,98.0,0,0.57,0.0,2026-02-25T22:44:04Z
-2320,Lamar Cardinals,Horizon League,1,0.0,0.445,-0.445,195,2.0,0,0.445,0.0,2026-02-25T22:44:04Z
-2325,La Salle Explorers,Big Ten,1,0.0,0.031,-0.031,156,21.7,0,0.031,0.0,2026-02-25T22:44:04Z
-2329,Lehigh Mountain Hawks,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2351,Loyola Marymount Lions,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2352,Loyola Maryland Greyhounds,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2377,McNeese Cowboys,Horizon League,1,1.0,0.755,0.245,22,89.4,0,0.755,0.0,2026-02-25T22:44:04Z
-2382,Mercer Bears,Colonial Athletic Association,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2390,Miami Hurricanes,Big East,1,1.0,0.814,0.186,25,87.9,0,0.814,0.0,2026-02-25T22:44:04Z
-2400,Mississippi Valley State Delta Devils,Southwestern Athletic Conference,1,0.0,0.034,-0.034,157,21.2,0,0.034,0.0,2026-02-25T22:44:04Z
-2413,Morehead State Eagles,Southland Conference,1,1.0,0.545,0.455,3,99.0,0,0.545,0.0,2026-02-25T22:44:04Z
-2415,Morgan State Bears,Southern Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2426,Navy Midshipmen,Independent,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2429,Charlotte 49ers,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2433,UL Monroe Warhawks,Mid-Eastern Athletic Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2437,Omaha Mavericks,Big Ten,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2439,UNLV Rebels,Independents,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2440,Nevada Wolf Pack,Independents,1,1.0,0.781,0.219,24,88.4,0,0.781,0.0,2026-02-25T22:44:04Z
-2441,New Haven Chargers,Sun Belt Conference,1,0.0,0.272,-0.272,181,9.1,0,0.272,0.0,2026-02-25T22:44:04Z
-2443,New Orleans Privateers,Horizon League,1,1.0,0.649,0.351,7,97.0,0,0.649,0.0,2026-02-25T22:44:04Z
-2447,Nicholls Colonels,Horizon League,1,1.0,0.555,0.445,4,98.5,0,0.555,0.0,2026-02-25T22:44:04Z
-2453,North Alabama Lions,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2459,Northern Illinois Huskies,Mid-American Conference,1,0.0,0.174,-0.174,172,13.6,0,0.174,0.0,2026-02-25T22:44:04Z
-2460,Northern Iowa Panthers,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2466,Northwestern State Demons,Horizon League,1,1.0,0.754,0.246,20,90.2,0,0.754,0.0,2026-02-25T22:44:04Z
-2473,Oakland Golden Grizzlies,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2483,Oregon Ducks,Pac-12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2492,Pepperdine Waves,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2501,Portland Pilots,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2507,Providence Friars,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2511,Queens University Royals,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2523,Robert Morris Colonials,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2541,Santa Clara Broncos,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2545,SE Louisiana Lions,Horizon League,1,0.0,0.307,-0.307,186,6.6,0,0.307,0.0,2026-02-25T22:44:04Z
-2547,Seattle U Redhawks,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2567,SMU Mustangs,Big East,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2569,South Carolina State Bulldogs,Southern Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2572,Southern Miss Golden Eagles,Mid-Eastern Athletic Conference,1,0.0,0.34,-0.34,188,5.6,0,0.34,0.0,2026-02-25T22:44:04Z
-2579,South Carolina Gamecocks,Patriot League,1,0.0,0.177,-0.177,173,13.1,0,0.177,0.0,2026-02-25T22:44:04Z
-2598,Saint Francis Red Flash,Sun Belt Conference,1,1.0,0.728,0.272,18,91.4,0,0.728,0.0,2026-02-25T22:44:04Z
-2599,St. John's Red Storm,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2603,Saint Joseph's Hawks,Big Ten,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2608,Saint Mary's Gaels,America East Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2617,Stephen F. Austin Lumberjacks,Horizon League,1,0.0,0.351,-0.351,192,3.5,0,0.351,0.0,2026-02-25T22:44:04Z
-2628,TCU Horned Frogs,Southeastern Conference,1,1.0,0.838,0.162,30,85.4,0,0.838,0.0,2026-02-25T22:44:04Z
-2633,Tennessee Volunteers,Patriot League,1,0.0,0.343,-0.343,190,4.5,0,0.343,0.0,2026-02-25T22:44:04Z
-2636,UTSA Roadrunners,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2641,Texas Tech Red Raiders,Southeastern Conference,1,1.0,0.866,0.134,35,82.8,0,0.866,0.0,2026-02-25T22:44:04Z
-2643,The Citadel Bulldogs,Colonial Athletic Association,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2649,Toledo Rockets,Mid-American Conference,1,1.0,0.826,0.174,27,86.9,0,0.826,0.0,2026-02-25T22:44:04Z
-2653,Troy Trojans,Mid-Eastern Athletic Conference,1,1.0,0.961,0.039,41,79.8,0,0.961,0.0,2026-02-25T22:44:04Z
-2655,Tulane Green Wave,Atlantic Coast Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2674,Valparaiso Beacons,Ohio Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2698,West Georgia Wolves,Missouri Valley Conference,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2711,Western Michigan Broncos,Mid-American Conference,1,1.0,0.776,0.224,23,88.9,0,0.776,0.0,2026-02-25T22:44:04Z
-2717,Western Carolina Catamounts,Colonial Athletic Association,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2747,Wofford Terriers,Colonial Athletic Association,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2750,Wright State Raiders,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2751,Wyoming Cowboys,Independents,1,0.0,0.152,-0.152,166,16.7,0,0.152,0.0,2026-02-25T22:44:04Z
-2752,Xavier Musketeers,Big 12,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2754,Youngstown State Penguins,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2755,Grambling Tigers,Southwestern Athletic Conference,1,1.0,0.966,0.034,42,79.3,0,0.966,0.0,2026-02-25T22:44:04Z
-2837,East Texas A&M Lions,Horizon League,1,0.0,0.458,-0.458,197,1.0,0,0.458,0.0,2026-02-25T22:44:04Z
-2870,Purdue Fort Wayne Mastodons,Horizon League,1,0.0,0.0,0.0,46,50.3,0,0.0,0.0,2026-02-25T22:44:04Z
-2916,Incarnate Word Cardinals,Horizon League,1,0.0,0.246,-0.246,178,10.4,0,0.246,0.0,2026-02-25T22:44:04Z
+2,Auburn Tigers,Patriot League,3,0.3333,0.3387,-0.0054,186,49.3,0,0.3387,0.0,2026-02-25T23:24:19Z
+5,UAB Blazers,Atlantic Coast Conference,2,1.0,0.769,0.231,46,87.7,0,0.769,0.0,2026-02-25T23:24:19Z
+6,South Alabama Jaguars,Mid-Eastern Athletic Conference,4,0.3333,0.504,-0.1707,295,19.5,0,0.504,-0.171,2026-02-25T23:24:19Z
+8,Arkansas Razorbacks,Patriot League,3,0.5,0.5935,-0.0935,248,32.3,0,0.5935,0.0,2026-02-25T23:24:19Z
+9,Arizona State Sun Devils,Southeastern Conference,3,0.3333,0.3883,-0.055,220,40.0,0,0.3883,0.0,2026-02-25T23:24:19Z
+12,Arizona Wildcats,Southeastern Conference,3,1.0,0.7467,0.2533,37,90.1,0,0.7467,0.0,2026-02-25T23:24:19Z
+13,Cal Poly Mustangs,Atlantic 10,1,1.0,0.828,0.172,72,80.5,0,0.828,0.0,2026-02-25T23:24:19Z
+16,Sacramento State Hornets,Conference USA,2,0.0,0.292,-0.292,334,8.6,0,0.292,0.0,2026-02-25T23:24:19Z
+21,San Diego State Aztecs,Independents,3,0.0,0.183,-0.183,305,16.7,0,0.183,0.0,2026-02-25T23:24:19Z
+23,San José State Spartans,Independents,3,0.6667,0.5677,0.099,109,70.4,0,0.5677,0.0,2026-02-25T23:24:19Z
+24,Stanford Cardinal,Big East,2,0.0,0.269,-0.269,329,10.1,0,0.269,0.0,2026-02-25T23:24:19Z
+25,California Golden Bears,Big East,2,1.0,0.731,0.269,33,91.2,0,0.731,0.0,2026-02-25T23:24:19Z
+26,UCLA Bruins,Pac-12,3,0.6667,0.5027,0.164,74,79.9,0,0.5027,0.0,2026-02-25T23:24:19Z
+27,UC Riverside Highlanders,Atlantic 10,2,0.5,0.651,-0.151,283,22.7,0,0.651,0.0,2026-02-25T23:24:19Z
+28,UC San Diego Tritons,Atlantic 10,1,1.0,0.581,0.419,5,98.9,0,0.581,0.0,2026-02-25T23:24:19Z
+30,USC Trojans,Pac-12,3,0.0,0.1697,-0.1697,294,19.7,0,0.1697,0.0,2026-02-25T23:24:19Z
+36,Colorado State Rams,Independents,3,1.0,0.7003,0.2997,27,92.9,0,0.7003,0.0,2026-02-25T23:24:19Z
+38,Colorado Buffaloes,Southeastern Conference,2,1.0,0.893,0.107,106,71.2,0,0.893,0.0,2026-02-25T23:24:19Z
+41,UConn Huskies,Big 12,3,0.5,0.565,-0.065,225,38.6,0,0.565,0.0,2026-02-25T23:24:19Z
+43,Yale Bulldogs,Mountain West,1,1.0,0.655,0.345,16,95.6,0,0.655,0.0,2026-02-25T23:24:19Z
+44,American University Eagles,Independent,3,1.0,0.937,0.063,140,61.9,0,0.937,0.0,2026-02-25T23:24:19Z
+45,George Washington Revolutionaries,Big Ten,2,0.5,0.546,-0.046,213,41.9,0,0.546,0.0,2026-02-25T23:24:19Z
+46,Georgetown Hoyas,Big 12,3,0.0,0.2397,-0.2397,322,12.1,0,0.2397,0.0,2026-02-25T23:24:19Z
+47,Howard Bison,Southern Conference,2,1.0,0.9915,0.0085,176,52.1,0,0.9915,0.0,2026-02-25T23:24:19Z
+48,Delaware Blue Hens,Missouri Valley Conference,2,0.0,0.2975,-0.2975,336,8.2,0,0.2975,0.0,2026-02-25T23:24:19Z
+50,Florida A&M Rattlers,Southwestern Athletic Conference,3,0.6667,0.6863,-0.0196,199,45.8,0,0.6863,0.0,2026-02-25T23:24:19Z
+52,Florida State Seminoles,Big East,3,0.6667,0.5527,0.114,99,73.2,0,0.5527,0.0,2026-02-25T23:24:19Z
+55,Jacksonville State Gamecocks,Missouri Valley Conference,2,0.0,0.321,-0.321,342,6.6,0,0.321,0.0,2026-02-25T23:24:19Z
+56,Stetson Hatters,Missouri Valley Conference,2,0.5,0.421,0.079,126,65.8,0,0.421,0.0,2026-02-25T23:24:19Z
+57,Florida Gators,Patriot League,3,1.0,0.9215,0.0785,127,65.5,0,0.9215,0.0,2026-02-25T23:24:19Z
+58,South Florida Bulls,Atlantic Coast Conference,2,1.0,0.96,0.04,156,57.5,0,0.96,0.0,2026-02-25T23:24:19Z
+59,Georgia Tech Yellow Jackets,Big East,2,0.0,0.05,-0.05,216,41.1,0,0.05,0.0,2026-02-25T23:24:19Z
+61,Georgia Bulldogs,Patriot League,3,1.0,0.785,0.215,54,85.5,0,0.785,0.0,2026-02-25T23:24:19Z
+62,Hawai'i Rainbow Warriors,Atlantic 10,2,0.5,0.3915,0.1085,103,71.9,0,0.3915,0.0,2026-02-25T23:24:19Z
+66,Iowa State Cyclones,Southeastern Conference,3,0.6667,0.579,0.0877,116,68.5,0,0.579,0.0,2026-02-25T23:24:19Z
+68,Boise State Broncos,Independents,3,0.6667,0.596,0.0707,134,63.4,0,0.596,0.0,2026-02-25T23:24:19Z
+70,Idaho Vandals,Conference USA,2,0.5,0.4325,0.0675,138,62.5,0,0.4325,0.0,2026-02-25T23:24:19Z
+71,Bradley Braves,Ohio Valley Conference,3,0.3333,0.4877,-0.1544,285,22.2,0,0.4877,0.0,2026-02-25T23:24:19Z
+77,Northwestern Wildcats,Pac-12,2,1.0,0.653,0.347,15,96.2,0,0.653,0.0,2026-02-25T23:24:19Z
+79,Southern Illinois Salukis,Ohio Valley Conference,3,1.0,0.655,0.345,16,95.6,0,0.655,0.0,2026-02-25T23:24:19Z
+82,UIC Flames,Ohio Valley Conference,3,0.6667,0.683,-0.0163,195,46.8,0,0.683,0.0,2026-02-25T23:24:19Z
+84,Indiana Hoosiers,Pac-12,2,0.0,0.177,-0.177,300,18.1,0,0.177,0.0,2026-02-25T23:24:19Z
+85,IU Indianapolis Jaguars,Horizon League,2,0.0,0.148,-0.148,280,23.6,0,0.148,0.0,2026-02-25T23:24:19Z
+87,Notre Dame Fighting Irish,Big East,2,0.0,0.154,-0.154,284,22.5,0,0.154,0.0,2026-02-25T23:24:19Z
+88,Southern Indiana Screaming Eagles,Southland Conference,3,0.6667,0.596,0.0707,134,63.4,0,0.596,0.0,2026-02-25T23:24:19Z
+91,Bellarmine Knights,Missouri Valley Conference,3,0.0,0.397,-0.397,358,2.2,0,0.397,0.0,2026-02-25T23:24:19Z
+93,Murray State Racers,Ohio Valley Conference,2,0.5,0.4595,0.0405,154,57.9,0,0.4595,0.0,2026-02-25T23:24:19Z
+94,Northern Kentucky Norse,Horizon League,3,0.5,0.578,-0.078,236,35.6,0,0.578,0.0,2026-02-25T23:24:19Z
+96,Kentucky Wildcats,Patriot League,3,0.3333,0.5097,-0.1764,298,18.6,0,0.5097,0.0,2026-02-25T23:24:19Z
+97,Louisville Cardinals,Big East,3,0.3333,0.51,-0.1767,299,18.4,0,0.51,0.0,2026-02-25T23:24:19Z
+98,Western Kentucky Hilltoppers,Missouri Valley Conference,2,1.0,0.7405,0.2595,35,90.7,0,0.7405,0.0,2026-02-25T23:24:19Z
+99,LSU Tigers,Patriot League,3,0.0,0.3425,-0.3425,347,5.2,0,0.3425,0.0,2026-02-25T23:24:19Z
+103,Boston College Eagles,Big East,3,0.3333,0.4123,-0.079,238,35.1,0,0.4123,0.0,2026-02-25T23:24:19Z
+104,Boston University Terriers,Independent,3,0.5,0.6825,-0.1825,303,17.1,0,0.6825,0.0,2026-02-25T23:24:19Z
+107,Holy Cross Crusaders,Independent,3,0.5,0.611,-0.111,259,29.3,0,0.611,0.0,2026-02-25T23:24:19Z
+108,Harvard Crimson,Mountain West,1,1.0,0.97,0.03,161,56.2,0,0.97,0.0,2026-02-25T23:24:19Z
+111,Northeastern Huskies,Western Athletic Conference,2,0.0,0.137,-0.137,271,26.0,0,0.137,0.0,2026-02-25T23:24:19Z
+113,Massachusetts Minutemen,Mid-American Conference,3,0.0,0.3487,-0.3487,349,4.7,0,0.3487,0.0,2026-02-25T23:24:19Z
+116,Mount St. Mary's Mountaineers,Metro Atlantic Athletic Conference,2,1.0,0.941,0.059,142,61.4,0,0.941,0.0,2026-02-25T23:24:19Z
+119,Towson Tigers,Western Athletic Conference,1,0.0,0.257,-0.257,326,11.0,0,0.257,0.0,2026-02-25T23:24:19Z
+120,Maryland Terrapins,Pac-12,3,0.5,0.515,-0.015,194,47.1,0,0.515,0.0,2026-02-25T23:24:19Z
+127,Michigan State Spartans,Pac-12,2,1.0,0.864,0.136,87,76.4,0,0.864,0.0,2026-02-25T23:24:19Z
+130,Michigan Wolverines,Pac-12,3,0.6667,0.647,0.0197,167,54.5,0,0.647,0.0,2026-02-25T23:24:19Z
+135,Minnesota Golden Gophers,Pac-12,3,0.6667,0.701,-0.0343,205,44.1,0,0.701,0.0,2026-02-25T23:24:19Z
+139,Saint Louis Billikens,Big Ten,3,0.3333,0.4213,-0.088,244,33.3,0,0.4213,0.0,2026-02-25T23:24:19Z
+140,Kansas City Roos,Big Ten,2,0.0,0.0505,-0.0505,217,40.8,0,0.0505,0.0,2026-02-25T23:24:19Z
+142,Missouri Tigers,Patriot League,3,0.6667,0.4857,0.181,66,82.2,0,0.4857,0.0,2026-02-25T23:24:19Z
+145,Ole Miss Rebels,Patriot League,3,0.0,0.2305,-0.2305,319,12.9,0,0.2305,0.0,2026-02-25T23:24:19Z
+147,Montana State Bobcats,Conference USA,2,0.0,0.253,-0.253,325,11.2,0,0.253,0.0,2026-02-25T23:24:19Z
+149,Montana Grizzlies,Conference USA,2,0.0,0.1995,-0.1995,311,15.1,0,0.1995,0.0,2026-02-25T23:24:19Z
+150,Duke Blue Devils,Big East,3,1.0,0.9,0.1,108,70.7,0,0.9,0.0,2026-02-25T23:24:19Z
+151,East Carolina Pirates,Atlantic Coast Conference,3,0.0,0.2515,-0.2515,324,11.5,0,0.2515,0.0,2026-02-25T23:24:19Z
+152,NC State Wolfpack,Big East,2,0.5,0.4965,0.0035,181,50.7,0,0.4965,0.0,2026-02-25T23:24:19Z
+153,North Carolina Tar Heels,Big East,3,0.6667,0.5077,0.159,78,78.9,0,0.5077,0.0,2026-02-25T23:24:19Z
+154,Wake Forest Demon Deacons,Big East,3,0.3333,0.276,0.0573,144,60.8,0,0.276,0.0,2026-02-25T23:24:19Z
+155,North Dakota Fighting Hawks,Big Ten,2,0.5,0.5805,-0.0805,239,34.8,0,0.5805,0.0,2026-02-25T23:24:19Z
+156,Creighton Bluejays,Big 12,3,0.5,0.3605,0.1395,86,76.7,0,0.3605,0.0,2026-02-25T23:24:19Z
+158,Nebraska Cornhuskers,Pac-12,3,0.5,0.615,-0.115,262,28.5,0,0.615,0.0,2026-02-25T23:24:19Z
+159,Dartmouth Big Green,Mountain West,1,1.0,0.545,0.455,2,99.7,0,0.545,0.0,2026-02-25T23:24:19Z
+160,New Hampshire Wildcats,Atlantic Coast Conference,2,0.0,0.1905,-0.1905,308,15.9,0,0.1905,0.0,2026-02-25T23:24:19Z
+161,Fairleigh Dickinson Knights,Sun Belt Conference,2,0.5,0.4085,0.0915,111,69.9,0,0.4085,0.0,2026-02-25T23:24:19Z
+163,Princeton Tigers,Mountain West,1,0.0,0.202,-0.202,313,14.5,0,0.202,0.0,2026-02-25T23:24:19Z
+164,Rutgers Scarlet Knights,Pac-12,3,0.3333,0.3897,-0.0564,223,39.2,0,0.3897,0.0,2026-02-25T23:24:19Z
+166,New Mexico State Aggies,Missouri Valley Conference,1,1.0,0.67,0.33,23,94.0,0,0.67,0.0,2026-02-25T23:24:19Z
+167,New Mexico Lobos,Independents,3,0.6667,0.5957,0.071,132,64.0,0,0.5957,0.0,2026-02-25T23:24:19Z
+171,Columbia Lions,Mountain West,1,0.0,0.455,-0.455,363,0.8,0,0.455,0.0,2026-02-25T23:24:19Z
+172,Cornell Big Red,Mountain West,1,0.0,0.03,-0.03,203,44.7,0,0.03,0.0,2026-02-25T23:24:19Z
+179,St. Bonaventure Bonnies,Big Ten,2,0.0,0.3105,-0.3105,340,7.1,0,0.3105,0.0,2026-02-25T23:24:19Z
+183,Syracuse Orange,Big East,2,0.0,0.056,-0.056,222,39.5,0,0.056,0.0,2026-02-25T23:24:19Z
+189,Bowling Green Falcons,Mid-American Conference,3,0.0,0.2017,-0.2017,312,14.8,0,0.2017,0.0,2026-02-25T23:24:19Z
+193,Miami (OH) RedHawks,Mid-American Conference,3,1.0,0.8317,0.1683,73,80.3,0,0.8317,0.0,2026-02-25T23:24:19Z
+194,Ohio State Buckeyes,Pac-12,3,0.5,0.588,-0.088,244,33.3,0,0.588,0.0,2026-02-25T23:24:19Z
+195,Ohio Bobcats,Mid-American Conference,2,1.0,0.844,0.156,80,78.4,0,0.844,0.0,2026-02-25T23:24:19Z
+197,Oklahoma State Cowboys,Southeastern Conference,3,0.3333,0.3197,0.0136,171,53.4,0,0.3197,0.0,2026-02-25T23:24:19Z
+198,Oral Roberts Golden Eagles,Big Ten,2,0.5,0.4555,0.0445,153,58.4,0,0.4555,0.0,2026-02-25T23:24:19Z
+201,Oklahoma Sooners,Patriot League,3,0.3333,0.4047,-0.0714,230,37.3,0,0.4047,0.0,2026-02-25T23:24:19Z
+202,Tulsa Golden Hurricane,Atlantic Coast Conference,3,1.0,0.825,0.175,69,81.2,0,0.825,0.0,2026-02-25T23:24:19Z
+204,Oregon State Beavers,America East Conference,2,1.0,0.814,0.186,64,82.7,0,0.814,0.0,2026-02-25T23:24:19Z
+213,Penn State Nittany Lions,Pac-12,2,0.0,0.0785,-0.0785,237,35.3,0,0.0785,0.0,2026-02-25T23:24:19Z
+218,Temple Owls,Atlantic Coast Conference,2,0.0,0.207,-0.207,315,14.0,0,0.207,0.0,2026-02-25T23:24:19Z
+219,Pennsylvania Quakers,Mountain West,1,0.0,0.345,-0.345,348,4.9,0,0.345,0.0,2026-02-25T23:24:19Z
+221,Pittsburgh Panthers,Big East,2,1.0,0.693,0.307,26,93.2,0,0.693,0.0,2026-02-25T23:24:19Z
+222,Villanova Wildcats,Big 12,3,0.5,0.3745,0.1255,91,75.2,0,0.3745,0.0,2026-02-25T23:24:19Z
+225,Brown Bears,Mountain West,1,1.0,0.798,0.202,58,84.2,0,0.798,0.0,2026-02-25T23:24:19Z
+227,Rhode Island Rams,Big Ten,2,0.5,0.3645,0.1355,88,76.2,0,0.3645,0.0,2026-02-25T23:24:19Z
+228,Clemson Tigers,Big East,2,0.0,0.271,-0.271,330,9.9,0,0.271,0.0,2026-02-25T23:24:19Z
+231,Furman Paladins,Colonial Athletic Association,3,0.3333,0.502,-0.1687,292,20.3,0,0.502,0.0,2026-02-25T23:24:19Z
+232,Charleston Cougars,Western Athletic Conference,2,1.0,0.883,0.117,98,73.4,0,0.883,0.0,2026-02-25T23:24:19Z
+233,South Dakota Coyotes,Big Ten,3,0.0,0.172,-0.172,296,19.0,0,0.172,0.0,2026-02-25T23:24:19Z
+235,Memphis Tigers,Atlantic Coast Conference,2,0.0,0.094,-0.094,249,31.8,0,0.094,0.0,2026-02-25T23:24:19Z
+236,Chattanooga Mocs,Colonial Athletic Association,2,1.0,0.786,0.214,56,84.9,0,0.786,0.0,2026-02-25T23:24:19Z
+238,Vanderbilt Commodores,Patriot League,3,0.0,0.3995,-0.3995,359,1.8,0,0.3995,0.0,2026-02-25T23:24:19Z
+239,Baylor Bears,Southeastern Conference,3,0.3333,0.3547,-0.0214,200,45.5,0,0.3547,0.0,2026-02-25T23:24:19Z
+242,Rice Owls,Atlantic Coast Conference,2,0.0,0.292,-0.292,334,8.6,0,0.292,0.0,2026-02-25T23:24:19Z
+245,Texas A&M Aggies,Patriot League,3,1.0,0.6305,0.3695,9,97.8,0,0.6305,0.0,2026-02-25T23:24:19Z
+248,Houston Cougars,Southeastern Conference,3,0.0,0.233,-0.233,321,12.3,0,0.233,0.0,2026-02-25T23:24:19Z
+249,North Texas Mean Green,Atlantic Coast Conference,3,0.5,0.411,0.089,114,68.9,0,0.411,0.0,2026-02-25T23:24:19Z
+250,UT Arlington Mavericks,Atlantic Sun Conference,2,0.5,0.512,-0.012,192,47.7,0,0.512,0.0,2026-02-25T23:24:19Z
+251,Texas Longhorns,Patriot League,3,0.5,0.3915,0.1085,103,71.9,0,0.3915,0.0,2026-02-25T23:24:19Z
+252,BYU Cougars,Southeastern Conference,3,0.3333,0.4103,-0.077,235,35.9,0,0.4103,0.0,2026-02-25T23:24:19Z
+253,Southern Utah Thunderbirds,Atlantic Sun Conference,2,0.0,0.3605,-0.3605,350,4.4,0,0.3605,0.0,2026-02-25T23:24:19Z
+254,Utah Utes,Southeastern Conference,3,0.3333,0.403,-0.0697,229,37.5,0,0.403,0.0,2026-02-25T23:24:19Z
+256,James Madison Dukes,Mid-Eastern Athletic Conference,3,1.0,0.751,0.249,40,89.3,0,0.751,0.0,2026-02-25T23:24:19Z
+257,Richmond Spiders,Big Ten,2,0.5,0.528,-0.028,202,44.9,0,0.528,0.0,2026-02-25T23:24:19Z
+258,Virginia Cavaliers,Big East,3,1.0,0.8553,0.1447,82,77.8,0,0.8553,0.0,2026-02-25T23:24:19Z
+259,Virginia Tech Hokies,Big East,2,0.5,0.7055,-0.2055,314,14.2,0,0.7055,0.0,2026-02-25T23:24:19Z
+261,Vermont Catamounts,Atlantic Coast Conference,2,0.5,0.419,0.081,124,66.3,0,0.419,0.0,2026-02-25T23:24:19Z
+264,Washington Huskies,Pac-12,2,0.5,0.5335,-0.0335,204,44.4,0,0.5335,0.0,2026-02-25T23:24:19Z
+265,Washington State Cougars,America East Conference,3,0.5,0.5015,-0.0015,184,49.9,0,0.5015,0.0,2026-02-25T23:24:19Z
+269,Marquette Golden Eagles,Big 12,2,0.5,0.609,-0.109,256,30.0,0,0.609,0.0,2026-02-25T23:24:19Z
+270,Milwaukee Panthers,Horizon League,3,0.0,0.25,-0.25,323,11.8,0,0.25,0.0,2026-02-25T23:24:19Z
+275,Wisconsin Badgers,Pac-12,3,0.5,0.474,0.026,163,55.6,0,0.474,0.0,2026-02-25T23:24:19Z
+276,Marshall Thundering Herd,Mid-Eastern Athletic Conference,4,0.75,0.5693,0.1807,67,81.9,0,0.5693,0.159,2026-02-25T23:24:19Z
+277,West Virginia Mountaineers,Southeastern Conference,3,0.0,0.262,-0.262,328,10.4,0,0.262,0.0,2026-02-25T23:24:19Z
+278,Fresno State Bulldogs,Independents,3,0.0,0.3277,-0.3277,343,6.3,0,0.3277,0.0,2026-02-25T23:24:19Z
+279,Pacific Tigers,America East Conference,2,0.0,0.125,-0.125,263,28.1,0,0.125,0.0,2026-02-25T23:24:19Z
+282,Indiana State Sycamores,Ohio Valley Conference,3,0.0,0.0535,-0.0535,219,40.3,0,0.0535,0.0,2026-02-25T23:24:19Z
+284,Stonehill Skyhawks,Sun Belt Conference,2,0.5,0.4375,0.0625,141,61.6,0,0.4375,0.0,2026-02-25T23:24:19Z
+288,Lipscomb Bisons,Missouri Valley Conference,3,1.0,0.7995,0.2005,61,83.6,0,0.7995,0.0,2026-02-25T23:24:19Z
+290,Georgia Southern Eagles,Mid-Eastern Athletic Conference,3,0.0,0.2595,-0.2595,327,10.7,0,0.2595,0.0,2026-02-25T23:24:19Z
+292,UT Rio Grande Valley Vaqueros,Horizon League,3,0.6667,0.6303,0.0364,159,56.7,0,0.6303,0.0,2026-02-25T23:24:19Z
+294,Jacksonville Dolphins,Missouri Valley Conference,2,0.0,0.379,-0.379,355,3.0,0,0.379,0.0,2026-02-25T23:24:19Z
+295,Old Dominion Monarchs,Mid-Eastern Athletic Conference,3,0.3333,0.4723,-0.139,274,25.1,0,0.4723,0.0,2026-02-25T23:24:19Z
+299,Long Beach State Beach,Atlantic 10,2,0.0,0.273,-0.273,331,9.6,0,0.273,0.0,2026-02-25T23:24:19Z
+300,UC Irvine Anteaters,Atlantic 10,2,0.5,0.6495,-0.1495,282,23.0,0,0.6495,0.0,2026-02-25T23:24:19Z
+301,San Diego Toreros,America East Conference,2,0.0,0.125,-0.125,263,28.1,0,0.125,0.0,2026-02-25T23:24:19Z
+302,UC Davis Aggies,Atlantic 10,2,0.5,0.5755,-0.0755,234,36.2,0,0.5755,0.0,2026-02-25T23:24:19Z
+304,Idaho State Bengals,Conference USA,2,1.0,0.7725,0.2275,47,87.4,0,0.7725,0.0,2026-02-25T23:24:19Z
+305,DePaul Blue Demons,Big 12,3,0.5,0.639,-0.139,274,25.1,0,0.639,0.0,2026-02-25T23:24:19Z
+309,Louisiana Ragin' Cajuns,Mid-Eastern Athletic Conference,4,0.25,0.2958,-0.0458,212,42.2,0,0.2958,-0.048,2026-02-25T23:24:19Z
+311,Maine Black Bears,Atlantic Coast Conference,1,1.0,0.641,0.359,13,96.7,0,0.641,0.0,2026-02-25T23:24:19Z
+314,Iona Gaels,Metro Atlantic Athletic Conference,2,0.5,0.6145,-0.1145,261,28.8,0,0.6145,0.0,2026-02-25T23:24:19Z
+315,Niagara Purple Eagles,Metro Atlantic Athletic Conference,2,0.0,0.1975,-0.1975,310,15.3,0,0.1975,0.0,2026-02-25T23:24:19Z
+322,Lafayette Leopards,Independent,3,0.5,0.343,0.157,79,78.6,0,0.343,0.0,2026-02-25T23:24:19Z
+324,Coastal Carolina Chanticleers,Mid-Eastern Athletic Conference,3,0.6667,0.5817,0.085,118,67.8,0,0.5817,0.0,2026-02-25T23:24:19Z
+325,Cleveland State Vikings,Horizon League,3,0.0,0.1825,-0.1825,303,17.1,0,0.1825,0.0,2026-02-25T23:24:19Z
+326,Texas State Bobcats,Mid-Eastern Athletic Conference,2,0.5,0.411,0.089,114,68.9,0,0.411,0.0,2026-02-25T23:24:19Z
+328,Utah State Aggies,Independents,3,0.5,0.679,-0.179,301,17.8,0,0.679,0.0,2026-02-25T23:24:19Z
+331,Eastern Washington Eagles,Conference USA,2,1.0,0.8125,0.1875,63,83.0,0,0.8125,0.0,2026-02-25T23:24:19Z
+333,Alabama Crimson Tide,Patriot League,3,1.0,0.633,0.367,10,97.5,0,0.633,0.0,2026-02-25T23:24:19Z
+338,Kennesaw State Owls,Missouri Valley Conference,2,1.0,0.637,0.363,11,97.3,0,0.637,0.0,2026-02-25T23:24:19Z
+339,Evansville Purple Aces,Ohio Valley Conference,3,0.0,0.069,-0.069,227,37.9,0,0.069,0.0,2026-02-25T23:24:19Z
+344,Mississippi State Bulldogs,Patriot League,3,0.5,0.479,0.021,166,54.8,0,0.479,0.0,2026-02-25T23:24:19Z
+349,Army Black Knights,Independent,3,0.3333,0.4263,-0.093,247,32.6,0,0.4263,0.0,2026-02-25T23:24:19Z
+350,UNC Wilmington Seahawks,Western Athletic Conference,2,1.0,0.7595,0.2405,44,88.2,0,0.7595,0.0,2026-02-25T23:24:19Z
+356,Illinois Fighting Illini,Pac-12,2,0.5,0.732,-0.232,320,12.6,0,0.732,0.0,2026-02-25T23:24:19Z
+357,Texas A&M-Corpus Christi Islanders,Horizon League,3,0.3333,0.304,0.0293,162,55.9,0,0.304,0.0,2026-02-25T23:24:19Z
+399,UAlbany Great Danes,Atlantic Coast Conference,2,0.5,0.6375,-0.1375,272,25.6,0,0.6375,0.0,2026-02-25T23:24:19Z
+526,Florida Gulf Coast Eagles,Missouri Valley Conference,2,1.0,0.61,0.39,7,98.4,0,0.61,0.0,2026-02-25T23:24:19Z
+2000,Abilene Christian Wildcats,Atlantic Sun Conference,2,0.5,0.4995,0.0005,183,50.1,0,0.4995,0.0,2026-02-25T23:24:19Z
+2005,Air Force Falcons,Independents,3,0.0,0.1103,-0.1103,258,29.6,0,0.1103,0.0,2026-02-25T23:24:19Z
+2006,Akron Zips,Mid-American Conference,3,1.0,0.8867,0.1133,101,72.6,0,0.8867,0.0,2026-02-25T23:24:19Z
+2010,Alabama A&M Bulldogs,Southwestern Athletic Conference,3,0.6667,0.5563,0.1104,102,72.3,0,0.5563,0.0,2026-02-25T23:24:19Z
+2011,Alabama State Hornets,Southwestern Athletic Conference,3,0.3333,0.4203,-0.087,243,33.7,0,0.4203,0.0,2026-02-25T23:24:19Z
+2016,Alcorn State Braves,Southwestern Athletic Conference,2,0.5,0.594,-0.094,249,31.8,0,0.594,0.0,2026-02-25T23:24:19Z
+2026,App State Mountaineers,Mid-Eastern Athletic Conference,2,0.5,0.681,-0.181,302,17.5,0,0.681,0.0,2026-02-25T23:24:19Z
+2029,Arkansas-Pine Bluff Golden Lions,Southwestern Athletic Conference,3,0.3333,0.252,0.0813,123,66.6,0,0.252,0.0,2026-02-25T23:24:19Z
+2031,Little Rock Trojans,Southland Conference,2,0.5,0.4425,0.0575,143,61.1,0,0.4425,0.0,2026-02-25T23:24:19Z
+2032,Arkansas State Red Wolves,Mid-Eastern Athletic Conference,3,1.0,0.7737,0.2263,49,86.8,0,0.7737,0.0,2026-02-25T23:24:19Z
+2046,Austin Peay Governors,Missouri Valley Conference,3,1.0,0.6065,0.3935,6,98.6,0,0.6065,0.0,2026-02-25T23:24:19Z
+2050,Ball State Cardinals,Mid-American Conference,3,0.3333,0.2493,0.084,120,67.4,0,0.2493,0.0,2026-02-25T23:24:19Z
+2057,Belmont Bruins,Ohio Valley Conference,2,1.0,0.924,0.076,130,64.7,0,0.924,0.0,2026-02-25T23:24:19Z
+2065,Bethune-Cookman Wildcats,Southwestern Athletic Conference,3,0.6667,0.6557,0.011,174,52.5,0,0.6557,0.0,2026-02-25T23:24:19Z
+2066,Binghamton Bearcats,Atlantic Coast Conference,2,0.5,0.5085,-0.0085,190,48.2,0,0.5085,0.0,2026-02-25T23:24:19Z
+2083,Bucknell Bison,Independent,3,0.3333,0.265,0.0683,136,63.0,0,0.265,0.0,2026-02-25T23:24:19Z
+2084,Buffalo Bulls,Mid-American Conference,3,0.3333,0.4007,-0.0674,226,38.4,0,0.4007,0.0,2026-02-25T23:24:19Z
+2086,Butler Bulldogs,Big 12,3,1.0,0.6505,0.3495,14,96.4,0,0.6505,0.0,2026-02-25T23:24:19Z
+2097,Campbell Fighting Camels,Western Athletic Conference,2,0.5,0.4205,0.0795,125,66.0,0,0.4205,0.0,2026-02-25T23:24:19Z
+2099,Canisius Golden Griffins,Metro Atlantic Athletic Conference,2,0.5,0.3725,0.1275,90,75.6,0,0.3725,0.0,2026-02-25T23:24:19Z
+2110,Central Arkansas Bears,Missouri Valley Conference,3,0.5,0.5955,-0.0955,252,31.2,0,0.5955,0.0,2026-02-25T23:24:19Z
+2115,Central Connecticut Blue Devils,Sun Belt Conference,2,0.5,0.2815,0.2185,52,86.0,0,0.2815,0.0,2026-02-25T23:24:19Z
+2116,UCF Knights,Southeastern Conference,3,1.0,0.753,0.247,41,89.0,0,0.753,0.0,2026-02-25T23:24:19Z
+2117,Central Michigan Chippewas,Mid-American Conference,3,0.3333,0.4653,-0.132,268,26.8,0,0.4653,0.0,2026-02-25T23:24:19Z
+2127,Charleston Southern Buccaneers,6,2,0.5,0.518,-0.018,196,46.4,0,0.518,0.0,2026-02-25T23:24:19Z
+2130,Chicago State Cougars,Sun Belt Conference,2,0.5,0.713,-0.213,317,13.4,0,0.713,0.0,2026-02-25T23:24:19Z
+2132,Cincinnati Bearcats,Southeastern Conference,2,0.5,0.5265,-0.0265,201,45.2,0,0.5265,0.0,2026-02-25T23:24:19Z
+2142,Colgate Raiders,Independent,3,0.5,0.299,0.201,60,83.8,0,0.299,0.0,2026-02-25T23:24:19Z
+2154,Coppin State Eagles,Southern Conference,2,1.0,0.666,0.334,22,94.2,0,0.666,0.0,2026-02-25T23:24:19Z
+2166,Davidson Wildcats,Big Ten,3,0.5,0.4545,0.0455,152,58.6,0,0.4545,0.0,2026-02-25T23:24:19Z
+2168,Dayton Flyers,Big Ten,3,1.0,0.9023,0.0977,110,70.1,0,0.9023,0.0,2026-02-25T23:24:19Z
+2169,Delaware State Hornets,Southern Conference,2,0.0,0.0555,-0.0555,221,39.7,0,0.0555,0.0,2026-02-25T23:24:19Z
+2172,Denver Pioneers,Big Ten,2,1.0,0.759,0.241,43,88.5,0,0.759,0.0,2026-02-25T23:24:19Z
+2174,Detroit Mercy Titans,Horizon League,3,1.0,0.656,0.344,19,95.1,0,0.656,0.0,2026-02-25T23:24:19Z
+2181,Drake Bulldogs,Ohio Valley Conference,2,0.0,0.288,-0.288,332,9.3,0,0.288,0.0,2026-02-25T23:24:19Z
+2182,Drexel Dragons,Western Athletic Conference,3,0.6667,0.651,0.0157,169,54.0,0,0.651,0.0,2026-02-25T23:24:19Z
+2184,Duquesne Dukes,Big Ten,3,0.5,0.3375,0.1625,77,79.2,0,0.3375,0.0,2026-02-25T23:24:19Z
+2193,East Tennessee State Buccaneers,Colonial Athletic Association,3,1.0,0.825,0.175,69,81.2,0,0.825,0.0,2026-02-25T23:24:19Z
+2197,Eastern Illinois Panthers,Southland Conference,2,0.0,0.3995,-0.3995,359,1.8,0,0.3995,0.0,2026-02-25T23:24:19Z
+2198,Eastern Kentucky Colonels,Missouri Valley Conference,3,1.0,0.5635,0.4365,3,99.5,0,0.5635,0.0,2026-02-25T23:24:19Z
+2199,Eastern Michigan Eagles,Mid-American Conference,3,0.3333,0.379,-0.0457,211,42.5,0,0.379,0.0,2026-02-25T23:24:19Z
+2210,Elon Phoenix,Western Athletic Conference,1,0.0,0.075,-0.075,232,36.6,0,0.075,0.0,2026-02-25T23:24:19Z
+2217,Fairfield Stags,Metro Atlantic Athletic Conference,2,1.0,0.764,0.236,45,87.9,0,0.764,0.0,2026-02-25T23:24:19Z
+2226,Florida Atlantic Owls,Atlantic Coast Conference,2,0.5,0.649,-0.149,281,23.3,0,0.649,0.0,2026-02-25T23:24:19Z
+2229,Florida International Panthers,Missouri Valley Conference,2,0.5,0.5455,-0.0455,210,42.7,0,0.5455,0.0,2026-02-25T23:24:19Z
+2230,Fordham Rams,Big Ten,2,1.0,0.6595,0.3405,21,94.5,0,0.6595,0.0,2026-02-25T23:24:19Z
+2239,Cal State Fullerton Titans,Atlantic 10,2,1.0,0.6405,0.3595,12,97.0,0,0.6405,0.0,2026-02-25T23:24:19Z
+2241,Gardner-Webb Runnin' Bulldogs,6,2,0.0,0.163,-0.163,291,20.5,0,0.163,0.0,2026-02-25T23:24:19Z
+2244,George Mason Patriots,Big Ten,2,0.0,0.089,-0.089,246,32.9,0,0.089,0.0,2026-02-25T23:24:19Z
+2247,Georgia State Panthers,Mid-Eastern Athletic Conference,3,0.3333,0.3287,0.0046,180,51.0,0,0.3287,0.0,2026-02-25T23:24:19Z
+2250,Gonzaga Bulldogs,America East Conference,3,1.0,0.8985,0.1015,107,71.0,0,0.8985,0.0,2026-02-25T23:24:19Z
+2253,Grand Canyon Lopes,Independents,3,0.5,0.572,-0.072,231,37.0,0,0.572,0.0,2026-02-25T23:24:19Z
+2261,Hampton Pirates,Western Athletic Conference,2,0.0,0.1285,-0.1285,266,27.4,0,0.1285,0.0,2026-02-25T23:24:19Z
+2272,High Point Panthers,6,2,1.0,0.779,0.221,51,86.3,0,0.779,0.0,2026-02-25T23:24:19Z
+2275,Hofstra Pride,Western Athletic Conference,2,1.0,0.9475,0.0525,146,60.3,0,0.9475,0.0,2026-02-25T23:24:19Z
+2277,Houston Christian Huskies,Horizon League,3,0.6667,0.4113,0.2554,36,90.4,0,0.4113,0.0,2026-02-25T23:24:19Z
+2287,Illinois State Redbirds,Ohio Valley Conference,3,0.5,0.513,-0.013,193,47.4,0,0.513,0.0,2026-02-25T23:24:19Z
+2294,Iowa Hawkeyes,Pac-12,3,0.5,0.434,0.066,139,62.2,0,0.434,0.0,2026-02-25T23:24:19Z
+2296,Jackson State Tigers,Southwestern Athletic Conference,2,0.5,0.357,0.143,84,77.1,0,0.357,0.0,2026-02-25T23:24:19Z
+2305,Kansas Jayhawks,Southeastern Conference,3,0.6667,0.6203,0.0464,150,59.2,0,0.6203,0.0,2026-02-25T23:24:19Z
+2306,Kansas State Wildcats,Southeastern Conference,3,0.5,0.4635,0.0365,158,57.0,0,0.4635,0.0,2026-02-25T23:24:19Z
+2309,Kent State Golden Flashes,Mid-American Conference,2,1.0,0.6585,0.3415,20,94.8,0,0.6585,0.0,2026-02-25T23:24:19Z
+2320,Lamar Cardinals,Horizon League,3,0.0,0.342,-0.342,346,5.5,0,0.342,0.0,2026-02-25T23:24:19Z
+2325,La Salle Explorers,Big Ten,3,0.3333,0.4767,-0.1434,277,24.4,0,0.4767,0.0,2026-02-25T23:24:19Z
+2329,Lehigh Mountain Hawks,Independent,3,0.5,0.3175,0.1825,65,82.5,0,0.3175,0.0,2026-02-25T23:24:19Z
+2330,Le Moyne Dolphins,Sun Belt Conference,2,0.0,0.328,-0.328,344,6.0,0,0.328,0.0,2026-02-25T23:24:19Z
+2335,Liberty Flames,Missouri Valley Conference,2,0.5,0.292,0.208,57,84.7,0,0.292,0.0,2026-02-25T23:24:19Z
+2344,Longwood Lancers,6,2,0.5,0.5065,-0.0065,187,49.0,0,0.5065,0.0,2026-02-25T23:24:19Z
+2348,Louisiana Tech Bulldogs,Missouri Valley Conference,2,0.5,0.535,-0.035,206,43.8,0,0.535,0.0,2026-02-25T23:24:19Z
+2349,UMass Lowell River Hawks,Atlantic Coast Conference,2,1.0,0.915,0.085,118,67.8,0,0.915,0.0,2026-02-25T23:24:19Z
+2350,Loyola Chicago Ramblers,Big Ten,2,0.0,0.223,-0.223,318,13.2,0,0.223,0.0,2026-02-25T23:24:19Z
+2351,Loyola Marymount Lions,America East Conference,2,1.0,0.875,0.125,93,74.8,0,0.875,0.0,2026-02-25T23:24:19Z
+2352,Loyola Maryland Greyhounds,Independent,3,0.0,0.3055,-0.3055,339,7.4,0,0.3055,0.0,2026-02-25T23:24:19Z
+2363,Manhattan Jaspers,Metro Atlantic Athletic Conference,1,0.0,0.109,-0.109,256,30.0,0,0.109,0.0,2026-02-25T23:24:19Z
+2368,Marist Red Foxes,Metro Atlantic Athletic Conference,2,1.0,0.74,0.26,34,91.0,0,0.74,0.0,2026-02-25T23:24:19Z
+2377,McNeese Cowboys,Horizon League,3,1.0,0.856,0.144,83,77.5,0,0.856,0.0,2026-02-25T23:24:19Z
+2378,UMBC Retrievers,Atlantic Coast Conference,2,1.0,0.7855,0.2145,55,85.2,0,0.7855,0.0,2026-02-25T23:24:19Z
+2379,Maryland Eastern Shore Hawks,Southern Conference,2,0.0,0.3015,-0.3015,338,7.7,0,0.3015,0.0,2026-02-25T23:24:19Z
+2382,Mercer Bears,Colonial Athletic Association,3,0.5,0.4875,0.0125,172,53.2,0,0.4875,0.0,2026-02-25T23:24:19Z
+2385,Mercyhurst Lakers,Sun Belt Conference,2,0.5,0.569,-0.069,227,37.9,0,0.569,0.0,2026-02-25T23:24:19Z
+2390,Miami Hurricanes,Big East,3,0.6667,0.5853,0.0814,122,66.8,0,0.5853,0.0,2026-02-25T23:24:19Z
+2393,Middle Tennessee Blue Raiders,Missouri Valley Conference,2,0.5,0.548,-0.048,214,41.6,0,0.548,0.0,2026-02-25T23:24:19Z
+2400,Mississippi Valley State Delta Devils,Southwestern Athletic Conference,4,0.25,0.1823,0.0677,137,62.7,0,0.1823,0.101,2026-02-25T23:24:19Z
+2405,Monmouth Hawks,Western Athletic Conference,2,0.0,0.155,-0.155,286,21.9,0,0.155,0.0,2026-02-25T23:24:19Z
+2413,Morehead State Eagles,Southland Conference,3,1.0,0.7127,0.2873,30,92.1,0,0.7127,0.0,2026-02-25T23:24:19Z
+2415,Morgan State Bears,Southern Conference,3,0.6667,0.7503,-0.0836,240,34.5,0,0.7503,0.0,2026-02-25T23:24:19Z
+2426,Navy Midshipmen,Independent,3,1.0,0.9675,0.0325,160,56.4,0,0.9675,0.0,2026-02-25T23:24:19Z
+2427,UNC Asheville Bulldogs,6,2,0.5,0.273,0.227,48,87.1,0,0.273,0.0,2026-02-25T23:24:19Z
+2428,North Carolina Central Eagles,Southern Conference,3,0.3333,0.2607,0.0726,131,64.4,0,0.2607,0.0,2026-02-25T23:24:19Z
+2429,Charlotte 49ers,Atlantic Coast Conference,3,0.5,0.6115,-0.1115,260,29.0,0,0.6115,0.0,2026-02-25T23:24:19Z
+2430,UNC Greensboro Spartans,Colonial Athletic Association,2,0.0,0.141,-0.141,276,24.7,0,0.141,0.0,2026-02-25T23:24:19Z
+2433,UL Monroe Warhawks,Mid-Eastern Athletic Conference,3,0.0,0.3715,-0.3715,352,3.8,0,0.3715,0.0,2026-02-25T23:24:19Z
+2437,Omaha Mavericks,Big Ten,2,1.0,0.798,0.202,58,84.2,0,0.798,0.0,2026-02-25T23:24:19Z
+2439,UNLV Rebels,Independents,3,0.5,0.6595,-0.1595,289,21.1,0,0.6595,0.0,2026-02-25T23:24:19Z
+2440,Nevada Wolf Pack,Independents,3,0.6667,0.4923,0.1744,71,80.8,0,0.4923,0.0,2026-02-25T23:24:19Z
+2441,New Haven Chargers,Sun Belt Conference,3,0.6667,0.645,0.0217,165,55.1,0,0.645,0.0,2026-02-25T23:24:19Z
+2443,New Orleans Privateers,Horizon League,3,1.0,0.758,0.242,42,88.8,0,0.758,0.0,2026-02-25T23:24:19Z
+2447,Nicholls Colonels,Horizon League,3,0.3333,0.4297,-0.0964,254,30.7,0,0.4297,0.0,2026-02-25T23:24:19Z
+2448,North Carolina A&T Aggies,Western Athletic Conference,2,0.5,0.5115,-0.0115,191,47.9,0,0.5115,0.0,2026-02-25T23:24:19Z
+2449,North Dakota State Bison,Big Ten,2,1.0,0.892,0.108,105,71.5,0,0.892,0.0,2026-02-25T23:24:19Z
+2450,Norfolk State Spartans,Southern Conference,2,1.0,0.801,0.199,62,83.3,0,0.801,0.0,2026-02-25T23:24:19Z
+2453,North Alabama Lions,Missouri Valley Conference,3,0.0,0.1435,-0.1435,278,24.1,0,0.1435,0.0,2026-02-25T23:24:19Z
+2454,North Florida Ospreys,Missouri Valley Conference,2,0.0,0.388,-0.388,357,2.5,0,0.388,0.0,2026-02-25T23:24:19Z
+2458,Northern Colorado Bears,Conference USA,1,1.0,0.537,0.463,1,100.0,0,0.537,0.0,2026-02-25T23:24:19Z
+2459,Northern Illinois Huskies,Mid-American Conference,3,0.3333,0.322,0.0113,173,52.9,0,0.322,0.0,2026-02-25T23:24:19Z
+2460,Northern Iowa Panthers,Ohio Valley Conference,3,0.5,0.6855,-0.1855,306,16.4,0,0.6855,0.0,2026-02-25T23:24:19Z
+2463,Cal State Northridge Matadors,Atlantic 10,2,1.0,0.571,0.429,4,99.2,0,0.571,0.0,2026-02-25T23:24:19Z
+2464,Northern Arizona Lumberjacks,Conference USA,1,0.0,0.463,-0.463,364,0.5,0,0.463,0.0,2026-02-25T23:24:19Z
+2466,Northwestern State Demons,Horizon League,3,0.6667,0.62,0.0467,149,59.5,0,0.62,0.0,2026-02-25T23:24:19Z
+2473,Oakland Golden Grizzlies,Horizon League,3,0.5,0.575,-0.075,232,36.6,0,0.575,0.0,2026-02-25T23:24:19Z
+2483,Oregon Ducks,Pac-12,3,0.5,0.282,0.218,53,85.8,0,0.282,0.0,2026-02-25T23:24:19Z
+2492,Pepperdine Waves,America East Conference,3,0.5,0.4595,0.0405,154,57.9,0,0.4595,0.0,2026-02-25T23:24:19Z
+2501,Portland Pilots,America East Conference,3,0.0,0.1865,-0.1865,307,16.2,0,0.1865,0.0,2026-02-25T23:24:19Z
+2502,Portland State Vikings,Conference USA,2,0.5,0.463,0.037,157,57.3,0,0.463,0.0,2026-02-25T23:24:19Z
+2504,Prairie View A&M Panthers,Southwestern Athletic Conference,3,0.6667,0.6617,0.005,179,51.2,0,0.6617,0.0,2026-02-25T23:24:19Z
+2506,Presbyterian Blue Hose,6,2,0.5,0.594,-0.094,249,31.8,0,0.594,0.0,2026-02-25T23:24:19Z
+2507,Providence Friars,Big 12,2,1.0,0.622,0.378,8,98.1,0,0.622,0.0,2026-02-25T23:24:19Z
+2509,Purdue Boilermakers,Pac-12,2,0.5,0.586,-0.086,242,34.0,0,0.586,0.0,2026-02-25T23:24:19Z
+2511,Queens University Royals,Missouri Valley Conference,3,1.0,0.722,0.278,32,91.5,0,0.722,0.0,2026-02-25T23:24:19Z
+2514,Quinnipiac Bobcats,Metro Atlantic Athletic Conference,1,0.0,0.301,-0.301,337,7.9,0,0.301,0.0,2026-02-25T23:24:19Z
+2515,Radford Highlanders,6,2,0.5,0.661,-0.161,290,20.8,0,0.661,0.0,2026-02-25T23:24:19Z
+2520,Rider Broncs,Metro Atlantic Athletic Conference,2,0.5,0.489,0.011,174,52.5,0,0.489,0.0,2026-02-25T23:24:19Z
+2523,Robert Morris Colonials,Horizon League,2,1.0,0.882,0.118,96,73.8,0,0.882,0.0,2026-02-25T23:24:19Z
+2529,Sacred Heart Pioneers,Metro Atlantic Athletic Conference,2,0.0,0.291,-0.291,333,9.0,0,0.291,0.0,2026-02-25T23:24:19Z
+2534,Sam Houston Bearkats,Missouri Valley Conference,2,1.0,0.708,0.292,29,92.3,0,0.708,0.0,2026-02-25T23:24:19Z
+2535,Samford Bulldogs,Colonial Athletic Association,2,0.5,0.507,-0.007,188,48.6,0,0.507,0.0,2026-02-25T23:24:19Z
+2539,San Francisco Dons,America East Conference,2,0.0,0.0405,-0.0405,208,43.3,0,0.0405,0.0,2026-02-25T23:24:19Z
+2540,UC Santa Barbara Gauchos,Atlantic 10,2,0.0,0.4105,-0.4105,361,1.4,0,0.4105,0.0,2026-02-25T23:24:19Z
+2541,Santa Clara Broncos,America East Conference,2,1.0,0.948,0.052,147,59.9,0,0.948,0.0,2026-02-25T23:24:19Z
+2545,SE Louisiana Lions,Horizon League,3,0.0,0.1337,-0.1337,270,26.3,0,0.1337,0.0,2026-02-25T23:24:19Z
+2546,Southeast Missouri State Redhawks,Southland Conference,2,1.0,0.677,0.323,24,93.7,0,0.677,0.0,2026-02-25T23:24:19Z
+2547,Seattle U Redhawks,America East Conference,3,0.5,0.657,-0.157,287,21.6,0,0.657,0.0,2026-02-25T23:24:19Z
+2550,Seton Hall Pirates,Big 12,2,0.5,0.4095,0.0905,112,69.5,0,0.4095,0.0,2026-02-25T23:24:19Z
+2561,Siena Saints,Metro Atlantic Athletic Conference,2,0.5,0.5395,-0.0395,207,43.6,0,0.5395,0.0,2026-02-25T23:24:19Z
+2565,SIU Edwardsville Cougars,Southland Conference,2,0.0,0.063,-0.063,224,38.9,0,0.063,0.0,2026-02-25T23:24:19Z
+2567,SMU Mustangs,Big East,3,1.0,0.8745,0.1255,91,75.2,0,0.8745,0.0,2026-02-25T23:24:19Z
+2569,South Carolina State Bulldogs,Southern Conference,4,0.25,0.334,-0.084,241,34.2,0,0.334,-0.112,2026-02-25T23:24:19Z
+2571,South Dakota State Jackrabbits,Big Ten,2,0.5,0.477,0.023,164,55.3,0,0.477,0.0,2026-02-25T23:24:19Z
+2572,Southern Miss Golden Eagles,Mid-Eastern Athletic Conference,2,0.5,0.503,-0.003,185,49.6,0,0.503,0.0,2026-02-25T23:24:19Z
+2579,South Carolina Gamecocks,Patriot League,3,0.3333,0.3313,0.002,182,50.4,0,0.3313,0.0,2026-02-25T23:24:19Z
+2582,Southern Jaguars,Southwestern Athletic Conference,2,0.5,0.672,-0.172,296,19.0,0,0.672,0.0,2026-02-25T23:24:19Z
+2598,Saint Francis Red Flash,Sun Belt Conference,3,0.3333,0.439,-0.1057,255,30.4,0,0.439,0.0,2026-02-25T23:24:19Z
+2599,St. John's Red Storm,Big 12,3,1.0,0.857,0.143,84,77.1,0,0.857,0.0,2026-02-25T23:24:19Z
+2603,Saint Joseph's Hawks,Big Ten,3,1.0,0.8245,0.1755,68,81.6,0,0.8245,0.0,2026-02-25T23:24:19Z
+2608,Saint Mary's Gaels,America East Conference,3,1.0,0.7505,0.2495,39,89.6,0,0.7505,0.0,2026-02-25T23:24:19Z
+2612,Saint Peter's Peacocks,Metro Atlantic Athletic Conference,2,0.0,0.191,-0.191,309,15.6,0,0.191,0.0,2026-02-25T23:24:19Z
+2617,Stephen F. Austin Lumberjacks,Horizon League,3,0.6667,0.5957,0.071,132,64.0,0,0.5957,0.0,2026-02-25T23:24:19Z
+2619,Stony Brook Seawolves,Western Athletic Conference,2,1.0,0.682,0.318,25,93.4,0,0.682,0.0,2026-02-25T23:24:19Z
+2623,Missouri State Bears,Missouri Valley Conference,2,0.0,0.3755,-0.3755,354,3.3,0,0.3755,0.0,2026-02-25T23:24:19Z
+2627,Tarleton State Texans,Atlantic Sun Conference,3,0.6667,0.503,0.1637,76,79.5,0,0.503,0.0,2026-02-25T23:24:19Z
+2628,TCU Horned Frogs,Southeastern Conference,3,0.6667,0.5897,0.077,129,64.9,0,0.5897,0.0,2026-02-25T23:24:19Z
+2630,UT Martin Skyhawks,Southland Conference,2,0.0,0.3805,-0.3805,356,2.7,0,0.3805,0.0,2026-02-25T23:24:19Z
+2633,Tennessee Volunteers,Patriot League,3,0.6667,0.659,0.0077,177,51.8,0,0.659,0.0,2026-02-25T23:24:19Z
+2634,Tennessee State Tigers,Southland Conference,2,1.0,0.882,0.118,96,73.8,0,0.882,0.0,2026-02-25T23:24:19Z
+2635,Tennessee Tech Golden Eagles,Southland Conference,2,1.0,0.9095,0.0905,112,69.5,0,0.9095,0.0,2026-02-25T23:24:19Z
+2636,UTSA Roadrunners,Atlantic Coast Conference,3,0.0,0.096,-0.096,253,31.0,0,0.096,0.0,2026-02-25T23:24:19Z
+2638,UTEP Miners,Missouri Valley Conference,1,0.0,0.33,-0.33,345,5.8,0,0.33,0.0,2026-02-25T23:24:19Z
+2640,Texas Southern Tigers,Southwestern Athletic Conference,3,0.6667,0.6503,0.0164,168,54.2,0,0.6503,0.0,2026-02-25T23:24:19Z
+2641,Texas Tech Red Raiders,Southeastern Conference,3,0.6667,0.716,-0.0493,215,41.4,0,0.716,0.0,2026-02-25T23:24:19Z
+2643,The Citadel Bulldogs,Colonial Athletic Association,3,0.0,0.313,-0.313,341,6.8,0,0.313,0.0,2026-02-25T23:24:19Z
+2649,Toledo Rockets,Mid-American Conference,2,1.0,0.8785,0.1215,94,74.5,0,0.8785,0.0,2026-02-25T23:24:19Z
+2653,Troy Trojans,Mid-Eastern Athletic Conference,3,0.6667,0.535,0.1317,89,75.9,0,0.535,0.0,2026-02-25T23:24:19Z
+2655,Tulane Green Wave,Atlantic Coast Conference,3,1.0,0.713,0.287,31,91.8,0,0.713,0.0,2026-02-25T23:24:19Z
+2670,VCU Rams,Big Ten,2,0.5,0.507,-0.007,188,48.6,0,0.507,0.0,2026-02-25T23:24:19Z
+2674,Valparaiso Beacons,Ohio Valley Conference,3,1.0,0.7025,0.2975,28,92.6,0,0.7025,0.0,2026-02-25T23:24:19Z
+2678,VMI Keydets,Colonial Athletic Association,2,0.0,0.169,-0.169,293,20.0,0,0.169,0.0,2026-02-25T23:24:19Z
+2681,Wagner Seahawks,Sun Belt Conference,3,0.6667,0.5027,0.164,74,79.9,0,0.5027,0.0,2026-02-25T23:24:19Z
+2692,Weber State Wildcats,Conference USA,2,1.0,0.775,0.225,50,86.6,0,0.775,0.0,2026-02-25T23:24:19Z
+2698,West Georgia Wolves,Missouri Valley Conference,3,0.0,0.3745,-0.3745,353,3.6,0,0.3745,0.0,2026-02-25T23:24:19Z
+2710,Western Illinois Leathernecks,Southland Conference,2,0.0,0.1375,-0.1375,272,25.6,0,0.1375,0.0,2026-02-25T23:24:19Z
+2711,Western Michigan Broncos,Mid-American Conference,3,0.3333,0.3277,0.0056,178,51.5,0,0.3277,0.0,2026-02-25T23:24:19Z
+2717,Western Carolina Catamounts,Colonial Athletic Association,3,1.0,0.914,0.086,117,68.2,0,0.914,0.0,2026-02-25T23:24:19Z
+2724,Wichita State Shockers,Atlantic Coast Conference,2,1.0,0.747,0.253,38,89.9,0,0.747,0.0,2026-02-25T23:24:19Z
+2729,William & Mary Tribe,Western Athletic Conference,1,0.0,0.466,-0.466,365,0.3,0,0.466,0.0,2026-02-25T23:24:19Z
+2737,Winthrop Eagles,6,2,0.5,0.5515,-0.0515,218,40.5,0,0.5515,0.0,2026-02-25T23:24:19Z
+2739,Green Bay Phoenix,Horizon League,2,0.5,0.519,-0.019,198,46.0,0,0.519,0.0,2026-02-25T23:24:19Z
+2747,Wofford Terriers,Colonial Athletic Association,3,0.5,0.448,0.052,147,59.9,0,0.448,0.0,2026-02-25T23:24:19Z
+2750,Wright State Raiders,Horizon League,3,0.5,0.485,0.015,170,53.7,0,0.485,0.0,2026-02-25T23:24:19Z
+2751,Wyoming Cowboys,Independents,3,0.6667,0.5477,0.119,95,74.2,0,0.5477,0.0,2026-02-25T23:24:19Z
+2752,Xavier Musketeers,Big 12,3,0.0,0.3645,-0.3645,351,4.1,0,0.3645,0.0,2026-02-25T23:24:19Z
+2754,Youngstown State Penguins,Horizon League,3,1.0,0.853,0.147,81,78.1,0,0.853,0.0,2026-02-25T23:24:19Z
+2755,Grambling Tigers,Southwestern Athletic Conference,3,0.3333,0.459,-0.1257,265,27.7,0,0.459,0.0,2026-02-25T23:24:19Z
+2771,Merrimack Warriors,Metro Atlantic Athletic Conference,2,1.0,0.655,0.345,16,95.6,0,0.655,0.0,2026-02-25T23:24:19Z
+2803,Bryant Bulldogs,Atlantic Coast Conference,1,0.0,0.131,-0.131,267,27.1,0,0.131,0.0,2026-02-25T23:24:19Z
+2815,Lindenwood Lions,Southland Conference,2,0.0,0.1455,-0.1455,279,23.8,0,0.1455,0.0,2026-02-25T23:24:19Z
+2837,East Texas A&M Lions,Horizon League,3,0.3333,0.5423,-0.209,316,13.7,0,0.5423,0.0,2026-02-25T23:24:19Z
+2856,California Baptist Lancers,Atlantic Sun Conference,1,0.0,0.018,-0.018,196,46.4,0,0.018,0.0,2026-02-25T23:24:19Z
+2870,Purdue Fort Wayne Mastodons,Horizon League,3,0.5,0.3865,0.1135,100,72.9,0,0.3865,0.0,2026-02-25T23:24:19Z
+2885,NJIT Highlanders,Atlantic Coast Conference,2,0.0,0.158,-0.158,288,21.4,0,0.158,0.0,2026-02-25T23:24:19Z
+2900,St. Thomas-Minnesota Tommies,Big Ten,1,0.0,0.429,-0.429,362,1.1,0,0.429,0.0,2026-02-25T23:24:19Z
+2908,South Carolina Upstate Spartans,6,2,0.5,0.454,0.046,151,58.9,0,0.454,0.0,2026-02-25T23:24:19Z
+2916,Incarnate Word Cardinals,Horizon League,3,0.3333,0.377,-0.0437,209,43.0,0,0.377,0.0,2026-02-25T23:24:19Z
+2934,Cal State Bakersfield Roadrunners,Atlantic 10,2,0.0,0.133,-0.133,269,26.6,0,0.133,0.0,2026-02-25T23:24:19Z
+3084,Utah Valley Wolverines,Atlantic Sun Conference,2,1.0,0.946,0.054,145,60.5,0,0.946,0.0,2026-02-25T23:24:19Z
+3101,Utah Tech Trailblazers,Atlantic Sun Conference,2,0.5,0.4185,0.0815,121,67.1,0,0.4185,0.0,2026-02-25T23:24:19Z
+112358,Long Island University Sharks,Sun Belt Conference,3,0.6667,0.5883,0.0784,128,65.2,0,0.5883,0.0,2026-02-25T23:24:19Z
