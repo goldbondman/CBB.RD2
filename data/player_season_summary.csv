@@ -1,0 +1,134 @@
+athlete_id,player,team_id,team,games_played,avg_min,avg_pts,avg_reb,avg_ast,avg_stl,avg_blk,avg_tov,ts_pct,usage_pct,season_pts_share,updated_at
+4401637,Cooper Smith,2199,Eastern Michigan Eagles,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+4432204,Noah Collier,2325,La Salle Explorers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+4592404,Addison Patterson,2199,Eastern Michigan Eagles,1,8.0,2.0,2.0,1.0,0.0,0.0,1.0,0.3333,,0.2222,2026-02-25T08:56:04Z
+4683770,Baye Fall,164,Rutgers Scarlet Knights,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+4684443,Rafael Castro,45,George Washington Revolutionaries,1,7.0,6.0,1.0,2.0,2.0,0.0,1.0,1.0,,0.2727,2026-02-25T08:56:04Z
+4685650,Christian Jones,45,George Washington Revolutionaries,1,5.0,1.0,0.0,2.0,0.0,0.0,0.0,0.5682,,0.0455,2026-02-25T08:56:04Z
+4703097,John Shanu II,2199,Eastern Michigan Eagles,1,2.0,2.0,1.0,0.0,0.0,0.0,0.0,1.0,,0.2222,2026-02-25T08:56:04Z
+4703804,Truth Harris,2325,La Salle Explorers,1,5.0,6.0,0.0,1.0,1.0,0.0,0.0,1.0,,0.4286,2026-02-25T08:56:04Z
+4703980,Skylar Wicks,2598,Saint Francis Red Flash,1,16.0,13.0,4.0,1.0,0.0,0.0,1.0,0.9028,,0.3171,2026-02-25T08:56:04Z
+4703983,Jacob Ognacevic,264,Washington Huskies,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+4708220,Trey Moss,45,George Washington Revolutionaries,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+4711400,Franck Kepnang,264,Washington Huskies,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+4869737,Wesley Yates III,264,Washington Huskies,1,7.0,5.0,0.0,3.0,0.0,0.0,0.0,0.8681,,0.2381,2026-02-25T08:56:04Z
+4873180,Bryson Tucker,264,Washington Huskies,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+4897465,Quimari Peterson,264,Washington Huskies,1,6.0,3.0,1.0,1.0,1.0,0.0,0.0,1.0,,0.1429,2026-02-25T08:56:04Z
+4898230,Garrett Johnson,45,George Washington Revolutionaries,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+4898334,Zion Russell,2598,Saint Francis Red Flash,1,10.0,3.0,2.0,2.0,0.0,0.0,0.0,0.75,,0.0732,2026-02-25T08:56:04Z
+5060705,Zoom Diallo,264,Washington Huskies,1,8.0,0.0,2.0,0.0,0.0,0.0,0.0,0.0,,0.0,2026-02-25T08:56:04Z
+5061576,Dylan Grant,164,Rutgers Scarlet Knights,1,7.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,,0.0,2026-02-25T08:56:04Z
+5081348,Chris Nwuli,164,Rutgers Scarlet Knights,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5093252,Eian Elmer,193,Miami (OH) RedHawks,1,7.0,2.0,3.0,1.0,1.0,0.0,0.0,1.0,,0.1429,2026-02-25T08:56:04Z
+5101653,Luke Skaljac,193,Miami (OH) RedHawks,1,5.0,2.0,1.0,0.0,0.0,0.0,0.0,0.5,,0.1429,2026-02-25T08:56:04Z
+5101689,Lathan Sommerville,264,Washington Huskies,1,6.0,2.0,0.0,0.0,0.0,0.0,0.0,0.3333,,0.0952,2026-02-25T08:56:04Z
+5101766,JJ Mandaquit,264,Washington Huskies,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5101811,Dorian Jones,164,Rutgers Scarlet Knights,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5101841,Gevonte Ware,164,Rutgers Scarlet Knights,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5105402,Darren Buchanan Jr.,164,Rutgers Scarlet Knights,1,3.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,,0.0,2026-02-25T08:56:04Z
+5105606,Desmond Claude,264,Washington Huskies,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5105833,Luke Hunger,45,George Washington Revolutionaries,1,7.0,2.0,1.0,1.0,0.0,0.0,0.0,1.0,,0.0909,2026-02-25T08:56:04Z
+5105859,Antwone Woolfolk,193,Miami (OH) RedHawks,1,6.0,2.0,0.0,0.0,1.0,0.0,1.0,0.5,,0.1429,2026-02-25T08:56:04Z
+5106589,Cameron Tweedy,2598,Saint Francis Red Flash,1,3.0,0.0,2.0,0.0,0.0,0.0,1.0,,,0.0,2026-02-25T08:56:04Z
+5106607,Josiah Harris,2325,La Salle Explorers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5106614,Gestin Liberis,2598,Saint Francis Red Flash,1,17.0,8.0,6.0,1.0,0.0,1.0,3.0,1.0,,0.1951,2026-02-25T08:56:04Z
+5106674,Peter Suder,193,Miami (OH) RedHawks,1,7.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,,0.0,2026-02-25T08:56:04Z
+5106841,Tyrone Marshall Jr.,45,George Washington Revolutionaries,1,3.0,2.0,0.0,1.0,0.0,2.0,1.0,1.0,,0.0909,2026-02-25T08:56:04Z
+5107176,Tre Dinkins,45,George Washington Revolutionaries,1,5.0,3.0,0.0,0.0,0.0,0.0,0.0,0.75,,0.1364,2026-02-25T08:56:04Z
+5107246,Mak Manciel,2199,Eastern Michigan Eagles,1,2.0,5.0,0.0,0.0,1.0,0.0,0.0,1.0,,0.5556,2026-02-25T08:56:04Z
+5107261,Jaeden Marshall,2325,La Salle Explorers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5107507,Justin Archer,2325,La Salle Explorers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5108031,Eli Yofan,193,Miami (OH) RedHawks,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5108121,Kheni Briggs,2441,New Haven Chargers,1,12.0,4.0,0.0,0.0,1.0,0.0,1.0,0.6667,,0.125,2026-02-25T08:56:04Z
+5108786,Chris Moncrief,2598,Saint Francis Red Flash,1,17.0,7.0,0.0,1.0,0.0,0.0,1.0,0.9021,,0.1707,2026-02-25T08:56:04Z
+5108930,Jerome Brewer Jr.,2325,La Salle Explorers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5122917,Mady Traore,264,Washington Huskies,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5142358,Jamichael Davis,164,Rutgers Scarlet Knights,1,,0.0,0.0,0.0,0.0,0.0,0.0,,,0.0,2026-02-25T08:56:04Z
+5144117,Jasir Rencher,264,Washington Huskies,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5144137,Vincent Chaudhri,45,George Washington Revolutionaries,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5144371,Ty Bevins,45,George Washington Revolutionaries,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5144387,Bryce Dortch,164,Rutgers Scarlet Knights,1,2.0,0.0,0.0,0.0,0.0,1.0,0.0,,,0.0,2026-02-25T08:56:04Z
+5174292,Rob Dockery,2325,La Salle Explorers,1,6.0,5.0,0.0,0.0,1.0,0.0,2.0,1.0,,0.3571,2026-02-25T08:56:04Z
+5174599,Trey Autry,45,George Washington Revolutionaries,1,7.0,6.0,0.0,0.0,0.0,0.0,0.0,1.0,,0.2727,2026-02-25T08:56:04Z
+5174600,Amir Arrington,45,George Washington Revolutionaries,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5174805,Emmanuel Ogbole,164,Rutgers Scarlet Knights,1,6.0,2.0,1.0,0.0,0.0,0.0,0.0,1.0,,0.2222,2026-02-25T08:56:04Z
+5175028,Braelon Green,2199,Eastern Michigan Eagles,1,2.0,0.0,0.0,1.0,0.0,0.0,0.0,,,0.0,2026-02-25T08:56:04Z
+5175408,Bowyn Beatty,2325,La Salle Explorers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5175809,Tariq Francis,164,Rutgers Scarlet Knights,1,7.0,2.0,0.0,1.0,0.0,0.0,0.0,0.5,,0.2222,2026-02-25T08:56:04Z
+5176182,Aidan Rubio,2199,Eastern Michigan Eagles,1,,0.0,0.0,0.0,0.0,0.0,0.0,,,0.0,2026-02-25T08:56:04Z
+5176212,Evan Ipsaro,193,Miami (OH) RedHawks,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5176215,Jackson Kotecki,193,Miami (OH) RedHawks,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5176216,Blake Anderson,193,Miami (OH) RedHawks,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5176313,Almar Atlason,193,Miami (OH) RedHawks,1,5.0,0.0,2.0,0.0,0.0,0.0,0.0,0.0,,0.0,2026-02-25T08:56:04Z
+5176654,Carlos Hart,2199,Eastern Michigan Eagles,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5176788,Bubu Benjamin,45,George Washington Revolutionaries,1,3.0,0.0,0.0,0.0,0.0,0.0,0.0,,,0.0,2026-02-25T08:56:04Z
+5176794,Jon Sanders II,2199,Eastern Michigan Eagles,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5177098,Jean Aranguren,45,George Washington Revolutionaries,1,6.0,2.0,1.0,0.0,0.0,0.0,1.0,1.0,,0.0909,2026-02-25T08:56:04Z
+5177260,Eric Acker,2325,La Salle Explorers,1,1.0,0.0,0.0,0.0,0.0,0.0,0.0,,,0.0,2026-02-25T08:56:04Z
+5177290,Ryen Gresko,2598,Saint Francis Red Flash,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5177291,KJ Swain Jr.,2598,Saint Francis Red Flash,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5185239,Jabri Fitzpatrick,2441,New Haven Chargers,1,19.0,12.0,0.0,1.0,1.0,0.0,0.0,0.7614,,0.375,2026-02-25T08:56:04Z
+5221320,Courtland Muldrew,264,Washington Huskies,1,2.0,3.0,1.0,0.0,0.0,0.0,0.0,1.0,,0.1429,2026-02-25T08:56:04Z
+5234749,Lino Mark,164,Rutgers Scarlet Knights,1,2.0,0.0,0.0,0.0,0.0,0.0,0.0,,,0.0,2026-02-25T08:56:04Z
+5238164,Christian Nitu,264,Washington Huskies,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5239605,Mohamed Binzagr,45,George Washington Revolutionaries,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5239609,Max Fradkin,164,Rutgers Scarlet Knights,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5239811,Damon Strand,2325,La Salle Explorers,1,3.0,0.0,1.0,0.0,0.0,0.0,1.0,0.0,,0.0,2026-02-25T08:56:04Z
+5240017,Mehki Ellison,2199,Eastern Michigan Eagles,1,6.0,0.0,3.0,0.0,0.0,0.0,1.0,0.0,,0.0,2026-02-25T08:56:04Z
+5240616,Jaden Johnson,2325,La Salle Explorers,1,9.0,0.0,1.0,2.0,1.0,0.0,0.0,0.0,,0.0,2026-02-25T08:56:04Z
+5241388,Merritt Alderink,2199,Eastern Michigan Eagles,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5242403,Victor Payne,2598,Saint Francis Red Flash,1,18.0,4.0,1.0,1.0,1.0,0.0,1.0,0.6667,,0.0976,2026-02-25T08:56:04Z
+5242404,Carson Rhodes,2598,Saint Francis Red Flash,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5242405,Trey Weiand,2598,Saint Francis Red Flash,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5242624,Jagger Bascombe,2441,New Haven Chargers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5242934,Mbaye N'Diaye,2199,Eastern Michigan Eagles,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5242935,Godslove Nwabude,2199,Eastern Michigan Eagles,1,6.0,0.0,3.0,0.0,0.0,1.0,0.0,0.0,,0.0,2026-02-25T08:56:04Z
+5242937,Mohammad Habhab,2199,Eastern Michigan Eagles,1,9.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,,0.0,2026-02-25T08:56:04Z
+5243005,Josue Grullon,2325,La Salle Explorers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5243011,Stefano Faloppa,2441,New Haven Chargers,1,10.0,5.0,1.0,0.0,0.0,0.0,0.0,0.8333,,0.1562,2026-02-25T08:56:04Z
+5243053,Brant Byers,193,Miami (OH) RedHawks,1,6.0,4.0,2.0,0.0,0.0,0.0,0.0,0.4098,,0.2857,2026-02-25T08:56:04Z
+5243054,Ethan Wright,193,Miami (OH) RedHawks,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5243388,Ralph Martino Jr.,2598,Saint Francis Red Flash,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5247200,Ahmad Harrison,2598,Saint Francis Red Flash,1,6.0,0.0,0.0,0.0,0.0,0.0,0.0,,,0.0,2026-02-25T08:56:04Z
+5248301,Kaden Powers,164,Rutgers Scarlet Knights,1,5.0,3.0,1.0,1.0,0.0,0.0,1.0,0.75,,0.3333,2026-02-25T08:56:04Z
+5252503,Maison Adeleye,2441,New Haven Chargers,1,6.0,6.0,0.0,0.0,0.0,0.0,0.0,1.0,,0.1875,2026-02-25T08:56:04Z
+5254175,Jalen Rougier-Roane,45,George Washington Revolutionaries,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5264730,Harun Zrno,164,Rutgers Scarlet Knights,1,6.0,2.0,0.0,0.0,0.0,0.0,1.0,1.0,,0.2222,2026-02-25T08:56:04Z
+5281370,Hannes Steinbach,264,Washington Huskies,1,8.0,8.0,4.0,1.0,1.0,1.0,0.0,0.9259,,0.381,2026-02-25T08:56:04Z
+5311862,Ashton Walker,2325,La Salle Explorers,1,8.0,3.0,1.0,1.0,0.0,0.0,0.0,0.75,,0.2143,2026-02-25T08:56:04Z
+5311863,Nas Hart,2325,La Salle Explorers,1,6.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,,0.0,2026-02-25T08:56:04Z
+5311864,Max Lipacis,2325,La Salle Explorers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5311865,Edwin Daniel,2325,La Salle Explorers,1,3.0,0.0,0.0,0.0,0.0,0.0,0.0,,,0.0,2026-02-25T08:56:04Z
+5311866,Arlan Masharaliyev,2325,La Salle Explorers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5312037,Denis Badalau,164,Rutgers Scarlet Knights,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5312047,BJ Roy,264,Washington Huskies,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5313308,Gregory Lawson II,2199,Eastern Michigan Eagles,1,6.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,,0.0,2026-02-25T08:56:04Z
+5313368,Trey Perry,193,Miami (OH) RedHawks,1,3.0,2.0,0.0,0.0,0.0,0.0,0.0,1.0,,0.1429,2026-02-25T08:56:04Z
+5313369,Brady Ganley,193,Miami (OH) RedHawks,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5313370,Justin Kirby,193,Miami (OH) RedHawks,1,2.0,2.0,1.0,0.0,0.0,0.0,1.0,1.0,,0.1429,2026-02-25T08:56:04Z
+5313371,Tyler Robbins,193,Miami (OH) RedHawks,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5313372,Leshawn Stowers,193,Miami (OH) RedHawks,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5313373,Kyle Waltz,193,Miami (OH) RedHawks,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5314310,Aidan Losiewicz,2441,New Haven Chargers,1,3.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,,0.0,2026-02-25T08:56:04Z
+5314311,Dominick LaDuca,2441,New Haven Chargers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5314312,Justice Hanna,2441,New Haven Chargers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5314313,Dior Kennedy,2441,New Haven Chargers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5314314,Owen Hotaling,2441,New Haven Chargers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5314315,Vere Anthony,2441,New Haven Chargers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5314316,Nathan Narcisse,2441,New Haven Chargers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5314317,Timothy Coleman,2441,New Haven Chargers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5314318,John Oladipo,2441,New Haven Chargers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5314319,Teshaun Steele,2441,New Haven Chargers,1,10.0,0.0,3.0,0.0,0.0,0.0,2.0,,,0.0,2026-02-25T08:56:04Z
+5314320,Andre Pasha,2441,New Haven Chargers,1,20.0,3.0,2.0,3.0,2.0,0.0,1.0,0.375,,0.0938,2026-02-25T08:56:04Z
+5314321,Tristan Burth,2441,New Haven Chargers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5314322,Zoumana Traore,2441,New Haven Chargers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5314323,Najimi George,2441,New Haven Chargers,1,18.0,2.0,0.0,1.0,0.0,1.0,0.0,0.2049,,0.0625,2026-02-25T08:56:04Z
+5314324,Kyle Kearson,2441,New Haven Chargers,1,2.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,,0.0,2026-02-25T08:56:04Z
+5314325,Matiss Ogle,2441,New Haven Chargers,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5315062,Brandon Russell,2598,Saint Francis Red Flash,1,3.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,,0.0,2026-02-25T08:56:04Z
+5315063,Paris Papadatos,2598,Saint Francis Red Flash,1,10.0,6.0,0.0,0.0,1.0,0.0,0.0,0.6,,0.1463,2026-02-25T08:56:04Z
+5315064,Melvin Weaver III,2598,Saint Francis Red Flash,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5315065,Kam Wylie,2598,Saint Francis Red Flash,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5315066,Kofi Asare,2598,Saint Francis Red Flash,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5315067,Brandon Rabish,2598,Saint Francis Red Flash,1,,,,,,,,,,0.0,2026-02-25T08:56:04Z
+5328456,Nikola Dzepina,264,Washington Huskies,1,2.0,0.0,0.0,0.0,0.0,0.0,0.0,,,0.0,2026-02-25T08:56:04Z
