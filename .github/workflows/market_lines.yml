@@ -2,31 +2,38 @@ name: Market Lines Capture
 
 on:
   schedule:
-    - cron: '0 14 * * *'         # 6 AM PST — opening lines posted by now
     - cron: '0 15-23,0-4 * * *'  # hourly pregame window
     - cron: '0 5 * * *'          # 9 PM PST — postgame/closing
+  workflow_run:
+    workflows: ["CBB Predictions Rolling"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       mode:
         description: 'Capture mode'
         default: 'pregame'
 
-
+# Standardized concurrency group to prevent race conditions across all pipeline workflows
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: cbb-data-pipeline
   cancel-in-progress: false
 
 jobs:
   capture:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # Standard checkout step
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
+      # Pattern 4: Rewritten Set up Python (must be before download)
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
+      # Pattern 4: Rewritten Download predictions artifact (must be after setup-python)
+      # Standardized name: cbb-predictions-rolling-latest
       - name: Download predictions artifact
         uses: actions/download-artifact@v4
         with:
@@ -35,74 +42,81 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - name: Fallback restore predictions artifact from git
+      # Pattern 1: Verify artifact or bootstrap from git history
+      - name: Verify predictions artifact or bootstrap from git
         run: |
-          for f in data/predictions_latest.csv data/predictions_combined_latest.csv data/ensemble_predictions_latest.csv; do
+          for f in data/predictions_latest.csv data/predictions_combined_latest.csv; do
             if [ ! -s "$f" ]; then
-              git show HEAD:"$f" > "$f" 2>/dev/null || true
+              echo "[WARN] $f missing from artifact — attempting git restore"
+              git show HEAD:"$f" > "$f" 2>/dev/null && \
+                echo "[OK] Restored $f from git" || \
+                echo "[WARN] $f not in git either"
             fi
           done
 
+      # Pattern 5: Install dependencies with import guards
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          python -c "import pandas, numpy, requests, scipy" || \
+            { echo "[ERROR] Core dependency import failed"; exit 1; }
 
+      # Pattern 6: Bootstrap empty files (headers if missing)
       - name: Initialize data directory
         run: |
           mkdir -p data
-
-          # Show what the artifact download provided
-          echo "=== Files available after artifact download ==="
-          ls -lh data/predictions*.csv 2>/dev/null || \
-            echo "[INFO] No prediction files found (market_lines.py will use ESPN directly)"
-          ls -lh data/market_lines.csv 2>/dev/null || \
-            echo "[INFO] No existing market_lines.csv found"
-
-          # Initialize empty market_lines.csv on first run
           if [ ! -f data/market_lines.csv ]; then
             echo "event_id,capture_type,captured_at_utc,home_spread_open,home_spread_current,line_movement,total_open,total_current,pinnacle_spread,draftkings_spread,home_tickets_pct,away_tickets_pct,home_money_pct,away_money_pct,steam_flag,rlm_flag,rlm_sharp_side,rlm_note,book_disagreement_flag,book_spread_diff,book_sharp_side,line_freeze_flag" > data/market_lines.csv
             echo "[INIT] Created empty market_lines.csv with headers"
           fi
 
-      - name: Capture market lines
+      # Execute market lines capture
+      - name: Run ingestion/market_lines.py
         run: |
           MODE="${{ github.event.inputs.mode }}"
           if [ -z "$MODE" ]; then
             HOUR=$(date -u +%H)
-            if [ "$HOUR" = "14" ]; then MODE="morning"
-            elif [ "$HOUR" = "05" ]; then MODE="postgame"
+            if [ "$HOUR" = "05" ]; then MODE="postgame"
             else MODE="pregame"
             fi
+            # If triggered by workflow_run, use 'morning' mode
+            if [ "${{ github.event_name }}" = "workflow_run" ]; then MODE="morning"; fi
           fi
           python -m ingestion.market_lines --mode "$MODE"
 
-      - name: Build predictions with context
+      # Pattern 2: Validate market_lines.csv is non-empty
+      - name: Validate market lines output
+        run: |
+          check_csv() {
+            local f="$1" min_rows="${2:-1}"
+            if [ ! -f "$f" ]; then
+              echo "[ERROR] $f was not created"; exit 1
+            fi
+            local rows=$(( $(wc -l < "$f") - 1 ))
+            if [ "$rows" -lt "$min_rows" ]; then
+              echo "[ERROR] $f has $rows data rows (minimum: $min_rows)"; exit 1
+            fi
+            echo "[OK] $f: $rows rows"
+          }
+          check_csv data/market_lines.csv 1
+
+      # Run enrichment
+      - name: Run enrichment/predictions_with_context.py
         run: python -m enrichment.predictions_with_context
 
-      - name: Verify capture outputs before upload
+      # Pattern 2: Validate predictions_with_context.csv
+      - name: Validate predictions_with_context output
         run: |
-          test -f data/market_lines.csv || { echo "[ERROR] data/market_lines.csv was not created"; exit 1; }
-
-          line_count=$(wc -l < data/market_lines.csv)
-          if [ "$line_count" -le 1 ]; then
-            echo "[WARN] market_lines capture produced no data rows (line_count=$line_count)"
-            exit 0
+          if [ -f data/predictions_with_context.csv ]; then
+            rows=$(( $(wc -l < data/predictions_with_context.csv) - 1 ))
+            echo "[OK] predictions_with_context.csv: $rows rows"
+          else
+            echo "[ERROR] data/predictions_with_context.csv was not created"; exit 1
           fi
 
-          files_to_upload=0
-          for f in data/market_lines.csv data/market_lines_latest.csv data/odds_snapshot.csv; do
-            if [ -s "$f" ]; then
-              files_to_upload=$((files_to_upload + 1))
-            fi
-          done
-
-          if [ "$files_to_upload" -eq 0 ]; then
-            echo "[ERROR] No market-lines artifact files were generated"
-            exit 1
-          fi
-
-          ls -lah data/market_lines.csv data/market_lines_latest.csv data/odds_snapshot.csv 2>/dev/null || true
-
+      # Pattern 10: Upload artifacts even on failure
       - name: Upload market lines artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cbb-market-lines
@@ -111,50 +125,35 @@ jobs:
             data/market_lines_latest.csv
             data/odds_snapshot.csv
           retention-days: 7
-          if-no-files-found: error
 
+      # Pattern 10: Upload predictions-with-context artifact
       - name: Upload predictions-with-context artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cbb-predictions-with-context
           path: data/predictions_with_context.csv
           retention-days: 30
 
-      - name: Commit market lines to repository
+      # Pattern 9: Standardized commit step with retry logic
+      - name: Commit to repo
         if: always()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin \
-            https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-
-          git add data/market_lines.csv \
-                  data/predictions_with_context.csv \
-                  2>/dev/null || true
-
+          git add data/
           if git diff --staged --quiet; then
-            echo "[SKIP] No market line changes to commit"
+            echo "[SKIP] No changes to commit"
             exit 0
           fi
-
-          MAX_RETRIES=3
-          for i in $(seq 1 5); do
+          git commit -m "market: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
+          for i in 1 2 3 4 5; do
             git fetch origin main
             git rebase -X ours origin/main --no-stat 2>&1 || {
               git rebase --abort 2>/dev/null || true
-              git merge origin/main -X ours --no-edit 2>&1 || true
+              git merge origin/main -X ours --no-edit
             }
-            git add data/market_lines.csv \
-                    data/predictions_with_context.csv \
-                    2>/dev/null || true
-            if git diff --staged --quiet; then
-              echo "[SKIP] Nothing to commit after merge"
-              exit 0
-            fi
-            git commit -m "market: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]" || true
-            git push origin HEAD:main && { echo "Push OK attempt $i"; exit 0; }
+            git push origin HEAD:main && { echo "[OK] Push succeeded attempt $i"; exit 0; }
             sleep $((i * 3))
           done
-          echo "[WARN] Could not push market lines — will retry next capture"
+          echo "[WARN] Push failed after 5 attempts"
