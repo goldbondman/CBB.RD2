@@ -370,6 +370,17 @@ def _enrich_win_probabilities(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[null_source, "win_prob_source"] = "model_implied"
     return df
 
+
+def _fill_first_numeric(df: pd.DataFrame, target_col: str, source_cols: list[str]) -> pd.DataFrame:
+    """Fill target column by taking the first non-null numeric value across source columns."""
+    merged = pd.Series(float("nan"), index=df.index, dtype="float64")
+    for col in source_cols:
+        if col in df.columns:
+            numeric = pd.to_numeric(df[col], errors="coerce")
+            merged = merged.fillna(numeric)
+    df[target_col] = merged
+    return df
+
 def build_predictions_with_context(
     predictions_path: Path = OUT_PREDICTIONS_COMBINED,
     out_path: Path = OUT_PREDICTIONS_CONTEXT,
@@ -879,6 +890,39 @@ def build_predictions_with_context(
         )
         df["market_evaluated"] = False
 
+    # Recover model spread before any downstream computed columns.
+    if "pred_spread" not in df.columns or df["pred_spread"].isna().all():
+        if "ens_ens_spread" in df.columns:
+            df["pred_spread"] = pd.to_numeric(df["ens_ens_spread"], errors="coerce")
+            log.warning("pred_spread was null — recovered from ens_ens_spread")
+        elif "predicted_spread" in df.columns:
+            df["pred_spread"] = pd.to_numeric(df["predicted_spread"], errors="coerce")
+
+    pred_spread_series = pd.to_numeric(df.get("pred_spread"), errors="coerce")
+    if pred_spread_series.notna().any():
+        top_counts = pred_spread_series.value_counts(dropna=True)
+        top_val = float(top_counts.index[0])
+        top_n = int(top_counts.iloc[0])
+        if top_n / len(df) >= 0.5:
+            log.warning(
+                "Data integrity check: dominant pred_spread %.2f appears in %d/%d rows",
+                top_val,
+                top_n,
+                len(df),
+            )
+
+    # Canonical market aliases for downstream calculations.
+    df = _fill_first_numeric(
+        df,
+        "spread_line",
+        ["spread_line", "home_spread_current", "market_spread", "home_spread_open", "spread"],
+    )
+    df = _fill_first_numeric(
+        df,
+        "total_line",
+        ["total_line", "over_under", "total_current", "total_open", "total"],
+    )
+
     pred_col = (
         "pred_spread" if "pred_spread" in df.columns
         else "ens_ens_spread"
@@ -890,7 +934,7 @@ def build_predictions_with_context(
 
         # Build _line using fillna chaining — never use `or` with Series
         _line = pd.Series(dtype=float)
-        for _lcol in ["spread_line", "home_spread_current"]:
+        for _lcol in ["spread_line", "home_spread_current", "market_spread", "home_spread_open"]:
             if _lcol in df.columns:
                 _s = pd.to_numeric(df[_lcol], errors="coerce")
                 if _line.empty:
@@ -1025,14 +1069,6 @@ def build_predictions_with_context(
             df["conference_name"] = df["conference"]
         else:
             df["conference_name"] = ""
-
-    # Protect pred_spread from being overwritten by market spread.
-    if "pred_spread" not in df.columns or df["pred_spread"].isna().all():
-        if "ens_ens_spread" in df.columns:
-            df["pred_spread"] = df["ens_ens_spread"]
-            log.warning("pred_spread was null — recovered from ens_ens_spread")
-        elif "predicted_spread" in df.columns:
-            df["pred_spread"] = df["predicted_spread"]
 
     if "spread" in df.columns and "pred_spread" in df.columns:
         if df["pred_spread"].notna().any():
