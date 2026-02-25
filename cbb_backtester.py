@@ -366,6 +366,13 @@ def load_completed_games(game_log: pd.DataFrame) -> pd.DataFrame:
 
     games = games.drop_duplicates("event_id")
     log.info(
+        "load_completed_games: %d rows | %d unique home_team_ids | "
+        "sample: %s",
+        len(games),
+        games["home_team_id"].nunique(),
+    log.info(f"Completed games: {len(games):,}")
+
+    log.info(
         "load_completed_games: %d rows loaded | %d unique home_team_ids | "
         "%d unique away_team_ids | sample home_team_id values: %s",
         len(games),

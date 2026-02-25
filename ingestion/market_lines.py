@@ -87,6 +87,13 @@ MARKET_LINES_SCHEMA_COLUMNS = [
 ]
 
 
+def bootstrap_market_lines_schema(data_dir: Path) -> Path:
+    """Ensure market_lines.csv exists and has required schema columns."""
+    market_path = data_dir / "market_lines.csv"
+    market_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if market_path.exists():
+        df = pd.read_csv(market_path, dtype={"event_id": str}, low_memory=False)
 def bootstrap_market_lines_schema(path: str | Path) -> Path:
     """Ensure market_lines.csv exists and has required schema columns."""
     market_path = Path(path)
@@ -594,6 +601,7 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
     today = override_date or date.today()
     log.info("Market capture mode=%s date=%s", mode, today)
 
+    market_path = bootstrap_market_lines_schema(data_dir)
     market_path = bootstrap_market_lines_schema(data_dir / "market_lines.csv")
     existing = pd.read_csv(market_path, dtype={"event_id": str}) if market_path.exists() else pd.DataFrame()
     existing = normalize_numeric_dtypes(existing)

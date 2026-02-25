@@ -1207,31 +1207,41 @@ def load_team_profiles(
     df = df.drop_duplicates("team_id", keep="last")
 
     # Try efficiency columns in confirmed priority order.
-    # team_game_weighted.csv uses adj_net_rtg (confirmed by run log).
-    # net_eff is the fallback for other source files.
     _team_agg: dict[str, float] = {}
+    _team_o_agg: dict[str, float] = {}
+    _team_d_agg: dict[str, float] = {}
+    _team_t_agg: dict[str, float] = {}
+
+    _agg_col = next((c for c in ["adj_net_rtg", "net_eff", "net_rtg", "cage_em"] if c in df_all.columns), None)
+    _o_col = next((c for c in ["adj_ortg", "ortg", "off_rtg", "off_eff", "cage_o"] if c in df_all.columns), None)
+    _d_col = next((c for c in ["adj_drtg", "drtg", "def_rtg", "def_eff", "cage_d"] if c in df_all.columns), None)
+    _t_col = next((c for c in ["adj_pace", "pace", "poss", "possessions", "cage_t"] if c in df_all.columns), None)
     _agg_candidates = ["adj_net_rtg", "net_eff", "net_rtg", "cage_em"]
     _agg_col = next((c for c in _agg_candidates if c in df_all.columns), None)
 
     if _agg_col and "team_id" in df_all.columns:
-        _agg = (
-            pd.to_numeric(df_all[_agg_col], errors="coerce")
-            .groupby(df_all["team_id"].astype(str))
-            .mean()
-        )
-        _team_agg = _agg.dropna().to_dict()
+        _team_agg = pd.to_numeric(df_all[_agg_col], errors="coerce").groupby(df_all["team_id"].astype(str)).mean().dropna().to_dict()
+    if _o_col and "team_id" in df_all.columns:
+        _team_o_agg = pd.to_numeric(df_all[_o_col], errors="coerce").groupby(df_all["team_id"].astype(str)).mean().dropna().to_dict()
+    if _d_col and "team_id" in df_all.columns:
+        _team_d_agg = pd.to_numeric(df_all[_d_col], errors="coerce").groupby(df_all["team_id"].astype(str)).mean().dropna().to_dict()
+    if _t_col and "team_id" in df_all.columns:
+        _team_t_agg = pd.to_numeric(df_all[_t_col], errors="coerce").groupby(df_all["team_id"].astype(str)).mean().dropna().to_dict()
+
+    if _agg_col:
         _non_zero = sum(1 for v in _team_agg.values() if v != 0.0)
         log.info(
-            "Season %s aggregated: %d teams, %d non-zero "
-            "(range: %.1f to %.1f)",
+            "[DIAG] load_team_profiles | Season %s aggregated: %d teams, %d non-zero (range: %.1f to %.1f)",
             _agg_col, len(_team_agg), _non_zero,
             min(_team_agg.values()) if _team_agg else 0,
             max(_team_agg.values()) if _team_agg else 0,
         )
     else:
         log.warning(
-            "No net efficiency column found for cage_em aggregation. "
+            "[DIAG] No net efficiency column found for cage_em aggregation. "
             "All cage_em will be 0.0. Columns checked: %s. Available: %s",
+            ["adj_net_rtg", "net_eff", "net_rtg", "cage_em"],
+            [c for c in df_all.columns if any(x in c.lower() for x in ["net", "eff", "rtg", "em"])][:15],
             _agg_candidates,
             [c for c in df_all.columns
              if any(x in c.lower() for x in
@@ -1275,8 +1285,12 @@ def load_team_profiles(
                 or 0
             ),
 
-            # Use `tid in _team_agg` not `_team_agg.get(tid) or ...`
+            # Use `tid in _agg` not `_agg.get(tid) or ...`
             # A legitimately zero-efficiency team would be skipped by `or`.
+            cage_em=(_team_agg[tid] if tid in _team_agg else col(row, "adj_net_rtg", "net_eff", "cage_em", "adj_em", default=0.0)),
+            cage_o=(_team_o_agg[tid] if tid in _team_o_agg else col(row, "adj_ortg", "ortg", "off_rtg", "off_eff", "cage_o", default=LEAGUE_AVG_ORTG)),
+            cage_d=(_team_d_agg[tid] if tid in _team_d_agg else col(row, "adj_drtg", "drtg", "def_rtg", "def_eff", "cage_d", default=LEAGUE_AVG_DRTG)),
+            cage_t=(_team_t_agg[tid] if tid in _team_t_agg else col(row, "adj_pace", "pace", "poss", "possessions", "cage_t", default=LEAGUE_AVG_PACE)),
             cage_em=(
                 _team_agg[tid]
                 if tid in _team_agg
@@ -1425,17 +1439,18 @@ def load_team_profiles(
 
     # Log how many teams have non-default cage_em (detects column mismatch)
     non_default = sum(1 for p in profiles.values() if p.cage_em != 0.0)
+    median_games = int(pd.Series(_team_game_count.values()).median()) if _team_game_count else 0
     if non_default == 0:
         log.warning(
-            "ALL %d team profiles have cage_em=0.0 — column name mismatch "
-            "likely. Expected 'adj_net_rtg' or 'net_eff' in source CSV. "
-            "Actual columns: %s",
-            len(profiles),
-            [c for c in df.columns if 'net' in c.lower() or 'eff' in c.lower()][:10],
+            "[DIAG] ALL %d team profiles have cage_em=0.0 — column name mismatch likely. "
+            "Expected 'adj_net_rtg' or 'net_eff' in source CSV. Actual columns: %s",
+            len(profiles), [c for c in df.columns if 'net' in c.lower() or 'eff' in c.lower()][:10],
         )
     else:
         _em_vals = [p.cage_em for p in profiles.values()]
         log.info(
+            "[DIAG] load_team_profiles | cage_em nonzero: %d/%d | games_before median: %d",
+            non_default, len(profiles), median_games
             "Loaded %d team profiles, %d with non-zero cage_em (range: %.1f to %.1f)",
             len(profiles), non_default, min(_em_vals), max(_em_vals)
         )
