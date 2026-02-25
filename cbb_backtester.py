@@ -365,26 +365,8 @@ def load_completed_games(game_log: pd.DataFrame) -> pd.DataFrame:
     games["neutral_site"]  = home.get("neutral_site", pd.Series(0, index=home.index)).values
 
     games = games.drop_duplicates("event_id")
-    # Bugfix: a prior edit injected a nested log.info() call here,
-    # leaving this function with an unclosed parenthesis and breaking runtime.
-    # Keep one valid diagnostic call and then continue normally.
-    log.info(
-        "load_completed_games: %d rows | %d unique home_team_ids | "
-        "sample: %s",
-        len(games),
-        games["home_team_id"].nunique(),
-        games["home_team_id"].dropna().astype(str).head(3).tolist(),
-    )
     log.info(f"Completed games: {len(games):,}")
 
-    log.info(
-        "load_completed_games: %d rows loaded | %d unique home_team_ids | "
-        "%d unique away_team_ids | sample home_team_id values: %s",
-        len(games),
-        games["home_team_id"].nunique(),
-        games["away_team_id"].nunique(),
-        games["home_team_id"].dropna().astype(str).head(3).tolist(),
-    )
     return games.reset_index(drop=True)
 
 
@@ -1280,8 +1262,6 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
     agg_spec = {
         "team": ("team", "last"),
         "conference": ("conference", "last"),
-        "wins": ("wins", "last"),
-        "losses": ("losses", "last"),
         "wins": ("win", "sum"),
         "losses": ("loss_flag", "sum"),
         "home_wins": ("home_win_flag", "sum"),
@@ -1369,8 +1349,9 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
     if "avg_opp_net_rtg" not in base.columns or base["avg_opp_net_rtg"].isna().all():
         log.warning("build_team_backtest_csv: avg_opp_net_rtg (opp_avg_net_rtg_season) is missing post-merge")
 
-    base["ats_pct_l10"] = grouped["cover"].apply(lambda s: (s.tail(10) == 1).mean()).values
-    base["ats_pct_l20"] = grouped["cover"].apply(lambda s: (s.tail(20) == 1).mean()).values
+    ats_l10 = grouped["cover"].apply(lambda s: (s.tail(10) == 1).mean()).rename("ats_pct_l10")
+    ats_l20 = grouped["cover"].apply(lambda s: (s.tail(20) == 1).mean()).rename("ats_pct_l20")
+    base = base.merge(ats_l10, on="team_id", how="left").merge(ats_l20, on="team_id", how="left")
     base["ortg_trend"] = pd.to_numeric(base["ortg_l5"], errors="coerce") - pd.to_numeric(base["ortg_l10"], errors="coerce")
     base["drtg_trend"] = pd.to_numeric(base["drtg_l5"], errors="coerce") - pd.to_numeric(base["drtg_l10"], errors="coerce")
     base["net_rtg_trend"] = pd.to_numeric(base["net_rtg_l5"], errors="coerce") - pd.to_numeric(base["net_rtg_l10"], errors="coerce")
@@ -1572,9 +1553,10 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
     latest_results_path = output_dir / "backtest_results_latest.csv"
     safe_write_csv(records, latest_results_path, index=False, label="backtest_results_latest", allow_empty=False)
 
-    # Prediction records also go to predictions_with_context.csv (Q4)
-    context_path = output_dir / "predictions_with_context.csv"
-    safe_write_csv(records, context_path, index=False, label="predictions_with_context", allow_empty=False)
+    # Prediction records should NOT go to predictions_with_context.csv as it overwrites enrichment output
+    # Rename to backtest_predictions_with_context.csv if needed for debugging
+    context_path = output_dir / "backtest_predictions_with_context.csv"
+    safe_write_csv(records, context_path, index=False, label="backtest_predictions_with_context", allow_empty=False)
 
     outputs["results"] = results_path
     outputs["results_latest"] = latest_results_path
@@ -1780,10 +1762,17 @@ def grade_historical_predictions(data_dir: Path = DATA_DIR) -> Tuple[pd.DataFram
         return pd.DataFrame(), pd.DataFrame()
 
     wg = pd.read_csv(weighted_path, low_memory=False)
+    if "event_id" not in wg.columns:
+        log.error("Missing event_id in weighted games file")
+        return pd.DataFrame(), pd.DataFrame()
     wg["event_id"] = wg["event_id"].astype(str)
     wg["game_datetime_utc"] = pd.to_datetime(wg["game_datetime_utc"], errors="coerce", utc=True)
 
-    home_rows = wg[wg.get("home_away", "").astype(str).str.lower().eq("home")].copy()
+    if "home_away" in wg.columns:
+        home_rows = wg[wg["home_away"].astype(str).str.lower().eq("home")].copy()
+    else:
+        home_rows = wg.copy()
+
     if home_rows.empty:
         home_rows = wg.copy()
 

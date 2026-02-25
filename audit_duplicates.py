@@ -16,8 +16,14 @@ PRIMARY_KEYS = {
     'games.csv': ['game_id'],
 }
 
+import sys
+
 issues = []
 for path in sorted(pathlib.Path('data').rglob('*.csv')):
+    # Skip if in data/csv/ to avoid duplication with data/
+    if 'data/csv' in str(path.as_posix()):
+        continue
+
     try:
         df = pd.read_csv(path, low_memory=False)
     except Exception as exc:
@@ -51,7 +57,7 @@ for path in sorted(pathlib.Path('data').rglob('*.csv')):
         if len(full_dupes) > 0:
             issues.append({
                 'file': str(path),
-                'pk_cols': 'all columns',
+                'pk_cols': ['ALL_COLUMNS'],
                 'duplicate_rows': int(len(full_dupes)),
                 'severity': 'WARNING',
             })
@@ -59,3 +65,10 @@ for path in sorted(pathlib.Path('data').rglob('*.csv')):
 
 print(f"\nTotal files with duplicates: {len(issues)}")
 pathlib.Path('data/duplicate_audit.json').write_text(json.dumps(issues, indent=2))
+
+critical_issues = [i for i in issues if i['severity'] == 'CRITICAL']
+if critical_issues:
+    print(f"[FAIL] {len(critical_issues)} critical duplicate issues found.")
+    sys.exit(1)
+else:
+    sys.exit(0)

@@ -74,18 +74,24 @@ def fit_calibration(df: pd.DataFrame) -> dict:
         "calibration_table": calibration_table,
         "iso_x_thresholds": iso.X_thresholds_.tolist(),
         "iso_y_thresholds": [round(v * 100, 2) for v in iso.y_thresholds_.tolist()],
-        "fitted_at_utc": pd.Timestamp.utcnow().isoformat(),
-        "note": "Apply via np.interp(raw, iso_x_thresholds, iso_y_thresholds)",
+        "fitted_at_utc": pd.Timestamp.now('UTC').isoformat(),
+        "note": "Apply via np.interp(raw_50_100, iso_x_thresholds, iso_y_thresholds)",
     }
 
 
 def apply_calibration_example(raw_confidence: float, cal_data: dict) -> float:
+    """Example of applying calibration. Input raw_confidence is 0-1 scale."""
     if not cal_data.get("calibrated"):
         return raw_confidence
 
     iso_x = cal_data["iso_x_thresholds"]
     iso_y = cal_data["iso_y_thresholds"]
-    return float(np.interp(raw_confidence * 100, iso_x, iso_y)) / 100
+
+    # Input may be 0.65 (0-1) or 65 (50-100). Standardize to 50-100 for interpolation.
+    raw_scaled = raw_confidence * 100 if raw_confidence <= 1.0 else raw_confidence
+
+    cal_scaled = float(np.interp(raw_scaled, iso_x, iso_y))
+    return cal_scaled / 100
 
 
 def main() -> None:
@@ -103,7 +109,12 @@ def main() -> None:
         return
 
     df = pd.read_csv(graded_path, dtype={"event_id": str})
-    graded = df[df.get("graded", False) == True].copy()
+
+    if "graded" in df.columns:
+        graded = df[df["graded"] == True].copy()
+    else:
+        graded = df.copy()
+
     log.info("Graded predictions loaded: %s", len(graded))
 
     cal_data = fit_calibration(graded)

@@ -158,6 +158,7 @@ def _load(path: pathlib.Path, label: str = "") -> Optional[pd.DataFrame]:
 
 def _write(df: pd.DataFrame, path: pathlib.Path, label: str, dry_run: bool = False) -> int:
     """Write CSV; return row count."""
+    df = df.copy()
     df["generated_at"] = NOW_ISO
     n = len(df)
     if dry_run:
@@ -338,7 +339,11 @@ def compute_period_stats(df: pd.DataFrame, label: str) -> dict:
     graded_ats = df[df["ats_result"].isin(["WIN", "LOSS"])]
     graded_ou  = df[df["ou_result"].isin(["WIN", "LOSS"])]
     graded_ml  = df[df["winner_correct"].notna()]
-    edge_games = graded_ats[graded_ats.get("edge_flag", pd.Series(dtype=float)).eq(1)] if "edge_flag" in df.columns else pd.DataFrame()
+
+    if "edge_flag" in df.columns:
+        edge_games = graded_ats[graded_ats["edge_flag"].eq(1)]
+    else:
+        edge_games = pd.DataFrame()
 
     high_conf = graded_ats[graded_ats["model_confidence"] >= 0.75] if "model_confidence" in graded_ats.columns else pd.DataFrame()
 
@@ -421,6 +426,7 @@ def _detect_sub_model_source(df: pd.DataFrame):
 
     # Fallback: use confidence quintiles as proxy
     if "model_confidence" in df.columns and df["model_confidence"].notna().sum() > 20:
+        print("[WARN] sub_model missing — creating synthetic M1-M7 labels from confidence quintiles")
         df = df.copy()
         df["sub_model"] = pd.qcut(
             df["model_confidence"].rank(method="first"),
@@ -629,7 +635,8 @@ def build_weekly(df: pd.DataFrame) -> pd.DataFrame:
         df["week_label"] = df["_date"].dt.isocalendar().week.astype(str)
 
     # Group by week
-    dates_no_tz = df["_date"].dt.tz_localize(None) if df["_date"].dt.tz is not None else df["_date"]
+    # Handle mixed timezones by converting all to UTC naive if aware
+    dates_no_tz = df["_date"].apply(lambda x: x.tz_convert(None) if x.tzinfo else x)
     df["_week_start"] = dates_no_tz.dt.to_period("W").apply(
         lambda p: p.start_time if pd.notna(p) else pd.NaT
     )
@@ -643,7 +650,10 @@ def build_weekly(df: pd.DataFrame) -> pd.DataFrame:
         if len(ats_g) < MIN_SAMPLE_WEEKLY and len(ml_g) < MIN_SAMPLE_WEEKLY:
             continue
 
-        edge_g = ats_g[ats_g.get("edge_flag", pd.Series(dtype=float)).eq(1)] if "edge_flag" in wdf.columns else pd.DataFrame()
+        if "edge_flag" in wdf.columns:
+            edge_g = ats_g[ats_g["edge_flag"].eq(1)]
+        else:
+            edge_g = pd.DataFrame()
 
         row = {
             "week_label":       wl,
@@ -708,7 +718,10 @@ def build_by_conference(df: pd.DataFrame) -> pd.DataFrame:
         if len(ats_g) < MIN_SAMPLE_CONF:
             continue
 
-        edge_g = ats_g[ats_g.get("edge_flag", pd.Series(dtype=float)).eq(1)] if "edge_flag" in cdf.columns else pd.DataFrame()
+        if "edge_flag" in cdf.columns:
+            edge_g = ats_g[ats_g["edge_flag"].eq(1)]
+        else:
+            edge_g = pd.DataFrame()
 
         # Best/worst model in this conference
         best_model = worst_model = None
@@ -858,11 +871,37 @@ def build_by_edge(df: pd.DataFrame) -> pd.DataFrame:
 
 def build_model_matrix(df: pd.DataFrame) -> pd.DataFrame:
     """Build Section H: head-to-head model comparison."""
-    if "sub_model" not in df.columns:
-        print("[WARN] No sub_model column — cannot build model matrix")
-        return pd.DataFrame()
+    work = df.copy()
 
-    ats_g = df[df["ats_result"].isin(["WIN", "LOSS"])]
+    # Identify if we need to melt columns (per-game format with M1..M7 spreads as columns)
+    model_cols = [f"{m.lower()}_spread" for m in MODELS.keys()]
+    present_cols = [c for c in model_cols if c in work.columns]
+
+    if present_cols and ("sub_model" not in work.columns or work["sub_model"].isna().all()):
+        if "game_id" not in work.columns:
+            print("[WARN] Cannot build model matrix without game_id column for wide format")
+            return pd.DataFrame()
+
+        melted = []
+        for m_id in MODELS.keys():
+            m_col = f"{m_id.lower()}_spread"
+            if m_col in work.columns:
+                m_df = work.copy()
+                m_df["pred_spread"] = m_df[m_col]
+                # Re-grade just for this sub-model to get its specific ats_result
+                grading = m_df.apply(grade_prediction, axis=1, result_type="expand")
+                m_df["ats_result"] = grading["ats_result"]
+                m_df["sub_model"] = m_id
+                melted.append(m_df[["game_id", "sub_model", "ats_result"]])
+
+        ats_g = pd.concat(melted)
+        ats_g = ats_g[ats_g["ats_result"].isin(["WIN", "LOSS"])]
+    else:
+        if "sub_model" not in work.columns:
+            print("[WARN] No sub_model column — cannot build model matrix")
+            return pd.DataFrame()
+        ats_g = work[work["ats_result"].isin(["WIN", "LOSS"])]
+
     available_models = sorted(set(ats_g["sub_model"].dropna()) & set(MODELS.keys()))
 
     if len(available_models) < 2:
@@ -871,15 +910,10 @@ def build_model_matrix(df: pd.DataFrame) -> pd.DataFrame:
 
     rows = []
     for ma, mb in combinations(available_models, 2):
-        # Games where both models made predictions
-        ma_games = set(ats_g[ats_g["sub_model"] == ma].index)
-        mb_games = set(ats_g[ats_g["sub_model"] == mb].index)
-
-        # Since sub_model is per-row, they won't share indices.
-        # Instead, compare based on game_id if available
         if "game_id" in ats_g.columns:
-            ma_df = ats_g[ats_g["sub_model"] == ma].set_index("game_id")
-            mb_df = ats_g[ats_g["sub_model"] == mb].set_index("game_id")
+            # Drop duplicates to ensure one entry per game per model
+            ma_df = ats_g[ats_g["sub_model"] == ma].drop_duplicates("game_id").set_index("game_id")
+            mb_df = ats_g[ats_g["sub_model"] == mb].drop_duplicates("game_id").set_index("game_id")
             common_ids = ma_df.index.intersection(mb_df.index)
 
             if len(common_ids) == 0:
@@ -892,19 +926,21 @@ def build_model_matrix(df: pd.DataFrame) -> pd.DataFrame:
                 })
                 continue
 
-            ma_picks = ma_df.loc[common_ids, "ats_result"]
-            mb_picks = mb_df.loc[common_ids, "ats_result"]
+            ma_res = ma_df.loc[common_ids, "ats_result"]
+            mb_res = mb_df.loc[common_ids, "ats_result"]
 
-            agree = (ma_picks == mb_picks).sum()
+            # Agreement: both WIN or both LOSS
+            agree = (ma_res == mb_res).sum()
             agreement_rate = round(float(agree / len(common_ids)), 4)
-            disagree_mask = ma_picks != mb_picks
+
+            disagree_mask = ma_res != mb_res
             n_disagree = int(disagree_mask.sum())
 
             a_wins = b_wins = None
             better = None
             if n_disagree >= MIN_SAMPLE_MATRIX:
-                a_wins = round(float((ma_picks[disagree_mask] == "WIN").mean()), 4)
-                b_wins = round(float((mb_picks[disagree_mask] == "WIN").mean()), 4)
+                a_wins = round(float((ma_res[disagree_mask] == "WIN").mean()), 4)
+                b_wins = round(float((mb_res[disagree_mask] == "WIN").mean()), 4)
                 if abs(a_wins - b_wins) < MODEL_COMPARISON_EVEN_THRESHOLD:
                     better = "EVEN"
                 elif a_wins > b_wins:

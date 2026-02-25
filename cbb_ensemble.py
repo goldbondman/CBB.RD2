@@ -66,7 +66,6 @@ from cbb_config import (
     DEFAULT_TOTAL_WEIGHTS,
     WEIGHTS_PATH,
 )
-from espn_config import get_game_tier
 
 log = logging.getLogger(__name__)
 
@@ -1219,12 +1218,11 @@ def load_team_profiles(
     _team_d_agg: dict[str, float] = {}
     _team_t_agg: dict[str, float] = {}
 
-    _agg_col = next((c for c in ["adj_net_rtg", "net_eff", "net_rtg", "cage_em"] if c in df_all.columns), None)
+    _agg_candidates = ["adj_net_rtg", "net_eff", "net_rtg", "cage_em"]
+    _agg_col = next((c for c in _agg_candidates if c in df_all.columns), None)
     _o_col = next((c for c in ["adj_ortg", "ortg", "off_rtg", "off_eff", "cage_o"] if c in df_all.columns), None)
     _d_col = next((c for c in ["adj_drtg", "drtg", "def_rtg", "def_eff", "cage_d"] if c in df_all.columns), None)
     _t_col = next((c for c in ["adj_pace", "pace", "poss", "possessions", "cage_t"] if c in df_all.columns), None)
-    _agg_candidates = ["adj_net_rtg", "net_eff", "net_rtg", "cage_em"]
-    _agg_col = next((c for c in _agg_candidates if c in df_all.columns), None)
 
     if _agg_col and "team_id" in df_all.columns:
         _team_agg = pd.to_numeric(df_all[_agg_col], errors="coerce").groupby(df_all["team_id"].astype(str)).mean().dropna().to_dict()
@@ -1247,12 +1245,8 @@ def load_team_profiles(
         log.warning(
             "[DIAG] No net efficiency column found for cage_em aggregation. "
             "All cage_em will be 0.0. Columns checked: %s. Available: %s",
-            ["adj_net_rtg", "net_eff", "net_rtg", "cage_em"],
-            [c for c in df_all.columns if any(x in c.lower() for x in ["net", "eff", "rtg", "em"])][:15],
             _agg_candidates,
-            [c for c in df_all.columns
-             if any(x in c.lower() for x in
-                    ["net", "eff", "rtg", "em"])][:15],
+            [c for c in df_all.columns if any(x in c.lower() for x in ["net", "eff", "rtg", "em"])][:15],
         )
 
     profiles: Dict[str, TeamProfile] = {}
@@ -1268,27 +1262,27 @@ def load_team_profiles(
                 continue
         return default
 
+    def _g(row, col, default=0.0):
+        v = row.get(col, default)
+        try:
+            return float(v) if pd.notna(v) else default
+        except (TypeError, ValueError):
+            return default
+
     for _, row in df.iterrows():
         tid = str(row.get("team_id", ""))
         if not tid:
             continue
-
-        def g(col, default=0.0):
-            v = row.get(col, default)
-            try:
-                return float(v) if pd.notna(v) else default
-            except (TypeError, ValueError):
-                return default
 
         tp = TeamProfile(
             team_id=tid,
             team_name=str(row.get("team", "")),
             conference=str(row.get("conference", "")),
             games_before=(
-                int(g("wins", 0) + g("losses", 0))
+                int(_g(row, "wins", 0) + _g(row, "losses", 0))
                 or _team_game_count.get(tid)
-                or int(g("games_played", 0))
-                or int(g("game_number", 0))
+                or int(_g(row, "games_played", 0))
+                or int(_g(row, "game_number", 0))
                 or 0
             ),
 
@@ -1383,7 +1377,7 @@ def load_team_profiles(
                 "pythagorean_win_pct",
                 "pyth_win_pct",
                 "pyth_wp",
-                default=g("wins", 0) / max(1.0, g("wins", 0) + g("losses", 0)),
+                default=_g(row, "wins", 0) / max(1.0, _g(row, "wins", 0) + _g(row, "losses", 0)),
             ),
             actual_win_pct=col(row, "season_win_pct", "win_pct", default=0.5),
             home_wpct=col(row, "home_win_pct", "home_wp", default=0.65),
@@ -1457,9 +1451,12 @@ def _coalesce_pred_spread(df: pd.DataFrame) -> pd.DataFrame:
     Never silently writes a fully-null pred_spread column.
     """
     if "pred_spread" not in df.columns or df["pred_spread"].isna().all():
-        for alias in ["ens_ens_spread", "predicted_spread", "ensemble_spread"]:
+        # Try to find a source for pred_spread
+        source_found = False
+        for alias in ["ens_ens_spread", "predicted_spread", "ensemble_spread", "ens_spread"]:
             if alias in df.columns and df[alias].notna().any():
                 df["pred_spread"] = df[alias]
+                source_found = True
                 log.warning(
                     "[INTEGRITY] pred_spread was null — recovered from '%s' (%d rows)",
                     alias, df["pred_spread"].notna().sum()
@@ -1474,13 +1471,20 @@ def _coalesce_pred_spread(df: pd.DataFrame) -> pd.DataFrame:
             )
 
     # Final gate — raise if still null after recovery attempts
-    if df["pred_spread"].isna().all():
+    if "pred_spread" not in df.columns or df["pred_spread"].isna().all():
         raise RuntimeError(
-            "pred_spread is fully null after all recovery attempts. "
+            "pred_spread is missing or fully null after all recovery attempts. "
             "Cannot write predictions file with no spread values."
         )
 
     null_pct = df["pred_spread"].isna().mean() * 100
+
+    if null_pct > 50:
+        raise RuntimeError(
+            f"pred_spread is {null_pct:.0f}% null after all recovery attempts. "
+            "Integrity gate failed (>50% null)."
+        )
+
     if null_pct > 10:
         log.warning(
             "[INTEGRITY] pred_spread is %.0f%% null after coalesce — "
