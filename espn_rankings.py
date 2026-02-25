@@ -639,6 +639,72 @@ def compute_conference_strength(df: pd.DataFrame) -> pd.DataFrame:
     return conf_df.reset_index()
 
 
+def compute_season_aggregates(game_log: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compute season-level aggregates from the full team game log.
+    Returns DataFrame indexed by team_id.
+    """
+    agg_cols = [
+        "wins", "losses",
+        "home_wins", "home_losses",
+        "away_wins", "away_losses",
+        "sos_computed", "opp_efg_pct_computed",
+    ]
+    if game_log.empty or "team_id" not in game_log.columns:
+        return pd.DataFrame(columns=agg_cols)
+
+    gl = game_log.copy()
+    gl["team_id"] = gl["team_id"].astype(str)
+
+    gl["win_num"] = pd.to_numeric(gl.get("win", np.nan), errors="coerce")
+    gl["played"] = gl["win_num"].notna().astype(float)
+
+    if "home_away" in gl.columns:
+        gl["is_home"] = gl["home_away"].astype(str).str.lower().eq("home")
+    else:
+        gl["is_home"] = False
+
+    gl["home_played"] = (gl["played"] * gl["is_home"].astype(float))
+    gl["away_played"] = (gl["played"] * (~gl["is_home"]).astype(float))
+    gl["home_win_num"] = gl["win_num"].fillna(0) * gl["is_home"].astype(float)
+    gl["away_win_num"] = gl["win_num"].fillna(0) * (~gl["is_home"]).astype(float)
+
+    grouped = gl.groupby("team_id", dropna=False)
+    season_agg = pd.DataFrame(index=grouped.size().index)
+    season_agg["wins"] = grouped["win_num"].sum(min_count=1)
+    season_agg["losses"] = grouped["played"].sum() - season_agg["wins"]
+    season_agg["home_wins"] = grouped["home_win_num"].sum()
+    season_agg["home_losses"] = grouped["home_played"].sum() - season_agg["home_wins"]
+    season_agg["away_wins"] = grouped["away_win_num"].sum()
+    season_agg["away_losses"] = grouped["away_played"].sum() - season_agg["away_wins"]
+
+    sos_primary = pd.Series(np.nan, index=season_agg.index)
+    if "opp_avg_net_rtg_season" in gl.columns:
+        opp_net = pd.to_numeric(gl["opp_avg_net_rtg_season"], errors="coerce")
+        if not opp_net.isna().all():
+            sos_primary = opp_net.groupby(gl["team_id"]).mean()
+
+    if sos_primary.isna().all() and "opponent_id" in gl.columns:
+        team_net = pd.to_numeric(gl.get("adj_net_rtg", np.nan), errors="coerce").groupby(gl["team_id"]).mean()
+        opp_ids = gl["opponent_id"].astype(str)
+        sos_primary = opp_ids.map(team_net).groupby(gl["team_id"]).mean()
+    season_agg["sos_computed"] = sos_primary
+
+    opp_efg_primary = pd.Series(np.nan, index=season_agg.index)
+    if "opp_avg_efg_season" in gl.columns:
+        opp_efg = pd.to_numeric(gl["opp_avg_efg_season"], errors="coerce")
+        if not opp_efg.isna().all():
+            opp_efg_primary = opp_efg.groupby(gl["team_id"]).mean()
+
+    if opp_efg_primary.isna().all() and "opponent_id" in gl.columns:
+        team_efg = pd.to_numeric(gl.get("efg_pct", np.nan), errors="coerce").groupby(gl["team_id"]).mean()
+        opp_ids = gl["opponent_id"].astype(str)
+        opp_efg_primary = opp_ids.map(team_efg).groupby(gl["team_id"]).mean()
+    season_agg["opp_efg_pct_computed"] = opp_efg_primary
+
+    return season_agg
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # SECTION 4 — MASTER RANKING BUILDER
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -663,6 +729,33 @@ def build_rankings(
     # Ensure team_id is a column (not index)
     if "team_id" not in df.columns and df.index.name == "team_id":
         df = df.reset_index()
+
+    season_agg = compute_season_aggregates(game_log)
+    overwrite_map = {
+        "wins": "wins",
+        "losses": "losses",
+        "home_wins": "home_wins",
+        "home_losses": "home_losses",
+        "away_wins": "away_wins",
+        "away_losses": "away_losses",
+        "opp_avg_net_rtg_season": "sos_computed",
+        "opp_avg_efg_season": "opp_efg_pct_computed",
+    }
+    df["team_id"] = df["team_id"].astype(str)
+    df = df.set_index("team_id", drop=False)
+    updated_teams = 0
+    if not season_agg.empty:
+        season_agg.index = season_agg.index.astype(str)
+        aligned = season_agg.reindex(df.index)
+        for dst_col, src_col in overwrite_map.items():
+            df[dst_col] = aligned[src_col]
+        updated_teams = int(df.index.isin(season_agg.index).sum())
+    else:
+        for dst_col in overwrite_map:
+            if dst_col not in df.columns:
+                df[dst_col] = np.nan
+    df = df.reset_index(drop=True)
+    log.info(f"Season aggregates applied for {updated_teams} teams")
 
     log.info(f"Building rankings for {len(df)} teams")
 
