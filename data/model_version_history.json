@@ -1,0 +1,17 @@
+[
+  {
+    "model_version_hash": "401dd635",
+    "model_version_full": "401dd63518d48a799ee785ed91b02289e8d950678bfd096bf8ee9ab1c18e2c22",
+    "component_hashes": {
+      "model_weights": "missing",
+      "confidence_calibration": "missing",
+      "model_bias_table": "c4755b29cf39"
+    },
+    "config_snapshot": {
+      "active_bias_corrections": 0,
+      "bias_dimensions": []
+    },
+    "created_at_utc": "2026-02-25T10:55:28.133429+00:00",
+    "pipeline_run_id": "22393718312"
+  }
+]
