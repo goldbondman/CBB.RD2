@@ -87,6 +87,7 @@ MARKET_LINES_SCHEMA_COLUMNS = [
 ]
 
 
+<<<<<<< HEAD
 def bootstrap_market_lines_schema(path: str | Path) -> Path:
     """Ensure market_lines.csv exists and has required schema columns."""
     csv_path = Path(path)
@@ -97,6 +98,15 @@ def bootstrap_market_lines_schema(path: str | Path) -> Path:
 
     if csv_path.exists() and csv_path.stat().st_size > 0:
         df = pd.read_csv(csv_path, dtype={"event_id": str}, low_memory=False)
+=======
+def bootstrap_market_lines_schema(data_dir: Path) -> Path:
+    """Ensure market_lines.csv exists and has required schema columns."""
+    market_path = data_dir / "market_lines.csv"
+    market_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if market_path.exists():
+        df = pd.read_csv(market_path, dtype={"event_id": str}, low_memory=False)
+>>>>>>> 8cfd96c (fix(ingestion): fix duplicate function syntax error and update deprecated pandas api in market_lines.py)
     else:
         df = pd.DataFrame(columns=MARKET_LINES_SCHEMA_COLUMNS)
 
@@ -443,7 +453,7 @@ def build_market_row(
         last_row = prior.iloc[-1]
         last_spread = last_row.get("home_spread_current")
         last_time = pd.Timestamp(last_row["captured_at_utc"])
-        hours_since = (pd.Timestamp.utcnow() - last_time).total_seconds() / 3600
+        hours_since = (pd.Timestamp.now("UTC") - last_time).total_seconds() / 3600
         try:
             move = abs(float(home_spread) - float(last_spread))
             steam_flag = (
@@ -515,7 +525,7 @@ def append_market_rows(new_rows: list[dict], output_path: Path) -> int:
         df_new["verification_status"] = "verified"
     if "verification_notes" not in df_new.columns:
         df_new["verification_notes"] = "matched_espn_event"
-    df_new["capture_hour"] = pd.to_datetime(df_new["captured_at_utc"], utc=True).dt.floor("H")
+    df_new["capture_hour"] = pd.to_datetime(df_new["captured_at_utc"], utc=True).dt.floor("h")
 
     if output_path.exists():
         df_existing = pd.read_csv(output_path, dtype={"event_id": str})
@@ -524,7 +534,7 @@ def append_market_rows(new_rows: list[dict], output_path: Path) -> int:
             if col not in df_existing.columns:
                 df_existing[col] = pd.NA
         if "capture_hour" not in df_existing.columns:
-            df_existing["capture_hour"] = pd.to_datetime(df_existing["captured_at_utc"], utc=True).dt.floor("H").astype(str)
+            df_existing["capture_hour"] = pd.to_datetime(df_existing["captured_at_utc"], utc=True).dt.floor("h").astype(str)
         df_existing["capture_hour"] = df_existing["capture_hour"].astype(str)
         df_new["capture_hour"] = df_new["capture_hour"].astype(str)
 
@@ -552,7 +562,11 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
     today = override_date or date.today()
     log.info("Market capture mode=%s date=%s", mode, today)
 
+<<<<<<< HEAD
     market_path = bootstrap_market_lines_schema(data_dir / "market_lines.csv")
+=======
+    market_path = bootstrap_market_lines_schema(data_dir)
+>>>>>>> 8cfd96c (fix(ingestion): fix duplicate function syntax error and update deprecated pandas api in market_lines.py)
     existing = pd.read_csv(market_path, dtype={"event_id": str}) if market_path.exists() else pd.DataFrame()
     existing = normalize_numeric_dtypes(existing)
 
@@ -703,7 +717,6 @@ def main() -> None:
     args = parser.parse_args()
 
     bootstrap_market_lines_schema(DATA_DIR)
-
     if args.backfill_days > 0:
         for d in range(args.backfill_days, -1, -1):
             target = date.today() - timedelta(days=d)
