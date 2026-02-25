@@ -47,9 +47,9 @@ three_pct_gap,Flags,Recent 3-point percentage (L5) minus season 3-point percenta
 efg_pct,Four Factors,Effective Field Goal percentage — accounts for 3-pointers being worth 50% more than 2-pointers. (FGM + 0.5*3PM) / FGA.,40 – 62%,Pipeline,Dean Oliver's #1 factor (weight: 40%). League average ≈ 50.5%. Elite offense: >55%.
 opp_efg_pct,Four Factors,Opponent Effective Field Goal percentage allowed — defensive eFG% suppression.,40 – 62%,Pipeline (season opponent avg),Lower is better. Elite defense: <46%. Combine with suffocation score for full defensive picture.
 tov_pct,Four Factors,Turnover percentage — turnovers per 100 possessions. Lower is better.,12 – 25%,Pipeline,Oliver's factor #2 (weight: 25%). League average ≈ 18%. Elite: <15%.
-orb_pct,Four Factors,Offensive rebound percentage — share of available offensive rebounds captured.,20 – 45%,Pipeline,Oliver's factor #3 (weight: 20%). High orb_pct = second-chance points machine.
+orb_pct,Four Factors,Offensive rebound percentage — share of available offensive rebounds captured.,20 – 45%,Pipeline,Dean Oliver's #3 factor (weight: 20%). High orb_pct = second-chance points machine.
 drb_pct,Four Factors,Defensive rebound percentage — share of available defensive rebounds captured.,55 – 85%,Pipeline,Complement to orb_pct. Elite defense: drb_pct >75%.
-ftr,Four Factors,Free Throw Rate — free throw attempts per field goal attempt. Measures ability to get to the line.,15 – 50%,Pipeline,Oliver's factor #4 (weight: 15%). High ftr + high ft_pct = free point machine.
+ftr,Four Factors,Free Throw Rate — free throw attempts per field goal attempt. Measures ability to get to the line.,15 – 50%,Pipeline,Dean Oliver's #4 factor (weight: 15%). High ftr + high ft_pct = free point machine.
 three_par,Four Factors,Three-Point Attempt Rate — share of field goal attempts from behind the arc.,20 – 55%,Pipeline,High three_par teams live and die by 3-point shooting variance.
 three_pct,Four Factors,Three-point field goal percentage (season).,28 – 42%,Pipeline,Most volatile major shooting stat. Use three_pct_gap to flag hot-shooting teams.
 ft_pct,Four Factors,Free throw percentage.,62 – 82%,Pipeline,Matters most in close games and tournament play when fouls are more common.

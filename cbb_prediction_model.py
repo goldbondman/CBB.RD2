@@ -740,13 +740,6 @@ class CBBPredictionModel:
             if is_neutral:
                 return 0.0
 
-            # Legacy reference only (do not use in live calculation):
-            # VENUE_HCA = {
-            #     'Duke-Cameron': 4.2,
-            #     'Kansas-Phog':  4.0,
-            #     'default':      2.7,
-            # }
-
             if home_team_profile:
                 ha_net = home_team_profile.get('ha_net_rtg_l10')
                 if ha_net is not None and not (
