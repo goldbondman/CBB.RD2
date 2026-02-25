@@ -113,6 +113,7 @@ REQUIRED_TEAM_CONTEXT_FIELDS = [
     "fgm", "fga", "ftm", "fta", "tpm", "tpa",
     "orb", "drb", "reb", "tov", "ast",
     "wins", "losses", "conference",
+    "pace", "ortg", "adj_pace", "adj_ortg", "adj_drtg", "drtg", "net_eff", "adj_net_rtg",
 ]
 
 OPP_HISTORY_WINDOW = 5
@@ -529,7 +530,7 @@ def run_predictions(
     schedule_df = load_games_schedule()
     team_schedule_df = build_team_schedule_index(schedule_df)
 
-    for matchup in matchups:
+    for i, matchup in enumerate(matchups):
         home_id = matchup.get("home_team_id")
         away_id = matchup.get("away_team_id")
         home_name = matchup.get("home_team")
@@ -695,8 +696,8 @@ def run_predictions(
             "edge_flag": int(edge_flag),
             "total_direction": "OVER" if (total_diff or 0) > 2 else "UNDER" if (total_diff or 0) < -2 else "PUSH",
 
-            "home_games_used": len(home_games),
-            "away_games_used": len(away_games),
+            "home_games_used": int(all_data[(all_data["team_id"].astype(str) == str(home_id)) & (all_data["game_datetime_utc"] < cutoff_dt)].shape[0]),
+            "away_games_used": int(all_data[(all_data["team_id"].astype(str) == str(away_id)) & (all_data["game_datetime_utc"] < cutoff_dt)].shape[0]),
             "home_win_prob": home_win_prob,
 
             "game_type": game_type,
@@ -776,8 +777,23 @@ def run_predictions(
         row.update(uws_result)
         results.append(row)
 
+    res_df = pd.DataFrame(results) if results else pd.DataFrame()
+
+    if not res_df.empty:
+        null_count = res_df["pred_spread"].isna().sum()
+        null_pct = (null_count / len(res_df)) * 100
+        unique_totals = res_df["projected_total"].nunique()
+
+        log.info(
+            "[DIAG] run_predictions | pred_spread: %d/%d non-null (%.1f%% null) | projected_total unique: %d",
+            len(res_df) - null_count, len(res_df), null_pct, unique_totals
+        )
+
+        if unique_totals <= 1 and len(res_df) > 1:
+            log.warning("[DIAG] projected_total unique count is %d for %d games", unique_totals, len(res_df))
+
     log.info(f"Predictions complete: {len(results)} generated, {skipped} skipped")
-    return pd.DataFrame(results) if results else pd.DataFrame()
+    return res_df
 
 
 def _compute_uws_for_matchup(matchup: Dict, snapshot: pd.DataFrame, game_type: str) -> Dict:
@@ -939,10 +955,19 @@ def model_total(team_a: dict, team_b: dict) -> dict:
 
     _home_pace = get_metric(team_a, ["pace", "adj_pace", "cage_t"], LEAGUE_AVG_PACE)
     _away_pace = get_metric(team_b, ["pace", "adj_pace", "cage_t"], LEAGUE_AVG_PACE)
-    projected_poss = round((_home_pace + _away_pace) / 2, 1)
 
     _home_ortg = get_metric(team_a, ["ortg", "adj_ortg", "cage_o"], LEAGUE_AVG_ORTG)
     _away_ortg = get_metric(team_b, ["ortg", "adj_ortg", "cage_o"], LEAGUE_AVG_ORTG)
+
+    # [DIAG] Log first game metrics to verify fallback behavior
+    if not hasattr(model_total, "_logged"):
+        log.info(
+            "[DIAG] model_total first game metrics | home_pace: %.1f, away_pace: %.1f, home_ortg: %.1f, away_ortg: %.1f",
+            _home_pace, _away_pace, _home_ortg, _away_ortg
+        )
+        model_total._logged = True
+
+    projected_poss = round((_home_pace + _away_pace) / 2, 1)
     projected_total = round(((_home_ortg + _away_ortg) * projected_poss) / 100, 1)
 
     _home_games = _safe_int(team_a.get("games_played") or team_a.get("game_number") or 0, default=0)
@@ -1065,6 +1090,10 @@ def write_predictions(df: pd.DataFrame, label: str) -> Path:
     if "event_id" not in out_df.columns and "game_id" in out_df.columns:
         out_df["event_id"] = out_df["game_id"]
         log.info("Normalized prediction output: added event_id from game_id")
+    elif "game_id" not in out_df.columns and "event_id" in out_df.columns:
+        out_df["game_id"] = out_df["event_id"]
+        log.info("Normalized prediction output: added game_id from event_id")
+
     if "predicted_spread" not in out_df.columns and "pred_spread" in out_df.columns:
         out_df["predicted_spread"] = out_df["pred_spread"]
         log.info("Normalized prediction output: added predicted_spread from pred_spread")

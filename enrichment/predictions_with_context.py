@@ -17,8 +17,11 @@ from espn_config import (
     conference_id_to_name,
 )
 from models.alpha_evaluator import evaluate_alpha
-from pipeline_csv_utils import add_conference_name
-from pipeline_csv_utils import normalize_numeric_dtypes
+from pipeline_csv_utils import (
+    add_conference_name,
+    normalize_column_names,
+    normalize_numeric_dtypes,
+)
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(message)s")
@@ -375,31 +378,26 @@ def build_predictions_with_context(
     df = pd.read_csv(predictions_path, dtype={"event_id": str})
     df = normalize_numeric_dtypes(df)
 
-    # Save model spread columns BEFORE normalize_column_names(),
-    # which may rename pred_spread -> spread or similar, causing
-    # it to be silently dropped by the market column drop loop.
-    _pred_spread_saved = None
-    _ens_spread_saved = None
-    if "pred_spread" in df.columns:
-        _pred_spread_saved = df["pred_spread"].copy()
-    if "ens_ens_spread" in df.columns:
-        _ens_spread_saved = df["ens_ens_spread"].copy()
+    # Save model columns BEFORE normalize_column_names()
+    _saved_cols = {}
+    for c in ["pred_spread", "ens_ens_spread", "predicted_spread", "pred_total", "pred_home_score", "pred_away_score"]:
+        if c in df.columns:
+            _saved_cols[c] = df[c].copy()
 
     df = normalize_column_names(df)
 
-    # Restore after normalization in case it renamed them
-    if _pred_spread_saved is not None and (
-        "pred_spread" not in df.columns
-        or df["pred_spread"].isna().mean() > 0.5
-    ):
-        df["pred_spread"] = _pred_spread_saved.values
-        log.debug("pred_spread restored after normalize_column_names")
-    if _ens_spread_saved is not None and (
-        "ens_ens_spread" not in df.columns
-        or df["ens_ens_spread"].isna().mean() > 0.5
-    ):
-        df["ens_ens_spread"] = _ens_spread_saved.values
-        log.debug("ens_ens_spread restored after normalize_column_names")
+    # Restore after normalization
+    for c, val in _saved_cols.items():
+        if c not in df.columns or df[c].isna().mean() > 0.5:
+            df[c] = val.values
+            log.debug("%s restored after normalize_column_names", c)
+
+    log.info(
+        "[DIAG] build_predictions_with_context | initial | pred_spread non-null: %d/%d (%.1f%% null)",
+        int(df["pred_spread"].notna().sum()) if "pred_spread" in df.columns else 0,
+        len(df),
+        (df["pred_spread"].isna().mean() * 100) if "pred_spread" in df.columns else 100.0
+    )
 
     if "event_id" not in df.columns:
         if "game_id" in df.columns:
@@ -430,6 +428,12 @@ def build_predictions_with_context(
         market = _build_market_lines_fallback(df, market_path)
 
     if not market.empty:
+        # Protect model columns from market collision
+        if "spread" in market.columns:
+            market = market.rename(columns={"spread": "market_spread"})
+        if "pred_spread" in market.columns:
+            market = market.drop(columns=["pred_spread"])
+
         if "captured_at_utc" in market.columns:
             capture_order = {"closing": 0, "pregame": 1, "opening": 2}
             market["_cap_rank"] = (
@@ -447,22 +451,6 @@ def build_predictions_with_context(
             market_cols = ["event_id"] + expected_market_cols
             available = [c for c in market_cols if c in market_latest.columns]
 
-            # Preserve pred_spread before dropping market columns.
-            # market_lines.csv has a 'spread' column that can collide
-            # with and wipe out the model's predicted spread.
-            _pred_spread_backup = None
-            _ens_spread_backup = None
-            if "pred_spread" in df.columns:
-                _pred_spread_backup = df["pred_spread"].copy()
-            if "ens_ens_spread" in df.columns:
-                _ens_spread_backup = df["ens_ens_spread"].copy()
-
-            drop_cols = [c for c in expected_market_cols if c in df.columns]
-            # Never drop pred_spread or ens_ens_spread — they are model outputs,
-            # not market inputs, even if they share a name with a market column.
-            drop_cols = [
-                c for c in drop_cols
-                if c not in ("pred_spread", "ens_ens_spread", "predicted_spread")
             # Drop market columns from df before merge — but NEVER drop
             # model output columns even if they share a name with a market col.
             _protected = {"pred_spread", "ens_ens_spread", "predicted_spread",
@@ -482,30 +470,13 @@ def build_predictions_with_context(
             df = df.merge(
                 market_latest[available], on="event_id", how="left"
             )
-            # Restore pred_spread if the merge overwrote it
-            if _pred_spread_backup is not None:
-                if (
-                    "pred_spread" not in df.columns
-                    or df["pred_spread"].isna().mean() > 0.5
-                ):
-                    df["pred_spread"] = _pred_spread_backup.values
-                    log.info(
-                        "pred_spread restored from pre-merge backup (%d non-null)",
-                        int(_pred_spread_backup.notna().sum()),
-                    )
-                else:
-                    null_rate = df["pred_spread"].isna().mean()
-                    if null_rate > 0.1:
-                        # Partially overwritten — fill nulls from backup
-                        df["pred_spread"] = df["pred_spread"].fillna(
-                            _pred_spread_backup
-                        )
-                        log.info("pred_spread partially restored (%d%% were null)",
-                                 int(null_rate * 100))
 
-            if _ens_spread_backup is not None and "ens_ens_spread" in df.columns:
-                if df["ens_ens_spread"].isna().mean() > 0.5:
-                    df["ens_ens_spread"] = _ens_spread_backup.values
+            log.info(
+                "[DIAG] build_predictions_with_context | post-market-merge | pred_spread non-null: %d/%d (%.1f%% null)",
+                int(df["pred_spread"].notna().sum()) if "pred_spread" in df.columns else 0,
+                len(df),
+                (df["pred_spread"].isna().mean() * 100) if "pred_spread" in df.columns else 100.0
+            )
             market_signal_cols = [
                 c for c in [
                     "home_spread_current", "home_spread_open", "line_movement",
@@ -673,25 +644,31 @@ def build_predictions_with_context(
         slim = pd.DataFrame(slim_data)
 
         # Drop pre-existing null collision columns before the context merge.
-        # Also drop _x/_y suffixed variants — these appear when
-        # predictions_combined_latest.csv was already produced by a workflow
-        # merge that added suffixes (e.g. home_momentum_score_x from the
-        # runner+ensemble merge step). If left in place, the context merge
-        # adds a second _y column alongside the existing _x column.
-        collision_cols = []
-        for field in _ctx_field_map:
-            for prefix in ["home_", "away_"]:
-                base = f"{prefix}{field}"
-                for variant in [base, f"{base}_x", f"{base}_y"]:
-                    if variant in df.columns and df[variant].isna().all():
-                        collision_cols.append(variant)
-        if collision_cols:
-            df = df.drop(columns=collision_cols)
-            log.debug(
-                "Dropped %d pre-existing null columns before context merge "
-                "(including _x/_y variants): %s",
-                len(collision_cols), collision_cols
-            )
+        # Coalesce _x variants if they have data.
+        # Drop all _y variants for context fields.
+        _ctx_cols = []
+        for f in _ctx_field_map:
+            _ctx_cols.extend([f"home_{f}", f"away_{f}"])
+
+        for col in _ctx_cols:
+            col_x = f"{col}_x"
+            col_y = f"{col}_y"
+
+            # Coalesce _x into clean name if clean is null or missing
+            if col_x in df.columns:
+                if col not in df.columns:
+                    df = df.rename(columns={col_x: col})
+                else:
+                    df[col] = df[col].combine_first(df[col_x])
+                    df = df.drop(columns=[col_x])
+
+            # Drop clean if 100% null (to allow merge to fill it)
+            if col in df.columns and df[col].isna().all():
+                df = df.drop(columns=[col])
+
+            # Drop _y unconditionally (they will be recreated by merge if conflict, then handled post-merge)
+            if col_y in df.columns:
+                df = df.drop(columns=[col_y])
 
         # Merge for home team
         home_slim = slim.rename(columns={
@@ -711,31 +688,29 @@ def build_predictions_with_context(
         df["away_team_id"] = df["away_team_id"].astype(str).str.strip()
         df = df.merge(away_slim, on="away_team_id", how="left")
 
-        # Derive momentum_tier from momentum_score when source
-        # CSV doesn't have a tier column directly
+        # Derive momentum_tier from momentum_score unconditionally
         for _side in ["home", "away"]:
             _tier_col = f"{_side}_momentum_tier"
             _score_col = f"{_side}_momentum_score"
-            if _tier_col not in df.columns or df[_tier_col].isna().all():
-                if _score_col in df.columns:
-                    _score = pd.to_numeric(
-                        df[_score_col], errors="coerce"
-                    )
-                    df[_tier_col] = pd.cut(
-                        _score,
-                        bins=[-999, 40, 50, 60, 70, 999],
-                        labels=["COLD", "NEUTRAL", "WARM",
-                                "HOT", "ELITE"],
-                        right=True,
-                    ).astype(str).replace("nan", pd.NA)
+            if _score_col in df.columns:
+                df[_tier_col] = pd.cut(
+                    pd.to_numeric(df[_score_col], errors="coerce"),
+                    bins=[-999, 40, 50, 60, 70, 999],
+                    labels=["COLD", "NEUTRAL", "WARM", "HOT", "ELITE"],
+                    right=True,
+                ).astype(str).replace("nan", pd.NA)
 
-        n_mom = int(
-            df.get("home_momentum_score",
-                   pd.Series(dtype=float)).notna().sum()
-        )
+        # Post-merge cleanup: handle any new _x/_y columns created by the merge
+        for col in _ctx_cols:
+            for suffix in ["_x", "_y"]:
+                cs = f"{col}{suffix}"
+                if cs in df.columns:
+                    df[col] = df[col].combine_first(df[cs]) if col in df.columns else df[cs]
+                    df = df.drop(columns=[cs])
+
+        n_mom = int(df.get("home_momentum_score", pd.Series(dtype=float)).notna().sum())
         log.info(
-            "Team profile context merged: %d/%d games have "
-            "home_momentum_score",
+            "[DIAG] build_predictions_with_context | post-context-merge | home_momentum_score: %d/%d non-null",
             n_mom, len(df)
         )
 
@@ -770,14 +745,6 @@ def build_predictions_with_context(
                             pd.to_numeric(df.get(_gu_col), errors="coerce")
                         )
 
-        n_mom = int(
-            df.get("home_momentum_score", pd.Series(dtype=float)).notna().sum()
-        )
-        log.info(
-            "Team profile context merged: %d/%d games have "
-            "home_momentum_score (0 = source column not found in CSV)",
-            n_mom, len(df)
-        )
     else:
         log.warning(
             "No team context source found. Checked: %s",
@@ -809,12 +776,16 @@ def build_predictions_with_context(
         )
         alpha_results = []
         for _, row in df.iterrows():
-            pred_spread = _safe_float(
-                row.get("pred_spread") or row.get("ens_ens_spread")
-            )
-            spread_line = _safe_float(
-                row.get("spread_line") or row.get("home_spread_current")
-            )
+            # Robust extraction from potentially nullable Series
+            ps = row.get("pred_spread")
+            if pd.isna(ps):
+                ps = row.get("ens_ens_spread")
+            pred_spread = _safe_float(ps)
+
+            sl = row.get("spread_line")
+            if pd.isna(sl):
+                sl = row.get("home_spread_current")
+            spread_line = _safe_float(sl)
             confidence = _safe_float(row.get("model_confidence"), 0.55)
 
             trap = bool(row.get("trap_game_flag", False))
@@ -827,9 +798,7 @@ def build_predictions_with_context(
             mkt = {}
             for col in expected_market_cols:
                 val = row.get(col)
-                if val is not None and not (
-                    isinstance(val, float) and pd.isna(val)
-                ):
+                if not pd.isna(val):
                     mkt[col] = val
 
             alpha = evaluate_alpha(
@@ -1014,6 +983,22 @@ def build_predictions_with_context(
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_path, index=False)
+
+    # [DIAG] Final results logging
+    null_spread = df["pred_spread"].isna().sum() if "pred_spread" in df.columns else len(df)
+    null_pct = (null_spread / len(df)) * 100 if len(df) > 0 else 0
+    n_mom = df["home_momentum_score"].notna().sum() if "home_momentum_score" in df.columns else 0
+    unique_totals = df["projected_total"].nunique() if "projected_total" in df.columns else 0
+    median_gu = int(df["home_games_used"].median()) if "home_games_used" in df.columns else 0
+
+    log.info(
+        "[DIAG] build_predictions_with_context | pred_spread: %d/%d non-null (%.1f%% null) | home_momentum_score: %d/%d non-null | projected_total unique: %d | home_games_used median: %d",
+        len(df) - null_spread, len(df), null_pct,
+        n_mom, len(df),
+        unique_totals,
+        median_gu
+    )
+
     log.info(
         "Wrote predictions with context: %d rows -> %s",
         len(df), out_path
@@ -1022,6 +1007,8 @@ def build_predictions_with_context(
 
 
 def _safe_float(val, default=None):
+    if pd.isna(val):
+        return default
     try:
         f = float(val)
         return default if pd.isna(f) else f
