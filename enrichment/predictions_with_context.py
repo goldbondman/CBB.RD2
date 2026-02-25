@@ -27,6 +27,7 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(message)s")
 
 RECORDS_CACHE_PATH = DATA_DIR / "team_records.csv"
+TEAM_CONTEXT_LOOKBACK_GAMES = 12
 
 
 def _fetch_team_record(team_id: str) -> dict:
@@ -578,9 +579,9 @@ def build_predictions_with_context(
 
     # ── Team profile context merge ─────────────────────────────────
     _ctx_sources = [
-        DATA_DIR / "team_pretournament_snapshot.csv",
         DATA_DIR / "team_game_weighted.csv",
         DATA_DIR / "csv" / "team_game_weighted.csv",
+        DATA_DIR / "team_pretournament_snapshot.csv",
     ]
     _ctx_df = None
     _ctx_df_full = None
@@ -588,13 +589,23 @@ def build_predictions_with_context(
         if _src.exists() and _src.stat().st_size > 100:
             try:
                 _ctx_df_full = pd.read_csv(_src, dtype={"team_id": str}, low_memory=False)
-                _ctx_df = _ctx_df_full
+                _ctx_df = _ctx_df_full.copy()
                 if "game_datetime_utc" in _ctx_df.columns:
+                    _ctx_df["game_datetime_utc"] = pd.to_datetime(
+                        _ctx_df["game_datetime_utc"], utc=True, errors="coerce"
+                    )
                     _ctx_df = _ctx_df.sort_values("game_datetime_utc")
-                _ctx_df = _ctx_df.drop_duplicates("team_id", keep="last")
+
+                if "team_id" in _ctx_df.columns:
+                    _ctx_df = _ctx_df.groupby("team_id", as_index=False, group_keys=False).tail(
+                        TEAM_CONTEXT_LOOKBACK_GAMES
+                    )
                 log.info(
-                    "Team context source: %s (%d teams, cols: %s)",
-                    _src.name, len(_ctx_df),
+                    "Team context source: %s (%d rows across %d teams; lookback=%d games)",
+                    _src.name, len(_ctx_df), _ctx_df["team_id"].nunique(), TEAM_CONTEXT_LOOKBACK_GAMES,
+                )
+                log.debug(
+                    "Team context candidate cols: %s",
                     [c for c in _ctx_df.columns
                      if any(x in c for x in
                             ['momentum','luck','form','rtg_std','ha_net',
@@ -643,26 +654,46 @@ def build_predictions_with_context(
                             ['momentum','luck','form','std','ha_'])][:10]
                 )
 
-        # Build slim lookup frame
-        slim_data = {"team_id": _ctx_df["team_id"].astype(str).str.strip()}
+        # Build slim lookup frame from the recent lookback window.
+        # For game-level sources this uses the last TEAM_CONTEXT_LOOKBACK_GAMES rows
+        # per team; for snapshot sources this naturally collapses to one row/team.
+        _ctx_recent = _ctx_df.copy()
+        _ctx_recent["team_id"] = _ctx_recent["team_id"].astype(str).str.strip()
+        slim_data = {
+            "team_id": sorted(_ctx_recent["team_id"].dropna().astype(str).unique().tolist())
+        }
         _DERIVED_FIELDS = {"momentum_tier"}  # computed post-merge
         for field, candidates in _ctx_field_map.items():
             if field in _DERIVED_FIELDS:
                 continue
             for cand in candidates:
-                if cand in _ctx_df.columns:
-                    slim_data[field] = _ctx_df[cand].values
+                if cand in _ctx_recent.columns:
+                    slim_data[field] = (
+                        pd.to_numeric(_ctx_recent[cand], errors="coerce")
+                        .groupby(_ctx_recent["team_id"])
+                        .mean()
+                        .reindex(slim_data["team_id"])
+                        .values
+                    )
                     break
             else:
                 slim_data[field] = pd.NA
 
         for gp_col in ["games_played", "game_number",
                         "games_before", "n_games"]:
-            if gp_col in _ctx_df.columns:
-                slim_data["_games_played_season"] = pd.to_numeric(
-                    _ctx_df[gp_col], errors="coerce"
-                ).values
+            if gp_col in _ctx_recent.columns:
+                slim_data["_games_played_season"] = (
+                    pd.to_numeric(_ctx_recent[gp_col], errors="coerce")
+                    .groupby(_ctx_recent["team_id"])
+                    .max()
+                    .reindex(slim_data["team_id"])
+                    .values
+                )
                 break
+        else:
+            slim_data["_games_played_season"] = (
+                _ctx_recent.groupby("team_id").size().reindex(slim_data["team_id"]).values
+            )
 
         slim = pd.DataFrame(slim_data)
 
