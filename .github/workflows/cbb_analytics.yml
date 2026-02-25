@@ -14,6 +14,14 @@ on:
         default: "both"
         type: choice
         options: ["tracker_only", "backtest_only", "both"]
+      start_date:
+        description: "Optional start date filter (YYYYMMDD)"
+        required: false
+        type: string
+      end_date:
+        description: "Optional end date filter (YYYYMMDD)"
+        required: false
+        type: string
 
 # Pattern 3: Standardized concurrency group to prevent race conditions across all pipeline workflows
 concurrency:
@@ -116,7 +124,16 @@ jobs:
       # Step 5: Run backtester (if requested or weekly)
       - name: Run backtester
         if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 10 * * 1' || github.event.inputs.run_mode == 'both' || github.event.inputs.run_mode == 'backtest_only'
-        run: python cbb_backtester.py --min-games 5
+        run: |
+          BACKTEST_ARGS="--min-games 5"
+          if [ -n "${{ github.event.inputs.start_date }}" ]; then
+            BACKTEST_ARGS="$BACKTEST_ARGS --start-date ${{ github.event.inputs.start_date }}"
+          fi
+          if [ -n "${{ github.event.inputs.end_date }}" ]; then
+            BACKTEST_ARGS="$BACKTEST_ARGS --end-date ${{ github.event.inputs.end_date }}"
+          fi
+          echo "Running backtester with args: $BACKTEST_ARGS"
+          python cbb_backtester.py $BACKTEST_ARGS
 
       # Step 6: Pattern 2: Validate backtester outputs
       - name: Validate backtester outputs
@@ -132,7 +149,13 @@ jobs:
       # Step 7: Run analytics/reporting scripts
       - name: Run results tracker
         if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 8 * * *' || github.event.inputs.run_mode == 'both' || github.event.inputs.run_mode == 'tracker_only'
-        run: python cbb_results_tracker.py
+        run: |
+          TRACKER_ARGS=""
+          if [ -n "${{ github.event.inputs.start_date }}" ]; then
+            TRACKER_ARGS="--date ${{ github.event.inputs.start_date }}"
+          fi
+          echo "Running results tracker with args: ${TRACKER_ARGS:-<default>}"
+          python cbb_results_tracker.py $TRACKER_ARGS
 
       - name: Run season summaries
         run: python cbb_season_summaries.py || echo "Summaries failed (non-fatal)"
