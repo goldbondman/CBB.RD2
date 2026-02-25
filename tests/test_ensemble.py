@@ -223,10 +223,10 @@ class TestEnsemblePredictor:
         assert 0.0 <= result.confidence <= 1.0
         assert result.model_agreement in ("STRONG", "MODERATE", "SPLIT")
 
-    def test_seven_model_predictions(self, strong_home, weak_away):
+    def test_eight_model_predictions(self, strong_home, weak_away):
         predictor = EnsemblePredictor()
         result = predictor.predict(strong_home, weak_away)
-        assert len(result.model_predictions) == 7
+        assert len(result.model_predictions) == 8
 
     def test_model_diversity(self, strong_home, weak_away):
         """Models should NOT all produce identical spreads."""

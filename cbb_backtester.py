@@ -329,6 +329,11 @@ def load_completed_games(game_log: pd.DataFrame) -> pd.DataFrame:
                    "opponent_id", "opponent", "points_for", "points_against",
                    "actual_margin"]].drop_duplicates("event_id")
 
+    # Defensive drop before renaming to avoid duplicate columns
+    for col in ["home_team_id", "home_team", "away_team_id", "away_team", "conference"]:
+        if col in home.columns:
+            home = home.drop(columns=[col])
+
     home = home.rename(columns={
         "team_id": "home_team_id", "team": "home_team",
         "opponent_id": "away_team_id", "opponent": "away_team",
@@ -349,7 +354,13 @@ def load_completed_games(game_log: pd.DataFrame) -> pd.DataFrame:
     games["neutral_site"]  = home.get("neutral_site", pd.Series(0, index=home.index)).values
 
     games = games.drop_duplicates("event_id")
-    log.info(f"Completed games: {len(games):,}")
+    log.info(
+        "load_completed_games: %d rows | %d unique home_team_ids | "
+        "sample: %s",
+        len(games),
+        games["home_team_id"].nunique(),
+        games["home_team_id"].dropna().astype(str).head(3).tolist(),
+    )
     return games.reset_index(drop=True)
 
 
@@ -1226,14 +1237,19 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
             return tgm[col_name]
         return pd.Series(default, index=tgm.index)
 
+    # Correct win counting: group by team and sum 'win' column where condition matches
+    if "win" not in tgm.columns:
+        tgm["win"] = (tgm["points_for"] > tgm["points_against"]).astype(int)
+
+    home_wins = tgm[tgm["home_away_norm"] == "home"].groupby("team_id")["win"].sum()
+    away_wins = tgm[tgm["home_away_norm"] == "away"].groupby("team_id")["win"].sum()
+    neutral_wins = tgm[pd.to_numeric(tgm["neutral_site"], errors="coerce") == 1].groupby("team_id")["win"].sum()
+
     agg_spec = {
         "team": ("team", "last"),
         "conference": ("conference", "last"),
         "wins": ("wins", "last"),
         "losses": ("losses", "last"),
-        "home_wins": ("home_wins", "last"),
-        "away_wins": ("away_wins", "last"),
-        "neutral_wins": ("neutral_wins", "sum") if "neutral_wins" in tgm.columns else ("neutral_site", "sum"),
         "ats_wins": ("cover", lambda s: int((s == 1).sum())),
         "ats_losses": ("cover", lambda s: int((s == 0).sum())),
         "ats_pushes": ("ats_push", "sum"),
@@ -1264,7 +1280,6 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
             resolved_agg[out_col] = agg
         elif out_col == "avg_opp_net_rtg" and "opp_avg_ortg_season" in tgm.columns:
             resolved_agg[out_col] = ("opp_avg_ortg_season", "last")
-            log.warning("Using fallback column opp_avg_ortg_season for avg_opp_net_rtg")
         else:
             missing_optional.append(source_col)
 
@@ -1306,6 +1321,15 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
 
     for split_df in splits:
         base = base.merge(split_df, on="team_id", how="left")
+
+    # Re-inject corrected win counts
+    base["home_wins"] = base["team_id"].map(home_wins).fillna(0)
+    base["away_wins"] = base["team_id"].map(away_wins).fillna(0)
+    base["neutral_wins"] = base["team_id"].map(neutral_wins).fillna(0)
+
+    # Post-merge data quality check for opp_avg_net_rtg_season
+    if "avg_opp_net_rtg" not in base.columns or base["avg_opp_net_rtg"].isna().all():
+        log.warning("build_team_backtest_csv: avg_opp_net_rtg (opp_avg_net_rtg_season) is missing post-merge")
 
     base["ats_pct_l10"] = grouped["cover"].apply(lambda s: (s.tail(10) == 1).mean()).values
     base["ats_pct_l20"] = grouped["cover"].apply(lambda s: (s.tail(20) == 1).mean()).values
@@ -1422,7 +1446,14 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
     out_path = output_dir / "team_season_summary.csv"
     safe_write_csv(base, out_path, index=False, label="team_season_summary", allow_empty=True)
     safe_write_csv(base, output_dir / "team_season_summary_latest.csv", index=False, label="team_season_summary_latest", allow_empty=True)
-    log.info("Backtest team analytics → %s", out_path)
+    log.info(
+        "build_team_backtest_csv end: %d teams summarized | "
+        "median home_wins: %.1f | neutral_wins range: %.1f-%.1f",
+        len(base),
+        base["home_wins"].median(),
+        base["neutral_wins"].min(),
+        base["neutral_wins"].max()
+    )
     return out_path
 
 
@@ -1502,7 +1533,6 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
     safe_write_csv(records, results_path, index=False, label="backtest_results", allow_empty=False)
     latest_results_path = output_dir / "backtest_results_latest.csv"
     safe_write_csv(records, latest_results_path, index=False, label="backtest_results_latest", allow_empty=False)
-    safe_write_csv(records, output_dir / "team_season_summary.csv", index=False, label="team_season_summary", allow_empty=False)
     outputs["results"] = results_path
     outputs["results_latest"] = latest_results_path
     log.info(f"Results -> {results_path}  ({len(records):,} rows)")
