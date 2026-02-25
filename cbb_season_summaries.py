@@ -141,8 +141,8 @@ def build_player_season_summary(output_path: Path = PLAYER_SUMMARY_CSV) -> pd.Da
 
     if all(c in base.columns for c in ["pts", "fga", "fta"]):
         ts_df = base.groupby(group_keys)[["pts", "fga", "fta"]].sum().reset_index()
-        ts_df["ts_pct"] = (ts_df["pts"] /
-                           (2 * (ts_df["fga"] + 0.44 * ts_df["fta"]))).round(4)
+        ts_df["ts_pct"] = pd.to_numeric((ts_df["pts"] /
+                           (2 * (ts_df["fga"] + 0.44 * ts_df["fta"]))), errors="coerce").round(4)
         ts_df["ts_pct"] = ts_df["ts_pct"].clip(0, 1)
         summary = summary.merge(ts_df[group_keys + ["ts_pct"]], on=group_keys, how="left")
     else:
@@ -157,9 +157,9 @@ def build_player_season_summary(output_path: Path = PLAYER_SUMMARY_CSV) -> pd.Da
         team_pts   = base.groupby([tid_col])["pts"].sum().reset_index(name="_team_pts")
         summary = summary.merge(player_pts, on=group_keys, how="left")
         summary = summary.merge(team_pts, on=[tid_col], how="left")
-        summary["season_pts_share"] = (
+        summary["season_pts_share"] = pd.to_numeric((
             summary["_player_pts"] / summary["_team_pts"].replace(0, pd.NA)
-        ).round(4)
+        ), errors="coerce").round(4)
         summary = summary.drop(columns=["_player_pts", "_team_pts"])
     else:
         summary["season_pts_share"] = None

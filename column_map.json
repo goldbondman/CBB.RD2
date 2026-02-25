@@ -1,31 +1,31 @@
 {
-  "version": "1.0",
-  "updated_at": "2026-02-21T20:48:00Z",
+  "version": "1.1",
+  "updated_at": "2026-02-24T23:40:00Z",
   "player_stats": {
     "espn_labels": {
       "min":                  {"pipeline_col": "min",        "aliases": ["MIN", "minutes", "Minutes"]},
-      "fg":                   {"pipeline_col": null,         "aliases": ["FG", "fieldgoals"],
+      "fg":                   {"pipeline_col": "_fg",        "aliases": ["FG", "fieldgoals", "fieldGoalsMade-fieldGoalsAttempted", "fieldgoalsmade-fieldgoalsattempted"],
                                "note": "combined FGM-A string, split into fgm+fga"},
-      "fgm-a":                {"pipeline_col": null,         "aliases": ["FGM-A", "fg"],
+      "fgm-a":                {"pipeline_col": "_fg",        "aliases": ["FGM-A", "fg"],
                                "note": "split on '-' to get fgm and fga"},
       "fieldgoalsmade":       {"pipeline_col": "fgm",        "aliases": ["FGM", "fgm"]},
       "fieldgoalsattempted":  {"pipeline_col": "fga",        "aliases": ["FGA", "fga"]},
-      "3pt":                  {"pipeline_col": null,         "aliases": ["3PT", "3-pt", "threepointers"],
+      "3pt":                  {"pipeline_col": "_3pt",       "aliases": ["3PT", "3-pt", "threepointers", "threePointFieldGoalsMade-threePointFieldGoalsAttempted", "threepointfieldgoalsmade-threepointfieldgoalsattempted"],
                                "note": "combined TPM-A string"},
       "threepointsmade":      {"pipeline_col": "tpm",        "aliases": ["TPM", "3pm"]},
       "threepointsattempted":  {"pipeline_col": "tpa",       "aliases": ["TPA", "3pa"]},
-      "ft":                   {"pipeline_col": null,         "aliases": ["FT", "freethrows"],
+      "ft":                   {"pipeline_col": "_ft",        "aliases": ["FT", "freethrows", "freeThrowsMade-freeThrowsAttempted", "freethrowsmade-freethrowsattempted"],
                                "note": "combined FTM-A string"},
       "freethrowsmade":       {"pipeline_col": "ftm",        "aliases": ["FTM"]},
       "freethrowsattempted":  {"pipeline_col": "fta",        "aliases": ["FTA"]},
-      "oreb":                 {"pipeline_col": "orb",        "aliases": ["OR", "ORB", "offensiverebounds", "oreb"]},
-      "dreb":                 {"pipeline_col": "drb",        "aliases": ["DR", "DRB", "defensiverebounds", "dreb"]},
-      "reb":                  {"pipeline_col": "reb",        "aliases": ["REB", "TR", "rebounds", "totalrebounds"]},
+      "oreb":                 {"pipeline_col": "orb",        "aliases": ["OR", "ORB", "offensiverebounds", "oreb", "offensiveRebounds"]},
+      "dreb":                 {"pipeline_col": "drb",        "aliases": ["DR", "DRB", "defensiverebounds", "dreb", "defensiveRebounds"]},
+      "reb":                  {"pipeline_col": "reb",        "aliases": ["REB", "TR", "rebounds", "totalrebounds", "totalRebounds"]},
       "ast":                  {"pipeline_col": "ast",        "aliases": ["AST", "A", "assists"]},
       "stl":                  {"pipeline_col": "stl",        "aliases": ["STL", "S", "steals"]},
       "blk":                  {"pipeline_col": "blk",        "aliases": ["BLK", "B", "blocks"]},
       "to":                   {"pipeline_col": "tov",        "aliases": ["TOV", "TO", "turnovers"]},
-      "pf":                   {"pipeline_col": "pf",         "aliases": ["PF", "fouls", "personalfouls"]},
+      "pf":                   {"pipeline_col": "pf",         "aliases": ["PF", "fouls", "personalfouls", "personalFouls"]},
       "pts":                  {"pipeline_col": "pts",        "aliases": ["PTS", "points"]},
       "+/-":                  {"pipeline_col": "plus_minus", "aliases": ["PM", "plusminus", "+/-"]}
     },
@@ -35,7 +35,10 @@
       "3pt":   {"delimiter": "-", "output_cols": ["tpm", "tpa"]},
       "3pm-a": {"delimiter": "-", "output_cols": ["tpm", "tpa"]},
       "ft":    {"delimiter": "-", "output_cols": ["ftm", "fta"]},
-      "ftm-a": {"delimiter": "-", "output_cols": ["ftm", "fta"]}
+      "ftm-a": {"delimiter": "-", "output_cols": ["ftm", "fta"]},
+      "fieldgoalsmade-fieldgoalsattempted": {"delimiter": "-", "output_cols": ["fgm", "fga"]},
+      "threepointfieldgoalsmade-threepointfieldgoalsattempted": {"delimiter": "-", "output_cols": ["tpm", "tpa"]},
+      "freethrowsmade-freethrowsattempted": {"delimiter": "-", "output_cols": ["ftm", "fta"]}
     }
   },
   "team_stats": {
