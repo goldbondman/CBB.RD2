@@ -32,15 +32,21 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Pattern 4: Rewritten Download predictions artifact (must be after setup-python)
-      # Standardized name: cbb-predictions-rolling-latest
-      - name: Download predictions artifact
+      # Download from the upstream CBB Predictions Rolling run when this workflow is
+      # triggered via workflow_run. For other trigger types, we rely on git bootstrap.
+      - name: Download predictions artifact (workflow_run trigger)
+        if: github.event_name == 'workflow_run'
         uses: actions/download-artifact@v4
         with:
           name: cbb-predictions-rolling-latest
           path: data/
+          run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
+
+      - name: Skip artifact download for scheduled/manual runs
+        if: github.event_name != 'workflow_run'
+        run: echo "[INFO] No upstream run context available; using repo fallback files"
 
       # Pattern 1: Verify artifact or bootstrap from git history
       - name: Verify predictions artifact or bootstrap from git
