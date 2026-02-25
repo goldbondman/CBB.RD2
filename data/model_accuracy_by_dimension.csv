@@ -1,0 +1,1 @@
+dimension,group,n_games,ats_wins,ats_losses,ats_pushes,ats_win_rate,mean_abs_error,mean_signed_error,correct_side_rate,mean_confidence,sufficient_sample,pipeline_run_id
