@@ -377,7 +377,7 @@ def build_team_state_before(
         (game_log["game_datetime_utc"] < before_dt)
     ].sort_values("game_datetime_utc")
 
-    if len(team_rows) < min_games:
+    if len(team_rows) < max(1, min_games):
         return None
 
     # Most recent row = team's state immediately before this game
@@ -1505,20 +1505,20 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
     safe_write_csv(records, output_dir / "team_season_summary.csv", index=False, label="team_season_summary", allow_empty=False)
     outputs["results"] = results_path
     outputs["results_latest"] = latest_results_path
-    log.info(f"Results → {results_path}  ({len(records):,} rows)")
+    log.info(f"Results -> {results_path}  ({len(records):,} rows)")
 
     report_path = output_dir / f"backtest_model_report_{today}.csv"
     safe_write_csv(report_df, report_path, index=False, label="backtest_model_report", allow_empty=True)
     safe_write_csv(report_df, output_dir / "backtest_model_report_latest.csv", index=False, label="backtest_model_report_latest", allow_empty=True)
     outputs["report"] = report_path
-    log.info(f"Report  → {report_path}")
+    log.info(f"Report  -> {report_path}")
 
     if not calib_df.empty:
         calib_path = output_dir / f"backtest_calibration_{today}.csv"
         safe_write_csv(calib_df, calib_path, index=False, label="backtest_calibration", allow_empty=True)
         safe_write_csv(calib_df, output_dir / "backtest_calibration_latest.csv", index=False, label="backtest_calibration_latest", allow_empty=True)
         outputs["calibration"] = calib_path
-        log.info(f"Calibration → {calib_path}")
+        log.info(f"Calibration -> {calib_path}")
 
     if optimized_weights:
         weights_payload = {
@@ -1557,7 +1557,7 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
             existing = pd.read_csv(weight_history_path)
             history_df = pd.concat([existing, history_df], ignore_index=True)
         safe_write_csv(history_df, weight_history_path, index=False, label="model_weight_history", allow_empty=True)
-        log.info(f"Weight history appended → {weight_history_path}")
+        log.info(f"Weight history appended -> {weight_history_path}")
 
     backtest_path = build_team_backtest_csv(output_dir)
     if backtest_path is not None:

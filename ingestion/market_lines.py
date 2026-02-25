@@ -87,7 +87,6 @@ MARKET_LINES_SCHEMA_COLUMNS = [
 ]
 
 
-<<<<<<< HEAD
 def bootstrap_market_lines_schema(path: str | Path) -> Path:
     """Ensure market_lines.csv exists and has required schema columns."""
     csv_path = Path(path)
@@ -98,15 +97,6 @@ def bootstrap_market_lines_schema(path: str | Path) -> Path:
 
     if csv_path.exists() and csv_path.stat().st_size > 0:
         df = pd.read_csv(csv_path, dtype={"event_id": str}, low_memory=False)
-=======
-def bootstrap_market_lines_schema(data_dir: Path) -> Path:
-    """Ensure market_lines.csv exists and has required schema columns."""
-    market_path = data_dir / "market_lines.csv"
-    market_path.parent.mkdir(parents=True, exist_ok=True)
-
-    if market_path.exists():
-        df = pd.read_csv(market_path, dtype={"event_id": str}, low_memory=False)
->>>>>>> 8cfd96c (fix(ingestion): fix duplicate function syntax error and update deprecated pandas api in market_lines.py)
     else:
         df = pd.DataFrame(columns=MARKET_LINES_SCHEMA_COLUMNS)
 
@@ -562,11 +552,7 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
     today = override_date or date.today()
     log.info("Market capture mode=%s date=%s", mode, today)
 
-<<<<<<< HEAD
     market_path = bootstrap_market_lines_schema(data_dir / "market_lines.csv")
-=======
-    market_path = bootstrap_market_lines_schema(data_dir)
->>>>>>> 8cfd96c (fix(ingestion): fix duplicate function syntax error and update deprecated pandas api in market_lines.py)
     existing = pd.read_csv(market_path, dtype={"event_id": str}) if market_path.exists() else pd.DataFrame()
     existing = normalize_numeric_dtypes(existing)
 
