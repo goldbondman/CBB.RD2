@@ -1,83 +1,112 @@
-version: 1
-pipeline:
-  - name: grade_predictions
-    command: python build_backtest_csvs.py --section grade-only
-  - name: walk_forward_validation
-    command: python -m evaluation.walk_forward
-    after: grade_predictions
-  - name: feature_audit
-    command: python -m evaluation.feature_audit
-    after: grade_predictions
-  - name: Accuracy and CLV summary
-    command: |
-      python -c "
-      import pandas as pd
-      from pathlib import Path
+name: CBB Backtest Tracker
 
-      s_path = Path('data/model_accuracy_summary.csv')
-      if not s_path.exists():
-          print('No accuracy summary yet — needs graded predictions')
-          exit(0)
+"on":
+  workflow_dispatch:
+  schedule:
+    - cron: "30 11 * * *"
 
-      s   = pd.read_csv(s_path).iloc[-1]
-      g   = int(s.get('total_graded', 0))
-      na  = 'N/A'
+concurrency:
+  group: cbb-backtest-tracker
+  cancel-in-progress: false
 
-      def fmt(val, suffix=''):
-          return f'{val}{suffix}' if val not in (None, na, '') else na
+permissions:
+  contents: read
 
-      print('=' * 55)
-      print(f'  ACCURACY SUMMARY   (n={g} graded predictions)')
-      print('=' * 55)
-      print()
-      print('CLV (PRIMARY METRIC)')
-      print(f'  vs Pinnacle:       '
-            f'{fmt(s.get(\"clv_vs_pinnacle_mean\"), \" pts\")}  '
-            f'beat {fmt(s.get(\"beat_pinnacle_pct\"), \"%\")}  '
-            f'n={s.get(\"clv_vs_pinnacle_n\", 0)}')
-      print(f'  vs Consensus:      '
-            f'{fmt(s.get(\"clv_vs_consensus_mean\"), \" pts\")}  '
-            f'beat {fmt(s.get(\"beat_consensus_pct\"), \"%\")}')
-      print(f'  vs DraftKings:     '
-            f'{fmt(s.get(\"clv_vs_dk_mean\"), \" pts\")}')
-      print(f'  With sharp money:  '
-            f'{fmt(s.get(\"clv_with_sharp_mean\"), \" pts\")}')
-      print(f'  Against sharp:     '
-            f'{fmt(s.get(\"clv_against_sharp_mean\"), \" pts\")}')
-      trend = s.get('clv_trend_direction', 'INSUFFICIENT_DATA')
-      sig   = s.get('clv_trend_significant', False)
-      print(f'  Trend:             {trend}  (significant={sig})')
-      print()
-      print('ATS (SECONDARY METRIC)')
-      print(f'  Overall:           {fmt(s.get(\"ats_pct\"), \"%\")}')
-      print(f'  Edge alerts only:  {fmt(s.get(\"edge_ats_pct\"), \"%\")}')
-      print(f'  ROI:               {fmt(s.get(\"roi_units\"), \" units\")}')
-      print(f'  Sharpe:            {fmt(s.get(\"sharpe_ratio\"))}')
-      wab = s.get('weeks_above_breakeven')
-      wt  = s.get('weeks_total')
-      if wab is not None and wt:
-          print(f'  Weeks profitable:  {wab}/{wt}')
-      print()
-      print('MARKET SIGNALS')
-      cn  = s.get('market_confirmed_n', 0)
-      ctn = s.get('market_contradicted_n', 0)
-      print(f'  Confirmed picks:   '
-            f'{fmt(s.get(\"ats_market_confirmed\"), \"%\")} ATS  '
-            f'n={cn}')
-      print(f'  Contradicted picks:{fmt(s.get(\"ats_market_contradicted\"), \"%\")} ATS  '
-            f'n={ctn}')
-      lift = s.get('market_lift_pp')
-      if lift is not None:
-          print(f'  Market lift:       {lift:+.1f}pp vs overall')
-      print(f'  Steam games:       '
-            f'{fmt(s.get(\"ats_steam_games\"), \"%\")} ATS  '
-            f'n={s.get(\"steam_games_n\", 0)}')
-      print(f'  RLM confirmed:     '
-            f'{fmt(s.get(\"ats_rlm_confirmed\"), \"%\")} ATS  '
-            f'n={s.get(\"rlm_confirmed_n\", 0)}')
-      print(f'  Line freeze:       '
-            f'{fmt(s.get(\"ats_line_freeze\"), \"%\")} ATS  '
-            f'n={s.get(\"freeze_games_n\", 0)}')
-      print('=' * 55)
-      "
-    after: grade_predictions
+jobs:
+  backtest-tracker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Grade predictions
+        run: python build_backtest_csvs.py --section grade-only
+
+      - name: Walk-forward validation
+        run: python -m evaluation.walk_forward
+
+      - name: Feature audit
+        run: python -m evaluation.feature_audit
+
+      - name: Accuracy and CLV summary
+        run: |
+          python -c "
+          import pandas as pd
+          from pathlib import Path
+
+          s_path = Path('data/model_accuracy_summary.csv')
+          if not s_path.exists():
+              print('No accuracy summary yet — needs graded predictions')
+              exit(0)
+
+          s = pd.read_csv(s_path).iloc[-1]
+          g = int(s.get('total_graded', 0))
+          na = 'N/A'
+
+          def fmt(val, suffix=''):
+              return f'{val}{suffix}' if val not in (None, na, '') else na
+
+          print('=' * 55)
+          print(f'  ACCURACY SUMMARY   (n={g} graded predictions)')
+          print('=' * 55)
+          print()
+          print('CLV (PRIMARY METRIC)')
+          print(f'  vs Pinnacle:       '
+                f'{fmt(s.get(\"clv_vs_pinnacle_mean\"), \" pts\")}  '
+                f'beat {fmt(s.get(\"beat_pinnacle_pct\"), \"%\")}  '
+                f'n={s.get(\"clv_vs_pinnacle_n\", 0)}')
+          print(f'  vs Consensus:      '
+                f'{fmt(s.get(\"clv_vs_consensus_mean\"), \" pts\")}  '
+                f'beat {fmt(s.get(\"beat_consensus_pct\"), \"%\")}')
+          print(f'  vs DraftKings:     '
+                f'{fmt(s.get(\"clv_vs_dk_mean\"), \" pts\")}')
+          print(f'  With sharp money:  '
+                f'{fmt(s.get(\"clv_with_sharp_mean\"), \" pts\")}')
+          print(f'  Against sharp:     '
+                f'{fmt(s.get(\"clv_against_sharp_mean\"), \" pts\")}')
+          trend = s.get('clv_trend_direction', 'INSUFFICIENT_DATA')
+          sig = s.get('clv_trend_significant', False)
+          print(f'  Trend:             {trend}  (significant={sig})')
+          print()
+          print('ATS (SECONDARY METRIC)')
+          print(f'  Overall:           {fmt(s.get(\"ats_pct\"), \"%\")}')
+          print(f'  Edge alerts only:  {fmt(s.get(\"edge_ats_pct\"), \"%\")}')
+          print(f'  ROI:               {fmt(s.get(\"roi_units\"), \" units\")}')
+          print(f'  Sharpe:            {fmt(s.get(\"sharpe_ratio\"))}')
+          wab = s.get('weeks_above_breakeven')
+          wt = s.get('weeks_total')
+          if wab is not None and wt:
+              print(f'  Weeks profitable:  {wab}/{wt}')
+          print()
+          print('MARKET SIGNALS')
+          cn = s.get('market_confirmed_n', 0)
+          ctn = s.get('market_contradicted_n', 0)
+          print(f'  Confirmed picks:   '
+                f'{fmt(s.get(\"ats_market_confirmed\"), \"%\")} ATS  '
+                f'n={cn}')
+          print(f'  Contradicted picks:{fmt(s.get(\"ats_market_contradicted\"), \"%\")} ATS  '
+                f'n={ctn}')
+          lift = s.get('market_lift_pp')
+          if lift is not None:
+              print(f'  Market lift:       {lift:+.1f}pp vs overall')
+          print(f'  Steam games:       '
+                f'{fmt(s.get(\"ats_steam_games\"), \"%\")} ATS  '
+                f'n={s.get(\"steam_games_n\", 0)}')
+          print(f'  RLM confirmed:     '
+                f'{fmt(s.get(\"ats_rlm_confirmed\"), \"%\")} ATS  '
+                f'n={s.get(\"rlm_confirmed_n\", 0)}')
+          print(f'  Line freeze:       '
+                f'{fmt(s.get(\"ats_line_freeze\"), \"%\")} ATS  '
+                f'n={s.get(\"freeze_games_n\", 0)}')
+          print('=' * 55)
+          "
