@@ -1,0 +1,1 @@
+game_id,game_datetime_utc,home_team,away_team,pred_spread,home_spread_open,home_spread_current,clv_vs_open,clv_vs_close,actual_margin,covered,spread_error,model_confidence,game_tier

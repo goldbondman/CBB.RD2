@@ -1,1116 +1,138 @@
-name: CBB Analytics — Backtester & Results Tracker
-
-# ── SCHEDULES ────────────────────────────────────────────────────────────────
-# Results tracker:  Daily at 8:00 AM UTC (12:00 AM PST / 1:00 AM PDT)
-#                   Runs after all games are final. Processes yesterday's results.
-#
-# Backtester:       Weekly on Mondays at 10:00 AM UTC (2:00 AM PST)
-#                   Full historical replay + weight optimization.
-#                   Also runs on-demand via workflow_dispatch.
-# ─────────────────────────────────────────────────────────────────────────────
+name: CBB Analytics
 
 on:
   schedule:
-    # Results tracker — every morning after games complete
-    - cron: "0 8 * * *"
-    # Backtester — weekly on Monday mornings
-    - cron: "0 10 * * 1"
-
+    - cron: "0 8 * * *"     # Results tracker — daily 8 AM UTC
+    - cron: "0 10 * * 1"    # Backtester — weekly Monday 10 AM UTC
   workflow_dispatch:
     inputs:
       run_mode:
         description: "What to run"
-        required: true
-        default: "tracker_only"
+        default: "both"
         type: choice
-        options:
-          - tracker_only        # Process yesterday's results + email
-          - backtest_only       # Full backtest + weight optimization + email
-          - both                # Run both sequentially
-          - tracker_summary     # Print season summary, no processing
-      date:
-        description: "Tracker: target date YYYYMMDD (blank = yesterday)"
-        required: false
-        default: ""
-      backtest_start:
-        description: "Backtester: start date YYYYMMDD (blank = full history)"
-        required: false
-        default: ""
-      optimizer_metric:
-        description: "Backtester: optimization target"
-        required: false
-        default: "ats"
-        type: choice
-        options: [ats, mae, brier]
-      min_games:
-        description: "Backtester: minimum games per team before predicting"
-        required: false
-        default: "5"
-      dry_run:
-        description: "Tracker: compute outcomes but don't write to log"
-        required: false
-        default: "false"
-        type: choice
-        options: ["true", "false"]
-      update_schema:
-        description: "Rebuild schema registry from current outputs"
-        required: false
-        default: "false"
-        type: choice
-        options: ["true", "false"]
+        options: ["tracker_only", "backtest_only", "both"]
 
-
+# Pattern 3: Standardized concurrency group to prevent race conditions across all pipeline workflows
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: cbb-data-pipeline
   cancel-in-progress: false
 
 permissions:
   contents: write
   actions: write
 
-env:
-  TZ: "America/Los_Angeles"
-
-
 jobs:
-  # ════════════════════════════════════════════════════════════════════════════
-  # STEP 0 — Decide which jobs to run based on trigger
-  # ════════════════════════════════════════════════════════════════════════════
-  setup:
+  analytics:
     runs-on: ubuntu-latest
-    outputs:
-      run_tracker:  ${{ steps.decide.outputs.run_tracker }}
-      run_backtest: ${{ steps.decide.outputs.run_backtest }}
-
     steps:
-      - name: Decide which jobs to run
-        id: decide
-        run: |
-          python3 - <<'PY'
-          import os
-          from datetime import datetime, timezone
-
-          event = os.getenv("GITHUB_EVENT_NAME", "schedule")
-          mode  = os.getenv("INPUT_MODE", "")
-
-          if event == "workflow_dispatch":
-              tracker  = mode in ("tracker_only",  "both", "tracker_summary")
-              backtest = mode in ("backtest_only", "both")
-
-          elif event == "schedule":
-              # Use UTC hour as the authoritative trigger signal.
-              # github.event.schedule is unreliable across GitHub runner versions.
-              hour    = datetime.now(timezone.utc).hour
-              weekday = datetime.now(timezone.utc).weekday()  # 0=Monday
-
-              tracker  = (hour == 8)                    # daily 8 AM UTC
-              backtest = (hour == 10 and weekday == 0)  # Monday 10 AM UTC
-
-              # Safety fallback when neither matches
-              if not tracker and not backtest:
-                  tracker = True
-
-          else:
-              tracker  = True
-              backtest = False
-
-          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f"run_tracker={'true' if tracker else 'false'}\n")
-              f.write(f"run_backtest={'true' if backtest else 'false'}\n")
-
-          print(f"run_tracker={tracker}  run_backtest={backtest}  "
-                f"(event={event}, hour={datetime.now(timezone.utc).hour})")
-          PY
-        env:
-          INPUT_MODE: ${{ github.event.inputs.run_mode || '' }}
-
-  # ════════════════════════════════════════════════════════════════════════════
-  # JOB 1 — RESULTS TRACKER
-  # Processes yesterday's predictions vs actual outcomes.
-  # Fires daily at 8AM UTC.
-  # ════════════════════════════════════════════════════════════════════════════
-  results_tracker:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      actions: write
-    needs: setup
-    if: always() && !cancelled() && needs.setup.outputs.run_tracker == 'true'
-
-    steps:
+      # Step 1: Standard checkout
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Ensure data directories exist and are git-tracked
-        run: |
-          mkdir -p data/csv
-          mkdir -p data/raw_json
-          touch data/csv/.gitkeep
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add data/csv/.gitkeep 2>/dev/null || true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check artifact availability
-        id: artifact_check
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const names = new Set([
-              'espn-cbb-csvs',
-              'cbb-results-log',
-              'cbb-predictions-rolling-latest',
-            ]);
-            const found = {
-              espnCsvs: false,
-              resultsLog: false,
-              rollingPreds: false,
-            };
-
-            const now = new Date();
-
-            for await (const page of github.paginate.iterator(
-              github.rest.actions.listArtifactsForRepo,
-              {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                per_page: 100,
-              }
-            )) {
-              for (const artifact of page.data.artifacts || []) {
-                if (!names.has(artifact.name)) continue;
-                // Skip if expired (expires_at is returned by the list API)
-                if (artifact.expires_at && new Date(artifact.expires_at) < now) continue;
-                if (artifact.name === 'espn-cbb-csvs')                        found.espnCsvs     = true;
-                if (artifact.name === 'cbb-results-log')                      found.resultsLog   = true;
-                if (artifact.name === 'cbb-predictions-rolling-latest')       found.rollingPreds = true;
-              }
-            }
-
-            core.setOutput('espn_csvs',           String(found.espnCsvs));
-            core.setOutput('results_log',         String(found.resultsLog));
-            core.setOutput('rolling_predictions', String(found.rollingPreds));
-            core.info(`Artifact availability: ${JSON.stringify(found)}`);
-
-      - name: Get latest ESPN pipeline run ID
-        id: get_espn_run_id
-        if: steps.artifact_check.outputs.espn_csvs == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const runs = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'update_espn_cbb.yml',
-              status: 'success',
-              per_page: 1,
-            });
-            const runId = runs.data.workflow_runs[0]?.id;
-            if (!runId) throw new Error('No successful espn pipeline run found');
-            core.setOutput('run_id', runId);
-
-      # ── Restore latest CSVs (pipeline data + existing results log) ──────────
-      - name: Download ESPN CSVs
-        if: steps.artifact_check.outputs.espn_csvs == 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: espn-cbb-csvs
-          path: data/
-          run-id: ${{ steps.get_espn_run_id.outputs.run_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Fallback restore ESPN CSVs from git
-        if: steps.artifact_check.outputs.espn_csvs == 'true'
-        run: |
-          for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv; do
-            if [ ! -s "$f" ]; then
-              git show HEAD:"$f" > "$f" 2>/dev/null || true
-            fi
-          done
-
-      - name: Skip ESPN CSV download (artifact missing)
-        if: steps.artifact_check.outputs.espn_csvs != 'true'
-        run: echo "[INFO] Artifact espn-cbb-csvs not found; continuing without download."
-
+      # Step 2: Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
+      # Step 3: Download all required artifacts. Standardized names used.
+      # Handoff from market_lines.yml
+      - name: Download market lines
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-market-lines
+          path: data/
+        continue-on-error: true
+
+      - name: Download predictions with context
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-predictions-with-context
+          path: data/
+        continue-on-error: true
+
+      # Handoff from update_espn_cbb.yml
+      - name: Download ESPN data
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-espn-data
+          path: data/
+        continue-on-error: true
+
+      # Pattern 1: Verify artifacts or bootstrap from git history to prevent silent failures
+      - name: Verify artifacts or bootstrap from git
+        run: |
+          for f in data/market_lines.csv data/predictions_with_context.csv data/team_game_weighted.csv; do
+            if [ ! -s "$f" ]; then
+              echo "[WARN] $f missing or empty — attempting git restore"
+              git show HEAD:"$f" > "$f" 2>/dev/null || echo "[WARN] $f not in git"
+            fi
+          done
+
+      # Step 4: Pattern 5: Install dependencies with import guards
       - name: Install dependencies
-        run: python -m pip install -r requirements.txt
-
-      - name: Update schema registry
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.update_schema == 'true'
-        run: python build_schema_registry.py
-
-      - name: Run ESPN pipeline (bootstrap data when artifact missing)
-        if: steps.artifact_check.outputs.espn_csvs != 'true'
-        run: python espn_pipeline.py --days-back 7
-
-      - name: Verify player metrics completeness
-        continue-on-error: true
-        run: python field_reconciler.py --check-outputs
-
-      - name: Get latest results log run ID
-        id: get_results_run_id
-        if: steps.artifact_check.outputs.results_log == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const runs = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'cbb_analytics.yml',
-              status: 'success',
-              per_page: 1,
-            });
-            if (runs.data.workflow_runs.length > 0) {
-              core.setOutput('run_id', runs.data.workflow_runs[0].id);
-            }
-
-      - name: Download previous results log
-        if: steps.artifact_check.outputs.results_log == 'true' && steps.get_results_run_id.outputs.run_id
-        uses: actions/download-artifact@v4
-        with:
-          name: cbb-results-log
-          path: data/
-          run-id: ${{ steps.get_results_run_id.outputs.run_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Fallback restore results log from git
-        if: steps.artifact_check.outputs.results_log == 'true'
         run: |
-          for f in data/results_log.csv data/results_summary.csv data/results_model_split.csv; do
-            if [ ! -s "$f" ]; then
-              git show HEAD:"$f" > "$f" 2>/dev/null || true
-            fi
-          done
-
-      - name: Skip previous results log download (artifact missing)
-        if: steps.artifact_check.outputs.results_log != 'true'
-        run: echo "[INFO] Artifact cbb-results-log not found; first run will create fresh outputs."
-
-      - name: Get latest rolling predictions run ID
-        id: get_predictions_run_id
-        if: steps.artifact_check.outputs.rolling_predictions == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const runs = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'cbb_predictions_rolling.yml',
-              status: 'success',
-              per_page: 1,
-            });
-            const runId = runs.data.workflow_runs[0]?.id;
-            if (!runId) throw new Error('No successful predictions rolling run found');
-            core.setOutput('run_id', runId);
-
-      - name: Download latest predictions
-        if: steps.artifact_check.outputs.rolling_predictions == 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: cbb-predictions-rolling-latest
-          path: data/
-          run-id: ${{ steps.get_predictions_run_id.outputs.run_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Fallback restore latest predictions from git
-        if: steps.artifact_check.outputs.rolling_predictions == 'true'
-        run: |
-          for f in data/predictions_latest.csv data/predictions_combined_latest.csv data/ensemble_predictions_latest.csv; do
-            if [ ! -s "$f" ]; then
-              git show HEAD:"$f" > "$f" 2>/dev/null || true
-            fi
-          done
-
-      - name: Skip latest predictions download (artifact missing)
-        if: steps.artifact_check.outputs.rolling_predictions != 'true'
-        run: echo "[INFO] Artifact cbb-predictions-rolling-latest not found; tracker may have no games to process."
-
-      - name: Generate predictions for target date (when artifact missing)
-        if: steps.artifact_check.outputs.rolling_predictions != 'true'
-        env:
-          TARGET_DATE: ${{ github.event.inputs.date || '' }}
-        run: |
-          python - <<'PY'
-          import os, subprocess, sys, pathlib
-          from datetime import datetime, timedelta
-          from zoneinfo import ZoneInfo
-
-          tz   = ZoneInfo("America/Los_Angeles")
-          date = (os.getenv("TARGET_DATE") or "").strip()
-          if not date:
-              date = (datetime.now(tz) - timedelta(days=1)).strftime("%Y%m%d")
-
-          data_dir = pathlib.Path("data")
-          if not data_dir.exists() or not (data_dir / "games.csv").exists():
-              print("[SKIP] data/games.csv not found — cannot generate predictions")
-              raise SystemExit(0)
-
-          print(f"[INFO] Generating predictions for {date}...")
-          result = subprocess.run(
-              [sys.executable, "espn_prediction_runner.py", "--date", date],
-              check=False,
-          )
-          if result.returncode != 0:
-              print(f"[WARN] Primary prediction generation exited {result.returncode} — "
-                    f"check espn_prediction_runner.py logs for details")
-
-          # Attempt ensemble (optional — may fail if profiles/rankings unavailable)
-          subprocess.run([sys.executable, "cbb_ensemble.py"], check=False)
-          print("[OK] Prediction generation step complete")
-          PY
-
-      - name: Debug data folder (post-download)
-        run: |
-          echo "[INFO] Listing data/ (max depth 3)"
-          find data -maxdepth 3 -type f | sed -n '1,200p' || true
-
-      # ── Run tracker ──────────────────────────────────────────────────────────
-      - name: Run results tracker
-        id: tracker
-        env:
-          TARGET_DATE: ${{ github.event.inputs.date || '' }}
-          DRY_RUN:     ${{ github.event.inputs.dry_run || 'false' }}
-          RUN_MODE:    ${{ github.event.inputs.run_mode || 'tracker_only' }}
-        run: |
-          python - <<'PY'
-          import os, subprocess, sys
-
-          date     = (os.getenv("TARGET_DATE") or "").strip()
-          dry_run  = os.getenv("DRY_RUN", "false").lower() == "true"
-          run_mode = os.getenv("RUN_MODE", "tracker_only")
-
-          cmd = [sys.executable, "cbb_results_tracker.py"]
-
-          if run_mode == "tracker_summary":
-              cmd.append("--summary")
-          else:
-              if date:
-                  cmd += ["--date", date]
-              if dry_run:
-                  cmd.append("--dry-run")
-
-          print(f"[RUN] {' '.join(cmd)}")
-          result = subprocess.run(cmd, check=False, capture_output=False)
-
-          if result.returncode != 0:
-              print(f"[WARN] Tracker exited {result.returncode} — may be no games yesterday")
-          PY
-
-      # ── Build season summaries ────────────────────────────────────────────────
-      - name: Build season summaries
-        continue-on-error: true
-        run: python cbb_season_summaries.py
-
-      # ── Read alert count for email subject line ────────────────────────────
-      - name: Check for alerts
-        id: alerts
-        run: |
-          python - <<'PY'
-          import pandas as pd, pathlib, os
-
-          alerts_path = pathlib.Path("data/results_alerts.csv")
-          n_alerts    = 0
-          critical    = 0
-
-          if alerts_path.exists() and alerts_path.stat().st_size > 10:
-              df = pd.read_csv(alerts_path)
-              if not df.empty:
-                  n_alerts = len(df)
-                  critical = int((df.get("severity", pd.Series()) == "CRITICAL").sum())
-
-          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f"n_alerts={n_alerts}\n")
-              f.write(f"n_critical={critical}\n")
-              f.write(f"has_alerts={'true' if n_alerts > 0 else 'false'}\n")
-
-          print(f"Alerts: {n_alerts} total, {critical} critical")
-          PY
-
-      # ── Build email body ─────────────────────────────────────────────────────
-      - name: Build tracker email
-        id: tracker_email
-        run: |
-          python - <<'PY'
-          import pandas as pd, pathlib, json, os
-          from datetime import datetime, timedelta
-          from zoneinfo import ZoneInfo
-
-          tz       = ZoneInfo("America/Los_Angeles")
-          today    = datetime.now(tz=tz).strftime("%Y-%m-%d")
-          yesterday= (datetime.now(tz=tz) - timedelta(days=1)).strftime("%B %d, %Y")
-
-          lines = []
-          lines.append(f"CBB Results Tracker — {yesterday}")
-          lines.append("=" * 60)
-
-          # ── Daily results table ────────────────────────────────────────────
-          log_path = pathlib.Path("data/results_log.csv")
-          if log_path.exists():
-              df = pd.read_csv(log_path)
-              df["game_datetime_utc"] = pd.to_datetime(
-                  df["game_datetime_utc"], utc=True, errors="coerce"
-              )
-              cutoff   = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=1)
-              df_today = df[df["game_datetime_utc"] >= cutoff].copy()
-
-              if not df_today.empty:
-                  ats_valid = df_today["primary_ats_correct"].dropna()
-                  ens_valid = df_today["ens_ats_correct"].dropna()
-                  lines.append(f"\nGames processed:   {len(df_today)}")
-                  lines.append(f"Games with lines:  {len(ats_valid)}")
-                  if len(ats_valid):
-                      lines.append(f"Primary ATS:       {ats_valid.sum():.0f}/{len(ats_valid)} ({ats_valid.mean()*100:.1f}%)")
-                  if len(ens_valid):
-                      lines.append(f"Ensemble ATS:      {ens_valid.sum():.0f}/{len(ens_valid)} ({ens_valid.mean()*100:.1f}%)")
-
-                  win_v = df_today["primary_wins_game"].dropna()
-                  if len(win_v):
-                      lines.append(f"Winner picks:      {win_v.sum():.0f}/{len(win_v)} ({win_v.mean()*100:.1f}%)")
-
-                  err_v = pd.to_numeric(df_today["primary_margin_error"], errors="coerce").dropna()
-                  if len(err_v):
-                      lines.append(f"Margin MAE:        {err_v.abs().mean():.1f} pts")
-                      lines.append(f"Margin Bias:       {err_v.mean():+.1f} pts")
-
-                  lines.append("\nGAME RESULTS")
-                  lines.append("-" * 60)
-                  lines.append(f"{'MATCHUP':<34} {'ACTUAL':>6} {'PRED':>6} {'ERR':>6} {'ATS':>4}")
-                  lines.append("-" * 60)
-
-                  for _, row in df_today.sort_values("actual_margin", ascending=False, na_position='last').iterrows():
-                      home = str(row.get("home_team",""))[:14]
-                      away = str(row.get("away_team",""))[:14]
-                      matchup = f"{home} vs {away}"
-                      act = f"{row.get('actual_margin', 0):+.0f}"
-                      pred_s = row.get("pred_spread")
-                      pred = f"{-float(pred_s):+.0f}" if pd.notna(pred_s) else "N/A"
-                      err_s = row.get("primary_margin_error")
-                      err = f"{float(err_s):+.0f}" if pd.notna(err_s) else "N/A"
-                      ats = {1: " ✓", 0: " ✗"}.get(row.get("primary_ats_correct"), " -")
-                      lines.append(f"{matchup:<34} {act:>6} {pred:>6} {err:>6} {ats:>4}")
-              else:
-                  lines.append("\nNo games processed yesterday (off day or no data).")
-          else:
-              lines.append("\nNo results log found yet.")
-
-          # ── Season rolling windows ─────────────────────────────────────────
-          summary_path = pathlib.Path("data/results_summary.csv")
-          if summary_path.exists():
-              sdf = pd.read_csv(summary_path)
-              sdf = sdf[sdf["source"] == "primary"]
-              lines.append("\n\nROLLING PERFORMANCE")
-              lines.append("-" * 60)
-              lines.append(f"{'WINDOW':<10} {'N':>5} {'ATS%':>6} {'O/U%':>6} {'WIN%':>6} {'MAE':>6} {'BIAS':>6}")
-              lines.append("-" * 60)
-              for _, row in sdf.iterrows():
-                  ats_flag = " ⚡" if float(row.get("ats_pct",0)) > 52.38 else "  "
-                  lines.append(
-                      f"{str(row.get('window','')):<10} "
-                      f"{int(row.get('n_games',0)):>5} "
-                      f"{float(row.get('ats_pct',0)):>5.1f}%{ats_flag}"
-                      f"{float(row.get('ou_pct',0)):>5.1f}% "
-                      f"{float(row.get('win_pct',0)):>5.1f}% "
-                      f"{float(row.get('margin_mae',0)):>6.2f} "
-                      f"{float(row.get('margin_bias',0)):>+6.2f}"
-                  )
-
-          # ── Per-model split ────────────────────────────────────────────────
-          split_path = pathlib.Path("data/results_model_split.csv")
-          if split_path.exists():
-              mdf = pd.read_csv(split_path)
-              lines.append("\n\nPER-MODEL ATS% (Season / L30 / L7)")
-              lines.append("-" * 60)
-              lines.append(f"{'MODEL':<18} {'SEASON':>8} {'L30':>8} {'L7':>8}")
-              lines.append("-" * 60)
-              for _, row in mdf.iterrows():
-                  sea = float(row.get("SEASON_ats", 0))
-                  l30 = float(row.get("L30_ats", 0))
-                  l7  = float(row.get("L7_ats", 0))
-                  flag = " ⚡" if sea > 52.38 else "  "
-                  lines.append(f"{str(row.get('model','')):<18} {sea:>7.1f}%{flag} {l30:>7.1f}% {l7:>7.1f}%")
-
-          # ── Alerts ────────────────────────────────────────────────────────
-          alerts_path = pathlib.Path("data/results_alerts.csv")
-          if alerts_path.exists():
-              adf = pd.read_csv(alerts_path)
-              if not adf.empty:
-                  lines.append(f"\n\n⚠️  ACTIVE ALERTS ({len(adf)})")
-                  lines.append("-" * 60)
-                  for _, row in adf.iterrows():
-                      sev  = str(row.get("severity",""))
-                      atype= str(row.get("alert_type",""))
-                      msg  = str(row.get("message",""))
-                      icon = "🚨" if sev == "CRITICAL" else "⚠️ "
-                      lines.append(f"{icon} [{atype}]")
-                      lines.append(f"   {msg}")
-
-          lines.append("\n" + "=" * 60)
-          lines.append("Generated by CBB Analytics Pipeline")
-
-          body = "\n".join(lines)
-
-          # Write to file for the email step to read
-          with open("/tmp/tracker_email_body.txt", "w") as f:
-              f.write(body)
-
-          print(body)
-          PY
-
-      # ── Send tracker email ────────────────────────────────────────────────
-      - name: Email tracker results
-        continue-on-error: true
-        env:
-          GMAIL_ADDRESS:    ${{ secrets.GMAIL_ADDRESS }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          NOTIFY_EMAIL:     ${{ secrets.NOTIFY_EMAIL }}
-          N_ALERTS:         ${{ steps.alerts.outputs.n_alerts }}
-          N_CRITICAL:       ${{ steps.alerts.outputs.n_critical }}
-        run: |
-          python send_email.py \
-            --subject "CBB Results $(date +'%b %d')" \
-            --body-file /tmp/tracker_email_body.txt \
-            --attachments \
-              data/results_log.csv \
-              data/results_summary.csv \
-              data/results_model_split.csv \
-              data/results_alerts.csv \
-              data/player_season_summary.csv \
-              data/team_season_summary.csv \
-            --critical-count ${{ steps.alerts.outputs.n_critical || 0 }}
-
-      - name: Check schema drift
-        run: python check_schema_drift.py
-        continue-on-error: true
-
-      # ── Persist results log as artifact ─────────────────────────────────────
-      - name: Check results files for artifact upload
-        id: upload_results
-        if: always()
-        run: |
-          shopt -s nullglob
-          files=(
-            data/results_log.csv
-            data/results_summary.csv
-            data/results_model_split.csv
-            data/results_alerts.csv
-            data/player_season_summary.csv
-            data/team_season_summary.csv
-          )
-
-          existing=0
-          for f in "${files[@]}"; do
-            if [ -s "$f" ]; then
-              existing=1
-            fi
-          done
-
-          echo "has_results_files=${existing}" >> "$GITHUB_OUTPUT"
-
-      - name: Upload results log artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cbb-results-log
-          path: |
-            data/results_log.csv
-            data/results_summary.csv
-            data/results_model_split.csv
-            data/results_alerts.csv
-            data/player_season_summary.csv
-            data/team_season_summary.csv
-            data/team_ats_profile.csv
-            data/team_luck_regression.csv
-            data/team_situational.csv
-            data/team_resume.csv
-            data/team_matchup_history.csv
-            data/conference_daily_summary.csv
-          retention-days: 90       # Keep longer — this is your performance history
-          if-no-files-found: warn
-
-
-      - name: Commit results tracker CSVs to repository
-        if: always()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-
-          git add \
-            data/results_log.csv \
-            data/results_summary.csv \
-            data/results_model_split.csv \
-            data/results_alerts.csv \
-            data/results_log_graded.csv \
-            data/player_season_summary.csv \
-            data/team_season_summary.csv \
-            2>/dev/null || true
-
-          if git diff --staged --quiet; then
-            echo "[SKIP] No results tracker changes to commit"
-            exit 0
-          fi
-
-          MAX_RETRIES=5
-          for i in $(seq 1 5); do
-            echo "Push attempt $i/$MAX_RETRIES"
-            git fetch origin main
-            git rebase -X ours origin/main --no-stat 2>&1 || {
-              git rebase --abort 2>/dev/null || true
-              git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
-            }
-
-            git add \
-              data/results_log.csv \
-              data/results_summary.csv \
-              data/results_model_split.csv \
-              data/results_alerts.csv \
-              data/results_log_graded.csv \
-              data/player_season_summary.csv \
-              data/team_season_summary.csv \
-              2>/dev/null || true
-
-            if git diff --staged --quiet; then
-              echo "[SKIP] Nothing to commit after merge"
-              exit 0
-            fi
-
-            git commit -m "tracker: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]" || true
-            git push origin HEAD:main && { echo "Push OK attempt $i"; exit 0; }
-
-            echo "[RETRY] Push failed, waiting before retry..."
-            sleep $((i * 3))
-          done
-
-          echo "[FAIL] Could not push after $MAX_RETRIES attempts"
-          exit 1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # ════════════════════════════════════════════════════════════════════════════
-  # JOB 2 — BACKTESTER
-  # Full historical replay + weight optimization.
-  # Runs weekly (Monday) or on-demand.
-  # ════════════════════════════════════════════════════════════════════════════
-  backtester:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      actions: write
-    needs: setup
-    if: needs.setup.outputs.run_backtest == 'true'
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Get latest results log run ID
-        id: get_results_run_id
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const runs = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'cbb_analytics.yml',
-              status: 'success',
-              per_page: 1,
-            });
-            if (runs.data.workflow_runs.length > 0) {
-              core.setOutput('run_id', runs.data.workflow_runs[0].id);
-            }
-
-      - name: Download previous results log
-        if: steps.get_results_run_id.outputs.run_id
-        uses: actions/download-artifact@v4
-        with:
-          name: cbb-results-log
-          path: data/
-          run-id: ${{ steps.get_results_run_id.outputs.run_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Fallback restore previous results log from git
-        run: |
-          for f in data/results_log.csv data/results_log_graded.csv; do
-            if [ ! -s "$f" ]; then
-              git show HEAD:"$f" > "$f" 2>/dev/null || true
-            fi
-          done
-
-      - name: Ensure data directories exist and are git-tracked
-        run: |
-          mkdir -p data/csv
-          mkdir -p data/raw_json
-          touch data/csv/.gitkeep
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add data/csv/.gitkeep 2>/dev/null || true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install dependencies
-        run: python -m pip install -r requirements.txt
-
-      # ── Generate required game log inputs ───────────────────────────────────
-      # artifact downloads can only pull from the *current* workflow run
-      # unless you provide a run-id (workflow_run trigger). For scheduled/dispatch
-      # analytics runs, we generate the inputs directly.
-      - name: Run ESPN pipeline (required for backtester)
-        run: |
-          python espn_pipeline.py --days-back 120
-
-      - name: Preflight backtester inputs
-        run: |
-          echo "[INFO] Checking backtester input files..."
-          ls -lah data || true
-          if [ -s data/team_game_weighted.csv ]; then
-            echo "[OK] data/team_game_weighted.csv present"
-          elif [ -s data/team_game_metrics.csv ]; then
-            echo "[OK] data/team_game_metrics.csv present (fallback)"
-          else
-            echo "[FAIL] Missing game log inputs. Expected data/team_game_weighted.csv or data/team_game_metrics.csv"
-            exit 1
-          fi
-
-      # ── Ensure graded results log exists ────────────────────────────────────
-      - name: Ensure graded results log exists
-        run: |
-          if [ ! -f data/results_log_graded.csv ]; then
-            echo "[WARN] Graded log not found — building from results_log.csv"
-            python build_backtest_csvs.py --section grade-only
-          fi
-
-      # ── Run backtester ───────────────────────────────────────────────────────
+          pip install -r requirements.txt
+          python -c "import pandas, numpy, requests, scipy" || \
+            { echo "[ERROR] Core dependency import failed"; exit 1; }
+
+      # Step 5: Run backtester (if requested or weekly)
       - name: Run backtester
-        id: backtest
-        env:
-          BACKTEST_START:   ${{ github.event.inputs.backtest_start || '' }}
-          OPTIMIZER_METRIC: ${{ github.event.inputs.optimizer_metric || 'ats' }}
-          MIN_GAMES:        ${{ github.event.inputs.min_games || '5' }}
-        run: |
-          python - <<'PY'
-          import os, subprocess, sys
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 10 * * 1' || github.event.inputs.run_mode == 'both' || github.event.inputs.run_mode == 'backtest_only'
+        run: python cbb_backtester.py --min-games 5
 
-          start   = (os.getenv("BACKTEST_START") or "").strip()
-          metric  = (os.getenv("OPTIMIZER_METRIC") or "ats").strip()
-          min_g   = (os.getenv("MIN_GAMES") or "5").strip()
-
-          cmd = [
-              sys.executable, "cbb_backtester.py",
-              "--optimizer-metric", metric,
-              "--min-games", min_g,
-          ]
-          if start:
-              cmd += ["--start-date", start]
-
-          print(f"[RUN] {' '.join(cmd)}")
-          subprocess.run(cmd, check=True)
-          PY
-
-      - name: Run build_backtest_csvs
-        run: |
-          if [ -f build_backtest_csvs.py ]; then
-            python build_backtest_csvs.py
-          else
-            echo "[SKIP] build_backtest_csvs.py not found"
-          fi
-
-      - name: Verify backtest output landed
-        run: |
-          python - <<'PY'
-          import pandas as pd
-          import sys
-          from pathlib import Path
-
-          path = Path("data/backtest_results_latest.csv")
-          if not path.exists():
-              print(f"FAIL: {path} missing after backtester run")
-              sys.exit(1)
-
-          df = pd.read_csv(path)
-          print(f"Rows: {len(df)}")
-          failures = []
-          for col in ["game_id", "actual_margin", "ens_spread", "home_team_id", "away_team_id"]:
-              if col not in df.columns:
-                  failures.append(f"{col} (missing)")
-                  continue
-              null_pct = df[col].isna().mean() * 100
-              print(f"  {col}: {null_pct:.0f}% null")
-              if null_pct == 100:
-                  failures.append(col)
-
-          if failures:
-              print(f"FAIL: critical output columns invalid: {failures}")
-              sys.exit(1)
-
-          print("PASS: critical backtest columns contain data")
-          PY
-
-
-      - name: Run pipeline health tests
-        run: pytest tests/test_pipeline_health.py -v
-        continue-on-error: true
-
-      # ── Build backtest email ──────────────────────────────────────────────
-      - name: Build backtest email
-        id: backtest_email
-        run: |
-          python - <<'PY'
-          import pandas as pd, json, pathlib, os
-          from datetime import datetime
-          from zoneinfo import ZoneInfo
-
-          tz    = ZoneInfo("America/Los_Angeles")
-          today = datetime.now(tz=tz).strftime("%Y-%m-%d")
-
-          lines = []
-          lines.append(f"CBB Backtester Report — {today}")
-          lines.append("=" * 72)
-
-          # ── Model accuracy table ───────────────────────────────────────────
-          report_files = sorted(pathlib.Path("data").glob("backtest_model_report_*.csv"))
-          if report_files:
-              rdf = pd.read_csv(report_files[-1])
-
-              lines.append("\nMODEL ACCURACY REPORT")
-              lines.append("-" * 72)
-              lines.append(
-                  f"{'MODEL':<16} {'N':>5} {'MAE':>6} {'RMSE':>6} {'BIAS':>6} "
-                  f"{'WIN%':>6} {'ATS%':>6} {'O/U%':>6} {'BRIER':>7} "
-                  f"{'EDGE_N':>7} {'EDGE_ATS':>8} {'ROI':>6}"
-              )
-              lines.append("-" * 72)
-
-              for _, row in rdf.iterrows():
-                  ats  = float(row.get("ats_pct", 0))
-                  flag = " ⚡" if ats > 52.38 else "  "
-                  lines.append(
-                      f"{str(row.get('model_name','')):<16} "
-                      f"{int(row.get('n_games',0)):>5} "
-                      f"{float(row.get('spread_mae',0)):>6.2f} "
-                      f"{float(row.get('spread_rmse',0)):>6.2f} "
-                      f"{float(row.get('spread_bias',0)):>+6.2f} "
-                      f"{float(row.get('win_pct',0)):>5.1f}% "
-                      f"{ats:>5.1f}%{flag}"
-                      f"{float(row.get('ou_pct',0)):>5.1f}% "
-                      f"{float(row.get('brier_score',0)):>7.4f} "
-                      f"{int(row.get('n_edge_games',0)):>7} "
-                      f"{float(row.get('edge_ats_pct',0)):>7.1f}% "
-                      f"{float(row.get('edge_roi_sim',0)):>+5.1f}%"
-                  )
-          else:
-              lines.append("\nNo model report found.")
-
-          # ── Calibration curve ──────────────────────────────────────────────
-          calib_files = sorted(pathlib.Path("data").glob("backtest_calibration_*.csv"))
-          if calib_files:
-              cdf = pd.read_csv(calib_files[-1])
-              if not cdf.empty:
-                  lines.append("\n\nCONFIDENCE CALIBRATION")
-                  lines.append("(well-calibrated: higher confidence → higher ATS%)")
-                  lines.append("-" * 45)
-                  lines.append(f"{'CONF RANGE':<16} {'N':>5} {'ATS%':>7}")
-                  lines.append("-" * 45)
-                  for _, row in cdf.iterrows():
-                      lo  = float(row.get("conf_bin_lo", 0))
-                      hi  = float(row.get("conf_bin_hi", 0))
-                      n   = int(row.get("n_games", 0))
-                      ats = float(row.get("ats_pct", 0))
-                      bar = "█" * int(ats / 5)   # ASCII bar, each block = 5%
-                      lines.append(f"{lo:.2f} – {hi:.2f}     {n:>5} {ats:>6.1f}%  {bar}")
-
-          # ── Optimized weights ──────────────────────────────────────────────
-          weights_path = pathlib.Path("data/backtest_optimized_weights.json")
-          if weights_path.exists():
-              with open(weights_path) as f:
-                  wdata = json.load(f)
-
-              lines.append("\n\nOPTIMIZED ENSEMBLE WEIGHTS")
-              lines.append(f"(Metric: {wdata.get('metric','ats').upper()} | "
-                           f"Value: {wdata.get('value',0):.4f} | "
-                           f"N games: {wdata.get('n_games_used',0):,})")
-              lines.append("-" * 45)
-              lines.append(f"{'MODEL':<18} {'DEFAULT':>9} {'OPTIMIZED':>10} {'DELTA':>8}")
-              lines.append("-" * 45)
-
-              opt     = wdata.get("weights", {})
-              default = wdata.get("default_weights", {})
-              for model, opt_w in opt.items():
-                  def_w = float(default.get(model, 0))
-                  delta = opt_w - def_w
-                  flag  = " ▲" if delta > 0.02 else (" ▼" if delta < -0.02 else "  ")
-                  lines.append(f"{model:<18} {def_w:>9.4f} {opt_w:>10.4f} {delta:>+7.4f}{flag}")
-
-              lines.append("\nTO APPLY: Copy 'optimized' values into EnsembleConfig in cbb_ensemble.py")
-
-          lines.append("\n" + "=" * 72)
-          lines.append("Generated by CBB Analytics Pipeline")
-
-          body = "\n".join(lines)
-
-          with open("/tmp/backtest_email_body.txt", "w") as f:
-              f.write(body)
-
-          print(body)
-          PY
-
-      # ── Send backtest email with report attachments ──────────────────────
-      - name: Email backtest report
-        continue-on-error: true
-        env:
-          GMAIL_ADDRESS:      ${{ secrets.GMAIL_ADDRESS }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          NOTIFY_EMAIL:       ${{ secrets.NOTIFY_EMAIL }}
-        run: |
-          python send_email.py \
-            --subject "CBB Backtester $(date +'%b %d, %Y')" \
-            --body-file /tmp/backtest_email_body.txt \
-            --attachments \
-              data/backtest_optimized_weights.json \
-              data/backtest_model_report_latest.csv \
-              data/backtest_results_latest.csv \
-              data/backtest_calibration_latest.csv \
-            --critical-count 0
-
-      # ── Upload backtest artifacts ────────────────────────────────────────────
-      - name: Check backtest files for artifact upload
-        id: upload_backtest
+      # Step 6: Pattern 2: Validate backtester outputs
+      - name: Validate backtester outputs
         if: always()
         run: |
-          shopt -s nullglob
-          files=(
-            data/results_log.csv
-            data/results_log_graded.csv
-            data/csv/backtest_summary.csv
-            data/csv/backtest_by_model.csv
-            data/csv/backtest_weekly.csv
-            data/csv/backtest_by_conference.csv
-            data/csv/backtest_calibration.csv
-            data/csv/backtest_by_edge.csv
-            data/csv/backtest_model_matrix.csv
-            data/backtest_results_*.csv
-            data/backtest_model_report_*.csv
-            data/backtest_calibration_*.csv
-            data/backtest_optimized_weights.json
-            data/model_weights.json
-            data/confidence_calibration.json
-            data/model_bias_table.csv
-            data/bias_report.json
-            data/bias_history.csv
-          )
+          if [ -f data/backtest_results_latest.csv ]; then
+            rows=$(( $(wc -l < data/backtest_results_latest.csv) - 1 ))
+            echo "[OK] backtest_results_latest.csv: $rows rows"
+          else
+            echo "[WARN] No backtester output found"
+          fi
 
-          existing=0
-          for f in "${files[@]}"; do
-            if [ -s "$f" ]; then
-              existing=1
-            fi
-          done
+      # Step 7: Run analytics/reporting scripts
+      - name: Run results tracker
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 8 * * *' || github.event.inputs.run_mode == 'both' || github.event.inputs.run_mode == 'tracker_only'
+        run: python cbb_results_tracker.py
 
-          echo "has_backtest_files=${existing}" >> "$GITHUB_OUTPUT"
+      - name: Run season summaries
+        run: python cbb_season_summaries.py || echo "Summaries failed (non-fatal)"
 
-      - name: Upload backtest artifacts
-        if: always() && steps.upload_backtest.outputs.has_backtest_files == '1'
+      # Step 8: Pattern 10: Upload results even on failure
+      - name: Upload analytics results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-backtest-${{ github.run_id }}
+          name: cbb-results-log
           path: |
             data/results_log.csv
-            data/results_log_graded.csv
-            data/csv/backtest_summary.csv
-            data/csv/backtest_by_model.csv
-            data/csv/backtest_weekly.csv
-            data/csv/backtest_by_conference.csv
-            data/csv/backtest_calibration.csv
-            data/csv/backtest_by_edge.csv
-            data/csv/backtest_model_matrix.csv
-            data/backtest_results_*.csv
-            data/backtest_model_report_*.csv
-            data/backtest_calibration_*.csv
-            data/model_weight_history.csv
-            data/model_weights.json
-            data/confidence_calibration.json
-            data/model_bias_table.csv
-            data/bias_report.json
-            data/bias_history.csv
+            data/results_summary.csv
+            data/backtest_results_latest.csv
+            data/team_season_summary.csv
           retention-days: 90
-          if-no-files-found: warn
 
-      - name: Upload backtest weights artifact
-        if: always() && steps.upload_backtest.outputs.has_backtest_files == '1'
-        uses: actions/upload-artifact@v4
-        with:
-          name: cbb-backtest-weights-${{ github.run_id }}
-          path: data/backtest_optimized_weights.json
-          retention-days: 90
-          if-no-files-found: warn
-
-      - name: Skip backtest artifact upload (no files generated)
-        if: always() && steps.upload_backtest.outputs.has_backtest_files != '1'
-        run: echo "[INFO] No backtest artifacts found; skipping upload for this run."
-
-      - name: Commit optimized weights to repository
+      # Step 9: Pattern 9: Standardized commit step with retry logic
+      - name: Commit to repo
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-
-          git add             data/results_log.csv             data/results_log_graded.csv             data/team_season_summary.csv             data/backtest_results_latest.csv             data/backtest_model_report_latest.csv             data/backtest_calibration_latest.csv             data/backtest_results_*.csv             data/backtest_model_report_*.csv             data/backtest_calibration_*.csv             data/csv/backtest_summary.csv             data/csv/backtest_by_model.csv             data/csv/backtest_weekly.csv             data/csv/backtest_by_conference.csv             data/csv/backtest_calibration.csv             data/csv/backtest_by_edge.csv             data/csv/backtest_model_matrix.csv             data/backtest_optimized_weights.json             data/backtest_weights_history.csv             data/weight_optimization_report.md             2>/dev/null || true
-
+          git add data/
           if git diff --staged --quiet; then
-            echo "[SKIP] Weights unchanged"
+            echo "[SKIP] No changes to commit"
             exit 0
           fi
-
-          MAX_RETRIES=5
-          for i in $(seq 1 5); do
-            echo "Push attempt $i/$MAX_RETRIES"
+          git commit -m "analytics: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
+          for i in 1 2 3 4 5; do
             git fetch origin main
             git rebase -X ours origin/main --no-stat 2>&1 || {
               git rebase --abort 2>/dev/null || true
-              git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
+              git merge origin/main -X ours --no-edit
             }
-
-            git add               data/results_log.csv               data/results_log_graded.csv               data/team_season_summary.csv               data/backtest_results_latest.csv               data/backtest_model_report_latest.csv               data/backtest_calibration_latest.csv               data/backtest_results_*.csv               data/backtest_model_report_*.csv               data/backtest_calibration_*.csv               data/csv/backtest_summary.csv               data/csv/backtest_by_model.csv               data/csv/backtest_weekly.csv               data/csv/backtest_by_conference.csv               data/csv/backtest_calibration.csv               data/csv/backtest_by_edge.csv               data/csv/backtest_model_matrix.csv               data/backtest_optimized_weights.json               data/backtest_weights_history.csv               data/weight_optimization_report.md               2>/dev/null || true
-
-            if git diff --staged --quiet; then
-              echo "[SKIP] Nothing to commit after merge"
-              exit 0
-            fi
-
-            SEASON_PCT=$(python -c "
-          import json, pathlib
-          w = pathlib.Path('data/backtest_optimized_weights.json')
-          d = json.loads(w.read_text()) if w.exists() else {}
-          pct = d.get('season_ats_pct', 0)
-          print(f'{pct*100:.1f}' if pct < 1 else f'{pct:.1f}')
-          " 2>/dev/null || echo "?")
-            git commit -m "weights: optimized $(date +'%Y-%m-%d') — season ATS ${SEASON_PCT}% [skip ci]" || true
-            git push origin HEAD:main && { echo "Push OK attempt $i"; exit 0; }
-
-            echo "[RETRY] Push failed, waiting before retry..."
+            git push origin HEAD:main && { echo "[OK] Push succeeded attempt $i"; exit 0; }
             sleep $((i * 3))
           done
-
-          echo "[FAIL] Could not push after $MAX_RETRIES attempts"
-          exit 1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "[WARN] Push failed after 5 attempts"

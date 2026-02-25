@@ -451,6 +451,10 @@ def build_predictions_with_context(
             market_cols = ["event_id"] + expected_market_cols
             available = [c for c in market_cols if c in market_latest.columns]
 
+            # Preserve model spreads before merge to handle potential market line collisions
+            _pred_spread_backup = df["pred_spread"].copy() if "pred_spread" in df.columns else None
+            _ens_spread_backup = df["ens_ens_spread"].copy() if "ens_ens_spread" in df.columns else None
+
             # Drop market columns from df before merge — but NEVER drop
             # model output columns even if they share a name with a market col.
             _protected = {"pred_spread", "ens_ens_spread", "predicted_spread",
@@ -477,6 +481,18 @@ def build_predictions_with_context(
                 len(df),
                 (df["pred_spread"].isna().mean() * 100) if "pred_spread" in df.columns else 100.0
             )
+
+            # Restore model spreads if they were lost or partially nullified by merge
+            if _pred_spread_backup is not None:
+                df["pred_spread"] = _pred_spread_backup.values
+            if _ens_spread_backup is not None:
+                df["ens_ens_spread"] = _ens_spread_backup.values
+
+            log.info(
+                "Market merge diagnostic: pred_spread null rate = %.1f%%",
+                df["pred_spread"].isna().mean() * 100 if "pred_spread" in df.columns else 100.0
+            )
+
             market_signal_cols = [
                 c for c in [
                     "home_spread_current", "home_spread_open", "line_movement",
@@ -591,8 +607,6 @@ def build_predictions_with_context(
                 "form_rating", "recent_form", "form_score",
                 "t_form_rating",
             ],
-            # momentum_tier is derived from momentum_score after merge
-            # (not present in source CSV — see derivation block below)
             "luck_score":      ["luck_score", "luck"],
             "ha_net_rtg_l10":  [
                 "ha_net_rtg_l10", "ha_net_eff_l10",
@@ -689,12 +703,26 @@ def build_predictions_with_context(
         df = df.merge(away_slim, on="away_team_id", how="left")
 
         # Derive momentum_tier from momentum_score unconditionally
+        # Verify no _x/_y collisions remain for context fields
+        _collision_vars = []
+        for f in _ctx_field_map:
+            for side in ["home_", "away_"]:
+                for suffix in ["_x", "_y"]:
+                    if f"{side}{f}{suffix}" in df.columns:
+                        _collision_vars.append(f"{side}{f}{suffix}")
+        if _collision_vars:
+            log.warning("Context merge left collision columns: %s", _collision_vars)
+
+        # Derive momentum_tier from momentum_score
         for _side in ["home", "away"]:
             _tier_col = f"{_side}_momentum_tier"
             _score_col = f"{_side}_momentum_score"
             if _score_col in df.columns:
                 df[_tier_col] = pd.cut(
                     pd.to_numeric(df[_score_col], errors="coerce"),
+                _score = pd.to_numeric(df[_score_col], errors="coerce")
+                df[_tier_col] = pd.cut(
+                    _score,
                     bins=[-999, 40, 50, 60, 70, 999],
                     labels=["COLD", "NEUTRAL", "WARM", "HOT", "ELITE"],
                     right=True,
@@ -745,6 +773,11 @@ def build_predictions_with_context(
                             pd.to_numeric(df.get(_gu_col), errors="coerce")
                         )
 
+        n_mom = int(df.get("home_momentum_score", pd.Series(dtype=float)).notna().sum())
+        log.info(
+            "Team profile context merged: %d/%d games have home_momentum_score",
+            n_mom, len(df)
+        )
     else:
         log.warning(
             "No team context source found. Checked: %s",
@@ -886,17 +919,27 @@ def build_predictions_with_context(
         else:
             df["eff_edge"] = pd.NA
 
+        _close = pd.to_numeric(df["home_spread_current"], errors="coerce") \
+            if "home_spread_current" in df.columns \
+            else pd.Series(dtype=float)
+
         # 3. clv_vs_open: model vs opening line
         if len(_open) > 0 and _open.notna().any() and len(_pred) > 0:
             df["clv_vs_open"] = (_open - _pred).round(3)
         else:
             df["clv_vs_open"] = pd.NA
 
-        # 4. predicted_spread alias (required by schema)
+        # 4. clv_vs_close: model vs current/closing line
+        if len(_close) > 0 and _close.notna().any() and len(_pred) > 0:
+            df["clv_vs_close"] = (_close - _pred).round(3)
+        else:
+            df["clv_vs_close"] = pd.NA
+
+        # 5. predicted_spread alias (required by schema)
         if len(_pred) > 0 and _pred.notna().any():
             df["predicted_spread"] = _pred
 
-        # 5. pred_home_score / pred_away_score from spread + total
+        # 6. pred_home_score / pred_away_score from spread + total
         if "pred_total" in df.columns and len(_pred) > 0:
             _total = pd.to_numeric(df["pred_total"], errors="coerce")
             # spread = away - home; total = home + away
@@ -909,15 +952,24 @@ def build_predictions_with_context(
         log.info(
             "Computed context cols — "
             "spread_diff_vs_line: %d/%d | eff_edge: %d/%d | "
-            "clv_vs_open: %d/%d | predicted_spread: %d/%d | "
+            "clv_vs_open: %d/%d | clv_vs_close: %d/%d | predicted_spread: %d/%d | "
             "pred_home_score: %d/%d",
             int(df["spread_diff_vs_line"].notna().sum()), len(df),
             int(df["eff_edge"].notna().sum()), len(df),
             int(df["clv_vs_open"].notna().sum()), len(df),
+            int(df["clv_vs_close"].notna().sum()), len(df),
             int(df["predicted_spread"].notna().sum())
                 if "predicted_spread" in df.columns else 0, len(df),
             int(df["pred_home_score"].notna().sum())
                 if "pred_home_score" in df.columns else 0, len(df),
+        )
+
+        clv_open_null_rate = float(df["clv_vs_open"].isna().mean()) if "clv_vs_open" in df.columns else 1.0
+        clv_close_null_rate = float(df["clv_vs_close"].isna().mean()) if "clv_vs_close" in df.columns else 1.0
+        log.info(
+            "CLV null rates — clv_vs_open: %.2f%% | clv_vs_close: %.2f%%",
+            clv_open_null_rate * 100.0,
+            clv_close_null_rate * 100.0,
         )
 
     except Exception as _exc:

@@ -33,6 +33,9 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+from scipy import stats as scipy_stats
+
+from cbb_config import SIGMA
 
 log = logging.getLogger(__name__)
 
@@ -150,7 +153,7 @@ class SimResult:
 # VARIANCE MODEL
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def compute_spread_std(inp: GameSimInput, base_std: float = 10.5) -> float:
+def compute_spread_std(inp: GameSimInput, base_std: float = SIGMA) -> float:
     """
     CBB spread outcomes have empirically ~10-11 point std dev.
     Adjust based on team characteristics:
@@ -588,10 +591,9 @@ def build_game_sim_inputs(
         if ensemble_total is None:
             ensemble_total = 140.0  # fallback
 
-        # Spread/total std from ensemble if available
-        spread_std = _safe_float(row.get("ens_ens_spread_std"))
-        if spread_std is None:
-            spread_std = _safe_float(row.get("ens_spread_std"))
+        # Use empirical CBB outcome variance model for MC spread distribution.
+        # Ensemble spread std reflects model agreement, not game outcome volatility.
+        spread_std = None
         total_std = None  # ensemble doesn't expose total_std currently
 
         # Betting context
@@ -651,6 +653,130 @@ def _safe_float(val) -> Optional[float]:
         return f
     except (TypeError, ValueError):
         return None
+
+
+def _calibration_curve(df: pd.DataFrame, prob_col: str) -> tuple[pd.DataFrame, float]:
+    """Build decile calibration report and mean calibration error."""
+    bins = np.linspace(0.0, 1.0, 11)
+    labels = [f"{int(bins[i]*100):02d}-{int(bins[i+1]*100):02d}%" for i in range(10)]
+    work = df.copy()
+    work["prob_bucket"] = pd.cut(
+        work[prob_col],
+        bins=bins,
+        labels=labels,
+        include_lowest=True,
+        right=True,
+    )
+    grouped = (
+        work.groupby("prob_bucket", observed=False)
+        .agg(
+            n_games=("actual_won", "size"),
+            predicted_win_rate=(prob_col, "mean"),
+            actual_win_rate=("actual_won", "mean"),
+        )
+        .reset_index()
+    )
+    grouped["calibration_error"] = (grouped["predicted_win_rate"] - grouped["actual_win_rate"]).abs()
+    mce = float(grouped.loc[grouped["n_games"] > 0, "calibration_error"].mean()) if (grouped["n_games"] > 0).any() else float("nan")
+    return grouped, mce
+
+
+def build_mc_calibration_report(
+    accuracy_path: Path = DATA_DIR / "model_accuracy_report.csv",
+    output_path: Path = DATA_DIR / "mc_calibration_report.csv",
+) -> dict:
+    """
+    Build MC calibration diagnostics and persist decile report CSV.
+
+    Returns metrics including MCE, sample size, and empirical sigma estimate.
+    """
+    if not accuracy_path.exists() or accuracy_path.stat().st_size < 10:
+        empty = pd.DataFrame({
+            "prob_bucket": [f"{i:02d}-{i+10:02d}%" for i in range(0, 100, 10)],
+            "n_games": [0] * 10,
+            "predicted_win_rate": [np.nan] * 10,
+            "actual_win_rate": [np.nan] * 10,
+            "calibration_error": [np.nan] * 10,
+        })
+        empty.to_csv(output_path, index=False)
+        print(f"[WARN] Missing {accuracy_path}; wrote empty calibration report to {output_path}")
+        return {
+            "n_games": 0,
+            "mce_before": np.nan,
+            "mce_after": np.nan,
+            "sigma_empirical": np.nan,
+            "sigma_current": SIGMA,
+            "sigma_recommended": None,
+            "updated": False,
+        }
+
+    df = pd.read_csv(accuracy_path, low_memory=False)
+    required = {"mc_home_win_pct", "actual_margin"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing required columns in {accuracy_path}: {sorted(missing)}")
+
+    df["mc_home_win_pct"] = pd.to_numeric(df["mc_home_win_pct"], errors="coerce")
+    df["actual_margin"] = pd.to_numeric(df["actual_margin"], errors="coerce")
+    graded = df.dropna(subset=["mc_home_win_pct", "actual_margin"]).copy()
+    graded = graded[(graded["mc_home_win_pct"] >= 0.0) & (graded["mc_home_win_pct"] <= 1.0)]
+    graded["actual_won"] = (graded["actual_margin"] > 0).astype(int)
+
+    curve_before, mce_before = _calibration_curve(graded, "mc_home_win_pct")
+    curve_before.to_csv(output_path, index=False)
+
+    pred_spread_col = None
+    for candidate in ["ens_ens_spread", "ens_spread", "pred_spread"]:
+        if candidate in graded.columns:
+            pred_spread_col = candidate
+            break
+
+    sigma_empirical = np.nan
+    sigma_recommended = None
+    mce_after = np.nan
+    updated = False
+
+    if pred_spread_col is not None:
+        graded[pred_spread_col] = pd.to_numeric(graded[pred_spread_col], errors="coerce")
+        err = (graded["actual_margin"] - graded[pred_spread_col]).dropna()
+        if len(err) >= 15:
+            sigma_empirical = float(err.std(ddof=1))
+            sigma_recommended = round(sigma_empirical, 3)
+            z = (0.0 - graded[pred_spread_col]) / sigma_empirical
+            graded["mc_home_win_pct_recal"] = scipy_stats.norm.cdf(z)
+            _, mce_after = _calibration_curve(graded.dropna(subset=["mc_home_win_pct_recal"]), "mc_home_win_pct_recal")
+
+            if abs(sigma_empirical - SIGMA) > 1.0:
+                updated = True
+        else:
+            print(f"[WARN] Only {len(err)} graded games with spread residuals; need >=15 to calibrate SIGMA.")
+    else:
+        print("[WARN] No spread prediction column found for SIGMA calibration.")
+
+    print(f"[MC-CAL] Graded games: {len(graded)}")
+    print(f"[MC-CAL] MCE before: {mce_before:.4f}" if pd.notna(mce_before) else "[MC-CAL] MCE before: n/a")
+    print(f"[MC-CAL] MCE after:  {mce_after:.4f}" if pd.notna(mce_after) else "[MC-CAL] MCE after: n/a")
+    if pd.notna(sigma_empirical):
+        print(f"[MC-CAL] SIGMA current={SIGMA:.3f}, empirical={sigma_empirical:.3f}")
+
+    old_mc = float(scipy_stats.norm.cdf((0.0 - (-6.5)) / SIGMA))
+    use_sigma = sigma_empirical if pd.notna(sigma_empirical) else SIGMA
+    new_mc = float(scipy_stats.norm.cdf((0.0 - (-6.5)) / use_sigma))
+    print(
+        "[MC-CAL] Kelly impact example (formula unchanged in alpha_evaluator): "
+        f"pred_spread=-6.5, spread_line=-3.5, model_confidence=0.62, "
+        f"mc_home_win_pct old={old_mc:.4f}, new={new_mc:.4f}"
+    )
+
+    return {
+        "n_games": int(len(graded)),
+        "mce_before": mce_before,
+        "mce_after": mce_after,
+        "sigma_empirical": sigma_empirical,
+        "sigma_current": SIGMA,
+        "sigma_recommended": sigma_recommended,
+        "updated": updated,
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -901,6 +1027,10 @@ def main() -> None:
             return
 
     print(f"[MC] {len(df)} games to simulate")
+
+    cal_metrics = build_mc_calibration_report()
+    if cal_metrics["n_games"] < 15:
+        print("[WARN] Fewer than 15 graded games available; skipping SIGMA updates.")
 
     # Load team profiles from rankings
     team_profiles = load_team_profiles_for_sim()

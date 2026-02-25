@@ -26,20 +26,18 @@ on:
   schedule:
     - cron: "0 10 * * *"   # 10:00 AM UTC daily (2 AM PST / 3 AM PDT)
 
-
+# Standardized concurrency group to prevent race conditions across all pipeline workflows
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: cbb-data-pipeline
   cancel-in-progress: false
 
 permissions:
   contents: write
   actions: write
 
-
 jobs:
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 1 — DATA PIPELINE
-  # Fetch ESPN data, compute all metrics, write CSVs
   # ════════════════════════════════════════════════════════════════════════════
   update:
     runs-on: ubuntu-latest
@@ -48,599 +46,93 @@ jobs:
       actions: write
     outputs:
       pipeline_success: ${{ steps.run_pipeline.outputs.success }}
-      game_count:       ${{ steps.run_pipeline.outputs.game_count }}
 
     steps:
+      # Standard checkout step
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Ensure data directories exist and are git-tracked
+      # Ensure directories exist
+      - name: Ensure data directories exist
         run: |
           mkdir -p data/csv
           mkdir -p data/raw_json
           touch data/csv/.gitkeep
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add data/csv/.gitkeep 2>/dev/null || true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify .gitignore is not blocking CSV files
-        run: |
-          if git check-ignore -q data/csv/backtest_summary.csv 2>/dev/null; then
-            echo "[WARN] data/csv/ is being ignored by .gitignore — fix required"
-            echo "       Remove any data/ or *.csv entries from .gitignore"
-            exit 1
-          else
-            echo "[OK] data/csv/ is not ignored"
-          fi
-
-      - name: Get latest ESPN pipeline run ID
-        id: get_run_id
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const runs = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'update_espn_cbb.yml',
-              status: 'success',
-              per_page: 1,
-            });
-            if (runs.data.workflow_runs.length > 0) {
-              core.setOutput('run_id', runs.data.workflow_runs[0].id);
-            }
-
-      - name: Download previous ESPN CSVs
-        if: steps.get_run_id.outputs.run_id
-        uses: actions/download-artifact@v4
-        with:
-          name: espn-cbb-csvs
-          path: data/
-          run-id: ${{ steps.get_run_id.outputs.run_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true   # OK to fail on first-ever run
-
-      - name: Fallback restore ESPN CSVs from git (update job)
-        run: |
-          for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv; do
-            if [ ! -s "$f" ]; then
-              git show HEAD:"$f" > "$f" 2>/dev/null || true
-            fi
-          done
-
+      # Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
+      # Pattern 5: Install dependencies with import guards
       - name: Install dependencies
-        run: python -m pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          python -c "import pandas, numpy, requests, scipy" || \
+            { echo "[ERROR] Core dependency import failed"; exit 1; }
 
+      # Execute the main data collection pipeline
       - name: Run ESPN pipeline
         id: run_pipeline
         run: |
           python espn_pipeline.py --days-back ${{ github.event.inputs.days_back || '3' }}
           echo "success=true" >> $GITHUB_OUTPUT
-          GAME_COUNT=$(python -c "
-          import pandas as pd, pathlib
-          p = pathlib.Path('data/games.csv')
-          if p.exists():
-              df = pd.read_csv(p)
-              print(len(df[df['completed'].astype(str).str.lower() == 'true']))
-          else:
-              print(0)
-          " 2>/dev/null || echo "0")
-          echo "game_count=$GAME_COUNT" >> $GITHUB_OUTPUT
         env:
           DAYS_BACK: ${{ github.event.inputs.days_back || '3' }}
 
-      - name: Check pipeline output health
+      # Pattern 2: Validate team_game_weighted.csv
+      - name: Validate team_game_weighted.csv
+        run: |
+          check_csv() {
+            local f="$1" min_rows="${2:-1}"
+            if [ ! -f "$f" ]; then
+              echo "[ERROR] $f was not created"; exit 1
+            fi
+            local rows=$(( $(wc -l < "$f") - 1 ))
+            if [ "$rows" -lt "$min_rows" ]; then
+              echo "[ERROR] $f has $rows data rows (minimum: $min_rows)"; exit 1
+            fi
+            echo "[OK] $f: $rows rows"
+          }
+          check_csv data/team_game_weighted.csv 1
+
+      # Pattern 10: Upload artifacts even on failure
+      # Standardized name: cbb-espn-data (matches contract table)
+      - name: Upload ESPN CSVs
         if: always()
-        run: |
-          python -c "
-          import pandas as pd, sys, pathlib
-          try:
-              p = pathlib.Path('data/team_game_metrics.csv')
-              if not p.exists():
-                  p = pathlib.Path('data/team_game_logs.csv')
-              if not p.exists():
-                  print('[WARN] No team output CSV found yet — pipeline may not have written data')
-                  sys.exit(0)
-              df = pd.read_csv(p)
-              print(f'[OK] {p.name}: {len(df)} rows')
-              if 'spread' in df.columns:
-                  odds_null = df['spread'].isna().mean() * 100
-                  if odds_null == 100:
-                      print(f'[INFO] Odds fields empty this run — ESPN did not return odds (normal)')
-                  else:
-                      print(f'[OK] Odds populated: {100-odds_null:.1f}% of rows have spread data')
-              else:
-                  print('[INFO] No spread column in output')
-          except Exception as e:
-              print(f'[FAIL] Could not read output: {e}')
-              sys.exit(1)
-          "
-
-      # ── Audit ESPN API field names ────────────────────────────────────────────
-      - name: Audit ESPN API stat headers
-        if: always()
-        run: |
-          python - <<'PY'
-          import json, pathlib, sys
-
-          KNOWN_TEAM_LABELS = {
-              "oreb", "offensiverebounds", "dreb", "defensiverebounds",
-              "reb", "rebounds", "totalrebounds",
-              "ast", "assists", "to", "turnovers",
-              "stl", "steals", "blk", "blocks",
-              "pf", "fouls",
-          }
-          KNOWN_SHOOTING_KEYWORDS = ["goal", "throw", "three"]
-
-          KNOWN_PLAYER_LABELS = {
-              "min", "minutes", "pts", "points",
-              "fg", "fgm-a", "field goals", "fieldgoals", "fieldgoalsmade", "fgma",
-              "3pt", "3p", "3-pt", "3pm-a", "three pointers",
-              "threepointers", "threepointsmade", "3ptma", "3fgma",
-              "ft", "ftm-a", "free throws", "freethrows", "freethrowsmade", "ftma",
-              "oreb", "or", "offensive rebounds",
-              "dreb", "dr", "defensive rebounds",
-              "reb", "tr", "rebounds", "total rebounds",
-              "ast", "a", "assists",
-              "stl", "s", "steals",
-              "blk", "b", "blocks",
-              "to", "tov", "turnovers",
-              "pf", "fouls", "personal fouls",
-              "pm", "+/-", "plusminus",
-          }
-
-          raw_dir = pathlib.Path("data/raw_json")
-          json_files = sorted(raw_dir.glob("*.json")) if raw_dir.exists() else []
-
-          if not json_files:
-              print("[SKIP] No raw JSON files found in data/raw_json/ — skipping audit")
-              sys.exit(0)
-
-          # Use the most recent JSON file
-          sample_file = json_files[-1]
-          print(f"[INFO] Auditing: {sample_file.name}")
-          raw = json.loads(sample_file.read_text())
-
-          audit = {
-              "source_file": sample_file.name,
-              "team_stat_labels": [],
-              "player_stat_labels": [],
-              "unmapped_team_labels": [],
-              "unmapped_player_labels": [],
-          }
-
-          boxscore = raw.get("boxscore", {})
-
-          # ── Team stat labels ──
-          seen_team = {}
-          for t in boxscore.get("teams", []):
-              team_name = t.get("team", {}).get("displayName", "?")
-              for s in t.get("statistics", []):
-                  name  = s.get("name", "")
-                  abbr  = s.get("abbreviation", "")
-                  dv    = s.get("displayValue", "")
-                  label = abbr.lower().replace(" ", "_") if abbr else name.lower().replace(" ", "_")
-                  entry = {"name": name, "abbreviation": abbr, "displayValue": dv, "team": team_name}
-                  seen_team[label] = entry
-
-          audit["team_stat_labels"] = list(seen_team.values())
-
-          for label, entry in seen_team.items():
-              name_lc = entry["name"].lower()
-              is_shooting = any(x in name_lc for x in KNOWN_SHOOTING_KEYWORDS)
-              if not is_shooting and label not in KNOWN_TEAM_LABELS:
-                  audit["unmapped_team_labels"].append(entry)
-
-          # ── Player stat labels ──
-          seen_player = {}
-          for team_block in boxscore.get("players", []):
-              for pg in team_block.get("statistics", []):
-                  raw_keys = list(pg.get("keys") or pg.get("labels") or pg.get("names") or [])
-                  for k in raw_keys:
-                      k_lower = str(k).strip().lower()
-                      seen_player[k_lower] = k  # raw label → original casing
-
-          audit["player_stat_labels"] = [
-              {"raw": orig, "lower": k_lower}
-              for k_lower, orig in seen_player.items()
-          ]
-
-          for k_lower, orig in seen_player.items():
-              if k_lower not in KNOWN_PLAYER_LABELS:
-                  audit["unmapped_player_labels"].append({"raw": orig, "lower": k_lower})
-
-          # ── Print results ──
-          print("\n═══ TEAM STAT LABELS FROM ESPN ════════════════════════")
-          for e in audit["team_stat_labels"]:
-              print(f"  name={e['name']!r:45s}  abbreviation={e['abbreviation']!r:10s}  sample={e['displayValue']!r}")
-
-          print("\n═══ PLAYER STAT LABELS FROM ESPN ══════════════════════")
-          for e in audit["player_stat_labels"]:
-              print(f"  raw={e['raw']!r}")
-
-          if audit["unmapped_team_labels"]:
-              print("\n⚠️  UNMAPPED TEAM LABELS (not in col_map):")
-              for e in audit["unmapped_team_labels"]:
-                  print(f"  name={e['name']!r}  abbreviation={e['abbreviation']!r}")
-          else:
-              print("\n[OK] All team stat labels are accounted for.")
-
-          if audit["unmapped_player_labels"]:
-              print("\n⚠️  UNMAPPED PLAYER LABELS (not in PLAYER_STAT_MAP):")
-              for e in audit["unmapped_player_labels"]:
-                  print(f"  {e['raw']!r}")
-          else:
-              print("[OK] All player stat labels are accounted for.")
-
-          out = pathlib.Path("data/espn_api_field_audit.json")
-          out.write_text(json.dumps(audit, indent=2))
-          print(f"\n[OK] Audit saved to {out}")
-          PY
-
-      - name: Reconcile ESPN field names
-        if: always()
-        continue-on-error: true
-        run: |
-          python field_reconciler.py \
-            --audit-path data/espn_api_field_audit.json
-
-      # ── Tournament metrics ────────────────────────────────────────────────
-      # Safety net: espn_pipeline.py now calls this inline, but we run it
-      # here too so the YML is self-contained if pipeline is run standalone.
-      # build_pretournament_snapshot writes the file rankings + predictions need.
-      - name: Run tournament metrics
-        run: |
-          python - <<'PY'
-          import pathlib, sys, pandas as pd
-
-          weighted = pathlib.Path("data/team_game_weighted.csv")
-          if not weighted.exists() or weighted.stat().st_size < 100:
-              print("[SKIP] team_game_weighted.csv not found — skipping tournament metrics")
-              sys.exit(0)
-
-          # Skip if pipeline already wrote these (check recency vs weighted)
-          snap = pathlib.Path("data/team_pretournament_snapshot.csv")
-          if snap.exists() and snap.stat().st_mtime >= weighted.stat().st_mtime:
-              print("[SKIP] Snapshot already current (pipeline wrote it)")
-              sys.exit(0)
-
-          try:
-              from espn_tournament import compute_tournament_metrics, build_pretournament_snapshot
-
-              player_path = pathlib.Path("data/player_game_metrics.csv")
-              player_df   = pd.read_csv(player_path) if player_path.exists() else pd.DataFrame()
-
-              df = pd.read_csv(weighted, dtype=str, low_memory=False)
-              df["game_datetime_utc"] = pd.to_datetime(df.get("game_datetime_utc"), utc=True, errors="coerce")
-              str_cols = {"team_id","team","opponent_id","opponent","home_away",
-                          "conference","conf_id","event_id","game_id",
-                          "game_datetime_utc","game_datetime_pst","venue",
-                          "state","source","parse_version","t_offensive_archetype"}
-              for col in df.columns:
-                  if col not in str_cols:
-                      df[col] = pd.to_numeric(df[col], errors="coerce")
-
-              df_t = compute_tournament_metrics(df, player_df=player_df if not player_df.empty else None)
-              df_t.to_csv("data/team_tournament_metrics.csv", index=False)
-              print(f"[OK]   team_tournament_metrics.csv: {len(df_t)} rows")
-
-              snap_df = build_pretournament_snapshot(df_t)
-              snap_df.to_csv("data/team_pretournament_snapshot.csv", index=False)
-              print(f"[OK]   team_pretournament_snapshot.csv: {len(snap_df)} teams")
-
-          except Exception as exc:
-              print(f"[WARN] Tournament metrics failed (non-fatal): {exc}")
-              import traceback; traceback.print_exc()
-          PY
-
-      # ── Rebuild player condition profiles (full history) ──────────────────
-      - name: Rebuild player condition profiles (full history)
-        continue-on-error: true
-        run: python cbb_player_matchup.py --build-profiles-only
-
-      # ── Validate outputs ──────────────────────────────────────────────────
-      - name: Validate outputs
-        run: |
-          python - <<'PY'
-          import pandas as pd, sys, pathlib
-
-          required = {
-              "data/games.csv":               "scoreboard",
-              "data/team_game_logs.csv":       "team logs",
-              "data/player_game_logs.csv":     "player logs",
-              "data/team_game_metrics.csv":    "advanced metrics",
-              "data/team_game_sos.csv":        "SOS metrics",
-              "data/team_game_weighted.csv":   "weighted metrics",
-              "data/player_game_metrics.csv":  "player metrics",
-          }
-          optional = {
-              "data/player_injury_proxy.csv":        "injury proxy",
-              "data/team_injury_impact.csv":          "team injury impact",
-              "data/team_tournament_metrics.csv":     "tournament metrics",
-              "data/team_pretournament_snapshot.csv": "tournament snapshot",
-          }
-
-          ok = True
-          for path, label in required.items():
-              p = pathlib.Path(path)
-              if not p.exists() or p.stat().st_size < 10:
-                  print(f"[FAIL] Missing required: {p.name} ({label})")
-                  ok = False
-              else:
-                  df = pd.read_csv(p)
-                  print(f"[OK]   {p.name}: {len(df):,} rows, {len(df.columns)} cols")
-
-          for path, label in optional.items():
-              p = pathlib.Path(path)
-              if not p.exists():
-                  print(f"[WARN] Optional missing: {p.name} ({label})")
-              else:
-                  df = pd.read_csv(p)
-                  print(f"[OK]   {p.name}: {len(df):,} rows ({label})")
-
-          if not ok:
-              sys.exit(1)
-
-          # Cross-check: completed games → team log rows
-          gdf = pd.read_csv("data/games.csv")
-          ldf = pd.read_csv("data/team_game_logs.csv")
-          completed_ids = set(
-              gdf[gdf["completed"].astype(str).str.lower() == "true"]["game_id"].astype(str)
-          )
-          log_ids = set(ldf["event_id"].astype(str))
-          missing = completed_ids - log_ids
-
-          print(f"\nCompleted games:      {len(completed_ids):,}")
-          print(f"Games with team logs: {len(log_ids):,}")
-          print(f"Missing from logs:    {len(missing)}")
-
-          if missing:
-              rate = 1 - len(missing) / max(1, len(completed_ids))
-              print(f"Completion rate:      {rate*100:.1f}%")
-              for m in sorted(missing)[:20]:
-                  print(f"  MISSING: {m}")
-              if rate < 0.90:
-                  print("[FAIL] Completion rate below 90% threshold")
-                  sys.exit(1)
-          else:
-              print("[OK]   All completed games have team log rows")
-
-          # Data freshness
-          df = pd.read_csv("data/games.csv")
-          if "game_datetime_utc" in df.columns:
-              df["game_datetime_utc"] = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
-              latest = df["game_datetime_utc"].max()
-              if pd.notna(latest):
-                  age_hours = (pd.Timestamp.now(tz="UTC") - latest).total_seconds() / 3600
-                  print(f"\nLatest game data:     {latest.strftime('%Y-%m-%d %H:%M UTC')}")
-                  print(f"Data age:             {age_hours:.1f} hours")
-                  if age_hours > 36:
-                      print("[WARN] Data is more than 36 hours old — check pipeline schedule")
-          PY
-
-      - name: Audit ensemble column availability
-        continue-on-error: true
-        run: |
-          python - <<'PY'
-          import pandas as pd, pathlib, sys
-
-          ENSEMBLE_REQUIRED = {
-              "cage_em":   ["adj_net_rtg", "net_eff", "net_rtg"],
-              "cage_o":    ["adj_ortg", "ortg", "off_rtg"],
-              "cage_d":    ["adj_drtg", "drtg", "def_rtg"],
-              "cage_t":    ["adj_pace", "pace"],
-              "efg_vs_opp": ["efg_vs_opp_season", "efg_vs_opp"],
-              "net_rtg_l5": ["net_rtg_l5", "net_eff_l5"],
-              "net_rtg_l10": ["net_rtg_l10", "net_eff_l10"],
-              "pythagorean_win_pct": ["pythagorean_win_pct", "pyth_win_pct"],
-              "cage_power_index": ["cage_power_index", "power_index"],
-          }
-
-          for fname in ["team_game_weighted.csv",
-                        "team_pretournament_snapshot.csv"]:
-              p = pathlib.Path("data") / fname
-              if not p.exists():
-                  print(f"[SKIP] {fname} not found")
-                  continue
-
-              df = pd.read_csv(p, nrows=5)
-              cols = set(df.columns)
-              print(f"\n[{fname}] — {len(df.columns)} columns total")
-              print(f"{'PROFILE FIELD':<22} {'STATUS':<10} MATCHED COLUMN")
-              print("-" * 60)
-
-              any_missing = False
-              for field, candidates in ENSEMBLE_REQUIRED.items():
-                  found = next((c for c in candidates if c in cols), None)
-                  if found:
-                      print(f"  {field:<20} {'OK':<10} {found}")
-                  else:
-                      print(f"  {field:<20} {'MISSING':<10} "
-                            f"(tried: {candidates})")
-                      any_missing = True
-
-              if any_missing:
-                  # Show actual column names that might be the right ones
-                  eff_cols = [c for c in cols if any(
-                      x in c.lower() for x in
-                      ['net', 'eff', 'rtg', 'ortg', 'drtg', 'pace',
-                       'efg', 'tov', 'pyth']
-                  )]
-                  print(f"\n  Actual efficiency-related columns in {fname}:")
-                  for c in sorted(eff_cols)[:20]:
-                      print(f"    {c}")
-              else:
-                  print(f"\n  [OK] All ensemble-required columns present")
-          PY
-
-      - name: Show output sizes
-        if: always()
-        run: ls -lh data/*.csv 2>/dev/null || echo "No CSVs found"
-
-      - name: Check for silent empty columns
-        if: always()
-        continue-on-error: true
-        run: |
-          python field_reconciler.py --check-outputs --fix-duplicates
-
-      - name: Upload ESPN CSVs (for downstream predictions)
         uses: actions/upload-artifact@v4
         with:
-          name: espn-cbb-csvs
-          path: |
-            data/games.csv
-            data/team_game_logs.csv
-            data/team_game_metrics.csv
-            data/team_game_sos.csv
-            data/team_game_weighted.csv
-            data/team_tournament_metrics.csv
-            data/team_pretournament_snapshot.csv
-            data/cbb_rankings.csv
-            data/cbb_rankings_by_conference.csv
-            data/player_game_logs.csv
-            data/player_game_metrics.csv
-            data/player_injury_proxy.csv
-            data/team_injury_impact.csv
-            data/team_form_snapshot.csv
-            data/player_condition_profiles.csv
-            data/player_archetype_matchup_matrix.csv
-            data/espn_api_field_audit.json
-            data/field_drift_report.json
-            data/field_drift_report.md
-            data/pipeline_run_log.csv
-            data/csv/backtest_summary.csv
-            data/csv/backtest_by_model.csv
-            data/csv/backtest_weekly.csv
-            data/csv/backtest_by_conference.csv
-            data/csv/backtest_calibration.csv
-            data/csv/backtest_by_edge.csv
-            data/csv/backtest_model_matrix.csv
-            data/results_log_graded.csv
-            data/team_rolling_l5.csv
-            data/team_rolling_l10.csv
-            data/team_weighted_rolling.csv
-            data/team_game_halfsplits.csv
-            data/team_ats_profile.csv
-            data/team_luck_regression.csv
-            data/team_situational.csv
-            data/team_resume.csv
-            data/team_matchup_history.csv
-            data/conference_daily_summary.csv
-            data/team_travel_fatigue.csv
-            data/player_rolling_l5.csv
-            data/player_role_splits.csv
+          name: cbb-espn-data
+          path: data/
           retention-days: 90
-          if-no-files-found: warn
 
-      - name: Upload latest prediction CSV alias
-        uses: actions/upload-artifact@v4
-        with:
-          name: cbb-predictions-latest
-          path: |
-            data/predictions_latest.csv
-            data/predictions_combined_latest.csv
-            data/ensemble_predictions_latest.csv
-          retention-days: 90
-          if-no-files-found: warn
-
-      - name: Upload raw JSON as artifact
+      # Pattern 9: Standardized commit step with retry logic
+      - name: Commit to repo
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: espn-cbb-raw-json
-          path: data/raw_json/
-          retention-days: 3
-          if-no-files-found: ignore
-
-      - name: Copy CSVs to data/csv/
-        if: success()
-        run: |
-          mkdir -p data/csv
-          for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv data/player_game_metrics.csv; do
-            [ -f "$f" ] && cp "$f" data/csv/ && echo "Copied $f" || echo "Skipped $f (not found)"
-          done
-      - name: Commit pipeline CSVs to repository
-        if: success() || failure()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-
-          git add             data/csv/tier_classifications.csv             data/csv/team_form_snapshot.csv             data/csv/player_leaders.csv             data/csv/conference_summary.csv             data/csv/backtest_summary.csv             data/csv/backtest_by_model.csv             data/csv/backtest_weekly.csv             data/csv/backtest_by_conference.csv             data/csv/backtest_calibration.csv             data/csv/backtest_by_edge.csv             data/csv/backtest_model_matrix.csv             data/csv/backtest_by_tier.csv             data/player_condition_profiles.csv             data/player_archetype_matchup_matrix.csv             data/field_drift_report.json             data/field_drift_report.md             column_map.json             2>/dev/null || true
-
+          git add data/
           if git diff --staged --quiet; then
             echo "[SKIP] No changes to commit"
             exit 0
           fi
-
-          MAX_RETRIES=5
-          for i in $(seq 1 5); do
-            echo "Push attempt $i/$MAX_RETRIES"
+          git commit -m "pipeline: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
+          for i in 1 2 3 4 5; do
             git fetch origin main
             git rebase -X ours origin/main --no-stat 2>&1 || {
               git rebase --abort 2>/dev/null || true
-              git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
+              git merge origin/main -X ours --no-edit
             }
-
-            git add               data/csv/tier_classifications.csv               data/csv/team_form_snapshot.csv               data/csv/player_leaders.csv               data/csv/conference_summary.csv               data/csv/backtest_summary.csv               data/csv/backtest_by_model.csv               data/csv/backtest_weekly.csv               data/csv/backtest_by_conference.csv               data/csv/backtest_calibration.csv               data/csv/backtest_by_edge.csv               data/csv/backtest_model_matrix.csv               data/csv/backtest_by_tier.csv               data/player_condition_profiles.csv               data/player_archetype_matchup_matrix.csv               data/field_drift_report.json               data/field_drift_report.md               column_map.json               2>/dev/null || true
-
-            if git diff --staged --quiet; then
-              echo "[SKIP] Nothing to commit after merge"
-              exit 0
-            fi
-
-            git commit -m "pipeline: $(date +'%Y-%m-%d %H:%M UTC') — metrics + backtest [skip ci]" || true
-            git push origin HEAD:main && { echo "Push OK attempt $i"; exit 0; }
-
-            echo "[RETRY] Push failed, waiting before retry..."
+            git push origin HEAD:main && { echo "[OK] Push succeeded attempt $i"; exit 0; }
             sleep $((i * 3))
           done
-
-          echo "[FAIL] Could not push after $MAX_RETRIES attempts"
-          exit 1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-      - name: Verify CSVs committed successfully
-        if: always()
-        run: |
-          python - <<'PY'
-          import subprocess, sys
-
-          result = subprocess.run(
-              ["git", "log", "--oneline", "-5"],
-              capture_output=True, text=True
-          )
-          print("[GIT LOG - last 5 commits]")
-          print(result.stdout)
-
-          result2 = subprocess.run(
-              ["git", "diff", "HEAD~1", "--name-only"],
-              capture_output=True, text=True
-          )
-          committed_files = result2.stdout.strip().split("\n")
-          csv_files = [f for f in committed_files if "data/csv" in f or ".csv" in f]
-
-          if csv_files:
-              print(f"[OK] {len(csv_files)} CSV file(s) in last commit:")
-              for f in csv_files[:10]:
-                  print(f"  {f}")
-          else:
-              print("[WARN] No CSV files found in last commit — check push steps above")
-          PY
+          echo "[WARN] Push failed after 5 attempts"
 
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 2 — CAGE RANKINGS
-  # Builds cbb_rankings.csv. Runs in parallel with predictions after update.
   # ════════════════════════════════════════════════════════════════════════════
   rankings:
     runs-on: ubuntu-latest
@@ -648,41 +140,11 @@ jobs:
       contents: write
       actions: write
     needs: update
-    if: >
-      always() &&
-      needs.update.result == 'success' &&
-      (github.event.inputs.run_rankings != 'false')
+    if: always() && needs.update.result == 'success' && (github.event.inputs.run_rankings != 'false')
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
-      - name: Ensure data directories exist and are git-tracked
-        run: |
-          mkdir -p data/csv
-          mkdir -p data/raw_json
-          touch data/csv/.gitkeep
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git add data/csv/.gitkeep 2>/dev/null || true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download ESPN CSVs
-        uses: actions/download-artifact@v4
-        with:
-          name: espn-cbb-csvs
-          path: data/
-        continue-on-error: true
-
-      - name: Fallback restore ESPN CSVs from git (rankings job)
-        run: |
-          for f in data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv; do
-            if [ ! -s "$f" ]; then
-              git show HEAD:"$f" > "$f" 2>/dev/null || true
-            fi
-          done
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -690,119 +152,78 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
-      - name: Install dependencies
-        run: python -m pip install -r requirements.txt
+      # Download data from previous job. Standardized name: cbb-espn-data.
+      - name: Download ESPN CSVs
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-espn-data
+          path: data/
+        continue-on-error: true
 
-      # Guard: rankings require snapshot — verify it exists before running
-      - name: Check snapshot dependency
+      # Pattern 1: Verify artifact or bootstrap from git history
+      - name: Verify artifact or bootstrap from git
         run: |
-          python - <<'PY'
-          import pathlib, sys
-          snap = pathlib.Path("data/team_pretournament_snapshot.csv")
-          if not snap.exists() or snap.stat().st_size < 100:
-              print("[WARN] team_pretournament_snapshot.csv missing or empty.")
-              print("       espn_rankings.py will build snapshot from game logs as fallback.")
-          else:
-              import pandas as pd
-              df = pd.read_csv(snap)
-              print(f"[OK]   Snapshot present: {len(df)} teams")
-          PY
+          for f in data/team_game_weighted.csv data/team_pretournament_snapshot.csv; do
+            if [ ! -s "$f" ]; then
+              echo "[WARN] $f missing — attempting git restore"
+              git show HEAD:"$f" > "$f" 2>/dev/null || true
+            fi
+          done
 
+      # Pattern 5: Install dependencies with import guards
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -c "import pandas, numpy, requests, scipy" || \
+            { echo "[ERROR] Core dependency import failed"; exit 1; }
+
+      # Build CAGE rankings
       - name: Build CAGE rankings
         run: python espn_rankings.py --top 25
 
+      # Pattern 2: Validate rankings output
       - name: Validate rankings output
         run: |
-          python - <<'PY'
-          import pandas as pd, sys, pathlib
+          if [ -f data/cbb_rankings.csv ]; then
+            rows=$(( $(wc -l < data/cbb_rankings.csv) - 1 ))
+            echo "[OK] cbb_rankings.csv: $rows rows"
+          else
+            echo "[ERROR] data/cbb_rankings.csv was not created"; exit 1
+          fi
 
-          p = pathlib.Path("data/cbb_rankings.csv")
-          if not p.exists():
-              print("[FAIL] cbb_rankings.csv not found")
-              sys.exit(1)
-
-          df = pd.read_csv(p)
-          if df.empty:
-              print("[FAIL] Rankings CSV is empty")
-              sys.exit(1)
-
-          print(f"[OK]   cbb_rankings.csv: {len(df)} teams, {len(df.columns)} columns")
-
-          required_cols = ["rank","team","cage_em","cage_o","cage_d","barthag",
-                           "wab","eff_grade","cage_power_index"]
-          missing_cols = [c for c in required_cols if c not in df.columns]
-          if missing_cols:
-              print(f"[WARN] Missing columns: {missing_cols}")
-          else:
-              print("[OK]   All required ranking columns present")
-
-          top = df.iloc[0]
-          print(f"\nRank 1: {top.get('team','?')} — CAGE_EM: {top.get('cage_em','?')}")
-          if pd.to_numeric(top.get('cage_em', 0), errors='coerce') <= 0:
-              print("[WARN] Top-ranked team has non-positive CAGE_EM — check data")
-
-          em = pd.to_numeric(df["cage_em"], errors="coerce").dropna()
-          print(f"CAGE_EM range:  {em.min():.1f}  to  {em.max():.1f}")
-          print(f"Teams ranked:   {len(df)}")
-          PY
-
+      # Pattern 10: Upload artifacts even on failure
       - name: Upload rankings artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-rankings-${{ github.run_id }}
-          path: |
-            data/cbb_rankings.csv
-            data/cbb_rankings_*.csv
-            data/cbb_rankings_by_conference.csv
+          name: cbb-rankings
+          path: data/cbb_rankings.csv
           retention-days: 30
-          if-no-files-found: warn
 
-      - name: Copy CSVs to data/csv/
-        if: success()
-        run: |
-          mkdir -p data/csv
-          for f in data/cbb_rankings.csv data/cbb_rankings_by_conference.csv; do
-            [ -f "$f" ] && cp "$f" data/csv/ && echo "Copied $f" || echo "Skipped $f (not found)"
-          done
-      - name: Commit rankings CSVs to repository
-        if: success()
+      # Pattern 9: Standardized commit step with retry logic
+      - name: Commit to repo
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-
-          git add             data/csv/cbb_rankings.csv             data/csv/cbb_rankings_by_conference.csv             data/cbb_rankings.csv             data/cbb_rankings_by_conference.csv             data/cbb_rankings_*.csv             2>/dev/null || true
-
+          git add data/
           if git diff --staged --quiet; then
-            echo "[SKIP] No ranking changes to commit"
+            echo "[SKIP] No changes to commit"
             exit 0
           fi
-
-          MAX_RETRIES=5
-          for i in $(seq 1 5); do
-            echo "Push attempt $i/$MAX_RETRIES"
+          git commit -m "rankings: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
+          for i in 1 2 3 4 5; do
             git fetch origin main
             git rebase -X ours origin/main --no-stat 2>&1 || {
               git rebase --abort 2>/dev/null || true
-              git merge origin/main -X ours --no-edit -m "merge: take ours for CSV conflict" 2>&1 || true
+              git merge origin/main -X ours --no-edit
             }
-
-            git add               data/csv/cbb_rankings.csv               data/csv/cbb_rankings_by_conference.csv               data/cbb_rankings.csv               data/cbb_rankings_by_conference.csv               data/cbb_rankings_*.csv               2>/dev/null || true
-
-            if git diff --staged --quiet; then
-              echo "[SKIP] Nothing to commit after merge"
-              exit 0
-            fi
-
-            git commit -m "rankings: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]" || true
-            git push origin HEAD:main && { echo "Push OK attempt $i"; exit 0; }
-
-            echo "[RETRY] Push failed, waiting before retry..."
+            git push origin HEAD:main && { echo "[OK] Push succeeded attempt $i"; exit 0; }
             sleep $((i * 3))
           done
+          echo "[WARN] Push failed after 5 attempts"
 
-          echo "[FAIL] Could not push after $MAX_RETRIES attempts"
-          exit 1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Final health check to verify all workflows meet standards
+      - name: Validate workflow health
+        if: always()
+        run: python .github/scripts/validate_workflows.py

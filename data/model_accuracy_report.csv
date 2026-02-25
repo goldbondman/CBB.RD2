@@ -1,0 +1,1 @@
+game_id,game_datetime_utc,home_team,away_team,pred_spread,actual_margin,spread_error,abs_error,covered,correct_side,model_confidence,game_tier,home_conference,away_conference,total_line,pred_total,actual_total,pipeline_run_id

@@ -525,6 +525,7 @@ def run_predictions(
     context_df = normalize_numeric_dtypes(context_df)
 
     results: List[Dict] = []
+    _first_call = True
     skipped = 0
     rankings_df = _load_rankings()
     schedule_df = load_games_schedule()
@@ -641,10 +642,20 @@ def run_predictions(
             home_team=str(home_name),
             away_team=str(away_name),
         )
-        totals_proj = model_total(home_ctx, away_ctx)
+        totals_proj = model_total(home_ctx, away_ctx, log_actuals=_first_call)
+        _first_call = False
         line_advisory = line_shopping_advisory(pred_spread, spread_line)
 
         _poss = totals_proj.get("projected_poss")
+
+        all_home_games = all_data[
+            (all_data["team_id"].astype(str) == str(home_id)) &
+            (all_data["game_datetime_utc"] < cutoff_dt)
+        ]
+        all_away_games = all_data[
+            (all_data["team_id"].astype(str) == str(away_id)) &
+            (all_data["game_datetime_utc"] < cutoff_dt)
+        ]
 
         row = {
             "game_id": game_id,
@@ -698,6 +709,8 @@ def run_predictions(
 
             "home_games_used": int(all_data[(all_data["team_id"].astype(str) == str(home_id)) & (all_data["game_datetime_utc"] < cutoff_dt)].shape[0]),
             "away_games_used": int(all_data[(all_data["team_id"].astype(str) == str(away_id)) & (all_data["game_datetime_utc"] < cutoff_dt)].shape[0]),
+            "home_games_used": len(all_home_games),
+            "away_games_used": len(all_away_games),
             "home_win_prob": home_win_prob,
 
             "game_type": game_type,
@@ -793,6 +806,10 @@ def run_predictions(
             log.warning("[DIAG] projected_total unique count is %d for %d games", unique_totals, len(res_df))
 
     log.info(f"Predictions complete: {len(results)} generated, {skipped} skipped")
+    log.info(
+        "Predictions complete: %d generated, %d skipped | median home_win_prob: %.3f",
+        len(res_df), skipped, res_df["home_win_prob"].median() if not res_df.empty else 0.0
+    )
     return res_df
 
 
@@ -938,7 +955,7 @@ def line_shopping_advisory(model_spread: float, closing_line: Optional[float]) -
     return ""
 
 
-def model_total(team_a: dict, team_b: dict) -> dict:
+def model_total(team_a: dict, team_b: dict, log_actuals: bool = False) -> dict:
     """Dedicated totals model using pace + ortg/drtg interaction."""
     LEAGUE_AVG_PACE = 67.2
     LEAGUE_AVG_ORTG = 110.0
@@ -969,6 +986,12 @@ def model_total(team_a: dict, team_b: dict) -> dict:
 
     projected_poss = round((_home_pace + _away_pace) / 2, 1)
     projected_total = round(((_home_ortg + _away_ortg) * projected_poss) / 100, 1)
+
+    if log_actuals:
+        log.info(
+            "model_total first call: home_pace=%.1f, away_pace=%.1f, home_ortg=%.1f, away_ortg=%.1f -> total=%.1f",
+            _home_pace, _away_pace, _home_ortg, _away_ortg, projected_total
+        )
 
     _home_games = _safe_int(team_a.get("games_played") or team_a.get("game_number") or 0, default=0)
     _away_games = _safe_int(team_b.get("games_played") or team_b.get("game_number") or 0, default=0)
