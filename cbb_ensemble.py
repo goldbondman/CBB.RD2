@@ -867,6 +867,10 @@ def _apply_bias_corrections(
         bt = pd.read_csv(bias_path)
         actionable = bt[bt["actionable"] == True]
     except Exception:
+        # Bugfix: loading/casting bias rows can fail on malformed CSV.
+        # Return unmodified prediction, but emit traceback at warning level
+        # so this data-quality failure is no longer silent in production logs.
+        log.warning("Failed to load actionable bias corrections from %s", bias_path, exc_info=True)
         return prediction, []
 
     game_tier = get_game_tier(home_conf, away_conf)
@@ -934,8 +938,9 @@ class EnsemblePredictor:
             actionable = bt[
                 bt["actionable"].astype(str).str.strip().str.lower().isin({"true", "1", "yes", "y"})
             ]
-        except Exception as exc:
-            log.debug("Unable to load bias table %s: %s", bias_table_path, exc)
+        except Exception:
+            # Bugfix: this affects final model values; keep fallback but surface traceback.
+            log.warning("Unable to load bias table %s", bias_table_path, exc_info=True)
             return prediction, []
 
         game_tier = get_game_tier(home.conference, away.conference)
@@ -1009,8 +1014,10 @@ class EnsemblePredictor:
             try:
                 mp = model.predict(home, away, neutral)
                 preds.append(mp)
-            except Exception as exc:
-                log.debug("Model %s failed: %s", model.name, exc)
+            except Exception:
+                # Bugfix: a model failure changes ensemble composition and outputs.
+                # Log at warning with traceback instead of debug-only silent degradation.
+                log.warning("Model %s failed during ensemble prediction", model.name, exc_info=True)
 
         if not preds:
             return EnsembleResult()
@@ -1291,25 +1298,6 @@ def load_team_profiles(
             cage_o=(_team_o_agg[tid] if tid in _team_o_agg else col(row, "adj_ortg", "ortg", "off_rtg", "off_eff", "cage_o", default=LEAGUE_AVG_ORTG)),
             cage_d=(_team_d_agg[tid] if tid in _team_d_agg else col(row, "adj_drtg", "drtg", "def_rtg", "def_eff", "cage_d", default=LEAGUE_AVG_DRTG)),
             cage_t=(_team_t_agg[tid] if tid in _team_t_agg else col(row, "adj_pace", "pace", "poss", "possessions", "cage_t", default=LEAGUE_AVG_PACE)),
-            cage_em=(
-                _team_agg[tid]
-                if tid in _team_agg
-                else col(
-                    row,
-                    "adj_net_rtg",
-                    "net_eff",
-                    "net_rtg",
-                    "cage_em",
-                    "adj_em",
-                    default=((g("wins", 0) / max(1.0, g("wins", 0) + g("losses", 0))) - 0.5) * 24.0,
-                )
-            ),
-            cage_o=col(row, "adj_ortg", "ortg", "off_rtg", "cage_o",
-                       default=LEAGUE_AVG_ORTG),
-            cage_d=col(row, "adj_drtg", "drtg", "def_rtg", "cage_d",
-                       default=LEAGUE_AVG_DRTG),
-            cage_t=col(row, "adj_pace", "pace", "poss", "cage_t",
-                       default=LEAGUE_AVG_PACE),
             barthag=col(row, "barthag", "barthag_score", default=0.5),
 
             # Four factors — try both naming conventions
@@ -1449,10 +1437,11 @@ def load_team_profiles(
     else:
         _em_vals = [p.cage_em for p in profiles.values()]
         log.info(
-            "[DIAG] load_team_profiles | cage_em nonzero: %d/%d | games_before median: %d",
-            non_default, len(profiles), median_games
-            "Loaded %d team profiles, %d with non-zero cage_em (range: %.1f to %.1f)",
-            len(profiles), non_default, min(_em_vals), max(_em_vals)
+            # Bugfix: prior malformed log args concatenated two messages and caused
+            # syntax/runtime failure. Use one explicit, correctly-parameterized message.
+            "[DIAG] load_team_profiles | cage_em nonzero: %d/%d | games_before median: %d | "
+            "range: %.1f to %.1f",
+            non_default, len(profiles), median_games, min(_em_vals), max(_em_vals)
         )
 
     return profiles
