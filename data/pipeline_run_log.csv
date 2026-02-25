@@ -2,3 +2,4 @@ run_timestamp_utc,trigger,days_back,dates_fetched,games_found,games_parsed,games
 2026-02-24T23:33:25Z,unknown,1,2,36,36,0,72,102,v1.0.0,False,ok
 2026-02-24T23:34:06Z,unknown,1,2,36,36,0,72,133,v1.0.0,False,ok
 2026-02-24T23:51:07Z,unknown,1,2,36,36,0,72,133,v1.0.0,False,ok
+2026-02-25T10:54:24Z,schedule,3,4,99,99,0,198,830,v1.0.0,False,ok

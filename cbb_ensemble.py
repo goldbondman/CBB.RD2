@@ -867,6 +867,10 @@ def _apply_bias_corrections(
         bt = pd.read_csv(bias_path)
         actionable = bt[bt["actionable"] == True]
     except Exception:
+        # Bugfix: loading/casting bias rows can fail on malformed CSV.
+        # Return unmodified prediction, but emit traceback at warning level
+        # so this data-quality failure is no longer silent in production logs.
+        log.warning("Failed to load actionable bias corrections from %s", bias_path, exc_info=True)
         return prediction, []
 
     game_tier = get_game_tier(home_conf, away_conf)
@@ -934,8 +938,9 @@ class EnsemblePredictor:
             actionable = bt[
                 bt["actionable"].astype(str).str.strip().str.lower().isin({"true", "1", "yes", "y"})
             ]
-        except Exception as exc:
-            log.debug("Unable to load bias table %s: %s", bias_table_path, exc)
+        except Exception:
+            # Bugfix: this affects final model values; keep fallback but surface traceback.
+            log.warning("Unable to load bias table %s", bias_table_path, exc_info=True)
             return prediction, []
 
         game_tier = get_game_tier(home.conference, away.conference)
@@ -1009,8 +1014,10 @@ class EnsemblePredictor:
             try:
                 mp = model.predict(home, away, neutral)
                 preds.append(mp)
-            except Exception as exc:
-                log.debug("Model %s failed: %s", model.name, exc)
+            except Exception:
+                # Bugfix: a model failure changes ensemble composition and outputs.
+                # Log at warning with traceback instead of debug-only silent degradation.
+                log.warning("Model %s failed during ensemble prediction", model.name, exc_info=True)
 
         if not preds:
             return EnsembleResult()
@@ -1430,6 +1437,8 @@ def load_team_profiles(
     else:
         _em_vals = [p.cage_em for p in profiles.values()]
         log.info(
+            # Bugfix: prior malformed log args concatenated two messages and caused
+            # syntax/runtime failure. Use one explicit, correctly-parameterized message.
             "[DIAG] load_team_profiles | cage_em nonzero: %d/%d | games_before median: %d | "
             "range: %.1f to %.1f",
             non_default, len(profiles), median_games, min(_em_vals), max(_em_vals)

@@ -48,7 +48,8 @@ def _fetch_team_record(team_id: str) -> dict:
             "losses": int(float(stats.get("losses", 0) or 0)),
         }
     except Exception as exc:  # noqa: BLE001
-        log.debug("Team record fetch failed for %s: %s", team_id, exc)
+        # Bugfix: record fetch failure changes output W-L context; log traceback for visibility.
+        log.warning("Team record fetch failed for %s", team_id, exc_info=True)
         return {"team_id": str(team_id), "wins": 0, "losses": 0}
 
 
@@ -61,6 +62,8 @@ def _build_records_from_local_history() -> dict:
         try:
             hist = pd.read_csv(csv_path, dtype={"home_team_id": str, "away_team_id": str})
         except Exception:
+            # Bugfix: malformed historical CSVs should not fail silently.
+            log.warning("Skipping unreadable history file: %s", csv_path, exc_info=True)
             continue
         required = {"home_team_id", "away_team_id", "home_wins", "home_losses", "away_wins", "away_losses"}
         if not required.issubset(hist.columns):
@@ -276,6 +279,8 @@ def _build_records_from_local_team_data() -> dict:
         try:
             df = pd.read_csv(path, dtype={"team_id": str}, low_memory=False)
         except Exception:
+            # Bugfix: context fallback should surface source-read failures.
+            log.warning("Skipping unreadable team context source: %s", path, exc_info=True)
             continue
         if "team_id" not in df.columns:
             continue
@@ -459,11 +464,14 @@ def build_predictions_with_context(
             # model output columns even if they share a name with a market col.
             _protected = {"pred_spread", "ens_ens_spread", "predicted_spread",
                           "pred_total", "pred_home_score", "pred_away_score"}
-            drop_cols = [
-                c for c in expected_market_cols
-                if c in df.columns and c not in _protected
-            ]
-            df = df.drop(columns=drop_cols, errors="ignore")
+            # Bugfix: stale *_x/*_y columns from prior merges can survive and then
+            # collide again, silently shadowing market values. Drop base/_x/_y variants.
+            drop_cols = []
+            for c in expected_market_cols:
+                for cand in (c, f"{c}_x", f"{c}_y"):
+                    if cand in df.columns and cand not in _protected:
+                        drop_cols.append(cand)
+            df = df.drop(columns=sorted(set(drop_cols)), errors="ignore")
 
             df["event_id"] = df["event_id"].astype(str).str.strip()
             market_latest["event_id"] = (
@@ -593,8 +601,9 @@ def build_predictions_with_context(
                              'net_eff','adj_net','cage_em'])][:8]
                 )
                 break
-            except Exception as _exc:
-                log.debug("Could not load %s: %s", _src, _exc)
+            except Exception:
+                # Bugfix: context-file load errors affect derived fields; keep fallback but emit traceback.
+                log.warning("Could not load context source %s", _src, exc_info=True)
 
     if _ctx_df is not None and "team_id" in _ctx_df.columns:
         # Map output field name -> ordered list of source column candidates
@@ -713,13 +722,12 @@ def build_predictions_with_context(
         if _collision_vars:
             log.warning("Context merge left collision columns: %s", _collision_vars)
 
-        # Derive momentum_tier from momentum_score
+        # Bugfix: momentum_tier is not present in source context CSVs.
+        # Derive tiers from momentum_score so downstream columns are populated.
         for _side in ["home", "away"]:
             _tier_col = f"{_side}_momentum_tier"
             _score_col = f"{_side}_momentum_score"
             if _score_col in df.columns:
-                df[_tier_col] = pd.cut(
-                    pd.to_numeric(df[_score_col], errors="coerce"),
                 _score = pd.to_numeric(df[_score_col], errors="coerce")
                 df[_tier_col] = pd.cut(
                     _score,

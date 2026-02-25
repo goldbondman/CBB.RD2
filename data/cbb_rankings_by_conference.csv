@@ -1,36 +1,22 @@
 conference,adj_net_rtg_mean,adj_net_rtg_median,adj_net_rtg_max,adj_net_rtg_min,adj_ortg_mean,adj_drtg_mean,barthag_mean,barthag_max,cage_power_index_mean,resume_score_mean,team_count,conference_name
-Big Ten,,,,,,,0.5,0.9945,49.025,50.0,4,Big Ten
-Big 12,,,,,,,0.5,0.5,44.2,50.0,2,Big 12
-Big East,,,,,,,0.5,0.5,44.20000000000001,50.0,6,Big East
-Independents,,,,,,,0.5,0.5,44.2,50.0,8,Independents
-Mid-American Conference,,,,,,,0.49999166666666667,0.9938,43.400000000000006,50.0,12,Mid-American Conference
-Mid-Eastern Athletic Conference,,,,,,,0.5,0.5,44.2,50.0,8,Mid-Eastern Athletic Conference
-Ohio Valley Conference,,,,,,,0.5,0.5,44.2,50.0,2,Ohio Valley Conference
-Pac-12,,,,,,,0.5,0.9999,41.237500000000004,50.0,8,Pac-12
-Patriot League,,,,,,,0.5,0.5,44.20000000000001,50.0,6,Patriot League
-Southeastern Conference,,,,,,,0.5,0.5,44.20000000000001,50.0,12,Southeastern Conference
-Southland Conference,,,,,,,0.5,0.5,44.2,50.0,2,Southland Conference
-Sun Belt Conference,,,,,,,0.49994999999999995,0.945,46.25,50.0,2,Sun Belt Conference
-Independent,,,,,,,0.50007,0.9151,50.68,50.0,10,Independent
-Big Ten,,,,,,,0.5088125,0.9711,50.975,50.0,8,Big Ten
-America East Conference,,,,,,,0.5,0.5,50.3,50.0,10,America East Conference
-Atlantic Coast Conference,,,,,,,0.5000363636363636,0.9698,51.4,50.0,11,Atlantic Coast Conference
-Big 12,,,,,,,0.5174,0.7716,51.6,50.0,10,Big 12
-Big East,,,,,,,0.4998571428571429,1.0,50.292857142857144,50.0,14,Big East
-Big Ten,,,,,,,0.5,0.5,50.3,50.0,2,Big Ten
-Colonial Athletic Association,,,,,,,0.5,0.5,50.29999999999999,50.0,6,Colonial Athletic Association
-Horizon League,,,,,,,0.5002608695652174,0.8815,53.626086956521746,50.0,23,Horizon League
-Independents,,,,,,,0.5,0.5,50.29999999999999,50.0,12,Independents
-Metro Atlantic Athletic Conference,,,,,,,0.5000083333333333,0.986,52.775,50.0,12,Metro Atlantic Athletic Conference
-Mid-American Conference,,,,,,,0.5003833333333333,1.0,50.35,50.0,12,Mid-American Conference
-Mid-Eastern Athletic Conference,,,,,,,0.5,1.0,50.300000000000004,50.0,12,Mid-Eastern Athletic Conference
-Missouri Valley Conference,,,,,,,0.5,0.5,50.3,50.0,8,Missouri Valley Conference
-Ohio Valley Conference,,,,,,,0.5,0.5,50.3,50.0,10,Ohio Valley Conference
-Pac-12,,,,,,,0.5001466666666666,0.9906,49.22666666666667,50.0,15,Pac-12
-Patriot League,,,,,,,0.5,0.9906,50.3,50.0,16,Patriot League
-Southeastern Conference,,,,,,,0.5000125,1.0,50.30625,50.0,16,Southeastern Conference
-Southern Conference,,,,,,,0.5,0.5,50.3,50.0,2,Southern Conference
-Southland Conference,,,,,,,0.5,0.5,50.3,50.0,2,Southland Conference
-Southwestern Athletic Conference,,,,,,,0.49995,0.9663,50.3,50.0,2,Southwestern Athletic Conference
-Sun Belt Conference,,,,,,,0.49974999999999997,0.9208,50.3,50.0,2,Sun Belt Conference
-Western Athletic Conference,,,,,,,0.50005,0.7427,48.25,50.0,2,Western Athletic Conference
+Independent,,,,,,,0.5,0.5,46.8,50.0,10,Independent
+Big Ten,,,,,,,0.5000625,0.9694,49.7375,50.0,8,Big Ten
+America East Conference,,,,,,,0.5,0.5,46.8,50.0,10,America East Conference
+Atlantic Coast Conference,,,,,,,0.5,0.5,46.8,50.0,8,Atlantic Coast Conference
+Big 12,,,,,,,0.50003,0.9383,47.17,50.0,10,Big 12
+Big East,,,,,,,0.5000714285714286,0.9987,48.40714285714285,50.0,14,Big East
+Big Ten,,,,,,,0.5,0.5,46.8,50.0,2,Big Ten
+Colonial Athletic Association,,,,,,,0.5,0.5,46.79999999999999,50.0,6,Colonial Athletic Association
+Horizon League,,,,,,,0.5002181818181818,0.7554,49.904545454545456,50.0,22,Horizon League
+Independents,,,,,,,0.4998416666666667,0.8469,49.15,50.0,12,Independents
+Mid-American Conference,,,,,,,0.49981666666666663,0.8517,46.76666666666667,50.0,12,Mid-American Conference
+Mid-Eastern Athletic Conference,,,,,,,0.5002583333333334,0.9613,43.38333333333333,50.0,12,Mid-Eastern Athletic Conference
+Missouri Valley Conference,,,,,,,0.5,0.5,46.8,50.0,8,Missouri Valley Conference
+Ohio Valley Conference,,,,,,,0.50008,0.7112,47.019999999999996,50.0,10,Ohio Valley Conference
+Pac-12,,,,,,,0.5002142857142857,0.9558,48.23571428571428,50.0,14,Pac-12
+Patriot League,,,,,,,0.49996875,0.8359,47.34375,50.0,16,Patriot League
+Southeastern Conference,,,,,,,0.49996875,0.9401,45.56875,50.0,16,Southeastern Conference
+Southern Conference,,,,,,,0.5,0.5,46.8,50.0,2,Southern Conference
+Southland Conference,,,,,,,0.5004,0.545,43.5,50.0,2,Southland Conference
+Southwestern Athletic Conference,,,,,,,0.49995,0.9663,64.7,50.0,2,Southwestern Athletic Conference
+Sun Belt Conference,,,,,,,0.49975,0.7284,54.05,50.0,2,Sun Belt Conference

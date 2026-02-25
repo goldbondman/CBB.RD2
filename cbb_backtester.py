@@ -365,11 +365,16 @@ def load_completed_games(game_log: pd.DataFrame) -> pd.DataFrame:
     games["neutral_site"]  = home.get("neutral_site", pd.Series(0, index=home.index)).values
 
     games = games.drop_duplicates("event_id")
+    # Bugfix: a prior edit injected a nested log.info() call here,
+    # leaving this function with an unclosed parenthesis and breaking runtime.
+    # Keep one valid diagnostic call and then continue normally.
     log.info(
         "load_completed_games: %d rows | %d unique home_team_ids | "
         "sample: %s",
         len(games),
         games["home_team_id"].nunique(),
+        games["home_team_id"].dropna().astype(str).head(3).tolist(),
+    )
     log.info(f"Completed games: {len(games):,}")
 
     log.info(
