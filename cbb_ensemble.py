@@ -373,14 +373,46 @@ class FourFactorsModel(_BaseModel):
         away: TeamProfile,
         neutral: bool = False,
     ) -> ModelPrediction:
+        use_vs_opp = any(
+            abs(v) > 1e-6
+            for v in (
+                home.efg_vs_opp,
+                away.efg_vs_opp,
+                home.tov_vs_opp,
+                away.tov_vs_opp,
+                home.orb_vs_opp,
+                away.orb_vs_opp,
+                home.ftr_vs_opp,
+                away.ftr_vs_opp,
+            )
+        )
+
         def _to_unit_rate(v: float) -> float:
             v = float(v)
             return v / 100.0 if abs(v) > 1.5 else v
 
-        efg_delta = _to_unit_rate(home.efg_vs_opp - away.efg_vs_opp)
-        tov_delta = -_to_unit_rate(home.tov_vs_opp - away.tov_vs_opp)
-        orb_delta = _to_unit_rate(home.orb_vs_opp - away.orb_vs_opp)
-        ftr_delta = _to_unit_rate(home.ftr_vs_opp - away.ftr_vs_opp)
+        if use_vs_opp:
+            efg_delta = _to_unit_rate(home.efg_vs_opp - away.efg_vs_opp)
+            tov_delta = -_to_unit_rate(home.tov_vs_opp - away.tov_vs_opp)
+            orb_delta = _to_unit_rate(home.orb_vs_opp - away.orb_vs_opp)
+            ftr_delta = _to_unit_rate(home.ftr_vs_opp - away.ftr_vs_opp)
+        else:
+            # Fallback to raw Four Factors vs each opponent profile if
+            # vs-opponent columns are missing in source data.
+            efg_delta = _to_unit_rate(
+                (home.efg_pct - away.opp_efg_pct)
+                - (away.efg_pct - home.opp_efg_pct)
+            )
+            tov_delta = -_to_unit_rate(
+                (home.tov_pct - away.opp_tov_pct)
+                - (away.tov_pct - home.opp_tov_pct)
+            )
+            orb_delta = _to_unit_rate(home.orb_pct - away.orb_pct)
+            ftr_delta = _to_unit_rate(
+                (home.ftr - away.opp_ftr) - (away.ftr - home.opp_ftr)
+            )
+            # Inject a modest efficiency anchor when four-factor deltas are sparse.
+            efg_delta += (home.cage_em - away.cage_em) * 0.05
 
         composite = (
             self.W_EFG * efg_delta
@@ -660,13 +692,27 @@ class CAGERankingsModel(_BaseModel):
         resume_edge = (home.resume_score - away.resume_score) / 50.0
         dna_edge    = (home.dna_score - away.dna_score) / 50.0
 
-        margin = (
+        base_margin = (
             0.45 * power_edge
             + 0.15 * suff_edge
             + 0.15 * clutch_edge
             + 0.15 * resume_edge
             + 0.10 * dna_edge
-        ) + self._hca(neutral)
+        )
+
+        if all(
+            abs(v - 50.0) < 1e-6
+            for v in (
+                home.cage_power_index, away.cage_power_index,
+                home.suffocation, away.suffocation,
+                home.clutch_rating, away.clutch_rating,
+                home.resume_score, away.resume_score,
+                home.dna_score, away.dna_score,
+            )
+        ):
+            base_margin = (home.cage_em - away.cage_em) * 0.45
+
+        margin = base_margin + self._hca(neutral)
         spread = -margin
 
         pace = self._expected_pace(home, away)
@@ -736,6 +782,76 @@ class RegressedEfficiencyModel(_BaseModel):
         return team.cage_em * self._reg_factor(team)
 
 
+class LuckRegressionModel(_BaseModel):
+    """Regression-to-mean model using Pythagorean win% and luck."""
+
+    name = "LuckRegression"
+
+    def predict(
+        self,
+        home: TeamProfile,
+        away: TeamProfile,
+        neutral: bool = False,
+    ) -> ModelPrediction:
+        pace = self._expected_pace(home, away)
+        margin = (
+            (home.pythagorean_win_pct - away.pythagorean_win_pct) * 25.0
+            - (home.luck - away.luck) * 0.3
+            + self._hca(neutral)
+        )
+        spread = -margin
+        total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        conf = max(0.10, min(0.90, self._confidence_from_games(home, away)))
+        return ModelPrediction(self.name, round(spread, 2), round(total, 1), round(conf, 3))
+
+
+class VarianceModel(_BaseModel):
+    """Volatility-aware model that regresses efficiency edges for high-variance teams."""
+
+    name = "Variance"
+
+    def predict(
+        self,
+        home: TeamProfile,
+        away: TeamProfile,
+        neutral: bool = False,
+    ) -> ModelPrediction:
+        pace = self._expected_pace(home, away)
+        h_std = max(home.net_rtg_std_l10, 0.0)
+        a_std = max(away.net_rtg_std_l10, 0.0)
+        eff_edge = home.cage_em - away.cage_em
+        confidence_adj = float(np.clip(1.0 - (h_std + a_std) / 40.0, 0.35, 1.0))
+        margin = eff_edge * confidence_adj * (pace / 100.0) + self._hca(neutral)
+        spread = -margin
+        total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        conf = max(0.10, min(0.90, self._confidence_from_games(home, away) * confidence_adj))
+        return ModelPrediction(self.name, round(spread, 2), round(total, 1), round(conf, 3))
+
+
+class HomeAwayFormModel(_BaseModel):
+    """Location-form model based on home/away adjusted net rating."""
+
+    name = "HomeAwayForm"
+
+    def predict(
+        self,
+        home: TeamProfile,
+        away: TeamProfile,
+        neutral: bool = False,
+    ) -> ModelPrediction:
+        pace = self._expected_pace(home, away)
+        h_loc = home.ha_net_rtg_l10 if abs(home.ha_net_rtg_l10) > 1e-6 else home.cage_em
+        a_loc = away.ha_net_rtg_l10 if abs(away.ha_net_rtg_l10) > 1e-6 else away.cage_em
+        location_edge = h_loc - a_loc
+        margin = location_edge * (pace / 100.0)
+        if not neutral:
+            margin += HCA * 0.5
+        spread = -margin
+        total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        conf = max(0.10, min(0.85, self._confidence_from_games(home, away)))
+        return ModelPrediction(self.name, round(spread, 2), round(total, 1), round(conf, 3))
+
+
 def _apply_bias_corrections(
     prediction: float,
     home_conf: str,
@@ -795,11 +911,11 @@ class EnsemblePredictor:
         FourFactorsModel,
         AdjustedEfficiencyModel,
         PythagoreanModel,
-        MomentumModel,
-        ATSIntelligenceModel,
         SituationalModel,
         CAGERankingsModel,
-        RegressedEfficiencyModel,
+        LuckRegressionModel,
+        VarianceModel,
+        HomeAwayFormModel,
     ]
 
     def _apply_bias_corrections(
@@ -1014,12 +1130,20 @@ def load_team_profiles(
     weighted_path = weighted_path or DATA_DIR / "team_game_weighted.csv"
 
     df = None
-    for path in [snapshot_path, weighted_path]:
+    for path in [weighted_path, snapshot_path]:
         if path.exists() and path.stat().st_size > 100:
-            log.info("Loading team profiles from %s", path.name)
-            df = pd.read_csv(path, dtype=str, low_memory=False)
-            df = normalize_numeric_dtypes(df)
-            break
+            candidate = pd.read_csv(path, dtype=str, low_memory=False)
+            candidate = normalize_numeric_dtypes(candidate)
+            signal_cols = [
+                "adj_net_rtg", "net_rtg", "net_rtg_l10", "cover_rate_season",
+                "ha_net_rtg_l10", "pythagorean_win_pct", "luck_score",
+            ]
+            signal_score = int(sum(candidate.get(c, pd.Series(dtype=float)).notna().sum() for c in signal_cols if c in candidate.columns))
+            if df is None or signal_score > 0:
+                df = candidate
+                log.info("Loading team profiles from %s (signal score=%d)", path.name, signal_score)
+                if signal_score > 0:
+                    break
 
     if df is None or df.empty:
         log.warning("No team data found for profiles")
@@ -1120,7 +1244,8 @@ def load_team_profiles(
             team_name=str(row.get("team", "")),
             conference=str(row.get("conference", "")),
             games_before=(
-                _team_game_count.get(tid)
+                int(g("wins", 0) + g("losses", 0))
+                or _team_game_count.get(tid)
                 or int(g("games_played", 0))
                 or int(g("game_number", 0))
                 or 0
@@ -1131,8 +1256,15 @@ def load_team_profiles(
             cage_em=(
                 _team_agg[tid]
                 if tid in _team_agg
-                else col(row, "adj_net_rtg", "net_eff", "net_rtg", "cage_em",
-                         "adj_em", default=0.0)
+                else col(
+                    row,
+                    "adj_net_rtg",
+                    "net_eff",
+                    "net_rtg",
+                    "cage_em",
+                    "adj_em",
+                    default=((g("wins", 0) / max(1.0, g("wins", 0) + g("losses", 0))) - 0.5) * 24.0,
+                )
             ),
             cage_o=col(row, "adj_ortg", "ortg", "off_rtg", "cage_o",
                        default=LEAGUE_AVG_ORTG),
@@ -1169,9 +1301,9 @@ def load_team_profiles(
                            "off_ftr_vs_opp", default=0.0),
 
             # Rolling windows — try l5/l10 suffixed variants
-            net_rtg_l5=col(row, "net_rtg_l5", "net_eff_l5",
+            net_rtg_l5=col(row, "net_rtg_l5", "net_eff_l5", "form_rating",
                            "adj_net_rtg_l5", default=0.0),
-            net_rtg_l10=col(row, "net_rtg_l10", "net_eff_l10",
+            net_rtg_l10=col(row, "net_rtg_l10", "net_eff_l10", "momentum_score",
                             "adj_net_rtg_l10", default=0.0),
             ortg_l5=col(row, "ortg_l5", "off_rtg_l5",
                         default=LEAGUE_AVG_ORTG),
@@ -1193,8 +1325,12 @@ def load_team_profiles(
             net_rtg_std_l10=col(row, "net_rtg_std_l10", "net_eff_std_l10",
                                 "net_rtg_std", default=8.0),
             efg_std_l10=col(row, "efg_std_l10", "eff_fg_std", default=5.0),
-            consistency_score=col(row, "consistency_score",
-                                  "consistency", default=50.0),
+            consistency_score=col(
+                row,
+                "consistency_score",
+                "consistency",
+                default=max(20.0, 100.0 - col(row, "net_rtg_std_l10", default=8.0) * 5.0),
+            ),
 
             # CAGE composites
             suffocation=col(row, "t_suffocation_rating", "suffocation",
@@ -1216,8 +1352,13 @@ def load_team_profiles(
 
             # Luck & record
             luck=col(row, "luck_score", "luck", default=0.0),
-            pythagorean_win_pct=col(row, "pythagorean_win_pct", "pyth_win_pct",
-                                    "pyth_wp", default=0.5),
+            pythagorean_win_pct=col(
+                row,
+                "pythagorean_win_pct",
+                "pyth_win_pct",
+                "pyth_wp",
+                default=g("wins", 0) / max(1.0, g("wins", 0) + g("losses", 0)),
+            ),
             actual_win_pct=col(row, "season_win_pct", "win_pct", default=0.5),
             home_wpct=col(row, "home_win_pct", "home_wp", default=0.65),
             away_wpct=col(row, "away_win_pct", "away_wp", default=0.40),
@@ -1233,19 +1374,28 @@ def load_team_profiles(
             opp_avg_drtg=col(row, "opp_avg_drtg_season", "opp_avg_drtg",
                              default=LEAGUE_AVG_DRTG),
             opp_orb_pct=col(row, "opp_avg_orb_season", "opp_orb_pct", default=30.0),
+            rest_days=col(row, "rest_days", default=3.0),
+            games_l7=col(row, "games_l7", default=2.0),
             fatigue_index=col(row, "fatigue_index", default=0.0),
 
             # ATS
-            cover_rate_season=col(row, "cover_rate_season",
+            cover_rate_season=col(row, "cover_rate_season", "cover_wtd_qual_rate_l10",
                                   "ats_cover_rate", default=0.5),
-            cover_rate_l10=col(row, "cover_rate_l10", default=0.5),
-            ats_margin_l10=col(row, "ats_margin_l10", default=0.0),
+            cover_rate_l10=col(row, "cover_rate_l10", "cover_wtd_qual_rate_l10", default=0.5),
+            ats_margin_l10=col(row, "ats_margin_l10", "cover_margin_l10", default=0.0),
             cover_margin=col(row, "cover_margin", default=0.0),
             cover_streak=col(row, "cover_streak", default=0.0),
             momentum_tier=str(row.get("momentum_tier") or
                               row.get("t_momentum_tier") or ""),
-            ha_net_rtg_l10=col(row, "ha_net_rtg_l10", "ha_net_eff_l10",
-                               default=0.0),
+            ha_net_rtg_l10=col(
+                row,
+                "ha_net_rtg_l10",
+                "ha_net_eff_l10",
+                "home_net_rtg_season",
+                "away_net_rtg_season",
+                "net_rtg",
+                default=0.0,
+            ),
         )
         profiles[tid] = tp
 

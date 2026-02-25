@@ -29,31 +29,35 @@ ENSEMBLE_MODEL_NAMES = [
     "FourFactors",
     "AdjEfficiency",
     "Pythagorean",
-    "Momentum",
     "Situational",
     "CAGERankings",
-    "RegressedEff",
+    "LuckRegression",
+    "Variance",
+    "HomeAwayForm",
 ]
 
 DEFAULT_SPREAD_WEIGHTS = {
-    "FourFactors":   0.12,
-    "AdjEfficiency": 0.22,
-    "Pythagorean":   0.14,
-    "Momentum":      0.16,
-    "Situational":   0.10,
-    "CAGERankings":  0.18,
-    "RegressedEff":  0.08,
+    "FourFactors":   0.125,
+    "AdjEfficiency": 0.125,
+    "Pythagorean":   0.125,
+    "Situational":   0.125,
+    "CAGERankings":  0.125,
+    "LuckRegression": 0.125,
+    "Variance":      0.125,
+    "HomeAwayForm":  0.125,
 }
 
 DEFAULT_TOTAL_WEIGHTS = {
-    "FourFactors":   0.15,
-    "AdjEfficiency": 0.24,
-    "Pythagorean":   0.10,
-    "Momentum":      0.14,
-    "Situational":   0.12,
-    "CAGERankings":  0.17,
-    "RegressedEff":  0.08,
+    "FourFactors":   0.125,
+    "AdjEfficiency": 0.125,
+    "Pythagorean":   0.125,
+    "Situational":   0.125,
+    "CAGERankings":  0.125,
+    "LuckRegression": 0.125,
+    "Variance":      0.125,
+    "HomeAwayForm":  0.125,
 }
+
 
 WEIGHTS_PATH = Path("data") / "backtest_optimized_weights.json"
 
