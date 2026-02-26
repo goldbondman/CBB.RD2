@@ -9,3 +9,5 @@ results_log,,error,missing_required_columns,missing=['predicted_spread']; output
 results_log,,error,missing_required_columns,missing=['predicted_spread'],,,2026-02-25T22:53:02.494921+00:00,/tmp/pytest-of-jules/pytest-0/test_loads_all_completed_games0/data/results_log.csv
 results_log,,error,missing_required_columns,missing=['predicted_spread']; output_path=data/results_log.csv,2026-02-25T22:53:33.450747+00:00,26.0,,
 results_log,,error,missing_required_columns,missing=['predicted_spread'],,,2026-02-25T22:53:33.455611+00:00,data/results_log.csv
+results_log,,error,missing_required_columns,missing=['predicted_spread']; output_path=data/results_log.csv,2026-02-26T08:54:49.417839+00:00,8.0,,
+results_log,,error,missing_required_columns,missing=['predicted_spread'],,,2026-02-26T08:54:49.420571+00:00,data/results_log.csv
