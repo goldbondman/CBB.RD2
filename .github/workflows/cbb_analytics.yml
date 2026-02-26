@@ -223,7 +223,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          python -c "import pandas, numpy, requests, scipy" || \
+          python -c "import pandas, numpy, requests, scipy; import bs4" || \
             { echo "[ERROR] Core dependency import failed"; exit 1; }
 
       # Step 5: Run backtester (if requested or weekly)
