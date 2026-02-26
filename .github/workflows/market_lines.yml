@@ -52,11 +52,11 @@ jobs:
       - name: Verify predictions artifact or bootstrap from git
         run: |
           for f in data/predictions_latest.csv data/predictions_combined_latest.csv; do
-            if [ ! -s "$f" ]; then
-              echo "[WARN] $f missing from artifact — attempting git restore"
-              git show HEAD:"$f" > "$f" 2>/dev/null && \
-                echo "[OK] Restored $f from git" || \
-                echo "[WARN] $f not in git either"
+            _git_lines=$(git show HEAD:"$f" 2>/dev/null | wc -l || echo 0)
+            _local_lines=$(wc -l < "$f" 2>/dev/null || echo 0)
+            if [ ! -s "$f" ] || [ "$_local_lines" -lt "$_git_lines" ]; then
+              echo "[BOOTSTRAP] $f: local=${_local_lines} git=${_git_lines} — restoring from git"
+              git show HEAD:"$f" > "$f" 2>/dev/null || echo "[WARN] $f not in git history"
             fi
           done
 
