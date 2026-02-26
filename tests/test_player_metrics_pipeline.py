@@ -16,7 +16,7 @@ FIXTURE = Path("tests/fixtures/summary_boxscore_fixture.json")
 
 def test_parse_summary_populates_raw_player_box_fields():
     raw = json.loads(FIXTURE.read_text())
-    parsed = parse_summary(raw, event_id="401")
+    parsed = parse_summary(raw, game_id="401")
 
     assert parsed is not None
     assert parsed["players"]
@@ -34,7 +34,7 @@ def test_parse_summary_populates_raw_player_box_fields():
 
 def test_compute_player_metrics_adds_derived_and_rolling_features():
     raw = json.loads(FIXTURE.read_text())
-    parsed = parse_summary(raw, event_id="401")
+    parsed = parse_summary(raw, game_id="401")
     base = parsed["players"][0].copy()
 
     rows = []

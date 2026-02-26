@@ -13,12 +13,9 @@ Model Descriptions
   M3  Pythagorean       Pythagorean expected win % → implied margin
   M4  Momentum          Recency-weighted L5 trend vs season baseline
   M5  Situational       Rest, home/away splits, scheduling fatigue
-  M6  CAGERankings      Composite CAGE power-index rating system
-  M7  LuckRegression    Pythagorean/luck regression-to-mean signal
-  M8  Variance          Volatility-aware efficiency moderation
-
-Note: the legacy standalone ``RegressedEff`` model has been folded into
-M2 to reduce redundant dependence on CAGE efficiency signals.
+  M6  LuckRegression    Pythagorean/luck regression-to-mean signal
+  M7  Variance          Volatility-aware efficiency moderation
+  M8  HomeAwayForm      Location-form model based on home/away adjusted net rating
 
 Pipeline Integration
 ──────────────────────────────────────────────────────────────────────
@@ -82,10 +79,11 @@ MODEL_ID_TO_NAME = {
     "m1": "FourFactors",
     "m2": "AdjEfficiency",
     "m3": "Pythagorean",
-    "m4": "Momentum",
-    "m5": "Situational",
-    "m6": "CAGERankings",
-    "m7": "RegressedEff",
+    "m4": "Situational",
+    "m5": "CAGERankings",
+    "m6": "LuckRegression",
+    "m7": "Variance",
+    "m8": "HomeAwayForm",
 }
 
 # Legacy 5-model diagnostic blend (M2 reduced by 0.05 to allocate room for M8 primary).
@@ -898,57 +896,6 @@ class CAGERankingsModel(_BaseModel):
 # M7 — REGRESSED EFFICIENCY MODEL
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class RegressedEfficiencyModel(_BaseModel):
-    """
-    Mean-regresses adjusted efficiency toward league average based on
-    sample size and consistency.  Conservative early in the season,
-    converges toward AdjEfficiency as data accumulates.
-    """
-
-    name = "RegressedEff"
-
-    FULL_SEASON_GAMES = 25.0
-
-    def predict(
-        self,
-        home: TeamProfile,
-        away: TeamProfile,
-        neutral: bool = False,
-    ) -> ModelPrediction:
-        h_reg = self._regress(home)
-        a_reg = self._regress(away)
-
-        pace = self._expected_pace(home, away)
-        margin = (h_reg - a_reg) * (pace / 100.0) + self._hca(neutral)
-        spread = -margin
-
-        h_ortg_reg = LEAGUE_AVG_ORTG + (
-            (home.cage_o - LEAGUE_AVG_ORTG) * self._reg_factor(home)
-        )
-        a_ortg_reg = LEAGUE_AVG_ORTG + (
-            (away.cage_o - LEAGUE_AVG_ORTG) * self._reg_factor(away)
-        )
-        total = self._eff_to_total(h_ortg_reg, a_ortg_reg, pace)
-
-        sample_conf = self._confidence_from_games(home, away)
-        avg_reg = (self._reg_factor(home) + self._reg_factor(away)) / 2.0
-        conf = max(0.10, min(0.90, sample_conf * avg_reg))
-
-        return ModelPrediction(
-            self.name, round(spread, 2), round(total, 1), round(conf, 3)
-        )
-
-    def _reg_factor(self, team: TeamProfile) -> float:
-        """0–1 regression factor: higher = less regression."""
-        sample = min(team.games_before / self.FULL_SEASON_GAMES, 1.0)
-        consist = team.consistency_score / 100.0
-        return sample * np.clip(consist, 0.3, 1.0)
-
-    def _regress(self, team: TeamProfile) -> float:
-        """Regress CAGE EM toward zero (league average)."""
-        return team.cage_em * self._reg_factor(team)
-
-
 class LuckRegressionModel(_BaseModel):
     """Regression-to-mean model using Pythagorean win% and luck."""
 
@@ -1393,6 +1340,26 @@ class EnsemblePredictor:
 # TEAM PROFILE LOADER (for workflow integration)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def col(row, *names, default=0.0):
+    """Try column names in priority order, return first non-null."""
+    for name in names:
+        v = row.get(name)
+        try:
+            if v is not None and not pd.isna(float(v)):
+                return float(v)
+        except (TypeError, ValueError):
+            continue
+    return default
+
+
+def _g(row, col, default=0.0):
+    v = row.get(col, default)
+    try:
+        return float(v) if pd.notna(v) else default
+    except (TypeError, ValueError):
+        return default
+
+
 def load_team_profiles(
     snapshot_path: Optional[Path] = None,
     weighted_path: Optional[Path] = None,
@@ -1495,29 +1462,11 @@ def load_team_profiles(
         log.warning(
             "[DIAG] No net efficiency column found for cage_em aggregation. "
             "All cage_em will be 0.0. Columns checked: %s. Available: %s",
-            _agg_candidates,
-            [c for c in df_all.columns if any(x in c.lower() for x in ["net", "eff", "rtg", "em"])][:15],
+            ", ".join(_agg_candidates),
+            ", ".join([c for c in df_all.columns if any(x in c.lower() for x in ["net", "eff", "rtg", "em"])][:15]),
         )
 
     profiles: Dict[str, TeamProfile] = {}
-
-    def col(row, *names, default=0.0):
-        """Try column names in priority order, return first non-null."""
-        for name in names:
-            v = row.get(name)
-            try:
-                if v is not None and not pd.isna(float(v)):
-                    return float(v)
-            except (TypeError, ValueError):
-                continue
-        return default
-
-    def _g(row, col, default=0.0):
-        v = row.get(col, default)
-        try:
-            return float(v) if pd.notna(v) else default
-        except (TypeError, ValueError):
-            return default
 
     for _, row in df.iterrows():
         tid = str(row.get("team_id", ""))

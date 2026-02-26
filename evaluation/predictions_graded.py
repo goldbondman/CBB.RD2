@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import pandas as pd
+from pipeline_csv_utils import compute_clv_pts
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -62,19 +63,10 @@ def grade_row(row: pd.Series) -> Dict[str, Any]:
     pinn_line = row.get("pinnacle_spread")
     dk_line = row.get("draftkings_spread")
 
-    def _clv(pred: Any, line: Any) -> Optional[float]:
-        """CLV = how much better model is than book's line."""
-        if pred is None or line is None:
-            return None
-        try:
-            return round(float(pred) - float(line), 3)
-        except (TypeError, ValueError):
-            return None
-
-    clv_vs_consensus = _clv(pred_spread, closing_line)
-    clv_vs_pinnacle = _clv(pred_spread, pinn_line)
-    clv_vs_dk = _clv(pred_spread, dk_line)
-    clv_vs_open = _clv(pred_spread, opening_line)
+    clv_vs_consensus = compute_clv_pts(closing_line, pred_spread)
+    clv_vs_pinnacle = compute_clv_pts(pinn_line, pred_spread)
+    clv_vs_dk = compute_clv_pts(dk_line, pred_spread)
+    clv_vs_open = compute_clv_pts(opening_line, pred_spread)
 
     def _beat_line(pred: Any, line: Any) -> Optional[bool]:
         if pred is None or line is None:

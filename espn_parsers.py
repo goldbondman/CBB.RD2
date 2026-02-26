@@ -405,7 +405,7 @@ def parse_scoreboard_event(event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 
 # ── Summary parser ────────────────────────────────────────────────────────────
 
-def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]]:
+def parse_summary(raw: Dict[str, Any], game_id: str) -> Optional[Dict[str, Any]]:
     """Parse ESPN summary JSON into structured game + team + player dicts."""
     try:
         header   = raw.get("header", {})
@@ -549,7 +549,7 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                         continue
 
                     prow: Dict[str, Any] = {
-                        "event_id":          event_id,
+                        "game_id":           game_id,
                         "game_datetime_utc":  game_dt_utc,
                         "game_datetime_pst":  _utc_to_pst(game_dt_utc),
                         "team_id":           tid,
@@ -649,7 +649,7 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
                     players.append(prow)
 
         return {
-            "event_id":          event_id,
+            "game_id":           game_id,
             "game_datetime_utc":  game_dt_utc,
             "game_datetime_pst":  _utc_to_pst(game_dt_utc),
             "venue":             venue,
@@ -670,7 +670,7 @@ def parse_summary(raw: Dict[str, Any], event_id: str) -> Optional[Dict[str, Any]
         }
 
     except Exception as exc:
-        log.error(f"parse_summary failed for event {event_id}: {exc}")
+        log.error(f"parse_summary failed for event {game_id}: {exc}")
         return None
 
 
@@ -686,7 +686,7 @@ def summary_to_team_rows(parsed: Dict[str, Any]) -> Tuple[Dict, Dict]:
         return cols
 
     base = {
-        "event_id":          parsed["event_id"],
+        "game_id":           parsed["game_id"],
         "game_datetime_utc": parsed["game_datetime_utc"],
         "game_datetime_pst": parsed.get("game_datetime_pst"),
         "venue":             parsed["venue"],

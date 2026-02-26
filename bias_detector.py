@@ -421,7 +421,7 @@ def write_bias_report(all_biases: list[dict], df_graded: pd.DataFrame, report_pa
             if len(grp) >= 5:
                 tier_ats[str(tier)] = {
                     "n": len(grp),
-                    "ats_pct": round(grp["home_covered_pred"].mean() * 100, 1),
+                    "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
                     "mae": round(grp["abs_spread_error"].mean(), 2),
                 }
 

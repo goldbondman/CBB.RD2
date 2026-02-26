@@ -60,9 +60,14 @@ import numpy as np
 import pandas as pd
 from config.logging_config import get_logger
 from config.model_version import compute_model_version, save_version_to_history
-from pipeline_csv_utils import add_conference_name, safe_write_csv
-from pipeline_csv_utils import normalize_numeric_dtypes, safe_write_csv
-from pipeline_csv_utils import normalize_column_names, safe_write_csv
+from pipeline_csv_utils import (
+    add_conference_name,
+    compute_spread_delta,
+    compute_clv_pts,
+    normalize_column_names,
+    normalize_numeric_dtypes,
+    safe_write_csv,
+)
 from models.alpha_evaluator import evaluate_alpha
 from cbb_situational import (
     detect_trap_game,
@@ -644,18 +649,12 @@ def run_predictions(
         spread_line = _safe_float(matchup.get("spread"))
         total_line = _safe_float(matchup.get("over_under"))
 
-        spread_diff = (
-            round(prediction["predicted_spread"] - spread_line, 2)
-            if spread_line is not None else None
-        )
-        total_diff = (
-            round(prediction["predicted_total"] - total_line, 2)
-            if total_line is not None else None
-        )
+        spread_diff = compute_spread_delta(spread_line, prediction["predicted_spread"])
+        total_diff = compute_spread_delta(total_line, prediction["predicted_total"])
 
         pred_spread = prediction["predicted_spread"]
         if spread_line is not None and spread_diff is not None:
-            edge_flag = abs(spread_diff) > 3.0
+            edge_flag = abs(spread_diff) >= 3.0
             spread_pick = f"{home_name} covers" if pred_spread < spread_line else f"{away_name} covers"
         else:
             edge_flag = False
@@ -773,7 +772,7 @@ def run_predictions(
             "line_shopping_advisory": line_advisory,
             "spread_pick": spread_pick,
             "edge_flag": int(edge_flag),
-            "total_direction": "OVER" if (total_diff or 0) > 2 else "UNDER" if (total_diff or 0) < -2 else "PUSH",
+            "total_direction": "UNDER" if (total_diff or 0) > 2 else "OVER" if (total_diff or 0) < -2 else "PUSH",
 
             "home_games_used": int(all_data[(all_data["team_id"].astype(str) == str(home_id)) & (all_data["game_datetime_utc"] < cutoff_dt)].shape[0]),
             "away_games_used": int(all_data[(all_data["team_id"].astype(str) == str(away_id)) & (all_data["game_datetime_utc"] < cutoff_dt)].shape[0]),

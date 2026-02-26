@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict
 
@@ -91,7 +91,7 @@ def main() -> None:
 
     out = pd.DataFrame(rows)
     out.to_csv(OUT_PATH, index=False)
-    print(f"Wrote {len(out)} model rows to {OUT_PATH} @ {datetime.utcnow().isoformat()}Z")
+    print(f"Wrote {len(out)} model rows to {OUT_PATH} @ {datetime.now(timezone.utc).isoformat()}Z")
 
 
 if __name__ == "__main__":

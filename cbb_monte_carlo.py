@@ -472,6 +472,14 @@ def simulate_slate(
 # RANKINGS JOIN HELPER
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _g(row, col, default=0.0):
+    v = row.get(col, default)
+    try:
+        return float(v) if pd.notna(v) else default
+    except (TypeError, ValueError):
+        return default
+
+
 def load_team_profiles_for_sim(
     rankings_path: str = "data/cbb_rankings.csv",
 ) -> dict:
@@ -485,13 +493,13 @@ def load_team_profiles_for_sim(
     profiles: dict = {}
 
     if not path.exists() or path.stat().st_size < 10:
-        print("[WARN] Rankings not found — using league-average variance parameters")
+        log.warning("Rankings not found — using league-average variance parameters")
         return profiles
 
     try:
         df = pd.read_csv(path, low_memory=False)
     except Exception as exc:
-        print(f"[WARN] Failed to read rankings: {exc}")
+        log.warning(f"Failed to read rankings: {exc}")
         return profiles
 
     # Identify the team_id column
@@ -503,15 +511,8 @@ def load_team_profiles_for_sim(
                 break
 
     if id_col not in df.columns:
-        print("[WARN] No team_id column found in rankings CSV")
+        log.warning("No team_id column found in rankings CSV")
         return profiles
-
-    def _g(row, col, default=0.0):
-        v = row.get(col, default)
-        try:
-            return float(v) if pd.notna(v) else default
-        except (TypeError, ValueError):
-            return default
 
     for _, row in df.iterrows():
         raw_id = row.get(id_col, "")

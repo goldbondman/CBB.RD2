@@ -68,7 +68,7 @@ from sklearn.metrics import brier_score_loss
 
 from config.logging_config import get_logger
 from espn_config import PIPELINE_RUN_ID
-from pipeline_csv_utils import safe_write_csv
+from pipeline_csv_utils import normalize_column_names, safe_write_csv
 
 warnings.filterwarnings("ignore")
 
@@ -151,13 +151,8 @@ def _append_weight_history_snapshot(history_path: Path, current_weights: dict) -
 def train_stacking_meta_model(backtest_results: pd.DataFrame, output_dir: Path) -> Optional[Dict[str, object]]:
     """Train ridge stacker on model outputs and validate vs weighted average on holdout."""
     model_alias_map = {
-        "m1_spread": ["fourfactors_spread"],
-        "m2_spread": ["adjefficiency_spread"],
-        "m3_spread": ["pythagorean_spread"],
-        "m4_spread": ["situational_spread"],
-        "m5_spread": ["cagerankings_spread"],
-        "m6_spread": ["regressedeff_spread", "luckregression_spread"],
-        "m7_spread": ["homeawayform_spread", "variance_spread"],
+        f"m{i+1}_spread": [f"{name.lower()}_spread"]
+        for i, name in enumerate(ENSEMBLE_MODEL_NAMES)
     }
 
     stack_df = backtest_results.copy()
@@ -168,7 +163,7 @@ def train_stacking_meta_model(backtest_results: pd.DataFrame, output_dir: Path) 
         if src:
             stack_df[alias] = pd.to_numeric(stack_df[src], errors="coerce")
 
-    model_cols = ["m1_spread", "m2_spread", "m3_spread", "m4_spread", "m5_spread", "m6_spread", "m7_spread"]
+    model_cols = [f"m{i+1}_spread" for i in range(len(ENSEMBLE_MODEL_NAMES))]
     aux_cols = ["cage_edge", "barthag_diff"]
     feature_cols = [c for c in model_cols + aux_cols if c in stack_df.columns]
     stacker_df = stack_df[feature_cols + ["actual_margin", "ens_spread"]].dropna()
@@ -211,7 +206,7 @@ def train_stacking_meta_model(backtest_results: pd.DataFrame, output_dir: Path) 
         "coef": stacker.coef_.tolist(),
         "intercept": float(stacker.intercept_),
         "features": feature_cols,
-        "trained_at": pd.Timestamp.utcnow().isoformat(),
+        "trained_at": pd.Timestamp.now('UTC').isoformat(),
         "n_samples": len(stacker_df),
         "train_samples": len(train_df),
         "holdout_samples": len(holdout_df),
@@ -383,7 +378,8 @@ def load_game_log() -> pd.DataFrame:
         if path.exists() and path.stat().st_size > 100:
             log.info(f"Loading game log: {path.name}")
             df = pd.read_csv(path, dtype=str, low_memory=False)
-            required = {"team_id", "event_id", "game_datetime_utc", "home_away", "points_for", "points_against"}
+            df = normalize_column_names(df)
+            required = {"team_id", "game_id", "game_datetime_utc", "home_away", "points_for", "points_against"}
             missing = sorted(required - set(df.columns))
             if missing:
                 raise ValueError(
@@ -412,7 +408,7 @@ def load_completed_games(game_log: pd.DataFrame) -> pd.DataFrame:
     """
     gl = game_log.copy()
     gl["team_id"]  = gl["team_id"].astype(str)
-    gl["event_id"] = gl["event_id"].astype(str)
+    gl["game_id"] = gl["game_id"].astype(str)
 
     # Filter to completed games (have real scores)
     gl = gl.dropna(subset=["points_for", "points_against"])
@@ -426,9 +422,9 @@ def load_completed_games(game_log: pd.DataFrame) -> pd.DataFrame:
         log.warning("Could not split home/away rows — using fallback pivot")
         # Fallback: each game appears twice (once per team), dedupe
         gl["actual_margin"] = gl["points_for"] - gl["points_against"]
-        return gl[["event_id", "game_datetime_utc", "team_id", "team",
+        return gl[["game_id", "game_datetime_utc", "team_id", "team",
                    "opponent_id", "opponent", "points_for", "points_against",
-                   "actual_margin"]].drop_duplicates("event_id")
+                   "actual_margin"]].drop_duplicates("game_id")
 
     # Defensive drop before renaming to avoid duplicate columns
     for col in ["home_team_id", "home_team", "away_team_id", "away_team", "conference"]:
@@ -444,7 +440,7 @@ def load_completed_games(game_log: pd.DataFrame) -> pd.DataFrame:
         "points_for": "home_score", "points_against": "away_score",
     })
 
-    games = home[["event_id", "game_datetime_utc",
+    games = home[["game_id", "game_datetime_utc",
                   "home_team_id", "home_team",
                   "away_team_id", "away_team",
                   "home_score", "away_score"]].copy()
@@ -454,7 +450,7 @@ def load_completed_games(game_log: pd.DataFrame) -> pd.DataFrame:
     games["home_won"]      = (games["actual_margin"] > 0).astype(int)
     games["neutral_site"]  = home.get("neutral_site", pd.Series(0, index=home.index)).values
 
-    games = games.drop_duplicates("event_id")
+    games = games.drop_duplicates("game_id")
     log.info(f"Completed games: {len(games):,}")
 
     return games.reset_index(drop=True)
@@ -838,14 +834,14 @@ def build_calibration_curve(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # NOTE: If cbb_ensemble model composition changes (add/remove/merge models),
-# retrain this stacking/meta-model and refresh MODEL_NAMES/DEFAULT_WEIGHTS before backtesting.
+# retrain this stacking/meta-model and refresh MODEL_NAMES before backtesting.
 
-MODEL_NAMES = [
-    "fourfactors", "adjefficiency", "pythagorean",
-    "momentum", "situational", "cagerankings", "regressedeff",
-]
+from cbb_config import ENSEMBLE_MODEL_NAMES
 
-DEFAULT_WEIGHTS = np.array([0.12, 0.22, 0.14, 0.16, 0.10, 0.18, 0.08])
+MODEL_NAMES = [n.lower() for n in ENSEMBLE_MODEL_NAMES]
+
+# Equal weighting default for the new 8-model ensemble
+DEFAULT_WEIGHTS = np.array([1.0 / len(MODEL_NAMES)] * len(MODEL_NAMES))
 
 
 def _ensemble_from_weights(records: pd.DataFrame, weights: np.ndarray) -> np.ndarray:
@@ -1032,7 +1028,7 @@ class BacktestEngine:
             game_dt    = row["game_datetime_utc"]
             home_id    = str(row["home_team_id"])
             away_id    = str(row["away_team_id"])
-            event_id   = str(row["event_id"])
+            game_id    = str(row.get("game_id", row.get("event_id", "")))
             neutral    = bool(row.get("neutral_site", False))
 
             # ── Build pre-game team states (ZERO LOOKAHEAD) ──────────────────
@@ -1049,7 +1045,7 @@ class BacktestEngine:
                     home_prior = history_log[(history_log["team_id"].astype(str) == home_id) & (history_log["game_datetime_utc"] < game_dt)]
                     away_prior = history_log[(history_log["team_id"].astype(str) == away_id) & (history_log["game_datetime_utc"] < game_dt)]
                     skip_samples.append({
-                        "event_id": event_id,
+                        "game_id": game_id,
                         "game_datetime": str(game_dt),
                         "home_team": str(row.get("home_team", "")),
                         "away_team": str(row.get("away_team", "")),
@@ -1069,7 +1065,7 @@ class BacktestEngine:
 
             # ── Build record ──────────────────────────────────────────────────
             rec = {
-                "game_id":          event_id,
+                "game_id":          game_id,
                 "game_datetime":    str(game_dt),
                 "home_team":        str(row.get("home_team", "")),
                 "away_team":        str(row.get("away_team", "")),
@@ -1168,15 +1164,10 @@ def build_full_report(
     Returns (model_report_df, calibration_df).
     """
     model_map = {
-        "FourFactors":   ("fourfactors_spread",   "fourfactors_total",   "fourfactors_conf"),
-        "AdjEfficiency": ("adjefficiency_spread",  "adjefficiency_total", "adjefficiency_conf"),
-        "Pythagorean":   ("pythagorean_spread",    "pythagorean_total",   "pythagorean_conf"),
-        "Momentum":      ("momentum_spread",       "momentum_total",      "momentum_conf"),
-        "Situational":   ("situational_spread",    "situational_total",   "situational_conf"),
-        "CAGERankings":  ("cagerankings_spread",   "cagerankings_total",  "cagerankings_conf"),
-        "RegressedEff":  ("regressedeff_spread",   "regressedeff_total",  "regressedeff_conf"),
-        "Ensemble":      ("ens_spread",            None,                   "ens_confidence"),
+        name: (f"{name.lower()}_spread", f"{name.lower()}_total", f"{name.lower()}_conf")
+        for name in ENSEMBLE_MODEL_NAMES
     }
+    model_map["Ensemble"] = ("ens_spread", None, "ens_confidence")
 
     report_rows = []
     for name, (sp_col, tot_col, conf_col) in model_map.items():
@@ -1619,7 +1610,7 @@ def train_platt_calibration(backtest_results: pd.DataFrame, output_dir: Path) ->
         "coef": clf.coef_[0].tolist(),
         "intercept": float(clf.intercept_[0]),
         "features": calib_features,
-        "trained_at": pd.Timestamp.utcnow().isoformat(),
+        "trained_at": pd.Timestamp.now('UTC').isoformat(),
         "n_samples": len(calib_df),
         "brier_score": brier,
     }
@@ -1744,7 +1735,7 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
             **optimized_weights,
             "pipeline_run_id": PIPELINE_RUN_ID,
             "seed": SEED,
-            "saved_at_utc": pd.Timestamp.utcnow().isoformat(),
+            "saved_at_utc": pd.Timestamp.now('UTC').isoformat(),
         }
 
         weights_path = output_dir / "backtest_optimized_weights.json"
@@ -1926,10 +1917,11 @@ def grade_historical_predictions(data_dir: Path = DATA_DIR) -> Tuple[pd.DataFram
         return pd.DataFrame(), pd.DataFrame()
 
     wg = pd.read_csv(weighted_path, low_memory=False)
-    if "event_id" not in wg.columns:
-        log.error("Missing event_id in weighted games file")
+    wg = normalize_column_names(wg)
+    if "game_id" not in wg.columns:
+        log.error("Missing game_id in weighted games file")
         return pd.DataFrame(), pd.DataFrame()
-    wg["event_id"] = wg["event_id"].astype(str)
+    wg["game_id"] = wg["game_id"].astype(str)
     wg["game_datetime_utc"] = pd.to_datetime(wg["game_datetime_utc"], errors="coerce", utc=True)
 
     if "home_away" in wg.columns:
@@ -1940,10 +1932,9 @@ def grade_historical_predictions(data_dir: Path = DATA_DIR) -> Tuple[pd.DataFram
     if home_rows.empty:
         home_rows = wg.copy()
 
-    games = home_rows.sort_values("game_datetime_utc").drop_duplicates(subset=["event_id"], keep="last").copy()
+    games = home_rows.sort_values("game_datetime_utc").drop_duplicates(subset=["game_id"], keep="last").copy()
     games["home_score"] = pd.to_numeric(games.get("points_for"), errors="coerce")
     games["away_score"] = pd.to_numeric(games.get("points_against"), errors="coerce")
-    games = games.rename(columns={"event_id": "game_id"})
 
     predictions["game_id"] = predictions.get("game_id", pd.Series(index=predictions.index, dtype=object)).astype(str)
     predictions["game_datetime_utc"] = pd.to_datetime(predictions.get("game_datetime_utc"), errors="coerce", utc=True)

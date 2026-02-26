@@ -55,7 +55,11 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pandas as pd
 
-from pipeline_csv_utils import normalize_numeric_dtypes, safe_write_csv
+from pipeline_csv_utils import (
+    normalize_column_names,
+    normalize_numeric_dtypes,
+    safe_write_csv,
+)
 from config.logging_config import get_logger
 
 warnings.filterwarnings("ignore")
@@ -129,6 +133,7 @@ class GameOutcome:
     """
     # Identity
     game_id:          str
+    event_id:         str
     game_date:        str          # YYYYMMDD
     game_datetime_utc:str
     home_team:        str
@@ -146,6 +151,7 @@ class GameOutcome:
 
     # Primary model prediction
     pred_spread:       Optional[float] = None    # Negative = home favored
+    predicted_spread:  Optional[float] = None    # Alias for pred_spread
     pred_total:        Optional[float] = None
     pred_home_score:   Optional[float] = None
     pred_away_score:   Optional[float] = None
@@ -184,8 +190,7 @@ class GameOutcome:
     pythagorean_spread:   Optional[float] = None
     momentum_spread:      Optional[float] = None
     situational_spread:   Optional[float] = None
-    cagerankings_spread:  Optional[float] = None
-    regressedeff_spread:  Optional[float] = None
+    cagerankings_ats_spread: Optional[float] = None
     m1_spread:            Optional[float] = None
     m2_spread:            Optional[float] = None
     m3_spread:            Optional[float] = None
@@ -193,6 +198,7 @@ class GameOutcome:
     m5_spread:            Optional[float] = None
     m6_spread:            Optional[float] = None
     m7_spread:            Optional[float] = None
+    m8_spread:            Optional[float] = None
     spread_line:          Optional[float] = None
 
     # Per-model ATS outcomes
@@ -201,8 +207,6 @@ class GameOutcome:
     pythagorean_ats:   Optional[int] = None
     momentum_ats:      Optional[int] = None
     situational_ats:   Optional[int] = None
-    cagerankings_ats:  Optional[int] = None
-    regressedeff_ats:  Optional[int] = None
 
     # Metadata
     cage_em_diff:      Optional[float] = None
@@ -287,6 +291,7 @@ def load_predictions(date_filter: Optional[str] = None) -> pd.DataFrame:
         if path.exists() and path.stat().st_size > 50:
             log.info(f"Loading predictions: {path.name}")
             df = pd.read_csv(path, dtype=str, low_memory=False)
+            df = normalize_column_names(df)
             df = normalize_numeric_dtypes(df)
             for col in df.columns:
                 if col not in {"game_id","home_team","away_team","home_team_id",
@@ -312,6 +317,7 @@ def load_games_results(game_ids: Optional[List[str]] = None) -> pd.DataFrame:
         return pd.DataFrame()
 
     df = pd.read_csv(games_path, dtype=str, low_memory=False)
+    df = normalize_column_names(df)
     df = normalize_numeric_dtypes(df)
     df["game_datetime_utc"] = pd.to_datetime(
         df.get("game_datetime_utc", pd.NaT), utc=True, errors="coerce"
@@ -343,6 +349,7 @@ def load_results_log() -> pd.DataFrame:
     """Load existing results log, or return empty DataFrame with schema."""
     if RESULTS_LOG.exists() and RESULTS_LOG.stat().st_size > 50:
         df = pd.read_csv(RESULTS_LOG, dtype=str, low_memory=False)
+        df = normalize_column_names(df)
         df = normalize_numeric_dtypes(df)
         for col in df.columns:
             if col not in {"game_id","game_date","game_datetime_utc","home_team",
@@ -426,6 +433,7 @@ def compute_outcomes(
     Compute all outcomes for one matched prediction + result pair.
     """
     game_id = str(pred_row.get("game_id", ""))
+    event_id = str(pred_row.get("event_id", game_id))
     game_dt = str(result_row.get("game_datetime_utc", ""))
 
     home_score  = _safe_float(result_row.get("home_score"))
@@ -467,6 +475,7 @@ def compute_outcomes(
 
     outcome = GameOutcome(
         game_id           = game_id,
+        event_id          = event_id,
         game_date         = game_dt[:10].replace("-", ""),
         game_datetime_utc = game_dt,
         home_team         = str(pred_row.get("home_team", result_row.get("home_team", ""))),
@@ -482,6 +491,7 @@ def compute_outcomes(
         home_won          = int(_safe_int(result_row.get("home_won"), int(act_margin > 0))),
 
         pred_spread        = pred_spread,
+        predicted_spread   = pred_spread,
         pred_total         = pred_total,
         pred_home_score    = _safe_float(pred_row.get("pred_home_score")),
         pred_away_score    = _safe_float(pred_row.get("pred_away_score")),
@@ -514,29 +524,27 @@ def compute_outcomes(
         ens_wins_game    = _win_correct(ens_spread, act_margin),
 
         # Per-model
-        fourfactors_spread   = model_spreads["fourfactors"],
-        adjefficiency_spread = model_spreads["adjefficiency"],
-        pythagorean_spread   = model_spreads["pythagorean"],
-        momentum_spread      = model_spreads["momentum"],
-        situational_spread   = model_spreads["situational"],
-        cagerankings_spread  = model_spreads["cagerankings"],
-        regressedeff_spread  = model_spreads["regressedeff"],
-        m1_spread            = model_spreads["fourfactors"],
-        m2_spread            = model_spreads["adjefficiency"],
-        m3_spread            = model_spreads["pythagorean"],
-        m4_spread            = model_spreads["momentum"],
-        m5_spread            = model_spreads["situational"],
-        m6_spread            = model_spreads["cagerankings"],
-        m7_spread            = model_spreads["regressedeff"],
+        fourfactors_spread   = model_spreads.get("fourfactors"),
+        adjefficiency_spread = model_spreads.get("adjefficiency"),
+        pythagorean_spread   = model_spreads.get("pythagorean"),
+        momentum_spread      = model_spreads.get("momentum"),
+        situational_spread   = model_spreads.get("situational"),
+        cagerankings_ats_spread = model_spreads.get("cagerankings"),
+        m1_spread            = model_spreads.get("fourfactors"),
+        m2_spread            = model_spreads.get("adjefficiency"),
+        m3_spread            = model_spreads.get("pythagorean"),
+        m4_spread            = model_spreads.get("situational"),
+        m5_spread            = model_spreads.get("cagerankings"),
+        m6_spread            = model_spreads.get("luckregression"),
+        m7_spread            = model_spreads.get("variance"),
+        m8_spread            = model_spreads.get("homeawayform"),
         spread_line          = mkt_spread,
 
-        fourfactors_ats   = model_ats["fourfactors"],
-        adjefficiency_ats = model_ats["adjefficiency"],
-        pythagorean_ats   = model_ats["pythagorean"],
-        momentum_ats      = model_ats["momentum"],
-        situational_ats   = model_ats["situational"],
-        cagerankings_ats  = model_ats["cagerankings"],
-        regressedeff_ats  = model_ats["regressedeff"],
+        fourfactors_ats   = model_ats.get("fourfactors"),
+        adjefficiency_ats = model_ats.get("adjefficiency"),
+        pythagorean_ats   = model_ats.get("pythagorean"),
+        momentum_ats      = model_ats.get("momentum"),
+        situational_ats   = model_ats.get("situational"),
 
         cage_em_diff  = _safe_float(pred_row.get("cage_em_diff") or pred_row.get("ens_cage_edge")),
         barthag_diff  = _safe_float(pred_row.get("barthag_diff") or pred_row.get("ens_barthag_diff")),

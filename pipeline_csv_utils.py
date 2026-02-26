@@ -85,17 +85,17 @@ def add_conference_name(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 PRIMARY_KEYS_MAP: dict[str, list[str]] = {
-    'team_game_metrics.csv': ['event_id', 'team_id'],
-    'team_game_logs.csv': ['event_id', 'team_id'],
-    'team_game_weighted.csv': ['event_id', 'team_id'],
-    'player_game_metrics.csv': ['event_id', 'athlete_id'],
-    'player_game_logs.csv': ['event_id', 'athlete_id'],
+    'team_game_metrics.csv': ['game_id', 'team_id'],
+    'team_game_logs.csv': ['game_id', 'team_id'],
+    'team_game_weighted.csv': ['game_id', 'team_id'],
+    'player_game_metrics.csv': ['game_id', 'athlete_id'],
+    'player_game_logs.csv': ['game_id', 'athlete_id'],
     'games.csv': ['game_id'],
     'cbb_rankings.csv': ['team_id'],
-    'results_log.csv': ['event_id'],
-    'results_log_graded.csv': ['event_id'],
-    'predictions_latest.csv': ['event_id'],
-    'predictions_combined_latest.csv': ['event_id'],
+    'results_log.csv': ['game_id'],
+    'results_log_graded.csv': ['game_id'],
+    'predictions_latest.csv': ['game_id'],
+    'predictions_combined_latest.csv': ['game_id'],
 }
 
 
@@ -125,7 +125,7 @@ def normalize_numeric_dtypes(
 
 
 COLUMN_ALIASES: dict[str, list[str]] = {
-    'event_id': ['game_id', 'eventId', 'gameId'],
+    'game_id': ['event_id', 'eventId', 'gameId'],
     'pred_spread': ['predicted_spread', 'prediction_spread'],
     'home_ml': ['home_money_line', 'home_moneyline'],
     'away_ml': ['away_money_line', 'away_moneyline'],
@@ -134,8 +134,25 @@ COLUMN_ALIASES: dict[str, list[str]] = {
 }
 
 
+def normalize_game_id(val: object) -> str:
+    """
+    Standardize game_id/event_id strings.
+    - Strips .0 from floats (e.g. '40123.0' -> '40123')
+    - Strips leading zeros (e.g. '040123' -> '40123')
+    - Handles NaN/None -> ''
+    """
+    if val is None or pd.isna(val):
+        return ""
+    s = str(val).strip()
+    if s.lower() in ("nan", "none", "nat", "<na>"):
+        return ""
+    if s.endswith(".0"):
+        s = s[:-2]
+    return s.lstrip("0")
+
+
 def normalize_column_names(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalize known aliases to canonical pipeline column names."""
+    """Normalize known aliases to canonical pipeline column names and standardize IDs."""
     out = df.copy()
     for canonical, aliases in COLUMN_ALIASES.items():
         if canonical in out.columns:
@@ -144,6 +161,16 @@ def normalize_column_names(df: pd.DataFrame) -> pd.DataFrame:
             if alias in out.columns:
                 out = out.rename(columns={alias: canonical})
                 break
+
+    # Standardize game_id if it exists
+    if "game_id" in out.columns:
+        out["game_id"] = out["game_id"].apply(normalize_game_id)
+
+    # Standardize team IDs if they exist
+    for col in ("team_id", "home_team_id", "away_team_id", "opponent_id"):
+        if col in out.columns:
+            out[col] = out[col].apply(normalize_game_id)
+
     return out
 
 
@@ -187,7 +214,8 @@ def safe_write_csv(
 ) -> pd.DataFrame:
     """Apply deterministic dedupe, stamp run_id, validate schema, and persist atomically."""
     p = pathlib.Path(path)
-    out = dedupe_by_primary_key(df, p)
+    out = normalize_column_names(df)
+    out = dedupe_by_primary_key(out, p)
     out = add_conference_name(out)
 
     if out.empty and not allow_empty:
@@ -209,3 +237,65 @@ def safe_write_csv(
     tmp.replace(p)
     logger.info("✓ %s → %s (%s rows)", label or p.stem, p, len(out))
     return out
+
+
+def compute_spread_delta(line: float, pred: float) -> float | None:
+    """
+    Raw delta between market line and model prediction: line - pred.
+    Positive = model is more home-favored than market.
+    Negative = model is more away-favored than market.
+    """
+    try:
+        if pd.isna(line) or pd.isna(pred):
+            return None
+        return round(float(line) - float(pred), 3)
+    except (TypeError, ValueError):
+        return None
+
+
+def compute_clv_pts(line: float, pred: float, pick_side: str | None = None) -> float | None:
+    """
+    Standardized CLV calculation relative to the pick side.
+    If pick_side is None, it is derived from the sign of pred (negative=home).
+
+    Positive = model 'beats' the market (line is better for the pick than model).
+    """
+    delta = compute_spread_delta(line, pred)
+    if delta is None:
+        return None
+
+    if pick_side is None:
+        # Infer side from pred: negative = home
+        side = "home" if float(pred) < 0 else "away"
+    else:
+        side = str(pick_side).lower()
+
+    if side == "home":
+        return delta
+    elif side == "away":
+        return -delta
+    return delta
+
+
+def compute_clv_pts_total(line: float, pred: float, pick_side: str | None = None) -> float | None:
+    """
+    Standardized CLV for totals.
+    Positive = model 'beats' the market.
+    """
+    try:
+        if pd.isna(line) or pd.isna(pred):
+            return None
+        diff = float(line) - float(pred)
+
+        if pick_side is None:
+            side = "under" if diff > 0 else "over"
+        else:
+            side = str(pick_side).lower()
+
+        if side == "under":
+            return diff
+        elif side == "over":
+            return -diff
+        return diff
+    except (TypeError, ValueError):
+        return None

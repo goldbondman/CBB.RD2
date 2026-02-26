@@ -4,11 +4,11 @@ import pathlib
 import pandas as pd
 
 PRIMARY_KEYS = {
-    'team_game_metrics.csv': ['event_id', 'team_id'],
-    'team_game_logs.csv': ['event_id', 'team_id'],
-    'team_game_weighted.csv': ['event_id', 'team_id'],
-    'player_game_metrics.csv': ['event_id', 'athlete_id'],
-    'player_game_logs.csv': ['event_id', 'athlete_id'],
+    'team_game_metrics.csv': ['game_id', 'team_id'],
+    'team_game_logs.csv': ['game_id', 'team_id'],
+    'team_game_weighted.csv': ['game_id', 'team_id'],
+    'player_game_metrics.csv': ['game_id', 'athlete_id'],
+    'player_game_logs.csv': ['game_id', 'athlete_id'],
     'cbb_rankings.csv': ['team_id'],
     'predictions_latest.csv': ['game_id'],
     'results_log.csv': ['game_id'],

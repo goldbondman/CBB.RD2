@@ -19,6 +19,8 @@ from espn_config import (
 from models.alpha_evaluator import evaluate_alpha
 from pipeline_csv_utils import (
     add_conference_name,
+    compute_spread_delta,
+    compute_clv_pts,
     normalize_column_names,
     normalize_numeric_dtypes,
 )
@@ -998,11 +1000,10 @@ def build_predictions_with_context(
                 _away_net = pd.to_numeric(df[_nc], errors="coerce")
                 break
 
-        # 1. spread_diff_vs_line: how far model is from market
-        if len(_line) > 0 and len(_pred) > 0:
-            df["spread_diff_vs_line"] = (_line - _pred).round(2)
-        else:
-            df["spread_diff_vs_line"] = pd.NA
+        # 1. spread_diff_vs_line: how far model is from market (raw delta)
+        df["spread_diff_vs_line"] = df.apply(
+            lambda r: compute_spread_delta(r.get("spread_line"), r.get(pred_col)), axis=1
+        )
 
         # 2. eff_edge: raw efficiency differential
         if len(_home_net) > 0 and len(_away_net) > 0:
@@ -1015,16 +1016,14 @@ def build_predictions_with_context(
             else pd.Series(dtype=float)
 
         # 3. clv_vs_open: model vs opening line
-        if len(_open) > 0 and _open.notna().any() and len(_pred) > 0:
-            df["clv_vs_open"] = (_open - _pred).round(3)
-        else:
-            df["clv_vs_open"] = pd.NA
+        df["clv_vs_open"] = df.apply(
+            lambda r: compute_clv_pts(r.get("home_spread_open"), r.get(pred_col)), axis=1
+        )
 
         # 4. clv_vs_close: model vs current/closing line
-        if len(_close) > 0 and _close.notna().any() and len(_pred) > 0:
-            df["clv_vs_close"] = (_close - _pred).round(3)
-        else:
-            df["clv_vs_close"] = pd.NA
+        df["clv_vs_close"] = df.apply(
+            lambda r: compute_clv_pts(r.get("home_spread_current"), r.get(pred_col)), axis=1
+        )
 
         # 5. predicted_spread alias (required by schema)
         if len(_pred) > 0 and _pred.notna().any():

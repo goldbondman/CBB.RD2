@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import pandas as pd
+from pipeline_csv_utils import compute_clv_pts
 
 log = logging.getLogger(__name__)
 
@@ -124,18 +125,16 @@ def evaluate_alpha(
     model_side = "home" if pred_spread < 0 else "away"
 
     edge_pts = 0.0
-    if spread_line is not None:
-        try:
-            edge_pts = abs(float(pred_spread) - float(spread_line))
-        except (TypeError, ValueError):
-            pass
+    spread_diff = compute_clv_pts(spread_line, pred_spread)
+    if spread_diff is not None:
+        edge_pts = abs(spread_diff)
 
     if edge_pts >= 3.0:
         is_alpha = True
         edge_types.append("MODEL_EDGE")
         reasoning.append(
             f"Model disagrees with line by {edge_pts:.1f}pts "
-            f"({'home' if pred_spread < spread_line else 'away'} side)"
+            f"({'home' if spread_diff > 0 else 'away'} side)"
         )
 
     if trap_for_favorite:

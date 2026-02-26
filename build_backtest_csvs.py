@@ -39,6 +39,7 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+from pipeline_csv_utils import compute_clv_pts
 
 # ── Paths ──────────────────────────────────────────────────────────────────
 DATA        = pathlib.Path("data")
@@ -52,14 +53,10 @@ NOW_UTC = datetime.now(timezone.utc)
 NOW_ISO = NOW_UTC.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 # ── Model definitions ──────────────────────────────────────────────────────
+from cbb_config import ENSEMBLE_MODEL_NAMES
+
 MODELS = {
-    "M1": "Four Factors",
-    "M2": "Adj Efficiency",
-    "M3": "Pythagorean",
-    "M4": "Momentum",
-    "M5": "Situational",
-    "M6": "CAGE Rankings",
-    "M7": "Regressed Efficiency",
+    f"M{i+1}": name for i, name in enumerate(ENSEMBLE_MODEL_NAMES)
 }
 
 EDGE_TIERS = [
@@ -96,15 +93,15 @@ MIN_NUMERIC_RATIO  = 0.5
 
 def compute_clv(pred_spread: float, opening_line: float, closing_line: float) -> dict:
     """Compute CLV vs open/close and whether we beat the close."""
-    clv_vs_open = pred_spread - opening_line if pd.notna(opening_line) else None
-    clv_vs_close = pred_spread - closing_line if pd.notna(closing_line) else None
+    clv_vs_open = compute_clv_pts(opening_line, pred_spread)
+    clv_vs_close = compute_clv_pts(closing_line, pred_spread)
     beat_close = None
     if pd.notna(closing_line):
         beat_close = abs(pred_spread) < abs(closing_line)
 
     return {
-        "clv_vs_open": round(clv_vs_open, 2) if clv_vs_open is not None else None,
-        "clv_vs_close": round(clv_vs_close, 2) if clv_vs_close is not None else None,
+        "clv_vs_open": clv_vs_open,
+        "clv_vs_close": clv_vs_close,
         "beat_closing_line": beat_close,
     }
 
@@ -873,11 +870,12 @@ def build_model_matrix(df: pd.DataFrame) -> pd.DataFrame:
     """Build Section H: head-to-head model comparison."""
     work = df.copy()
 
-    # Identify if we need to melt columns (per-game format with M1..M7 spreads as columns)
+    # Identify if we need to melt columns (per-game format with M1..M8 spreads as columns)
     model_cols = [f"{m.lower()}_spread" for m in MODELS.keys()]
     present_cols = [c for c in model_cols if c in work.columns]
 
-    if present_cols and ("sub_model" not in work.columns or work["sub_model"].isna().all()):
+    if present_cols:
+        # If we have per-model columns, we melt to ensure we have predictions for all models per game
         if "game_id" not in work.columns:
             print("[WARN] Cannot build model matrix without game_id column for wide format")
             return pd.DataFrame()
@@ -889,16 +887,21 @@ def build_model_matrix(df: pd.DataFrame) -> pd.DataFrame:
                 m_df = work.copy()
                 m_df["pred_spread"] = m_df[m_col]
                 # Re-grade just for this sub-model to get its specific ats_result
-                grading = m_df.apply(grade_prediction, axis=1, result_type="expand")
-                m_df["ats_result"] = grading["ats_result"]
+                # We need to ensure we have actual results to grade against
+                if all(c in m_df.columns for c in ["actual_margin", "spread_line"]):
+                    grading = m_df.apply(grade_prediction, axis=1, result_type="expand")
+                    m_df["ats_result"] = grading["ats_result"]
+
                 m_df["sub_model"] = m_id
-                melted.append(m_df[["game_id", "sub_model", "ats_result"]])
+                keep_cols = ["game_id", "sub_model", "ats_result"]
+                melted.append(m_df[[c for c in keep_cols if c in m_df.columns]])
 
         ats_g = pd.concat(melted)
-        ats_g = ats_g[ats_g["ats_result"].isin(["WIN", "LOSS"])]
+        if "ats_result" in ats_g.columns:
+            ats_g = ats_g[ats_g["ats_result"].isin(["WIN", "LOSS"])]
     else:
         if "sub_model" not in work.columns:
-            print("[WARN] No sub_model column — cannot build model matrix")
+            print("[WARN] No sub_model column and no model columns — cannot build model matrix")
             return pd.DataFrame()
         ats_g = work[work["ats_result"].isin(["WIN", "LOSS"])]
 

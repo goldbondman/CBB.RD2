@@ -18,7 +18,7 @@ on:
           - end_of_season
 
 concurrency:
-  group: cbb-pipeline
+  group: cbb-data-pipeline
   cancel-in-progress: false
 
 permissions:
@@ -99,7 +99,7 @@ jobs:
           SEASON_ACTIVE=$(python -c "from espn_config import SEASON_ACTIVE; print('true' if SEASON_ACTIVE else 'false')" 2>/dev/null || echo "true")
 
           run_step "daily" "espn_pipeline"         python espn_pipeline.py
-          run_step "daily" "market_lines_closing"  python cbb_market_lines.py --mode closing
+          run_step "daily" "market_lines_closing"  python -m ingestion.market_lines --mode closing
 
           if [ "$SEASON_ACTIVE" = "true" ]; then
             run_step "daily" "prediction_runner"   python espn_prediction_runner.py
@@ -109,7 +109,7 @@ jobs:
           fi
 
           run_step "daily" "results_tracker"       python cbb_results_tracker.py
-          run_step "daily" "grade_predictions"     python cbb_grade_predictions.py
+          run_step "daily" "grade_predictions"     python -m evaluation.predictions_graded
           run_step "daily" "accuracy_report"       python cbb_accuracy_report.py
           run_step "daily" "season_summaries"      python cbb_season_summaries.py
 

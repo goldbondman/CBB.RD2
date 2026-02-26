@@ -42,14 +42,14 @@ log = get_logger(__name__)
 
 # Required downstream integrity columns
 REQUIRED_TEAM_COLUMNS = [
-    "event_id", "team_id", "conference", "wins", "losses",
+    "game_id", "team_id", "conference", "wins", "losses",
     "fgm", "fga", "ftm", "fta", "tpm", "tpa", "orb", "drb", "reb", "tov", "ast",
     "opp_fgm", "opp_fga", "opp_ftm", "opp_fta",
     "opp_tpm", "opp_tpa", "opp_orb", "opp_drb", "opp_tov",
 ]
 
 REQUIRED_PLAYER_COLUMNS = [
-    "event_id", "team_id", "athlete_id",
+    "game_id", "team_id", "athlete_id",
     "fgm", "fga", "ftm", "fta", "tpm", "tpa", "orb", "drb", "reb", "tov", "ast",
 ]
 
@@ -90,10 +90,10 @@ SOFT_VALIDATION_FIELDS = {
 def _scoreboard_team_context(games_df: pd.DataFrame) -> pd.DataFrame:
     """Build team-level context rows (wins/losses/conference) from games.csv rows."""
     if games_df.empty:
-        return pd.DataFrame(columns=["event_id", "team_id"])
+        return pd.DataFrame(columns=["game_id", "team_id"])
 
     g = games_df.copy()
-    g["event_id"] = g.get("game_id", "").astype(str)
+    g["game_id"] = g.get("game_id", "").astype(str)
 
     shared = {
         "spread": g.get("spread", None),
@@ -113,7 +113,7 @@ def _scoreboard_team_context(games_df: pd.DataFrame) -> pd.DataFrame:
     }
 
     home = pd.DataFrame({
-        "event_id": g.get("game_id", ""),
+        "game_id": g.get("game_id", ""),
         "team_id": g.get("home_team_id", ""),
         "home_away": "home",
         "conference": g.get("home_conference", ""),
@@ -133,7 +133,7 @@ def _scoreboard_team_context(games_df: pd.DataFrame) -> pd.DataFrame:
         **shared,
     })
     away = pd.DataFrame({
-        "event_id": g.get("game_id", ""),
+        "game_id": g.get("game_id", ""),
         "team_id": g.get("away_team_id", ""),
         "home_away": "away",
         "conference": g.get("away_conference", ""),
@@ -154,9 +154,9 @@ def _scoreboard_team_context(games_df: pd.DataFrame) -> pd.DataFrame:
     })
 
     out = pd.concat([home, away], ignore_index=True)
-    out["event_id"] = out["event_id"].astype(str)
+    out["game_id"] = out["game_id"].astype(str)
     out["team_id"] = out["team_id"].astype(str)
-    return out.drop_duplicates(["event_id", "team_id"], keep="last")
+    return out.drop_duplicates(["game_id", "team_id"], keep="last")
 
 
 def _log_stage_null_rates(stage: str, df: pd.DataFrame, columns: List[str]) -> None:
@@ -168,7 +168,7 @@ def _log_stage_null_rates(stage: str, df: pd.DataFrame, columns: List[str]) -> N
         log.info(f"{stage}: {len(df)} rows | none of target columns present")
         return
     null_rates = (df[present].isna().mean() * 100).round(1).to_dict()
-    key_cols = [k for k in ["event_id", "team_id", "opponent_id", "game_datetime_utc"] if k in df.columns]
+    key_cols = [k for k in ["game_id", "team_id", "opponent_id", "game_datetime_utc"] if k in df.columns]
     sample = df[key_cols].head(3).to_dict("records") if key_cols else []
     log.info(f"{stage}: rows={len(df)} null_rates(%)={null_rates} key_sample={sample}")
 
@@ -179,8 +179,8 @@ def _log_player_stage_diagnostics(stage: str, df: pd.DataFrame) -> None:
         "efg_pct", "three_pct", "fg_pct", "ft_pct",
     ]
     _log_stage_null_rates(stage, df, target_cols)
-    dtypes = {k: str(df[k].dtype) for k in ["event_id", "team_id", "athlete_id"] if k in df.columns}
-    key_sample = df[[k for k in ["event_id", "team_id", "athlete_id"] if k in df.columns]].head(3).to_dict("records")
+    dtypes = {k: str(df[k].dtype) for k in ["game_id", "team_id", "athlete_id"] if k in df.columns}
+    key_sample = df[[k for k in ["game_id", "team_id", "athlete_id"] if k in df.columns]].head(3).to_dict("records")
     suffix_collisions = [c for c in df.columns if c.endswith("_x") or c.endswith("_y")]
     log.info(f"{stage}: key_dtypes={dtypes} key_sample={key_sample} suffix_collisions={suffix_collisions[:10]}")
 
@@ -195,10 +195,12 @@ def _enrich_team_rows_from_scoreboard(df_team: pd.DataFrame, games_df: pd.DataFr
     if ctx.empty:
         return df
 
-    df["event_id"] = df.get("event_id", "").astype(str)
-    df["team_id"] = df.get("team_id", "").astype(str)
+    if "game_id" not in df.columns and "event_id" in df.columns:
+        df["game_id"] = df["event_id"]
+    df["game_id"] = (df["game_id"] if "game_id" in df.columns else pd.Series("", index=df.index)).astype(str)
+    df["team_id"] = (df["team_id"] if "team_id" in df.columns else pd.Series("", index=df.index)).astype(str)
 
-    df = df.merge(ctx, on=["event_id", "team_id"], how="left", suffixes=("", "_sb"))
+    df = df.merge(ctx, on=["game_id", "team_id"], how="left", suffixes=("", "_sb"))
 
     fill_cols = [
         "conference", "wins", "losses", "home_wins", "home_losses", "away_wins", "away_losses",
@@ -600,8 +602,8 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         df_all  = _append_dedupe_write(
             OUT_TEAM_LOGS,
             df_team,
-            unique_keys=["event_id", "team_id"],
-            sort_cols=["game_datetime_utc", "event_id", "team_id"],
+            unique_keys=["game_id", "team_id"],
+            sort_cols=["game_datetime_utc", "game_id", "team_id"],
             persist=False,
         )
         _log_stage_null_rates("team_rows_before_validation", df_all, TARGET_NULL_GUARD_COLUMNS)
@@ -610,8 +612,8 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         _append_dedupe_write(
             OUT_TEAM_LOGS,
             df_team,
-            unique_keys=["event_id", "team_id"],
-            sort_cols=["game_datetime_utc", "event_id", "team_id"],
+            unique_keys=["game_id", "team_id"],
+            sort_cols=["game_datetime_utc", "game_id", "team_id"],
             persist=True,
         )
 
@@ -630,8 +632,8 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         df_metrics_out = _append_dedupe_write(
             OUT_METRICS,
             df_metrics,
-            unique_keys=["event_id", "team_id"],
-            sort_cols=["game_datetime_utc", "event_id", "team_id"],
+            unique_keys=["game_id", "team_id"],
+            sort_cols=["game_datetime_utc", "game_id", "team_id"],
         )
         log.info(f"team_game_metrics.csv: {len(df_metrics_out)} total rows")
 
@@ -641,8 +643,8 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         df_sos_out = _append_dedupe_write(
             OUT_SOS,
             df_sos,
-            unique_keys=["event_id", "team_id"],
-            sort_cols=["game_datetime_utc", "event_id", "team_id"],
+            unique_keys=["game_id", "team_id"],
+            sort_cols=["game_datetime_utc", "game_id", "team_id"],
         )
         log.info(f"team_game_sos.csv: {len(df_sos_out)} total rows")
 
@@ -652,8 +654,8 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         df_weighted_out = _append_dedupe_write(
             OUT_WEIGHTED,
             df_weighted,
-            unique_keys=["event_id", "team_id"],
-            sort_cols=["game_datetime_utc", "event_id", "team_id"],
+            unique_keys=["game_id", "team_id"],
+            sort_cols=["game_datetime_utc", "game_id", "team_id"],
         )
         log.info(f"team_game_weighted.csv: {len(df_weighted_out)} total rows")
 
@@ -674,8 +676,8 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         df_tournament_out = _append_dedupe_write(
             OUT_TOURNAMENT_METRICS,
             df_tournament,
-            unique_keys=["event_id", "team_id"],
-            sort_cols=["game_datetime_utc", "event_id", "team_id"],
+            unique_keys=["game_id", "team_id"],
+            sort_cols=["game_datetime_utc", "game_id", "team_id"],
         )
         log.info(f"team_tournament_metrics.csv: {len(df_tournament_out)} total rows")
 
@@ -709,8 +711,8 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         df_all_p   = _append_dedupe_write(
             OUT_PLAYER_LOGS,
             df_players,
-            unique_keys=["event_id", "team_id", "athlete_id"],
-            sort_cols=["game_datetime_utc", "event_id", "team_id", "athlete_id"],
+            unique_keys=["game_id", "team_id", "athlete_id"],
+            sort_cols=["game_datetime_utc", "game_id", "team_id", "athlete_id"],
         )
         _log_player_stage_diagnostics("player_rows:post_dedupe", df_all_p)
         log.info(f"player_game_logs.csv: {len(df_all_p)} total rows")
@@ -722,8 +724,8 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         df_player_metrics_out = _append_dedupe_write(
             OUT_PLAYER_METRICS,
             df_player_metrics,
-            unique_keys=["event_id", "athlete_id"],
-            sort_cols=["game_datetime_utc", "event_id", "athlete_id"],
+            unique_keys=["game_id", "athlete_id"],
+            sort_cols=["game_datetime_utc", "game_id", "athlete_id"],
         )
         _log_player_stage_diagnostics("player_metrics:post_write", df_player_metrics_out)
 
@@ -738,8 +740,8 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
             df_proxy_out = _append_dedupe_write(
                 OUT_PLAYER_PROXY,
                 df_proxy,
-                unique_keys=["event_id", "athlete_id"],
-                sort_cols=["game_datetime_utc", "event_id", "athlete_id"],
+                unique_keys=["game_id", "athlete_id"],
+                sort_cols=["game_datetime_utc", "game_id", "athlete_id"],
             )
             log.info(f"player_injury_proxy.csv: {len(df_proxy_out)} total rows")
 
@@ -750,8 +752,8 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
                 df_impact_out = _append_dedupe_write(
                     OUT_TEAM_INJURY,
                     df_impact,
-                    unique_keys=["event_id", "team_id"],
-                    sort_cols=["game_datetime_utc", "event_id", "team_id"],
+                    unique_keys=["game_id", "team_id"],
+                    sort_cols=["game_datetime_utc", "game_id", "team_id"],
                 )
                 log.info(f"team_injury_impact.csv: {len(df_impact_out)} total rows")
     else:
@@ -762,7 +764,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         # This keeps downstream validators/pipelines deterministic.
         if not OUT_PLAYER_LOGS.exists():
             empty_player_logs = pd.DataFrame(columns=[
-                "event_id", "game_datetime_utc", "game_datetime_pst",
+                "game_id", "game_datetime_utc", "game_datetime_pst",
                 "team_id", "team", "home_away", "athlete_id", "player",
                 "jersey", "position", "starter", "did_not_play",
                 "min", "pts", "fgm", "fga", "tpm", "tpa", "ftm", "fta",
@@ -775,7 +777,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
 
         if not OUT_PLAYER_METRICS.exists():
             empty_player_metrics = pd.DataFrame(columns=[
-                "event_id", "game_datetime_utc", "game_datetime_pst",
+                "game_id", "game_datetime_utc", "game_datetime_pst",
                 "team_id", "team", "home_away", "athlete_id", "player",
                 "jersey", "position", "starter", "did_not_play",
                 "min", "pts", "fgm", "fga", "tpm", "tpa", "ftm", "fta",

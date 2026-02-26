@@ -41,6 +41,10 @@ def fit_calibration(df: pd.DataFrame) -> dict:
         }
 
     X = sub["model_confidence"].values.astype(float)
+    # Ensure X is on 50-100 scale
+    if X.max() <= 1.0:
+        X = X * 100
+
     y = sub["home_covered_pred"].values.astype(float)
 
     iso = IsotonicRegression(out_of_bounds="clip")
@@ -80,7 +84,7 @@ def fit_calibration(df: pd.DataFrame) -> dict:
 
 
 def apply_calibration_example(raw_confidence: float, cal_data: dict) -> float:
-    """Example of applying calibration. Input raw_confidence is 0-1 scale."""
+    """Example of applying calibration. Standardizes input to 50-100 scale."""
     if not cal_data.get("calibrated"):
         return raw_confidence
 
@@ -91,6 +95,7 @@ def apply_calibration_example(raw_confidence: float, cal_data: dict) -> float:
     raw_scaled = raw_confidence * 100 if raw_confidence <= 1.0 else raw_confidence
 
     cal_scaled = float(np.interp(raw_scaled, iso_x, iso_y))
+    # Return as 0-1 scale
     return cal_scaled / 100
 
 

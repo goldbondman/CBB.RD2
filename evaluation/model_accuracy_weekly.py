@@ -161,7 +161,7 @@ def compute_summary(df: pd.DataFrame) -> pd.DataFrame:
         log.warning("No graded predictions for summary")
         return pd.DataFrame([
             {
-                "as_of_utc": pd.Timestamp.utcnow().isoformat(),
+                "as_of_utc": pd.Timestamp.now('UTC').isoformat(),
                 "clv_vs_pinnacle_mean": None,
                 "clv_vs_pinnacle_n": 0,
                 "beat_pinnacle_pct": None,
@@ -265,7 +265,7 @@ def compute_summary(df: pd.DataFrame) -> pd.DataFrame:
 
     return pd.DataFrame([
         {
-            "as_of_utc": pd.Timestamp.utcnow().isoformat(),
+            "as_of_utc": pd.Timestamp.now('UTC').isoformat(),
             "clv_vs_pinnacle_mean": clv_pinn_mean,
             "clv_vs_pinnacle_n": clv_pinn_n,
             "beat_pinnacle_pct": beat_pinn_pct,

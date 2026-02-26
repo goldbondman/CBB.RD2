@@ -44,6 +44,7 @@ PUBLIC_BET_THRESHOLD = 65
 RLM_LINE_MOVE_MIN = 0.5
 
 MARKET_LINES_SCHEMA_COLUMNS = [
+    "game_id",
     "event_id",
     "capture_type",
     "captured_at_utc",
@@ -98,7 +99,7 @@ def bootstrap_market_lines_schema(path: str | Path) -> Path:
     market_path.parent.mkdir(parents=True, exist_ok=True)
 
     if market_path.exists() and market_path.stat().st_size > 0:
-        df = pd.read_csv(market_path, dtype={"event_id": str}, low_memory=False)
+        df = pd.read_csv(market_path, dtype={"game_id": str, "event_id": str}, low_memory=False)
     else:
         df = pd.DataFrame(columns=MARKET_LINES_SCHEMA_COLUMNS)
 
@@ -360,6 +361,7 @@ def parse_espn_event(event: dict) -> Optional[dict]:
             total_current = None
 
         return {
+            "game_id": str(event.get("id", "")).strip(),
             "event_id": str(event.get("id", "")).strip(),
             "home_team_id": str(home_team.get("id", "")).strip(),
             "away_team_id": str(away_team.get("id", "")).strip(),
@@ -399,8 +401,7 @@ def match_to_pipeline_event(market_game: dict, pipeline_predictions: pd.DataFram
         )
 
         if home_match and away_match:
-            event_col = "event_id" if "event_id" in row.index else "game_id"
-            return str(row.get(event_col, ""))
+            return str(row.get("game_id", row.get("event_id", "")))
 
     return None
 
@@ -462,7 +463,7 @@ def detect_book_disagreement(pinnacle_spread: Optional[float], draftkings_spread
 
 
 def build_market_row(
-    event_id: str,
+    game_id: str,
     capture_type: str,
     market_data: dict,
     pinnacle_data: Optional[dict],
@@ -476,8 +477,10 @@ def build_market_row(
     home_tickets = market_data.get("home_tickets_pct")
 
     steam_flag = False
-    if not existing_rows.empty and "event_id" in existing_rows.columns:
-        prior = existing_rows[existing_rows["event_id"] == event_id].sort_values("captured_at_utc")
+    if not existing_rows.empty and "game_id" in existing_rows.columns:
+        prior = existing_rows[existing_rows["game_id"] == game_id].sort_values("captured_at_utc")
+    elif not existing_rows.empty and "event_id" in existing_rows.columns:
+        prior = existing_rows[existing_rows["event_id"] == game_id].sort_values("captured_at_utc")
     else:
         prior = pd.DataFrame()
 
@@ -509,7 +512,8 @@ def build_market_row(
         line_movement = round(float(home_spread) - float(spread_open), 2)
 
     return {
-        "event_id": event_id,
+        "game_id": game_id,
+        "event_id": game_id,
         "capture_type": capture_type,
         "captured_at_utc": now,
         "pulled_at_utc": now,
@@ -554,7 +558,11 @@ def append_market_rows(new_rows: list[dict], output_path: Path) -> int:
     if df_new.empty:
         return 0
 
-    df_new["event_id"] = df_new["event_id"].astype(str)
+    if "game_id" in df_new.columns:
+        df_new["game_id"] = df_new["game_id"].astype(str)
+    if "event_id" in df_new.columns:
+        df_new["event_id"] = df_new["event_id"].astype(str)
+
     if "pulled_at_utc" not in df_new.columns:
         df_new["pulled_at_utc"] = df_new.get("captured_at_utc")
     if "verification_status" not in df_new.columns:
@@ -564,7 +572,7 @@ def append_market_rows(new_rows: list[dict], output_path: Path) -> int:
     df_new["capture_hour"] = pd.to_datetime(df_new["captured_at_utc"], utc=True).dt.floor("h")
 
     if output_path.exists():
-        df_existing = pd.read_csv(output_path, dtype={"event_id": str})
+        df_existing = pd.read_csv(output_path, dtype={"game_id": str, "event_id": str})
         df_existing = normalize_numeric_dtypes(df_existing)
         for col in MARKET_LINES_SCHEMA_COLUMNS:
             if col not in df_existing.columns:
@@ -574,8 +582,9 @@ def append_market_rows(new_rows: list[dict], output_path: Path) -> int:
         df_existing["capture_hour"] = df_existing["capture_hour"].astype(str)
         df_new["capture_hour"] = df_new["capture_hour"].astype(str)
 
-        dedup_key = df_existing[["event_id", "capture_type", "capture_hour"]].apply(tuple, axis=1)
-        new_key = df_new[["event_id", "capture_type", "capture_hour"]].apply(tuple, axis=1)
+        join_key = "game_id" if "game_id" in df_existing.columns else "event_id"
+        dedup_key = df_existing[[join_key, "capture_type", "capture_hour"]].apply(tuple, axis=1)
+        new_key = df_new[[join_key, "capture_type", "capture_hour"]].apply(tuple, axis=1)
         df_new = df_new[~new_key.isin(dedup_key)]
 
         if df_new.empty:
@@ -598,9 +607,8 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
     today = override_date or date.today()
     log.info("Market capture mode=%s date=%s", mode, today)
 
-    market_path = bootstrap_market_lines_schema(data_dir)
     market_path = bootstrap_market_lines_schema(data_dir / "market_lines.csv")
-    existing = pd.read_csv(market_path, dtype={"event_id": str}) if market_path.exists() else pd.DataFrame()
+    existing = pd.read_csv(market_path, dtype={"game_id": str, "event_id": str}) if market_path.exists() else pd.DataFrame()
     existing = normalize_numeric_dtypes(existing)
 
     log.info("Fetching ESPN scoreboard...")
@@ -642,8 +650,8 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
         if not parsed or not parsed.get("event_id"):
             continue
 
-        event_id = str(parsed.get("event_id", "")).strip()
-        if not event_id:
+        game_id = str(parsed.get("game_id", "")).strip()
+        if not game_id:
             unmatched += 1
             continue
 
@@ -681,13 +689,13 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
         # Fallback to Action Network's version of these books if direct fetch failed
         if an_enrichment:
             if not pinn_match and an_enrichment.get("pinn_spread") is not None:
-                log.debug("Using Pinnacle fallback for %s: %s", event_id, an_enrichment["pinn_spread"])
+                log.debug("Using Pinnacle fallback for %s: %s", game_id, an_enrichment["pinn_spread"])
                 pinn_match = {"spread": an_enrichment["pinn_spread"], "total": an_enrichment.get("pinn_total")}
             if not dk_match and an_enrichment.get("dk_spread") is not None:
-                log.debug("Using DraftKings fallback for %s: %s", event_id, an_enrichment["dk_spread"])
+                log.debug("Using DraftKings fallback for %s: %s", game_id, an_enrichment["dk_spread"])
                 dk_match = {"spread": an_enrichment["dk_spread"], "total": an_enrichment.get("dk_total")}
 
-        row = build_market_row(event_id, capture_type, parsed, pinn_match, dk_match, existing)
+        row = build_market_row(game_id, capture_type, parsed, pinn_match, dk_match, existing)
         row["home_team_id"] = parsed.get("home_team_id")
         row["away_team_id"] = parsed.get("away_team_id")
         row["home_team_name"] = parsed.get("home_team_name")
@@ -702,8 +710,8 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
 
     if not market_path.exists():
         raise RuntimeError(f"Market lines write failed: file missing at {market_path}")
-    written_df = pd.read_csv(market_path, dtype={"event_id": str}, low_memory=False)
-    required_cols = ["event_id", "pulled_at_utc", "verification_status", "verification_notes"]
+    written_df = pd.read_csv(market_path, dtype={"game_id": str, "event_id": str}, low_memory=False)
+    required_cols = ["game_id", "pulled_at_utc", "verification_status", "verification_notes"]
     missing_cols = [c for c in required_cols if c not in written_df.columns]
     if missing_cols:
         raise RuntimeError(f"Market lines write failed: missing columns {missing_cols} in {market_path}")
@@ -742,11 +750,11 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
 
     steam_games = [r for r in new_rows if r.get("steam_flag")]
     if steam_games:
-        log.warning("🔥 STEAM DETECTED on %s games: %s", len(steam_games), ", ".join(str(r["event_id"]) for r in steam_games))
+        log.warning("🔥 STEAM DETECTED on %s games: %s", len(steam_games), ", ".join(str(r["game_id"]) for r in steam_games))
 
     rlm_games = [r for r in new_rows if r.get("rlm_flag")]
     for row in rlm_games:
-        log.warning("↔️ REVERSE LINE MOVEMENT: event %s — %s", row["event_id"], row.get("rlm_note"))
+        log.warning("↔️ REVERSE LINE MOVEMENT: game %s — %s", row["game_id"], row.get("rlm_note"))
 
 
 def main() -> None:
