@@ -2,7 +2,6 @@ name: CBB Pipeline
 
 on:
   schedule:
-    - cron: "0 9 * * *"       # DAILY         — 09:00 UTC / 01:00 PST
     - cron: "0 10 1,15 * *"   # BIWEEKLY      — 10:00 UTC on 1st and 15th
     - cron: "0 10 10 4 *"     # END OF SEASON — 10:00 UTC on April 10
   workflow_dispatch:
