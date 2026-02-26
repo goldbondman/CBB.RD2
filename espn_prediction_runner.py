@@ -1255,7 +1255,13 @@ def main():
         decay_type=args.decay,
         min_games_for_full_confidence=args.min_games,
     )
-    apply_active_weights(config)
+    active_path = Path("data/active_weights.json")
+    if active_path.exists():
+        weights = json.loads(active_path.read_text())
+        for f in dataclasses.fields(config):
+            if f.name in weights and not f.name.startswith("_"):
+                setattr(config, f.name, type(getattr(config, f.name))(weights[f.name]))
+        log.info("Active weights loaded (deployed %s)", weights.get("deployed_at", "unknown"))
     model = CBBPredictionModel(config)
 
     results_df = run_predictions(
