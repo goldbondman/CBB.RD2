@@ -214,6 +214,26 @@ jobs:
         if: steps.games_gate.outputs.gate_passed == 'true'
         run: python weight_deployer.py
 
+      - name: Summarize weight deployment
+        if: always()
+        run: |
+          echo "## Weight Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f data/active_weights.json ]; then
+            echo "### Active weights deployed" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat data/active_weights.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "_No active_weights.json found — deployment may have been rejected._" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -f data/walk_forward_validation.json ]; then
+            echo "### Walk-forward validation result" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat data/walk_forward_validation.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
       - name: Re-run accuracy report with updated weights
         if: steps.games_gate.outputs.gate_passed == 'true'
         run: python cbb_accuracy_report.py
