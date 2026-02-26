@@ -24,6 +24,7 @@ import sys
 import traceback
 from datetime import datetime, timezone, timedelta
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -38,6 +39,7 @@ CSV_DIR.mkdir(parents=True, exist_ok=True)
 NOW_UTC     = datetime.now(timezone.utc)
 NOW_ISO     = NOW_UTC.strftime("%Y-%m-%dT%H:%M:%SZ")
 TODAY_STAMP = NOW_UTC.strftime("%Y%m%d")
+PST_TZ      = ZoneInfo("America/Los_Angeles")
 
 # Track results for summary table
 _results: list[dict] = []
@@ -148,6 +150,101 @@ def enrich_with_matchup_summary(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _norm_id(series: pd.Series) -> pd.Series:
+    """Normalize join keys to strings without trailing .0 artifacts."""
+    return series.astype(str).str.replace(r"\.0$", "", regex=True).str.strip()
+
+
+def enrich_ensemble_team_names() -> None:
+    """Backfill team names + matchup text on ensemble prediction exports.
+
+    Integrity behavior:
+      - Never drops rows.
+      - Only fills missing/blank home_team and away_team.
+      - Writes updated files only when at least one missing name is recovered.
+    """
+    ensemble_paths = [
+        p for p in sorted(DATA.glob("ensemble_predictions*.csv"))
+        if p.exists() and p.stat().st_size > 10
+    ]
+    if not ensemble_paths:
+        return
+
+    lookup_sources: list[pd.DataFrame] = []
+    for p in (DATA / "predictions_latest.csv", DATA / "games.csv"):
+        df = _load(p, p.stem)
+        if df is None:
+            continue
+        required = {"game_id", "home_team", "away_team"}
+        if required.issubset(df.columns):
+            keep = [c for c in ["game_id", "home_team_id", "away_team_id", "home_team", "away_team"] if c in df.columns]
+            lookup_sources.append(df[keep].copy())
+
+    if not lookup_sources:
+        print("[WARN] ensemble enrichment: no lookup source with team names")
+        return
+
+    lookup = pd.concat(lookup_sources, ignore_index=True)
+    lookup["game_id"] = _norm_id(lookup["game_id"])
+    if "home_team_id" in lookup.columns:
+        lookup["home_team_id"] = _norm_id(lookup["home_team_id"])
+    if "away_team_id" in lookup.columns:
+        lookup["away_team_id"] = _norm_id(lookup["away_team_id"])
+    lookup["home_team"] = lookup["home_team"].astype(str).str.strip()
+    lookup["away_team"] = lookup["away_team"].astype(str).str.strip()
+    lookup = lookup[(lookup["home_team"] != "") & (lookup["away_team"] != "")]
+    lookup = lookup.drop_duplicates(subset=["game_id"], keep="first")
+
+    for ensemble_path in ensemble_paths:
+        ens = _load(ensemble_path, ensemble_path.name)
+        if ens is None or "game_id" not in ens.columns:
+            continue
+
+        ens = ens.copy()
+        ens["game_id"] = _norm_id(ens["game_id"])
+        if "home_team_id" in ens.columns:
+            ens["home_team_id"] = _norm_id(ens["home_team_id"])
+        if "away_team_id" in ens.columns:
+            ens["away_team_id"] = _norm_id(ens["away_team_id"])
+
+        for c in ("home_team", "away_team"):
+            if c not in ens.columns:
+                ens[c] = ""
+            ens[c] = ens[c].astype(str).replace({"nan": "", "None": ""}).str.strip()
+
+        before_missing = ((ens["home_team"] == "") | (ens["away_team"] == "")).sum()
+
+        merged = ens.merge(
+            lookup[["game_id", "home_team", "away_team"]].rename(
+                columns={"home_team": "_home_team_lu", "away_team": "_away_team_lu"}
+            ),
+            on="game_id",
+            how="left",
+        )
+
+        home_missing = merged["home_team"] == ""
+        away_missing = merged["away_team"] == ""
+        merged.loc[home_missing, "home_team"] = merged.loc[home_missing, "_home_team_lu"].fillna("")
+        merged.loc[away_missing, "away_team"] = merged.loc[away_missing, "_away_team_lu"].fillna("")
+        merged = merged.drop(columns=["_home_team_lu", "_away_team_lu"])
+
+        if "matchup" not in merged.columns:
+            merged["matchup"] = ""
+        matchup_missing = merged["matchup"].astype(str).str.strip().isin(["", "nan", "None"])
+        merged.loc[matchup_missing, "matchup"] = (
+            merged.loc[matchup_missing, "away_team"].astype(str).str.strip() +
+            " @ " +
+            merged.loc[matchup_missing, "home_team"].astype(str).str.strip()
+        ).str.strip()
+        merged.loc[merged["matchup"].str.startswith("@") | merged["matchup"].str.endswith("@"), "matchup"] = ""
+
+        after_missing = ((merged["home_team"] == "") | (merged["away_team"] == "")).sum()
+        recovered = int(before_missing - after_missing)
+        if recovered > 0:
+            safe_write_csv(merged, ensemble_path, index=False)
+            print(f"[OK]  {ensemble_path.name}: backfilled team names for {recovered} rows")
+
+
 def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
     """Build bet_recs.csv: Betting recommendations with edge flags."""
     df = predictions.copy()
@@ -157,6 +254,27 @@ def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
         df = df[df["is_final"] == 0]
     elif "game_status" in df.columns:
         df = df[df["game_status"].astype(str).str.lower() == "scheduled"]
+
+    # Keep only today + tomorrow in Pacific time so recs match the intended slate.
+    # This avoids pulling in UTC-dated rows that are "yesterday" in PST.
+    pst_today = NOW_UTC.astimezone(PST_TZ).date()
+    target_dates = {pst_today, pst_today + timedelta(days=1)}
+
+    dt_col = "game_datetime_utc" if "game_datetime_utc" in df.columns else "game_date"
+    if dt_col in df.columns:
+        before_count = len(df)
+        dt_utc = pd.to_datetime(df[dt_col], errors="coerce", utc=True)
+        dt_pst_date = dt_utc.dt.tz_convert(PST_TZ).dt.date
+        in_window_mask = dt_pst_date.isin(target_dates)
+        dropped_invalid = int(dt_utc.isna().sum())
+        df = df[in_window_mask].copy()
+        print(
+            "[INFO] bet_recs: PST date window filter",
+            f"kept={len(df)} dropped_outside={before_count - len(df) - dropped_invalid} dropped_invalid_datetime={dropped_invalid}",
+            f"target_dates={[d.isoformat() for d in sorted(target_dates)]}",
+        )
+    else:
+        print("[WARN] bet_recs: missing game datetime column; unable to enforce PST date window")
 
     recs = []
 
@@ -214,9 +332,21 @@ def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
                 "confidence": "MEDIUM"
             })
 
-    if recs:
-        out_df = pd.DataFrame(recs)
-        _write(out_df, "bet_recs.csv", ["predictions_mc_latest"])
+    out_df = pd.DataFrame(recs)
+    if out_df.empty:
+        out_df = pd.DataFrame(columns=[
+            "game_id", "date", "home_team", "away_team", "bet_type", "pick",
+            "market_line", "model_line", "edge", "model_prob", "market_prob",
+            "expected_roi", "confidence",
+        ])
+        out_df["generated_at"] = NOW_ISO
+        for out_path in (CSV_DIR / "bet_recs.csv", DATA / "bet_recs.csv"):
+            out_df.to_csv(out_path, index=False)
+        print("[INFO] bet_recs: wrote empty file after PST date filtering (prevents stale recs)")
+        _results.append({"file": "bet_recs.csv", "rows": 0, "sources": "predictions_mc_latest", "status": "OK"})
+        return
+
+    _write(out_df, "bet_recs.csv", ["predictions_mc_latest"])
 
 
 def build_team_form_snapshot_csv() -> None:
@@ -466,6 +596,8 @@ def main() -> None:
         preds = _load(DATA / "predictions_latest.csv", "predictions_latest")
 
     if preds is not None:
+        enrich_ensemble_team_names()
+
         # 1. Recommendations
         build_bet_recs_csv(preds)
 

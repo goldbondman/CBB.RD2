@@ -711,10 +711,29 @@ def build_mc_calibration_report(
         }
 
     df = pd.read_csv(accuracy_path, low_memory=False)
-    required = {"mc_home_win_pct", "actual_margin"}
-    missing = required - set(df.columns)
-    if missing:
-        log.warning(f"Missing columns {sorted(missing)} in {accuracy_path} — returning empty metrics")
+
+    # Backtests may not contain MC output; fall back to model probabilities.
+    probability_candidates = ["mc_home_win_pct", "home_win_prob", "win_prob_home", "model_confidence"]
+    prob_col = next((col for col in probability_candidates if col in df.columns), None)
+    if prob_col is None or "actual_margin" not in df.columns:
+        empty = pd.DataFrame({
+            "prob_bucket": [f"{i:02d}-{i+10:02d}%" for i in range(0, 100, 10)],
+            "n_games": [0] * 10,
+            "predicted_win_rate": [np.nan] * 10,
+            "actual_win_rate": [np.nan] * 10,
+            "calibration_error": [np.nan] * 10,
+        })
+        empty.to_csv(output_path, index=False)
+        missing_cols = [
+            *( ["actual_margin"] if "actual_margin" not in df.columns else [] ),
+            *( ["probability column"] if prob_col is None else [] ),
+        ]
+        log.warning(
+            "Missing %s in %s; wrote empty calibration report to %s",
+            missing_cols,
+            accuracy_path,
+            output_path,
+        )
         return {
             "n_games": 0,
             "mce_before": np.nan,
@@ -725,7 +744,10 @@ def build_mc_calibration_report(
             "updated": False,
         }
 
-    df["mc_home_win_pct"] = pd.to_numeric(df["mc_home_win_pct"], errors="coerce")
+    if prob_col != "mc_home_win_pct":
+        log.info("Using %s as probability source for MC calibration report", prob_col)
+
+    df["mc_home_win_pct"] = pd.to_numeric(df[prob_col], errors="coerce")
     df["actual_margin"] = pd.to_numeric(df["actual_margin"], errors="coerce")
     graded = df.dropna(subset=["mc_home_win_pct", "actual_margin"]).copy()
     graded = graded[(graded["mc_home_win_pct"] >= 0.0) & (graded["mc_home_win_pct"] <= 1.0)]

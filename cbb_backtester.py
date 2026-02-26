@@ -1809,12 +1809,18 @@ def grade_historical_predictions(data_dir: Path = DATA_DIR) -> Tuple[pd.DataFram
     )
     gradeable = merged[gradeable_mask].copy()
 
-    if gradeable.empty or len(gradeable) < 10:
-        log.warning("Found %s gradeable games (<10). Writing empty accuracy outputs.", len(gradeable))
+    if gradeable.empty:
+        log.warning("Found 0 gradeable games. Writing empty accuracy outputs.")
         _write_empty_accuracy_outputs(report_path, dimension_path)
         log.info("Total predictions found: %s", total_predictions)
         log.info("Total gradeable games: %s", len(gradeable))
         return pd.DataFrame(), pd.DataFrame()
+
+    if len(gradeable) < 10:
+        log.warning(
+            "Found only %s gradeable games (<10). Writing partial accuracy outputs with limited sample.",
+            len(gradeable),
+        )
 
     mae_neg_home_favored = (-gradeable["pred_spread"] - gradeable["actual_margin"]).abs().mean()
     mae_pos_home_favored = (gradeable["pred_spread"] - gradeable["actual_margin"]).abs().mean()

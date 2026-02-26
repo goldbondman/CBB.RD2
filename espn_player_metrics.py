@@ -529,7 +529,17 @@ def _write_player_splits(df: pd.DataFrame) -> None:
     """
     Write focused player split CSVs. Non-fatal — failures logged, never crash.
     """
-    id_cols = [c for c in ["athlete_id", "event_id", "team_id", "game_datetime_utc"]
+    id_cols = [c for c in [
+        "athlete_id",
+        "player",
+        "athlete_name",
+        "player_name",
+        "display_name",
+        "event_id",
+        "team_id",
+        "team",
+        "game_datetime_utc",
+    ]
                if c in df.columns]
 
     # ── player_rolling_l5.csv ──
@@ -537,6 +547,12 @@ def _write_player_splits(df: pd.DataFrame) -> None:
         l5_cols = [c for c in df.columns if c.endswith("_l5")]
         if l5_cols:
             out = df[id_cols + l5_cols].copy()
+            # Prefer rows where L5 values actually exist so downstream previews
+            # do not look blank when the frame mixes pre-history + in-history rows.
+            if l5_cols:
+                has_l5_values = out[l5_cols].notna().any(axis=1)
+                if has_l5_values.any():
+                    out = out.loc[has_l5_values].copy()
             safe_write_csv(out, OUT_PLAYER_ROLLING_L5, label="player_rolling_l5")
             log.info(f"player_rolling_l5.csv: {len(out)} rows, {len(l5_cols)} L5 columns")
     except Exception as exc:
