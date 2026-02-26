@@ -2,7 +2,6 @@ name: CBB Pipeline
 
 on:
   schedule:
-    - cron: "0 9 * * *"       # DAILY         — 09:00 UTC / 01:00 PST
     - cron: "0 10 1,15 * *"   # BIWEEKLY      — 10:00 UTC on 1st and 15th
     - cron: "0 10 10 4 *"     # END OF SEASON — 10:00 UTC on April 10
   workflow_dispatch:
@@ -30,97 +29,6 @@ permissions:
 # ─────────────────────────────────────────────────────────────────────────────
 
 jobs:
-
-  # ───────────────────────────────────────────────────────────────────────────
-  # DAILY  (09:00 UTC every day)
-  # Steps: data ingest → market lines → predictions → grading → reporting
-  # All steps continue-on-error; failures are logged to pipeline_step_runs.csv
-  # ───────────────────────────────────────────────────────────────────────────
-  daily:
-    name: "Daily — ingest, predict, grade"
-    if: |
-      github.event.schedule == '0 9 * * *' ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.tier == 'daily')
-    runs-on: ubuntu-latest
-    env:
-      DATA_DIR: ${{ secrets.DATA_DIR }}
-      TZ: America/Los_Angeles
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run DAILY tier
-        run: |
-          set +e
-          mkdir -p data data/archive
-          touch data/pipeline_errors.log
-
-          # Structured step log (append-only CSV)
-          STEP_LOG="data/pipeline_step_runs.csv"
-          if [ ! -f "$STEP_LOG" ]; then
-            echo "run_timestamp_utc,tier,step,command,status,error_message" > "$STEP_LOG"
-          fi
-
-          log_step() {
-            local tier="$1" step="$2" cmd="$3" status="$4" msg="$5"
-            local ts
-            ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-            local escaped="${msg//\"/\"\"}"
-            printf '%s,%s,%s,"%s",%s,"%s"\n' \
-              "$ts" "$tier" "$step" "$cmd" "$status" "$escaped" >> "$STEP_LOG"
-          }
-
-          run_step() {
-            local tier="$1" step="$2"
-            shift 2
-            local cmd=("$@")
-            echo "[INFO] $step: ${cmd[*]}"
-            if "${cmd[@]}"; then
-              log_step "$tier" "$step" "${cmd[*]}" "success" ""
-            else
-              local rc=$?
-              local msg="$step exited $rc"
-              echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") | $tier | $msg" | tee -a data/pipeline_errors.log
-              log_step "$tier" "$step" "${cmd[*]}" "failed" "$msg"
-            fi
-          }
-
-          # Check SEASON_ACTIVE before running prediction step
-          SEASON_ACTIVE=$(python -c "from espn_config import SEASON_ACTIVE; print('true' if SEASON_ACTIVE else 'false')" 2>/dev/null || echo "true")
-
-          run_step "daily" "espn_pipeline"         python espn_pipeline.py
-          run_step "daily" "market_lines_closing"  python cbb_market_lines.py --mode closing
-
-          if [ "$SEASON_ACTIVE" = "true" ]; then
-            run_step "daily" "prediction_runner"   python espn_prediction_runner.py
-          else
-            echo "[SKIP] espn_prediction_runner.py — SEASON_ACTIVE is False"
-            log_step "daily" "prediction_runner" "python espn_prediction_runner.py" "skipped" "SEASON_ACTIVE=False"
-          fi
-
-          run_step "daily" "results_tracker"       python cbb_results_tracker.py
-          run_step "daily" "grade_predictions"     python cbb_grade_predictions.py
-          run_step "daily" "accuracy_report"       python cbb_accuracy_report.py
-          run_step "daily" "season_summaries"      python cbb_season_summaries.py
-
-      - name: Upload daily logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cbb-daily-logs-${{ github.run_id }}
-          path: |
-            data/pipeline_errors.log
-            data/pipeline_step_runs.csv
 
   # ───────────────────────────────────────────────────────────────────────────
   # BIWEEKLY LEARNING  (10:00 UTC on 1st and 15th)
