@@ -237,23 +237,29 @@ jobs:
         if: steps.games_gate.outputs.gate_passed == 'true'
         run: python cbb_accuracy_report.py
 
-      - name: Upload biweekly logs
+      - name: Upload biweekly learning artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-biweekly-logs-${{ github.run_id }}
+          name: cbb-biweekly-weights
           path: |
-            data/pipeline_errors.log
-            data/pipeline_step_runs.csv
+            data/active_weights.json
             data/candidate_weights.json
             data/walk_forward_validation.json
-            data/active_weights.json
+            data/weight_gate_audit.csv
+            data/weight_history/
+          retention-days: 90
 
       - name: Commit biweekly model weights
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add data/walk_forward_validation.json || true
+          git add data/weight_gate_audit.csv        || true
+          git add data/active_weights.json          || true
+          git add data/weight_history/              || true
 
           git add --ignore-missing \
             data/active_weights.json \
