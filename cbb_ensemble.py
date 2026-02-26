@@ -221,6 +221,7 @@ class EnsembleResult:
     spread:            float = 0.0
     total:             float = 0.0
     confidence:        float = 0.0
+    calibrated_confidence: float = 0.0
     model_agreement:   str   = ""      # "STRONG", "MODERATE", "SPLIT"
     spread_std:        float = 0.0
     cage_edge:         float = 0.0
@@ -241,6 +242,7 @@ class EnsembleResult:
             "ens_spread":          round(self.spread, 2),
             "ens_total":           round(self.total, 1),
             "ens_confidence":      round(self.confidence, 3),
+            "calibrated_confidence": round(self.calibrated_confidence, 3),
             "ens_agreement":       self.model_agreement,
             "ens_spread_std":      round(self.spread_std, 2),
             "cage_edge":           round(self.cage_edge, 2),
@@ -287,6 +289,15 @@ class EnsembleConfig:
     edge_threshold_total:  float = 4.0
     agreement_strong:      float = 0.70    # fraction of models on same side
     agreement_moderate:    float = 0.55
+    calibration: Optional[Dict] = field(default=None, init=False)
+
+    def __post_init__(self) -> None:
+        calib_path = Path("data/calibration_params.json")
+        if calib_path.exists():
+            try:
+                self.calibration = json.loads(calib_path.read_text())
+            except (OSError, json.JSONDecodeError):
+                self.calibration = None
 
     @classmethod
     def from_optimized(cls) -> "EnsembleConfig":
@@ -302,6 +313,32 @@ class EnsembleConfig:
             except (OSError, json.JSONDecodeError, TypeError):
                 pass
         return config
+
+
+def apply_calibration(
+    raw_confidence: float,
+    spread_std: float,
+    cage_edge: float,
+    calib: Optional[Dict],
+) -> float:
+    if calib is None:
+        return float(raw_confidence)
+
+    X = np.array([[raw_confidence, spread_std or 0.0, cage_edge or 0.0]], dtype=float)
+    coef = np.array(calib.get("coef", []), dtype=float)
+    intercept = float(calib.get("intercept", 0.0))
+
+    if coef.size != X.shape[1]:
+        log.warning(
+            "Calibration coefficient length mismatch (got=%d expected=%d); using raw confidence",
+            coef.size,
+            X.shape[1],
+        )
+        return float(raw_confidence)
+
+    logit = float(X @ coef + intercept)
+    calibrated = float(1 / (1 + np.exp(-logit)))
+    return max(0.0, min(1.0, calibrated))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1116,7 +1153,7 @@ class EnsemblePredictor:
             0.05 if agreement == "STRONG"
             else (-0.05 if agreement == "SPLIT" else 0.0)
         )
-        ensemble_conf = max(0.05, min(0.95, avg_conf + agreement_bonus))
+        raw_confidence = max(0.05, min(0.95, avg_conf + agreement_bonus))
 
         # ── CAGE edge & barthag diff (metadata) ──────────────────────────
         cage_edge    = home.cage_em - away.cage_em
@@ -1128,6 +1165,12 @@ class EnsemblePredictor:
                 home.team_name, away.team_name,
             )
         barthag_diff = home.barthag - away.barthag
+        calibrated_confidence = apply_calibration(
+            raw_confidence=raw_confidence,
+            spread_std=spread_std,
+            cage_edge=cage_edge,
+            calib=self.config.calibration,
+        )
 
         # ── Edge flags ────────────────────────────────────────────────────
         edge_spread = False
@@ -1159,7 +1202,8 @@ class EnsemblePredictor:
         return EnsembleResult(
             spread=round(corrected_spread, 2),
             total=round(ens_total, 1),
-            confidence=round(ensemble_conf, 3),
+            confidence=round(raw_confidence, 3),
+            calibrated_confidence=round(calibrated_confidence, 3),
             model_agreement=agreement,
             spread_std=round(spread_std, 2),
             cage_edge=round(cage_edge, 2),

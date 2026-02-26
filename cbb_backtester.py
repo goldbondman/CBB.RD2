@@ -62,6 +62,8 @@ np.random.seed(SEED)
 import pandas as pd
 from scipy import stats as scipy_stats
 from scipy.optimize import minimize
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import brier_score_loss
 
 from config.logging_config import get_logger
 from espn_config import PIPELINE_RUN_ID
@@ -1476,6 +1478,66 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
     return out_path
 
 
+def train_platt_calibration(backtest_results: pd.DataFrame, output_dir: Path) -> Optional[Path]:
+    """Fit Platt calibration and persist coefficients when quality is acceptable."""
+    calib_features = ["ens_confidence", "spread_std", "cage_edge"]
+    required_cols = calib_features + ["market_spread", "actual_margin", "ens_spread"]
+
+    missing = [c for c in required_cols if c not in backtest_results.columns]
+    if missing:
+        log.warning("Skipping calibration: missing required columns %s", missing)
+        return None
+
+    calib_df = backtest_results[required_cols].dropna().copy()
+    if calib_df.empty:
+        log.warning("Skipping calibration: no complete rows after dropna")
+        return None
+
+    pred_margin = -calib_df["ens_spread"].values
+    mkt_margin = -calib_df["market_spread"].values
+    act_margin = calib_df["actual_margin"].values
+
+    push_mask = act_margin == mkt_margin
+    calib_df = calib_df.loc[~push_mask].copy()
+    if len(calib_df) < 50:
+        log.info("Skipping calibration: only %d ATS-labeled rows (need >= 50)", len(calib_df))
+        return None
+
+    pred_margin = -calib_df["ens_spread"].values
+    mkt_margin = -calib_df["market_spread"].values
+    act_margin = calib_df["actual_margin"].values
+    model_home = pred_margin > mkt_margin
+    home_cover = act_margin > mkt_margin
+    calib_df["ats_correct"] = (model_home == home_cover).astype(int)
+
+    X = calib_df[calib_features].values
+    y = calib_df["ats_correct"].astype(int).values
+
+    clf = LogisticRegression(C=1.0, max_iter=500)
+    clf.fit(X, y)
+
+    y_prob = clf.predict_proba(X)[:, 1]
+    brier = float(brier_score_loss(y, y_prob))
+    log.info("Calibration Brier score: %.4f", brier)
+
+    if brier > 0.28:
+        log.warning("Calibration rejected: Brier score %.4f > 0.28 baseline", brier)
+        return None
+
+    params = {
+        "coef": clf.coef_[0].tolist(),
+        "intercept": float(clf.intercept_[0]),
+        "features": calib_features,
+        "trained_at": pd.Timestamp.utcnow().isoformat(),
+        "n_samples": len(calib_df),
+        "brier_score": brier,
+    }
+    calib_path = output_dir / "calibration_params.json"
+    calib_path.write_text(json.dumps(params, indent=2))
+    log.info("Calibration layer trained on %d samples", len(calib_df))
+    return calib_path
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # ENTRY POINT
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1545,8 +1607,13 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
         print(f"\n  Optimized {config.optimizer_metric.upper()}: {opt_metric:.4f}")
         print()
 
+    # ── Train confidence calibration ─────────────────────────────────────────
+    calibration_path = train_platt_calibration(records, output_dir)
+
     # ── Write outputs ─────────────────────────────────────────────────────────
     outputs = {}
+    if calibration_path is not None:
+        outputs["calibration_params"] = calibration_path
 
     results_path = output_dir / f"backtest_results_{today}.csv"
     safe_write_csv(records, results_path, index=False, label="backtest_results", allow_empty=False)
