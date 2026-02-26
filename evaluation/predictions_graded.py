@@ -178,6 +178,16 @@ def main() -> None:
 
     graded = df.apply(grade_row, axis=1, result_type="expand")
     out = pd.concat([df, graded], axis=1)
+
+    # MC calibration columns
+    if "mc_cover_pct" in out.columns and "home_covered_pred" in out.columns:
+        # MC cover pct is the probability of the predicted side covering.
+        # home_covered_pred is a boolean (True/False) of whether the predicted side covered.
+        out["mc_cover_calib_error"] = out["mc_cover_pct"] - out["home_covered_pred"].astype(float)
+        out["mc_cover_pct_bucket"] = (out["mc_cover_pct"] * 20).round() / 20  # 5% buckets
+        log.info("MC calibration columns computed for %d graded games",
+                 out["mc_cover_pct"].notna().sum())
+
     out.to_csv(OUTPUT_PATH, index=False)
     log.info("Wrote %s rows to %s", len(out), OUTPUT_PATH)
 

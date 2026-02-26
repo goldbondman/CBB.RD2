@@ -403,6 +403,22 @@ def build_predictions_with_context(
     df = pd.read_csv(predictions_path, dtype={"event_id": str})
     df = normalize_numeric_dtypes(df)
 
+    # [NEW] Join Monte Carlo columns if available
+    mc_path = DATA_DIR / "predictions_mc_latest.csv"
+    if mc_path.exists():
+        mc_df = pd.read_csv(mc_path, usecols=[
+            "game_id", "mc_cover_pct", "mc_home_win_pct", "mc_upset_prob",
+            "mc_spread_lo", "mc_spread_hi", "mc_total_lo", "mc_total_hi",
+            "mc_edge_confirmed", "mc_edge_contradicted"
+        ])
+        # Ensure game_id is string for join
+        df["game_id"] = df.get("game_id", df.get("event_id")).astype(str).str.strip()
+        mc_df["game_id"] = mc_df["game_id"].astype(str).str.strip()
+        df = df.merge(mc_df, on="game_id", how="left")
+        log.info("MC columns joined: %d games enriched", mc_df["game_id"].nunique())
+    else:
+        log.warning("predictions_mc_latest.csv not found — MC columns will be null")
+
     # Save model columns BEFORE normalize_column_names()
     _saved_cols = {}
     for c in ["pred_spread", "ens_ens_spread", "predicted_spread", "pred_total", "pred_home_score", "pred_away_score"]:

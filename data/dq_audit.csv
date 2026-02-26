@@ -9,3 +9,11 @@ results_log,,error,missing_required_columns,missing=['predicted_spread']; output
 results_log,,error,missing_required_columns,missing=['predicted_spread'],,,2026-02-25T22:53:02.494921+00:00,/tmp/pytest-of-jules/pytest-0/test_loads_all_completed_games0/data/results_log.csv
 results_log,,error,missing_required_columns,missing=['predicted_spread']; output_path=data/results_log.csv,2026-02-25T22:53:33.450747+00:00,26.0,,
 results_log,,error,missing_required_columns,missing=['predicted_spread'],,,2026-02-25T22:53:33.455611+00:00,data/results_log.csv
+results_log,,error,missing_required_columns,missing=['predicted_spread']; output_path=/tmp/pytest-of-jules/pytest-0/test_produces_csv_when_predict0/data/results_log.csv,2026-02-26T08:28:30.224210+00:00,3.0,,
+results_log,,error,missing_required_columns,missing=['predicted_spread'],,,2026-02-26T08:28:30.228372+00:00,/tmp/pytest-of-jules/pytest-0/test_produces_csv_when_predict0/data/results_log.csv
+results_log,,error,missing_required_columns,missing=['predicted_spread']; output_path=/tmp/pytest-of-jules/pytest-0/test_matches_when_latest_conta0/data/results_log.csv,2026-02-26T08:28:30.369268+00:00,2.0,,
+results_log,,error,missing_required_columns,missing=['predicted_spread'],,,2026-02-26T08:28:30.373135+00:00,/tmp/pytest-of-jules/pytest-0/test_matches_when_latest_conta0/data/results_log.csv
+results_log,,error,missing_required_columns,missing=['predicted_spread']; output_path=/tmp/pytest-of-jules/pytest-0/test_handles_missing_spread_co0/data/results_log.csv,2026-02-26T08:28:30.508430+00:00,1.0,,
+results_log,,error,missing_required_columns,missing=['predicted_spread'],,,2026-02-26T08:28:30.512505+00:00,/tmp/pytest-of-jules/pytest-0/test_handles_missing_spread_co0/data/results_log.csv
+results_log,,error,missing_required_columns,missing=['predicted_spread']; output_path=/tmp/pytest-of-jules/pytest-0/test_loads_all_completed_games0/data/results_log.csv,2026-02-26T08:28:30.645948+00:00,2.0,,
+results_log,,error,missing_required_columns,missing=['predicted_spread'],,,2026-02-26T08:28:30.649810+00:00,/tmp/pytest-of-jules/pytest-0/test_loads_all_completed_games0/data/results_log.csv

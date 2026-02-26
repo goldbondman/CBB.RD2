@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
   actions: write
 
 jobs:
@@ -197,13 +197,65 @@ jobs:
       - name: Update governance status
         run: python -m pipeline update-check
 
+      - name: MC calibration drift check
+        run: |
+          python - <<'PY'
+          import sys, os
+          from pathlib import Path
+          sys.path.insert(0, str(Path.cwd()))
+          from cbb_monte_carlo import build_mc_calibration_report
+          # build_mc_calibration_report defaults to data/model_accuracy_report.csv
+          # Let's check if it exists or use predictions_graded.csv
+          acc_path = Path("data/predictions_graded.csv")
+          if not acc_path.exists():
+              acc_path = Path("data/model_accuracy_report.csv")
+
+          report = build_mc_calibration_report(accuracy_path=acc_path)
+          if report and report.get("n_games", 0) > 0:
+              import json, pandas as pd
+              from datetime import datetime, timezone
+              row = {"run_date": datetime.now(timezone.utc).isoformat(), **report}
+              cal_path = Path("data/mc_backtest_calibration.csv")
+              df = pd.read_csv(cal_path) if cal_path.exists() else pd.DataFrame()
+              pd.concat([df, pd.DataFrame([row])]).to_csv(cal_path, index=False)
+              brier = report.get('brier_score')
+              mae = report.get('calibration_mae')
+              print(f"MC Brier: {brier:.4f}" if brier is not None else "MC Brier: N/A")
+              print(f"Calib MAE: {mae:.4f}" if mae is not None else "Calib MAE: N/A")
+
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+                  f.write(f"\n### MC Calibration Drift\n")
+                  f.write(f"- **Brier Score:** {brier:.4f}\n")
+                  f.write(f"- **Calibration MAE:** {mae:.4f}\n")
+                  f.write(f"- **Sample Size:** {report.get('n_games')}\n")
+          PY
+
+      - name: Commit MC calibration drift history
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/mc_backtest_calibration.csv
+          if git diff --staged --quiet; then
+            echo "[SKIP] No drift history to commit"
+          else
+            git commit -m "chore: update MC calibration drift history [skip ci]"
+            for i in 1 2 3; do
+              git fetch origin main
+              git rebase origin/main || { git rebase --abort; git pull --rebase; }
+              git push origin HEAD:main && exit 0 || sleep 5
+            done
+          fi
+
       - name: Upload governance artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cbb-backtest-latest
           retention-days: 7
-          path: artifacts/${{ env.RUN_ID }}/**
+          path: |
+            artifacts/${{ env.RUN_ID }}/**
+            data/mc_backtest_calibration.csv
 
       - name: Accuracy and CLV summary
         run: |

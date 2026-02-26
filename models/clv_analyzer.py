@@ -116,8 +116,10 @@ def build_clv_reports(
             pred_context_path,
             pred_context_path.exists(),
         )
+
     acc = _safe_read_csv(accuracy_path, "model_accuracy_report.csv")
     pred = _safe_read_csv(pred_context_path, "predictions_with_context.csv")
+
     if pred.empty:
         for fallback in PRED_FALLBACK_PATHS:
             pred = _safe_read_csv(fallback, f"fallback predictions ({fallback.name})")
@@ -131,31 +133,6 @@ def build_clv_reports(
 
     if pred.empty:
         LOG.warning("No prediction rows available for CLV report. Writing empty outputs.")
-        _write_empty_outputs()
-        return pd.DataFrame(), pd.DataFrame()
-
-    pred = _prepare_join_key(pred, "predictions_with_context.csv")
-
-    if acc.empty:
-        LOG.warning("model_accuracy_report.csv has no rows; CLV report will omit outcome metrics.")
-    def _safe_read_csv(path: Path, label: str) -> pd.DataFrame:
-        try:
-            return pd.read_csv(path, low_memory=False)
-        except EmptyDataError:
-            LOG.warning("%s exists but is empty: %s", label, path)
-            return pd.DataFrame()
-
-    acc = _safe_read_csv(accuracy_path, "model_accuracy_report")
-    pred = _safe_read_csv(pred_context_path, "predictions_with_context")
-    if pred.empty and FALLBACK_PRED_CONTEXT_PATH.exists():
-        LOG.warning(
-            "Primary predictions_with_context is empty; falling back to %s",
-            FALLBACK_PRED_CONTEXT_PATH,
-        )
-        pred = _safe_read_csv(FALLBACK_PRED_CONTEXT_PATH, "predictions_combined_latest")
-
-    if pred.empty:
-        LOG.warning("No prediction rows available for CLV analysis. Writing empty outputs.")
         _write_empty_outputs()
         return pd.DataFrame(), pd.DataFrame()
 

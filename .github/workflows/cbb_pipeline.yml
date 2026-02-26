@@ -31,97 +31,6 @@ permissions:
 jobs:
 
   # ───────────────────────────────────────────────────────────────────────────
-  # DAILY  (09:00 UTC every day)
-  # Steps: data ingest → market lines → predictions → grading → reporting
-  # All steps continue-on-error; failures are logged to pipeline_step_runs.csv
-  # ───────────────────────────────────────────────────────────────────────────
-  daily:
-    name: "Daily — ingest, predict, grade"
-    if: |
-      github.event.schedule == '0 9 * * *' ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.tier == 'daily')
-    runs-on: ubuntu-latest
-    env:
-      DATA_DIR: ${{ secrets.DATA_DIR }}
-      TZ: America/Los_Angeles
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run DAILY tier
-        run: |
-          set +e
-          mkdir -p data data/archive
-          touch data/pipeline_errors.log
-
-          # Structured step log (append-only CSV)
-          STEP_LOG="data/pipeline_step_runs.csv"
-          if [ ! -f "$STEP_LOG" ]; then
-            echo "run_timestamp_utc,tier,step,command,status,error_message" > "$STEP_LOG"
-          fi
-
-          log_step() {
-            local tier="$1" step="$2" cmd="$3" status="$4" msg="$5"
-            local ts
-            ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-            local escaped="${msg//\"/\"\"}"
-            printf '%s,%s,%s,"%s",%s,"%s"\n' \
-              "$ts" "$tier" "$step" "$cmd" "$status" "$escaped" >> "$STEP_LOG"
-          }
-
-          run_step() {
-            local tier="$1" step="$2"
-            shift 2
-            local cmd=("$@")
-            echo "[INFO] $step: ${cmd[*]}"
-            if "${cmd[@]}"; then
-              log_step "$tier" "$step" "${cmd[*]}" "success" ""
-            else
-              local rc=$?
-              local msg="$step exited $rc"
-              echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") | $tier | $msg" | tee -a data/pipeline_errors.log
-              log_step "$tier" "$step" "${cmd[*]}" "failed" "$msg"
-            fi
-          }
-
-          # Check SEASON_ACTIVE before running prediction step
-          SEASON_ACTIVE=$(python -c "from espn_config import SEASON_ACTIVE; print('true' if SEASON_ACTIVE else 'false')" 2>/dev/null || echo "true")
-
-          run_step "daily" "espn_pipeline"         python espn_pipeline.py
-          run_step "daily" "market_lines_closing"  python -m ingestion.market_lines --mode closing
-
-          if [ "$SEASON_ACTIVE" = "true" ]; then
-            run_step "daily" "prediction_runner"   python espn_prediction_runner.py
-          else
-            echo "[SKIP] espn_prediction_runner.py — SEASON_ACTIVE is False"
-            log_step "daily" "prediction_runner" "python espn_prediction_runner.py" "skipped" "SEASON_ACTIVE=False"
-          fi
-
-          run_step "daily" "results_tracker"       python cbb_results_tracker.py
-          run_step "daily" "grade_predictions"     python cbb_grade_predictions.py
-          run_step "daily" "accuracy_report"       python cbb_accuracy_report.py
-          run_step "daily" "season_summaries"      python cbb_season_summaries.py
-
-      - name: Upload daily logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cbb-daily-logs-${{ github.run_id }}
-          path: |
-            data/pipeline_errors.log
-            data/pipeline_step_runs.csv
-
-  # ───────────────────────────────────────────────────────────────────────────
   # BIWEEKLY LEARNING  (10:00 UTC on 1st and 15th)
   # Gate: >= 200 graded games since last weight deployment
   # Steps: grid search → walk-forward validation → deploy/reject → report
@@ -150,6 +59,29 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Get latest analytics run ID
+        id: get_analytics_run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_id=$(gh run list \
+            --workflow=cbb_analytics.yml \
+            --status=success \
+            --limit=1 \
+            --json=databaseId \
+            --jq='.[0].databaseId // ""')
+          echo "run_id=$run_id" >> $GITHUB_OUTPUT
+
+      - name: Download results log (for predictions_graded.csv)
+        if: steps.get_analytics_run.outputs.run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-results-log
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.get_analytics_run.outputs.run_id }}
+        continue-on-error: true
 
       - name: Season active gate
         id: season_gate
@@ -335,6 +267,24 @@ jobs:
             echo "[WARN] data/results_log.csv not found — archive step skipped"
           fi
 
+      - name: Archive MC calibration season report
+        run: |
+          YEAR=$(date -u +"%Y")
+          python -c "
+          from pathlib import Path
+          from cbb_monte_carlo import build_mc_calibration_report
+          import pandas as pd, shutil
+          acc_path = Path('data/predictions_graded.csv')
+          if not acc_path.exists(): acc_path = Path('data/model_accuracy_report.csv')
+          report = build_mc_calibration_report(accuracy_path=acc_path)
+          if Path('data/mc_calibration_curve.csv').exists():
+              shutil.copy('data/mc_calibration_curve.csv',
+                          f'data/archive/mc_calibration_curve_{YEAR}.csv')
+          if report:
+              print(f'Season MC Brier: {report.get(\"brier_score\",\"N/A\")}')
+          "
+          python calibration_script.py  # refit isotonic regression on full season
+
       - name: Upload end-of-season artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -360,7 +310,9 @@ jobs:
             data/candidate_weights.json \
             data/backtest_optimized_weights.json \
             data/model_weights.json \
-            data/walk_forward_validation.json
+            data/walk_forward_validation.json \
+            data/confidence_calibration.json \
+            data/archive/mc_calibration_curve_*.csv
 
           if git diff --staged --quiet; then
             echo "[SKIP] No weight changes to commit"

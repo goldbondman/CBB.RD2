@@ -94,6 +94,15 @@ jobs:
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
         continue-on-error: true
 
+      - name: Download rolling predictions (for MC calibration)
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-predictions-rolling-latest
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || steps.get_espn_run.outputs.run_id }}
+        continue-on-error: true
+
       # Handoff from update_espn_cbb.yml
       - name: Download ESPN data
         uses: actions/download-artifact@v4
@@ -169,6 +178,32 @@ jobs:
         run: python cbb_accuracy_report.py
         continue-on-error: false
 
+      - name: Update model bias table
+        run: |
+          python -c "
+          import pandas as pd
+          from pathlib import Path
+          df = pd.read_csv('data/predictions_graded.csv') if Path('data/predictions_graded.csv').exists() else None
+          if df is not None and len(df[df.get('graded', pd.Series(dtype=bool))]) >= 50:
+              import subprocess; subprocess.run(['python', 'models/bias_detector.py'], check=True)
+          else:
+              print('[SKIP] Fewer than 50 graded games — bias detector skipped')
+          "
+        continue-on-error: true
+
+      - name: Update confidence calibration
+        run: |
+          python -c "
+          import pandas as pd
+          from pathlib import Path
+          df = pd.read_csv('data/predictions_graded.csv') if Path('data/predictions_graded.csv').exists() else None
+          if df is not None and len(df[df.get('graded', pd.Series(dtype=bool))]) >= 50:
+              import subprocess; subprocess.run(['python', 'calibration_script.py'], check=True)
+          else:
+              print('[SKIP] Fewer than 50 graded games — calibration skipped')
+          "
+        continue-on-error: true
+
       - name: Upload analytics results
         if: always()
         uses: actions/upload-artifact@v4
@@ -176,7 +211,11 @@ jobs:
           name: cbb-results-log
           path: |
             data/results_log.csv
-            data/results_summary.csv
+            data/model_accuracy_summary.csv
+            data/predictions_graded.csv
+            data/model_bias_table.csv
+            data/walk_forward_validation.json
+            data/mc_calibration_curve.csv
             data/backtest_results_latest.csv
             data/team_season_summary.csv
           retention-days: 90

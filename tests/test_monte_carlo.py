@@ -453,7 +453,7 @@ class TestOutputFormat:
         assert len(df) == 1
         assert "game_id" in df.columns
         assert "mc_spread_median" in df.columns
-        assert "mc_cover_probability" in df.columns
+        assert "mc_cover_pct" in df.columns
         assert "mc_confidence" in df.columns
         assert "mc_confidence_tier" in df.columns
         assert "mc_n_sims" in df.columns
@@ -463,12 +463,12 @@ class TestOutputFormat:
         df = results_to_mc_columns([result])
         expected_cols = [
             "game_id",
-            "mc_spread_median", "mc_spread_p10", "mc_spread_p25",
-            "mc_spread_p75", "mc_spread_p90", "mc_spread_std",
-            "mc_total_median", "mc_total_p10", "mc_total_p90",
+            "mc_spread_median", "mc_spread_lo", "mc_spread_p25",
+            "mc_spread_p75", "mc_spread_hi", "mc_spread_std",
+            "mc_total_median", "mc_total_lo", "mc_total_hi",
             "mc_home_win_pct", "mc_away_win_pct",
-            "mc_cover_probability", "mc_over_pct", "mc_under_pct",
-            "mc_upset_probability", "mc_confidence", "mc_confidence_tier",
+            "mc_cover_pct", "mc_over_pct", "mc_under_pct",
+            "mc_upset_prob", "mc_confidence", "mc_confidence_tier",
             "mc_high_variance", "mc_low_variance", "mc_model_alignment",
             "mc_edge_confirmed", "mc_edge_contradicted", "mc_n_sims",
         ]
@@ -579,15 +579,15 @@ class TestBuildGameCards:
         }])
         mc = pd.DataFrame([{
             "game_id": "401000001",
-            "mc_cover_probability": 0.63,
+            "mc_cover_pct": 0.63,
             "mc_confidence_tier": "MEDIUM",
             "mc_spread_p25": -9.0,
             "mc_spread_p75": -2.0,
-            "mc_total_p10": 130.0,
-            "mc_total_p90": 155.0,
+            "mc_total_lo": 130.0,
+            "mc_total_hi": 155.0,
             "mc_home_win_pct": 0.72,
             "mc_away_win_pct": 0.28,
-            "mc_upset_probability": 0.28,
+            "mc_upset_prob": 0.28,
             "mc_model_alignment": "LEAN",
             "mc_high_variance": False,
             "mc_edge_confirmed": False,

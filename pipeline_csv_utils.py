@@ -127,6 +127,8 @@ def normalize_numeric_dtypes(
 COLUMN_ALIASES: dict[str, list[str]] = {
     'event_id': ['game_id', 'eventId', 'gameId'],
     'pred_spread': ['predicted_spread', 'prediction_spread'],
+    'model1_schedule_pred': ['ens_model1_schedule_pred'],
+    'model2_four_factors_pred': ['ens_model2_four_factors_pred'],
     'home_ml': ['home_money_line', 'home_moneyline'],
     'away_ml': ['away_money_line', 'away_moneyline'],
     'cover': ['ats_cover', 'cover_result'],
@@ -139,11 +141,24 @@ def normalize_column_names(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
     for canonical, aliases in COLUMN_ALIASES.items():
         if canonical in out.columns:
+            # If canonical exists, also ensure certain aliases are present if they are required by some schemas
+            if canonical == 'pred_spread' and 'predicted_spread' not in out.columns:
+                out['predicted_spread'] = out['pred_spread']
             continue
         for alias in aliases:
             if alias in out.columns:
                 out = out.rename(columns={alias: canonical})
+                # If we just renamed to pred_spread, also keep predicted_spread as an alias
+                if canonical == 'pred_spread':
+                    out['predicted_spread'] = out['pred_spread']
                 break
+
+    # Special case for event_id/game_id
+    if 'event_id' in out.columns and 'game_id' not in out.columns:
+        out['game_id'] = out['event_id']
+    elif 'game_id' in out.columns and 'event_id' not in out.columns:
+        out['event_id'] = out['game_id']
+
     return out
 
 

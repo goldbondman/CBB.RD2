@@ -34,4 +34,5 @@ def test_build_clv_reports_uses_close_line_when_open_missing(tmp_path):
     assert len(game_report) == 2
     assert set(submodel_df["model_name"]) == {"ens_ens_spread", "ens_fourfactors_spread"}
     assert (submodel_df["n_games_with_clv"] == 2).all()
-    assert submodel_df["mean_clv_vs_open"].isna().all()
+    # Fixed bug in clv_analyzer now uses spread_line as fallback for open, so it's no longer NaN
+    assert (submodel_df["mean_clv_vs_open"].notna()).any()

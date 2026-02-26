@@ -164,11 +164,10 @@ jobs:
 
           if not dfs:
               print("[WARN] No predictions generated")
-              pd.DataFrame().to_csv(data_dir / "predictions_latest.csv", index=False)
+              pd.DataFrame().to_csv(data_dir / "predictions_pre_ensemble.csv", index=False)
           else:
               merged = pd.concat(dfs, ignore_index=True).drop_duplicates(subset=["game_id"], keep="last")
-              merged.to_csv(data_dir / "predictions_primary.csv", index=False)
-              merged.to_csv(data_dir / "predictions_latest.csv", index=False)
+              merged.to_csv(data_dir / "predictions_pre_ensemble.csv", index=False)
           PY
 
       # Pattern 2: Validate that the primary model produced non-empty output
@@ -185,7 +184,7 @@ jobs:
             fi
             echo "[OK] $f: $rows rows"
           }
-          check_csv data/predictions_latest.csv 1
+          check_csv data/predictions_pre_ensemble.csv 1
 
       # Run ensemble model if enabled
       - name: Run ensemble model predictions
@@ -210,9 +209,9 @@ jobs:
         if: always()
         run: |
           python - <<'PY'
-          import pathlib, pandas as pd
+          import pathlib, pandas as pd, sys
           data_dir = pathlib.Path("data")
-          primary = data_dir / "predictions_primary.csv"
+          primary = data_dir / "predictions_pre_ensemble.csv"
           ensemble = data_dir / "ensemble_predictions_latest.csv"
           out = data_dir / "predictions_combined_latest.csv"
           if not primary.exists():
@@ -223,6 +222,13 @@ jobs:
               e_df = pd.read_csv(ensemble)
               # Simple merge logic
               combined = p_df.merge(e_df, on="game_id", how="left", suffixes=("", "_ens"))
+              # Ensure compatibility columns (M1-M2) are present without prefix for legacy tests/tools
+              for col in ["model1_schedule_pred", "model2_four_factors_pred"]:
+                  ens_col = f"ens_{col}"
+                  if ens_col in combined.columns and col not in combined.columns:
+                      combined[col] = combined[ens_col]
+                  elif f"{col}_ens" in combined.columns and col not in combined.columns:
+                      combined[col] = combined[f"{col}_ens"]
           else:
               combined = p_df
           combined.to_csv(out, index=False)
@@ -259,6 +265,9 @@ jobs:
             data/predictions_*.csv
             data/ensemble_predictions_latest.csv
             data/predictions_combined_latest.csv
+            data/predictions_mc_latest.csv
+            data/mc_game_cards.csv
+            data/mc_calibration_report.csv
             data/dq_skipped_games.csv
           retention-days: 90
 

@@ -380,11 +380,19 @@ def _round_or_none(value: Optional[float], decimals: int) -> Optional[float]:
 
 def apply_calibration(raw_confidence: float, calibration_table: dict) -> float:
     """
-    Apply calibration adjustment from backtest_optimized_weights.json.
-
-    Find the correct bucket (50-59, 60-69, etc.) and apply the adj multiplier.
-    Clamp output to [0.50, 0.99].
+    Apply calibration adjustment. Supports both legacy bucket-based adjustment
+    and new Isotonic Regression thresholds.
     """
+    # Isotonic Regression thresholds (from confidence_calibration.json)
+    if "iso_x_thresholds" in calibration_table and "iso_y_thresholds" in calibration_table:
+        iso_x = calibration_table["iso_x_thresholds"]
+        iso_y = calibration_table["iso_y_thresholds"]
+        # Standardize to 50-100 scale for thresholds if they look like percents
+        raw_scaled = raw_confidence * 100 if raw_confidence <= 1.0 else raw_confidence
+        cal_scaled = float(np.interp(raw_scaled, iso_x, iso_y))
+        return max(0.50, min(0.99, cal_scaled / 100.0))
+
+    # Legacy bucket-based adjustment (from backtest_optimized_weights.json)
     bucket = int(raw_confidence * 100) // 10 * 10
     adj = calibration_table.get(str(bucket), 1.0)
     calibrated = raw_confidence * float(adj)
@@ -392,7 +400,17 @@ def apply_calibration(raw_confidence: float, calibration_table: dict) -> float:
 
 
 def _load_calibration_table() -> Optional[dict]:
-    """Load confidence_calibration from backtest_optimized_weights.json."""
+    """
+    Load calibration table. Prefers confidence_calibration.json (Isotonic),
+    falls back to backtest_optimized_weights.json (Buckets).
+    """
+    iso_path = DATA_DIR / "confidence_calibration.json"
+    if iso_path.exists() and iso_path.stat().st_size > 10:
+        try:
+            return json.loads(iso_path.read_text())
+        except Exception:
+            pass
+
     if not WEIGHTS_PATH.exists() or WEIGHTS_PATH.stat().st_size < 10:
         return None
     try:
@@ -799,10 +817,25 @@ def build_mc_calibration_report(
         f"mc_home_win_pct old={old_mc:.4f}, new={new_mc:.4f}"
     )
 
+    # Calculate additional metrics for drift tracking
+    brier_score = ((graded["mc_home_win_pct"] - graded["actual_won"]) ** 2).mean()
+    calibration_mae = (graded["mc_home_win_pct"] - graded["actual_won"]).abs().mean()
+
+    # Slope
+    if len(graded) >= 10:
+        slope, intercept, r_value, p_value, std_err = scipy_stats.linregress(
+            graded["mc_home_win_pct"], graded["actual_won"]
+        )
+    else:
+        slope = np.nan
+
     return {
         "n_games": int(len(graded)),
         "mce_before": mce_before,
         "mce_after": mce_after,
+        "brier_score": float(brier_score),
+        "calibration_mae": float(calibration_mae),
+        "calibration_slope": float(slope),
         "sigma_empirical": sigma_empirical,
         "sigma_current": SIGMA,
         "sigma_recommended": sigma_recommended,
@@ -821,20 +854,20 @@ def results_to_mc_columns(results: list) -> pd.DataFrame:
         rows.append({
             "game_id": r.game_id,
             "mc_spread_median": r.spread_median,
-            "mc_spread_p10": r.spread_p10,
+            "mc_spread_lo": r.spread_p10,
             "mc_spread_p25": r.spread_p25,
             "mc_spread_p75": r.spread_p75,
-            "mc_spread_p90": r.spread_p90,
+            "mc_spread_hi": r.spread_p90,
             "mc_spread_std": r.spread_std_realized,
             "mc_total_median": r.total_median,
-            "mc_total_p10": r.total_p10,
-            "mc_total_p90": r.total_p90,
+            "mc_total_lo": r.total_p10,
+            "mc_total_hi": r.total_p90,
             "mc_home_win_pct": r.home_win_pct,
             "mc_away_win_pct": r.away_win_pct,
-            "mc_cover_probability": r.cover_probability,
+            "mc_cover_pct": r.cover_probability,
             "mc_over_pct": r.over_pct,
             "mc_under_pct": r.under_pct,
-            "mc_upset_probability": r.upset_probability,
+            "mc_upset_prob": r.upset_probability,
             "mc_confidence": r.mc_confidence,
             "mc_confidence_tier": r.mc_confidence_tier,
             "mc_high_variance": r.high_variance_flag,
@@ -894,7 +927,7 @@ def build_game_cards(
     cards["total_line"] = merged.get("total_line")
 
     # MC columns
-    cards["mc_cover_probability"] = merged.get("mc_cover_probability")
+    cards["mc_cover_probability"] = merged.get("mc_cover_pct")
     cards["mc_confidence_tier"] = merged.get("mc_confidence_tier")
 
     # Formatted ranges (vectorized)
@@ -905,17 +938,17 @@ def build_game_cards(
         merged["mc_spread_p75"].round(0).astype(int).astype(str),
         "",
     )
-    has_total_range = pd.notna(merged.get("mc_total_p10")) & pd.notna(merged.get("mc_total_p90"))
+    has_total_range = pd.notna(merged.get("mc_total_lo")) & pd.notna(merged.get("mc_total_hi"))
     cards["mc_total_range"] = np.where(
         has_total_range,
-        merged["mc_total_p10"].round(0).astype(int).astype(str) + " to " +
-        merged["mc_total_p90"].round(0).astype(int).astype(str),
+        merged["mc_total_lo"].round(0).astype(int).astype(str) + " to " +
+        merged["mc_total_hi"].round(0).astype(int).astype(str),
         "",
     )
 
     cards["mc_home_win_pct"] = merged.get("mc_home_win_pct")
     cards["mc_away_win_pct"] = merged.get("mc_away_win_pct")
-    cards["mc_upset_probability"] = merged.get("mc_upset_probability")
+    cards["mc_upset_probability"] = merged.get("mc_upset_prob")
     cards["mc_model_alignment"] = merged.get("mc_model_alignment")
     cards["mc_high_variance"] = merged.get("mc_high_variance")
     cards["mc_edge_confirmed"] = merged.get("mc_edge_confirmed")

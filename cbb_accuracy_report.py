@@ -14,7 +14,8 @@ DATA_DIR = Path("data")
 RESULTS_LOG = DATA_DIR / "results_log.csv"
 DYNAMIC_WEIGHTS = DATA_DIR / "dynamic_model_weights.json"
 BACKTEST_WEIGHTS = DATA_DIR / "backtest_optimized_weights.json"
-OUT_PATH = DATA_DIR / "cbb_accuracy_report.csv"
+OUT_PATH = DATA_DIR / "model_accuracy_summary.csv"
+GRADED_PREDS = DATA_DIR / "predictions_graded.csv"
 
 MODEL_IDS = ["m1", "m2", "m3", "m4", "m5", "m6", "m7"]
 
@@ -45,6 +46,26 @@ def _load_dynamic_payload() -> dict:
     if not DYNAMIC_WEIGHTS.exists() or DYNAMIC_WEIGHTS.stat().st_size <= 2:
         return {}
     return json.loads(DYNAMIC_WEIGHTS.read_text())
+
+
+def build_mc_calibration_curve(df: pd.DataFrame) -> None:
+    if "mc_cover_pct_bucket" not in df.columns:
+        return
+    # Filter to games that have been graded
+    graded = df[df.get("graded") == True].copy()
+    if graded.empty:
+        return
+
+    curve = graded.groupby("mc_cover_pct_bucket").agg(
+        predicted_prob=("mc_cover_pct", "mean"),
+        actual_cover_rate=("home_covered_pred", "mean"),
+        n_games=("game_id", "count"),
+        calib_error=("mc_cover_calib_error", "mean"),
+    ).reset_index()
+
+    curve_path = DATA_DIR / "mc_calibration_curve.csv"
+    curve.to_csv(curve_path, index=False)
+    print(f"MC calibration curve written: {len(curve)} buckets to {curve_path}")
 
 
 def _ats_pct(df: pd.DataFrame, spread_col: str, days: int) -> float:
@@ -92,6 +113,11 @@ def main() -> None:
     out = pd.DataFrame(rows)
     out.to_csv(OUT_PATH, index=False)
     print(f"Wrote {len(out)} model rows to {OUT_PATH} @ {datetime.utcnow().isoformat()}Z")
+
+    # MC calibration curve
+    if GRADED_PREDS.exists():
+        graded_df = pd.read_csv(GRADED_PREDS)
+        build_mc_calibration_curve(graded_df)
 
 
 if __name__ == "__main__":

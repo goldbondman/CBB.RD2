@@ -51,7 +51,7 @@ jobs:
       # Pattern 1: Verify artifact or bootstrap from git history
       - name: Verify predictions artifact or bootstrap from git
         run: |
-          for f in data/predictions_latest.csv data/predictions_combined_latest.csv; do
+          for f in data/predictions_pre_ensemble.csv data/predictions_combined_latest.csv; do
             if [ ! -s "$f" ]; then
               echo "[WARN] $f missing from artifact — attempting git restore"
               git show HEAD:"$f" > "$f" 2>/dev/null && \
@@ -130,7 +130,7 @@ jobs:
             data/market_lines.csv
             data/market_lines_latest.csv
             data/odds_snapshot.csv
-          retention-days: 7
+          retention-days: 30
 
       # Pattern 10: Upload predictions-with-context artifact
       - name: Upload predictions-with-context artifact

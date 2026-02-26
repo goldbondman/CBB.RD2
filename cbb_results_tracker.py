@@ -146,6 +146,7 @@ class GameOutcome:
 
     # Primary model prediction
     pred_spread:       Optional[float] = None    # Negative = home favored
+    predicted_spread:  Optional[float] = None    # Alias for schema
     pred_total:        Optional[float] = None
     pred_home_score:   Optional[float] = None
     pred_away_score:   Optional[float] = None
@@ -482,6 +483,7 @@ def compute_outcomes(
         home_won          = int(_safe_int(result_row.get("home_won"), int(act_margin > 0))),
 
         pred_spread        = pred_spread,
+        predicted_spread   = pred_spread,
         pred_total         = pred_total,
         pred_home_score    = _safe_float(pred_row.get("pred_home_score")),
         pred_away_score    = _safe_float(pred_row.get("pred_away_score")),
@@ -1014,7 +1016,8 @@ class ResultsTracker:
         # with NaN so the column selection never raises KeyError).
         merge_cols = ["game_id", "home_score", "away_score", "actual_margin",
                      "actual_total", "home_won", "spread", "over_under",
-                     "home_ml", "away_ml", "game_datetime_utc", "neutral_site"]
+                     "home_ml", "away_ml", "game_datetime_utc", "neutral_site",
+                     "predicted_spread", "pred_spread"]
         for col in merge_cols:
             if col not in results.columns:
                 results[col] = np.nan
@@ -1146,9 +1149,7 @@ class ResultsTracker:
                 row["source"] = source
                 summary_rows.append(row)
 
-        summary_df = pd.DataFrame(summary_rows)
-        safe_write_csv(summary_df, self.output_dir / "results_summary.csv", index=False, label="results_summary", allow_empty=True)
-        log.info(f"Summary written → {self.output_dir / 'results_summary.csv'}")
+        # results_summary.csv removed (merged into model_accuracy_summary.csv)
 
         # Alerts
         if alerts:

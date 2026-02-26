@@ -41,9 +41,14 @@ def _make_predictions_csv(path: Path, game_ids: list, date_str: str = "20260220"
             "game_datetime_utc": f"2026-02-{date_str[-2:]}T19:00:00+00:00",
             "neutral_site": 0,
             "pred_spread": -3.5,
+            "predicted_spread": -3.5,
             "pred_total": 145.0,
             "model_confidence": 0.65,
             "edge_flag": 0,
+            "model1_schedule_pred": -3.0,
+            "model2_four_factors_pred": -4.0,
+            "home_conference": "ACC",
+            "away_conference": "Big Ten",
         })
     pd.DataFrame(rows).to_csv(path, index=False)
 
