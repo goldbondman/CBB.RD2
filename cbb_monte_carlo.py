@@ -861,6 +861,9 @@ def build_game_cards(
         return pd.DataFrame()
 
     merged = combined_df.merge(mc_df, on="game_id", how="left")
+    _dropped = combined_df['game_id'].nunique() - combined_df['game_id'].isin(mc_df['game_id']).sum()
+    if _dropped > 0:
+        log.warning("[MC] %d games dropped from merge — MC output missing for these game_ids", _dropped)
     if merged.empty:
         return pd.DataFrame()
 
