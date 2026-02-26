@@ -63,11 +63,12 @@ def grade_row(row: pd.Series) -> Dict[str, Any]:
     dk_line = row.get("draftkings_spread")
 
     def _clv(pred: Any, line: Any) -> Optional[float]:
-        """CLV = how much better model is than book's line."""
+        """CLV convention: line - pred (positive => model found value)."""
         if pred is None or line is None:
             return None
         try:
-            return round(float(pred) - float(line), 3)
+            # CLV convention: clv_vs_consensus = line - pred (positive => model found value).
+            return round(float(line) - float(pred), 3)
         except (TypeError, ValueError):
             return None
 
@@ -171,6 +172,12 @@ def main() -> None:
         return
 
     df = pd.read_csv(input_path, low_memory=False)
+    # Alias normalization: legacy files may ship event_id; standardize joins/exports on game_id.
+    if "event_id" in df.columns and "game_id" not in df.columns:
+        df = df.rename(columns={"event_id": "game_id"})
+    if "game_id" in df.columns:
+        df["game_id"] = df["game_id"].astype(str).str.lstrip("0")
+        df.loc[df["game_id"] == "", "game_id"] = "0"
     if df.empty:
         pd.DataFrame().to_csv(OUTPUT_PATH, index=False)
         log.info("Input %s empty; wrote empty graded output.", input_path)

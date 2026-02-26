@@ -654,8 +654,9 @@ def run_predictions(
         spread_line = _safe_float(matchup.get("spread"))
         total_line = _safe_float(matchup.get("over_under"))
 
+        # CLV convention: clv_vs_consensus = line - pred (positive => model found value).
         spread_diff = (
-            round(prediction["predicted_spread"] - spread_line, 2)
+            round(spread_line - prediction["predicted_spread"], 2)
             if spread_line is not None else None
         )
         total_diff = (
@@ -777,6 +778,8 @@ def run_predictions(
             "home_ml": _safe_float(matchup.get("home_ml")),
             "away_ml": _safe_float(matchup.get("away_ml")),
             "spread_diff_vs_line": spread_diff,
+            # CLV convention: clv_vs_consensus = line - pred (positive => model found value).
+            "clv_vs_consensus": spread_diff,
             "total_diff_vs_line": total_diff,
             "total_edge": (round(totals_proj.get("projected_total", 0) - total_line, 2)
                            if total_line is not None else None),
