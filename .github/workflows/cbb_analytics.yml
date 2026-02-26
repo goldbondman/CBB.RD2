@@ -183,7 +183,12 @@ jobs:
             echo "[WARN] No backtester output found"
           fi
 
-      # Step 7: Run analytics/reporting scripts
+      # Step 7: Grade predictions first so tracker can consume CLV fields
+      - name: Grade predictions
+        run: python evaluation/predictions_graded.py
+        continue-on-error: false
+
+      # Step 8: Run analytics/reporting scripts
       - name: Run results tracker
         if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 8 * * *' || github.event.inputs.run_mode == 'both' || github.event.inputs.run_mode == 'tracker_only'
         run: |
@@ -196,11 +201,6 @@ jobs:
 
       - name: Run season summaries
         run: python cbb_season_summaries.py || echo "Summaries failed (non-fatal)"
-
-      # Step 8: Pattern 10: Upload results on success
-      - name: Grade predictions
-        run: python evaluation/predictions_graded.py
-        continue-on-error: false
 
       - name: Accuracy report
         run: python cbb_accuracy_report.py

@@ -68,6 +68,8 @@ TZ = ZoneInfo("America/Los_Angeles")
 DATA_DIR         = Path("data")
 DATA_CSV_DIR     = DATA_DIR / "csv"
 PREDICTIONS_CSV  = DATA_DIR / "predictions_combined_latest.csv"
+PREDICTIONS_GRADED_CSV = DATA_DIR / "predictions_graded.csv"
+PREDICTIONS_CONTEXT_CSV = DATA_DIR / "predictions_with_context.csv"
 ENSEMBLE_CSV     = DATA_DIR / "ensemble_predictions_latest.csv"
 PRIMARY_CSV      = DATA_DIR / "predictions_latest.csv"
 PREDICTIONS_HISTORY_CSV = DATA_DIR / "predictions_history.csv"
@@ -209,6 +211,15 @@ class GameOutcome:
     # Metadata
     cage_em_diff:      Optional[float] = None
     barthag_diff:      Optional[float] = None
+    clv_vs_consensus:  Optional[float] = None
+    clv_vs_open:       Optional[float] = None
+    clv_vs_pinnacle:   Optional[float] = None
+    clv_vs_dk:         Optional[float] = None
+    beat_consensus:    Optional[bool] = None
+    beat_pinnacle:     Optional[bool] = None
+    clv_direction:     Optional[str] = None
+    home_spread_current: Optional[float] = None
+    home_spread_open:  Optional[float] = None
     processed_at:      str = ""
 
     def to_dict(self) -> Dict:
@@ -320,7 +331,13 @@ def load_predictions(date_filter: Optional[str] = None) -> pd.DataFrame:
             DATA_DIR / f"ensemble_predictions_{date_filter}.csv",
             DATA_DIR / f"predictions_{date_filter}.csv",
         ]
-    candidates += [PREDICTIONS_CSV, ENSEMBLE_CSV, PRIMARY_CSV]
+    candidates += [
+        PREDICTIONS_GRADED_CSV,
+        PREDICTIONS_CONTEXT_CSV,
+        PREDICTIONS_CSV,
+        ENSEMBLE_CSV,
+        PRIMARY_CSV,
+    ]
 
     for path in candidates:
         if path.exists() and path.stat().st_size > 50:
@@ -579,6 +596,15 @@ def compute_outcomes(
 
         cage_em_diff  = _safe_float(pred_row.get("cage_em_diff") or pred_row.get("ens_cage_edge")),
         barthag_diff  = _safe_float(pred_row.get("barthag_diff") or pred_row.get("ens_barthag_diff")),
+        clv_vs_consensus = _safe_float(pred_row.get("clv_vs_consensus")),
+        clv_vs_open      = _safe_float(pred_row.get("clv_vs_open")),
+        clv_vs_pinnacle  = _safe_float(pred_row.get("clv_vs_pinnacle")),
+        clv_vs_dk        = _safe_float(pred_row.get("clv_vs_dk")),
+        beat_consensus   = pred_row.get("beat_consensus"),
+        beat_pinnacle    = pred_row.get("beat_pinnacle"),
+        clv_direction    = pred_row.get("clv_direction"),
+        home_spread_current = _safe_float(pred_row.get("home_spread_current")),
+        home_spread_open    = _safe_float(pred_row.get("home_spread_open")),
         processed_at  = datetime.now(TZ).isoformat(),
     )
 
