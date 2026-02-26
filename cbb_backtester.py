@@ -2100,6 +2100,13 @@ def main():
         sys.exit(1)
 
     verify_path = args.output_dir / "backtest_results_latest.csv"
+    if "results_latest" not in outputs:
+        log.warning(
+            "Skipping backtest results verification and grading because no predictions were produced. "
+            "Try lowering --min-games or widening the evaluation window."
+        )
+        return
+
     if not verify_backtest_output(verify_path):
         sys.exit(1)
 
