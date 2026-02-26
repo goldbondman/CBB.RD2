@@ -42,6 +42,7 @@ from espn_config import (
     OUT_TEAM_LOGS as CSV_LOGS,
     OUT_TOURNAMENT_SNAPSHOT as CSV_SNAPSHOT,
     OUT_RANKINGS as CSV_RANKINGS,
+    SEASON_ACTIVE,
     TZ,
 )
 try:
@@ -84,6 +85,12 @@ except ImportError as e:
     raise SystemExit(
         f"Cannot import cbb_prediction_model.py. Ensure it is in the same directory.\n{e}"
     )
+
+try:
+    from cbb_ensemble import EnsemblePredictor, EnsembleConfig, TeamProfile
+    ENSEMBLE_AVAILABLE = True
+except ImportError:
+    ENSEMBLE_AVAILABLE = False
 
 try:
     from espn_tournament import (
@@ -562,6 +569,7 @@ def run_predictions(
     schedule_df = load_games_schedule()
     team_schedule_df = build_team_schedule_index(schedule_df)
     args_min_games = int(getattr(getattr(model, "config", None), "min_games_for_full_confidence", 0) or 0)
+    ensemble = EnsemblePredictor(EnsembleConfig.from_optimized()) if ENSEMBLE_AVAILABLE else None
 
     for i, matchup in enumerate(matchups):
         home_id = matchup.get("home_team_id")
@@ -737,17 +745,22 @@ def run_predictions(
             "away_net_eff": round(prediction["away_net_eff"], 2),
             "home_off_eff_vs_exp": round(prediction["home_off_eff_vs_exp"], 2),
             "away_off_eff_vs_exp": round(prediction["away_off_eff_vs_exp"], 2),
-            "eff_edge": round(prediction.get("eff_edge", 0), 2),
-            "composite_edge": round(prediction.get("composite_edge", 0), 2),
-            "hca": round(bd.get("hca", 0), 2),
+            "eff_edge": round(prediction.get("model_eff_edge", 0), 2),
+            "composite_edge": round(prediction.get("model_composite_edge", 0), 2),
+            "hca": round(prediction.get("model_hca_applied", bd.get("hca", 0)), 2),
 
-            "model_efg_delta": round(prediction.get("efg_delta", 0), 2),
-            "model_tov_delta": round(prediction.get("tov_delta", 0), 2),
-            "model_orb_delta": round(prediction.get("orb_delta", 0), 2),
-            "model_drb_delta": round(prediction.get("drb_delta", 0), 2),
-            "model_ftr_delta": round(prediction.get("ftr_delta", 0), 2),
-            "model_eff_edge": round(prediction.get("eff_edge", 0), 2),
-            "model_composite_edge": round(prediction.get("composite_edge", 0), 2),
+            "model_efg_delta": round(prediction.get("model_efg_delta", 0), 2),
+            "model_tov_delta": round(prediction.get("model_tov_delta", 0), 2),
+            "model_orb_delta": round(prediction.get("model_orb_delta", 0), 2),
+            "model_drb_delta": round(prediction.get("model_drb_delta", 0), 2),
+            "model_ftr_delta": round(prediction.get("model_ftr_delta", 0), 2),
+            "model_tpar_delta": prediction.get("model_tpar_delta"),
+            "model_eff_edge": round(prediction.get("model_eff_edge", 0), 2),
+            "model_composite_edge": round(prediction.get("model_composite_edge", 0), 2),
+            "model_raw_edge": round(prediction.get("model_raw_edge", 0), 2),
+            "model_home_pace": round(prediction.get("model_home_pace", 0), 1),
+            "model_away_pace": round(prediction.get("model_away_pace", 0), 1),
+            "model_hca_applied": round(prediction.get("model_hca_applied", 0), 2),
 
             "spread_line": spread_line,
             "total_line": total_line,
@@ -841,6 +854,40 @@ def run_predictions(
             "is_alpha": alpha.get("is_alpha", False),
             "edge_types": alpha.get("edge_types", ""),
         }
+
+        if ensemble is not None:
+            home_profile = TeamProfile(
+                team_id=str(home_id or ""),
+                team_name=str(home_name or ""),
+                conference=str(home_ctx.get("conference") or ""),
+                games_before=int(len(home_games)),
+                cage_em=float(home_ctx.get("adj_net_rtg") or home_ctx.get("net_eff") or 0.0),
+                cage_o=float(home_ctx.get("adj_ortg") or home_ctx.get("ortg") or 0.0),
+                cage_d=float(home_ctx.get("adj_drtg") or home_ctx.get("drtg") or 0.0),
+                cage_t=float(home_ctx.get("adj_pace") or home_ctx.get("pace") or 0.0),
+                barthag=float(home_ctx.get("barthag") or 0.5),
+            )
+            away_profile = TeamProfile(
+                team_id=str(away_id or ""),
+                team_name=str(away_name or ""),
+                conference=str(away_ctx.get("conference") or ""),
+                games_before=int(len(away_games)),
+                cage_em=float(away_ctx.get("adj_net_rtg") or away_ctx.get("net_eff") or 0.0),
+                cage_o=float(away_ctx.get("adj_ortg") or away_ctx.get("ortg") or 0.0),
+                cage_d=float(away_ctx.get("adj_drtg") or away_ctx.get("drtg") or 0.0),
+                cage_t=float(away_ctx.get("adj_pace") or away_ctx.get("pace") or 0.0),
+                barthag=float(away_ctx.get("barthag") or 0.5),
+            )
+            ens_result = ensemble.predict(
+                home_profile,
+                away_profile,
+                neutral=neutral,
+                spread_line=spread_line,
+                total_line=total_line,
+                primary_spread=prediction["predicted_spread"],
+            )
+            row["ensemble_spread"] = round(ens_result.spread, 2)
+            row["m8_spread"] = round(float(prediction["predicted_spread"]), 2)
 
         row.update(uws_result)
         results.append(row)
@@ -1197,6 +1244,10 @@ def main():
     )
     args = parser.parse_args()
 
+    if not SEASON_ACTIVE:
+        log.info("Pipeline paused — SEASON_ACTIVE is False")
+        sys.exit(0)
+
     version = compute_model_version(DATA_DIR)
     save_version_to_history(version, DATA_DIR / "model_version_history.json")
     log.info(
@@ -1250,7 +1301,13 @@ def main():
         decay_type=args.decay,
         min_games_for_full_confidence=args.min_games,
     )
-    apply_active_weights(config)
+    active_path = Path("data/active_weights.json")
+    if active_path.exists():
+        weights = json.loads(active_path.read_text())
+        for f in dataclasses.fields(config):
+            if f.name in weights and not f.name.startswith("_"):
+                setattr(config, f.name, type(getattr(config, f.name))(weights[f.name]))
+        log.info("Active weights loaded (deployed %s)", weights.get("deployed_at", "unknown"))
     model = CBBPredictionModel(config)
 
     results_df = run_predictions(

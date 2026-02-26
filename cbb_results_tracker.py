@@ -44,6 +44,7 @@ Usage:
 """
 
 import argparse
+import json
 import warnings
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timedelta
@@ -74,6 +75,8 @@ RESULTS_LOG      = DATA_DIR / "results_log.csv"
 RESULTS_SUMMARY  = DATA_DIR / "results_summary.csv"
 RESULTS_ALERTS   = DATA_DIR / "results_alerts.csv"
 MODEL_SPLIT_CSV  = DATA_DIR / "results_model_split.csv"
+DYNAMIC_WEIGHTS_JSON = DATA_DIR / "dynamic_model_weights.json"
+BACKTEST_WEIGHTS_JSON = DATA_DIR / "backtest_optimized_weights.json"
 
 
 def _resolve_data_path(primary: Path) -> Path:
@@ -94,6 +97,15 @@ MODEL_NAMES     = [
     "fourfactors", "adjefficiency", "pythagorean",
     "momentum", "situational", "cagerankings", "regressedeff",
 ]
+MODEL_ID_MAP = {
+    "m1": "fourfactors",
+    "m2": "adjefficiency",
+    "m3": "pythagorean",
+    "m4": "momentum",
+    "m5": "situational",
+    "m6": "cagerankings",
+    "m7": "regressedeff",
+}
 
 # Alert thresholds
 DRIFT_THRESHOLD       = 5.0    # % pts drop from season avg to trigger alert
@@ -174,6 +186,14 @@ class GameOutcome:
     situational_spread:   Optional[float] = None
     cagerankings_spread:  Optional[float] = None
     regressedeff_spread:  Optional[float] = None
+    m1_spread:            Optional[float] = None
+    m2_spread:            Optional[float] = None
+    m3_spread:            Optional[float] = None
+    m4_spread:            Optional[float] = None
+    m5_spread:            Optional[float] = None
+    m6_spread:            Optional[float] = None
+    m7_spread:            Optional[float] = None
+    spread_line:          Optional[float] = None
 
     # Per-model ATS outcomes
     fourfactors_ats:   Optional[int] = None
@@ -501,6 +521,14 @@ def compute_outcomes(
         situational_spread   = model_spreads["situational"],
         cagerankings_spread  = model_spreads["cagerankings"],
         regressedeff_spread  = model_spreads["regressedeff"],
+        m1_spread            = model_spreads["fourfactors"],
+        m2_spread            = model_spreads["adjefficiency"],
+        m3_spread            = model_spreads["pythagorean"],
+        m4_spread            = model_spreads["momentum"],
+        m5_spread            = model_spreads["situational"],
+        m6_spread            = model_spreads["cagerankings"],
+        m7_spread            = model_spreads["regressedeff"],
+        spread_line          = mkt_spread,
 
         fourfactors_ats   = model_ats["fourfactors"],
         adjefficiency_ats = model_ats["adjefficiency"],
@@ -842,6 +870,98 @@ def build_model_split_table(log_df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _load_backtest_weights() -> Dict[str, float]:
+    default = {mid: 1.0 / len(MODEL_ID_MAP) for mid in MODEL_ID_MAP}
+    if not BACKTEST_WEIGHTS_JSON.exists() or BACKTEST_WEIGHTS_JSON.stat().st_size <= 2:
+        return default
+    try:
+        payload = json.loads(BACKTEST_WEIGHTS_JSON.read_text())
+    except (OSError, json.JSONDecodeError, TypeError) as exc:
+        log.warning("Could not parse %s (%s); using equal backtest fallback", BACKTEST_WEIGHTS_JSON, exc)
+        return default
+
+    out: Dict[str, float] = {}
+    spread_weights = payload.get("weights") if isinstance(payload, dict) else None
+    for mid, model_name in MODEL_ID_MAP.items():
+        key = f"{mid}_weight"
+        val = payload.get(key) if isinstance(payload, dict) else None
+        if val is None and isinstance(spread_weights, dict):
+            for candidate in (model_name, model_name.title(), model_name.capitalize()):
+                if candidate in spread_weights:
+                    val = spread_weights[candidate]
+                    break
+        try:
+            out[mid] = float(val) if val is not None else default[mid]
+        except (TypeError, ValueError):
+            out[mid] = default[mid]
+
+    total = sum(out.values())
+    if total <= 0:
+        return default
+    return {k: v / total for k, v in out.items()}
+
+
+def write_dynamic_model_weights(log_df: pd.DataFrame) -> None:
+    """Compute + persist L14 dynamic model weights blended with backtest priors."""
+    if log_df.empty:
+        log.warning("Skipping dynamic model weights: empty results log")
+        return
+
+    results_log = log_df.copy()
+    if "spread_line" not in results_log.columns and "market_spread" in results_log.columns:
+        results_log["spread_line"] = results_log["market_spread"]
+
+    required_cols = {"actual_margin", "spread_line"}
+    if not required_cols.issubset(results_log.columns):
+        log.warning("Skipping dynamic model weights: missing required columns %s", sorted(required_cols - set(results_log.columns)))
+        return
+
+    model_ids = list(MODEL_ID_MAP.keys())
+    dynamic_weights: Dict[str, float] = {}
+    for mid in model_ids:
+        spread_col = f"{mid}_spread"
+        if spread_col not in results_log.columns:
+            continue
+        recent = results_log.tail(14).copy()
+        recent = recent.dropna(subset=[spread_col, "actual_margin", "spread_line"])
+        if recent.empty:
+            continue
+        recent["covered"] = (
+            (pd.to_numeric(recent[spread_col], errors="coerce") > 0)
+            == (pd.to_numeric(recent["actual_margin"], errors="coerce") > pd.to_numeric(recent["spread_line"], errors="coerce"))
+        )
+        ats_pct = recent["covered"].mean()
+        dynamic_weights[mid] = max(0.02, float(ats_pct))
+
+    if not dynamic_weights:
+        log.warning("Skipping dynamic model weights: no model spread columns with usable L14 rows")
+        return
+
+    total_dyn = sum(dynamic_weights.values())
+    dynamic_weights = {k: round(v / total_dyn, 4) for k, v in dynamic_weights.items()}
+
+    backtest_weights = _load_backtest_weights()
+    final_weights: Dict[str, float] = {}
+    for mid in model_ids:
+        bt = backtest_weights.get(mid, 1 / 7)
+        dyn = dynamic_weights.get(mid, 1 / 7)
+        final_weights[mid] = round(0.70 * bt + 0.30 * dyn, 4)
+
+    total_blend = sum(final_weights.values())
+    if total_blend > 0:
+        final_weights = {k: round(v / total_blend, 4) for k, v in final_weights.items()}
+
+    payload = {
+        "computed_at": datetime.now(tz=ZoneInfo("UTC")).isoformat(),
+        "l14_window": 14,
+        "dynamic_weights": dynamic_weights,
+        "backtest_weights": {k: round(v, 4) for k, v in backtest_weights.items()},
+        "blended_weights": final_weights,
+    }
+    DYNAMIC_WEIGHTS_JSON.write_text(json.dumps(payload, indent=2))
+    log.info("Dynamic model weights written → %s", DYNAMIC_WEIGHTS_JSON)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAIN TRACKER
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1041,6 +1161,8 @@ class ResultsTracker:
         # Per-model split table
         model_split = build_model_split_table(log_df)
         safe_write_csv(model_split, self.output_dir / "results_model_split.csv", index=False, label="results_model_split", allow_empty=True)
+
+        write_dynamic_model_weights(log_df)
 
     def _print_daily_summary(
         self,
