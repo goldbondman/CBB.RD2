@@ -730,12 +730,7 @@ class CBBPredictionModel:
         home_team_profile: Optional[Dict] = None,
         away_team_profile: Optional[Dict] = None,
     ) -> Dict:
-        """
-        Predict spread/total and expose matchup components as top-level keys.
-
-        This wraps predict_game() and lifts selected values from breakdown so
-        downstream pipelines can consume them without nested dict access.
-        """
+        """Predict spread/total and expose matchup components as top-level keys."""
         prediction = self.predict_game(
             home_games=home_games,
             away_games=away_games,
@@ -746,15 +741,21 @@ class CBBPredictionModel:
         )
 
         breakdown = prediction.get('breakdown', {}) or {}
-        component_keys = [
-            'efg_delta', 'tov_delta', 'orb_delta', 'drb_delta', 'ftr_delta',
-            'eff_edge', 'composite_edge', 'raw_edge',
-        ]
-        for key in component_keys:
-            prediction[key] = breakdown.get(key)
 
-        prediction['home_pace'] = prediction.get('pace')
-        prediction['away_pace'] = prediction.get('pace')
+        # Persist model components with prefixed keys so downstream merged CSVs
+        # can consume these signals without colliding with existing columns.
+        prediction['model_efg_delta'] = breakdown.get('efg_delta')
+        prediction['model_tov_delta'] = breakdown.get('tov_delta')
+        prediction['model_orb_delta'] = breakdown.get('orb_delta')
+        prediction['model_drb_delta'] = breakdown.get('drb_delta')
+        prediction['model_ftr_delta'] = breakdown.get('ftr_delta')
+        prediction['model_tpar_delta'] = breakdown.get('tpar_delta')
+        prediction['model_eff_edge'] = breakdown.get('eff_edge')
+        prediction['model_composite_edge'] = breakdown.get('composite_edge')
+        prediction['model_raw_edge'] = breakdown.get('raw_edge')
+        prediction['model_home_pace'] = prediction.get('pace')
+        prediction['model_away_pace'] = prediction.get('pace')
+        prediction['model_hca_applied'] = breakdown.get('hca')
 
         return prediction
 
@@ -941,6 +942,7 @@ class CBBPredictionModel:
                 'orb_delta':      round(orb_delta,      2),
                 'drb_delta':      round(drb_delta,      2),
                 'ftr_delta':      round(ftr_delta,      2),
+                'tpar_delta':     None,
                 'tpar_delta':     round(tpar_delta,     2),
                 'raw_total':      round(raw_total,      1),
                 'tourn_mult':     tourn_mult,
