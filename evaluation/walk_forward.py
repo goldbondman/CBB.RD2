@@ -16,6 +16,8 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 DATA_DIR = Path("data")
+ACTIVE_WEIGHTS_PATH = DATA_DIR / "active_weights.json"
+VALIDATION_OUTPUT_PATH = DATA_DIR / "walk_forward_validation.json"
 INPUT_CANDIDATES = [
     DATA_DIR / "results_log_graded.csv",
     DATA_DIR / "predictions_graded.csv",
@@ -138,7 +140,14 @@ def walk_forward_validation(
     return results_df
 
 
-def validate_candidate_weights(candidate_path: str | Path, graded_path: str | Path) -> dict:
+def _apply_weight_overrides(config: ModelConfig, payload: dict) -> None:
+    raw_weights = payload.get("weights", payload)
+    for key, value in raw_weights.items():
+        if hasattr(config, key):
+            setattr(config, key, value)
+
+
+def validate_candidate_weights(candidate_path: Path, graded_path: Path) -> dict:
     candidate_path = Path(candidate_path)
     graded_path = Path(graded_path)
 
@@ -151,19 +160,20 @@ def validate_candidate_weights(candidate_path: str | Path, graded_path: str | Pa
     if not graded_path.exists():
         raise FileNotFoundError(f"Graded predictions file not found: {graded_path}")
 
-    candidate_payload = json.loads(candidate_file.read_text())
-    raw_weights = candidate_payload.get("weights", candidate_payload)
+    candidate_payload = json.loads(candidate_file.read_text(encoding="utf-8"))
 
     default_config = ModelConfig()
+    if ACTIVE_WEIGHTS_PATH.exists():
+        active_payload = json.loads(ACTIVE_WEIGHTS_PATH.read_text(encoding="utf-8"))
+        _apply_weight_overrides(default_config, active_payload)
+
     candidate_config = ModelConfig()
-    for key, value in raw_weights.items():
-        if hasattr(candidate_config, key):
-            setattr(candidate_config, key, value)
+    _apply_weight_overrides(candidate_config, candidate_payload)
 
     try:
         graded_df = pd.read_csv(graded_path, low_memory=False)
     except pd.errors.EmptyDataError:
-        return {
+        validation = {
             "candidate_better": False,
             "default_clv_mean": 0.0,
             "candidate_clv_mean": 0.0,
@@ -172,9 +182,13 @@ def validate_candidate_weights(candidate_path: str | Path, graded_path: str | Pa
             "folds_total": 0,
             "recommendation": "INSUFFICIENT_DATA",
         }
+        VALIDATION_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        VALIDATION_OUTPUT_PATH.write_text(json.dumps(validation, indent=2) + "\n", encoding="utf-8")
+        return validation
 
-    default_results = walk_forward_validation(graded_df, model_config=default_config)
-    candidate_results = walk_forward_validation(graded_df, model_config=candidate_config)
+    fold_kwargs = {"min_train_weeks": 4, "test_window_weeks": 1}
+    default_results = walk_forward_validation(graded_df, model_config=default_config, **fold_kwargs)
+    candidate_results = walk_forward_validation(graded_df, model_config=candidate_config, **fold_kwargs)
 
     merged = default_results[["fold", "clv_mean"]].merge(
         candidate_results[["fold", "clv_mean"]], on="fold", suffixes=("_default", "_candidate")
@@ -199,7 +213,7 @@ def validate_candidate_weights(candidate_path: str | Path, graded_path: str | Pa
         )
         recommendation = "DEPLOY" if should_deploy else "REJECT"
 
-    return {
+    validation = {
         "candidate_better": candidate_better,
         "default_clv_mean": round(default_clv_mean, 4),
         "candidate_clv_mean": round(candidate_clv_mean, 4),
@@ -208,9 +222,12 @@ def validate_candidate_weights(candidate_path: str | Path, graded_path: str | Pa
         "folds_total": folds_total,
         "recommendation": recommendation,
     }
+    VALIDATION_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    VALIDATION_OUTPUT_PATH.write_text(json.dumps(validation, indent=2) + "\n", encoding="utf-8")
+    return validation
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, default=None, help="Path to graded predictions CSV")
     parser.add_argument(
@@ -256,8 +273,23 @@ def main() -> None:
 
     if args.validate_candidate:
         validation = validate_candidate_weights(args.validate_candidate, input_path)
-        log.info("Candidate validation: %s", json.dumps(validation, indent=2))
+        log.info(
+            "Recommendation=%s | improvement_pp=%.4f | candidate_clv_mean=%.4f | default_clv_mean=%.4f | folds_won=%s/%s",
+            validation["recommendation"],
+            validation["improvement_pp"],
+            validation["candidate_clv_mean"],
+            validation["default_clv_mean"],
+            validation["folds_candidate_won"],
+            validation["folds_total"],
+        )
+        if validation["recommendation"] == "DEPLOY":
+            return 0
+        if validation["recommendation"] == "REJECT":
+            return 1
+        return 2
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
