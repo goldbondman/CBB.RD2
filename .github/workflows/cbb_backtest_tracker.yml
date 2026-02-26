@@ -201,7 +201,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-backtest-${{ env.RUN_ID }}
+          name: cbb-backtest-latest
+          retention-days: 7
           path: artifacts/${{ env.RUN_ID }}/**
 
       - name: Accuracy and CLV summary
