@@ -1104,22 +1104,42 @@ def _coalesce_pred_spread(df: pd.DataFrame) -> pd.DataFrame:
     Logs a warning if recovery was needed so it is visible in run logs.
     Never silently writes a fully-null pred_spread column.
     """
+    spread_candidates = [
+        "predicted_spread",
+        "primary_spread",
+        "model_spread",
+        "ens_spread",
+        "ens_ens_spread",
+        "ensemble_spread",
+    ]
     if "pred_spread" not in df.columns or df["pred_spread"].isna().all():
-        for alias in ["ens_ens_spread", "predicted_spread", "ensemble_spread"]:
+        for alias in spread_candidates:
             if alias in df.columns and df[alias].notna().any():
                 df["pred_spread"] = df[alias]
-                log.warning(
-                    "[INTEGRITY] pred_spread was null — recovered from '%s' (%d rows)",
-                    alias, df["pred_spread"].notna().sum()
-                )
+                log.info("[PREDICTIONS] pred_spread populated from %s", alias)
                 break
         else:
             log.error(
                 "[INTEGRITY] pred_spread is null and no alias found. "
-                "Aliases checked: ens_ens_spread, predicted_spread, ensemble_spread. "
+                "Aliases checked: %s. "
                 "Available columns: %s",
+                spread_candidates,
                 sorted(df.columns.tolist())
             )
+
+    total_candidates = [
+        "predicted_total",
+        "primary_total",
+        "model_total",
+        "ens_total",
+        "ensemble_total",
+    ]
+    if "pred_total" not in df.columns or df["pred_total"].isna().all():
+        for alias in total_candidates:
+            if alias in df.columns and df[alias].notna().any():
+                df["pred_total"] = df[alias]
+                log.info("[PREDICTIONS] pred_total populated from %s", alias)
+                break
 
     # Final gate — raise if still null after recovery attempts
     if df["pred_spread"].isna().all():

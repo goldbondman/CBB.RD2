@@ -210,7 +210,7 @@ jobs:
         if: always()
         run: |
           python - <<'PY'
-          import pathlib, pandas as pd
+          import pathlib, pandas as pd, sys
           data_dir = pathlib.Path("data")
           primary = data_dir / "predictions_primary.csv"
           ensemble = data_dir / "ensemble_predictions_latest.csv"
@@ -260,7 +260,8 @@ jobs:
           combined = pd.concat([existing, new_rows], ignore_index=True)
           combined = combined.drop_duplicates(subset=["game_id"], keep="last")
           combined.to_csv(history, index=False)
-          print(f"[OK] predictions_history.csv: {len(combined)} total rows")
+          print(f"[OK] predictions_history.csv: {len(combined)} total rows "
+                f"({len(existing)} existing + {len(new_rows)} new)")
           PY
 
       # Run additional simulations and enrichment

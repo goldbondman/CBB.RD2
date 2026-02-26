@@ -70,8 +70,10 @@ DATA_CSV_DIR     = DATA_DIR / "csv"
 PREDICTIONS_CSV  = DATA_DIR / "predictions_combined_latest.csv"
 ENSEMBLE_CSV     = DATA_DIR / "ensemble_predictions_latest.csv"
 PRIMARY_CSV      = DATA_DIR / "predictions_latest.csv"
+PREDICTIONS_HISTORY_CSV = DATA_DIR / "predictions_history.csv"
 GAMES_CSV        = DATA_DIR / "games.csv"
 RESULTS_LOG      = DATA_DIR / "results_log.csv"
+RESULTS_LOG_BY_TEAM = DATA_DIR / "results_log_by_team.csv"
 RESULTS_SUMMARY  = DATA_DIR / "results_summary.csv"
 RESULTS_ALERTS   = DATA_DIR / "results_alerts.csv"
 MODEL_SPLIT_CSV  = DATA_DIR / "results_model_split.csv"
@@ -214,7 +216,40 @@ class GameOutcome:
         # Backward-compatible alias required by results_log schema validators.
         if "predicted_spread" not in row:
             row["predicted_spread"] = row.get("pred_spread")
+        # Aliases for downstream compatibility
+        row["ats_correct"] = row.get("primary_ats_correct")
+        row["cover"] = row.get("primary_ats_correct")
+        row["ou_correct"] = row.get("primary_ou_correct")
+        row["spread_line"] = row.get("market_spread")
+        row["actual_spread"] = row.get("actual_margin")
         return row
+
+
+def _expand_to_team_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """Expand game-level rows to team-level rows for downstream compat."""
+    rows: List[Dict] = []
+    for _, r in df.iterrows():
+        base = r.to_dict()
+        ats_val = _safe_int(r.get("ats_correct"), default=None)
+        away_ats = None if ats_val is None else (1 - ats_val)
+        home = {
+            **base,
+            "team_id": r.get("home_team_id"),
+            "opponent_id": r.get("away_team_id"),
+            "home_away": "home",
+            "team_ats_correct": r.get("ats_correct"),
+            "team_ou_correct": r.get("ou_correct"),
+        }
+        away = {
+            **base,
+            "team_id": r.get("away_team_id"),
+            "opponent_id": r.get("home_team_id"),
+            "home_away": "away",
+            "team_ats_correct": away_ats,
+            "team_ou_correct": r.get("ou_correct"),
+        }
+        rows.extend([home, away])
+    return pd.DataFrame(rows)
 
 
 @dataclass
@@ -278,19 +313,14 @@ def load_predictions(date_filter: Optional[str] = None) -> pd.DataFrame:
 
     date_filter: YYYYMMDD — if provided, try to load predictions_{date}.csv first.
     """
-    candidates = []
+    candidates = [PREDICTIONS_HISTORY_CSV]
     if date_filter:
         candidates += [
             DATA_DIR / f"predictions_combined_{date_filter}.csv",
             DATA_DIR / f"ensemble_predictions_{date_filter}.csv",
             DATA_DIR / f"predictions_{date_filter}.csv",
         ]
-    pred_path = Path("data/predictions_history.csv")
-    if not pred_path.exists() or pred_path.stat().st_size == 0:
-        pred_path = Path("data/predictions_combined_latest.csv")
-        log.warning("[TRACKER] predictions_history.csv not found, falling back to latest")
-
-    candidates += [pred_path, PREDICTIONS_CSV, ENSEMBLE_CSV, PRIMARY_CSV]
+    candidates += [PREDICTIONS_CSV, ENSEMBLE_CSV, PRIMARY_CSV]
 
     for path in candidates:
         if path.exists() and path.stat().st_size > 50:
@@ -1108,6 +1138,11 @@ class ResultsTracker:
         safe_write_csv(updated_log, results_log_path, index=False)
         log.info(f"Results log updated: {len(updated_log):,} total records → {results_log_path}")
 
+        by_team_df = _expand_to_team_rows(updated_log)
+        by_team_path = self.output_dir / "results_log_by_team.csv"
+        safe_write_csv(by_team_df, by_team_path, index=False, label="results_log_by_team", allow_empty=True)
+        log.info(f"Results log by team updated: {len(by_team_df):,} total records → {by_team_path}")
+
         # ── Detect alerts ─────────────────────────────────────────────────────
         alerts = detect_alerts(updated_log)
 
@@ -1139,6 +1174,8 @@ class ResultsTracker:
         if all_outcomes:
             new_rows    = pd.DataFrame([o.to_dict() for o in all_outcomes])
             safe_write_csv(new_rows, self.output_dir / "results_log.csv", index=False, label="results_log", allow_empty=True)
+            by_team_df = _expand_to_team_rows(new_rows)
+            safe_write_csv(by_team_df, self.output_dir / "results_log_by_team.csv", index=False, label="results_log_by_team", allow_empty=True)
             log.info(f"Reprocessed {len(all_outcomes)} outcomes")
 
             updated_log = load_results_log()

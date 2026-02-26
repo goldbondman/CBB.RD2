@@ -1047,6 +1047,24 @@ def main():
 
     print(f"[BACKTEST] Loading results_log.csv: {len(df):,} rows")
 
+    alias_map = {
+        "primary_ats_correct": "ats_correct",
+        "primary_ou_correct": "ou_correct",
+        "market_spread": "spread_line",
+        "actual_margin": "actual_spread",
+        "ens_ens_spread": "ens_spread",
+    }
+    for src, dst in alias_map.items():
+        if src in df.columns and dst not in df.columns:
+            df[dst] = df[src]
+
+    # pred_spread fallback for backtester grading
+    if "pred_spread" not in df.columns or df["pred_spread"].isna().all():
+        for col in ["predicted_spread", "ens_ens_spread", "ensemble_spread"]:
+            if col in df.columns and df[col].notna().any():
+                df["pred_spread"] = df[col]
+                break
+
     # Validate only mode
     if args.validate:
         ok = validate_results_log(df)
