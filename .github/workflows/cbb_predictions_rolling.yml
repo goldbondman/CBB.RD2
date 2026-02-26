@@ -240,6 +240,29 @@ jobs:
             echo "[OK] predictions_combined_latest.csv: $rows rows"
           fi
 
+
+      - name: Append to predictions history
+        if: always()
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          from pathlib import Path
+
+          latest = Path("data/predictions_combined_latest.csv")
+          history = Path("data/predictions_history.csv")
+
+          if not latest.exists() or latest.stat().st_size == 0:
+              print("[SKIP] No predictions to append")
+              raise SystemExit(0)
+
+          new_rows = pd.read_csv(latest, dtype=str)
+          existing = pd.read_csv(history, dtype=str) if history.exists() else pd.DataFrame()
+          combined = pd.concat([existing, new_rows], ignore_index=True)
+          combined = combined.drop_duplicates(subset=["game_id"], keep="last")
+          combined.to_csv(history, index=False)
+          print(f"[OK] predictions_history.csv: {len(combined)} total rows")
+          PY
+
       # Run additional simulations and enrichment
       - name: Run Monte Carlo
         continue-on-error: true
@@ -259,6 +282,7 @@ jobs:
             data/predictions_*.csv
             data/ensemble_predictions_latest.csv
             data/predictions_combined_latest.csv
+            data/predictions_history.csv
             data/dq_skipped_games.csv
           retention-days: 90
 
@@ -268,6 +292,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/predictions_history.csv
           git add data/
           if git diff --staged --quiet; then
             echo "[SKIP] No changes to commit"

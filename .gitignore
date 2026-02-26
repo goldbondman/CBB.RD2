@@ -14,3 +14,4 @@ data/*
 # Vercel
 .vercel/
 vercel.json
+data/staging/

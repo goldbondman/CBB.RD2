@@ -285,7 +285,12 @@ def load_predictions(date_filter: Optional[str] = None) -> pd.DataFrame:
             DATA_DIR / f"ensemble_predictions_{date_filter}.csv",
             DATA_DIR / f"predictions_{date_filter}.csv",
         ]
-    candidates += [PREDICTIONS_CSV, ENSEMBLE_CSV, PRIMARY_CSV]
+    pred_path = Path("data/predictions_history.csv")
+    if not pred_path.exists() or pred_path.stat().st_size == 0:
+        pred_path = Path("data/predictions_combined_latest.csv")
+        log.warning("[TRACKER] predictions_history.csv not found, falling back to latest")
+
+    candidates += [pred_path, PREDICTIONS_CSV, ENSEMBLE_CSV, PRIMARY_CSV]
 
     for path in candidates:
         if path.exists() and path.stat().st_size > 50:
