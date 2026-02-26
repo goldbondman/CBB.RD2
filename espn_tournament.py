@@ -435,11 +435,24 @@ def _star_reliance_from_players(
 ) -> pd.DataFrame:
     """Compute star reliance using player-level data."""
 
+    def _normalize_team_id(series: pd.Series) -> pd.Series:
+        """Normalize team ids across mixed int/string payloads for safe joins."""
+        normalized = pd.to_numeric(series, errors="coerce")
+        return series.where(normalized.isna(), normalized.astype("Int64").astype("string"))
+
     # Ensure numeric
     player_df = player_df.copy()
     for c in ["pts", "fga", "fta", "tov", "usage_rate", "pts_season_avg"]:
         if c in player_df.columns:
             player_df[c] = pd.to_numeric(player_df[c], errors="coerce")
+
+    # team_id can arrive as int in player payloads and as object in team metrics.
+    # Normalize both sides to a consistent nullable string dtype before merge.
+    if "team_id" not in player_df.columns or "team_id" not in df.columns:
+        return _star_reliance_from_box(df)
+    player_df["team_id"] = _normalize_team_id(player_df["team_id"])
+    df = df.copy()
+    df["team_id"] = _normalize_team_id(df["team_id"])
 
     # Latest game per player per team (pre-tournament snapshot)
     player_df["_sort_dt"] = pd.to_datetime(
