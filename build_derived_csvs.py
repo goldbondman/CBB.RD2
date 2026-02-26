@@ -20,6 +20,7 @@ before "Validate outputs".
 from __future__ import annotations
 
 import pathlib
+import argparse
 import sys
 import traceback
 from datetime import datetime, timezone, timedelta
@@ -48,6 +49,12 @@ _results: list[dict] = []
 SPREAD_EDGE_MIN = 3.0
 TOTAL_EDGE_MIN = 4.0
 ML_EDGE_MIN = 0.05
+
+# Runtime overrideable window config (defaults preserve current behavior intent)
+WINDOW_START_HOURS = 0.0
+WINDOW_BEHIND_HOURS = 0.0
+WINDOW_AHEAD_HOURS = 48.0
+WINDOW_TIMEZONE = "America/Los_Angeles"
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
@@ -89,6 +96,55 @@ def _write(df: pd.DataFrame, stem: str, sources: list[str],
         print(f"[WARN] {stem}: write failed — {exc}")
         traceback.print_exc()
         _results.append({"file": stem, "rows": 0, "sources": ", ".join(sources), "status": f"FAIL: {exc}"})
+
+
+def _filter_upcoming_window(
+    df: pd.DataFrame,
+    label: str,
+    start_hours: float,
+    behind_hours: float,
+    ahead_hours: float,
+    timezone_name: str,
+) -> pd.DataFrame:
+    """Filter rows into a rolling time window in the requested timezone."""
+    if ahead_hours <= 0:
+        print(f"[WARN] {label}: window-ahead-hours <= 0 ({ahead_hours}); returning empty dataset")
+        return df.iloc[0:0].copy()
+
+    dt_candidates = [
+        "game_datetime_utc",
+        "game_datetime",
+        "date",
+        "game_date",
+    ]
+    dt_col = next((col for col in dt_candidates if col in df.columns), None)
+    if dt_col is None:
+        print(f"[WARN] {label}: no datetime column found in {dt_candidates}; unable to enforce time window")
+        return df
+
+    tz = ZoneInfo(timezone_name)
+    run_local = NOW_UTC.astimezone(tz)
+    window_start = run_local - timedelta(hours=float(behind_hours)) + timedelta(hours=float(start_hours))
+    window_end = window_start + timedelta(hours=float(ahead_hours))
+
+    dt_local = pd.to_datetime(df[dt_col], errors="coerce", utc=True).dt.tz_convert(tz)
+    before_count = len(df)
+    invalid_count = int(dt_local.isna().sum())
+    mask = dt_local.notna() & (dt_local >= window_start) & (dt_local <= window_end)
+    filtered = df[mask].copy()
+
+    print(
+        f"[INFO] {label}: rolling window filter",
+        f"timezone={timezone_name}",
+        f"start={window_start.isoformat()}",
+        f"end={window_end.isoformat()}",
+        f"behind_hours={float(behind_hours)}",
+        f"kept={len(filtered)}",
+        f"dropped_outside={before_count - len(filtered) - invalid_count}",
+        f"dropped_invalid_datetime={invalid_count}",
+        f"datetime_col={dt_col}",
+    )
+    return filtered
 
 # ── Matchup enrichment ─────────────────────────────────────────────────────
 
@@ -255,26 +311,14 @@ def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
     elif "game_status" in df.columns:
         df = df[df["game_status"].astype(str).str.lower() == "scheduled"]
 
-    # Keep only today + tomorrow in Pacific time so recs match the intended slate.
-    # This avoids pulling in UTC-dated rows that are "yesterday" in PST.
-    pst_today = NOW_UTC.astimezone(PST_TZ).date()
-    target_dates = {pst_today, pst_today + timedelta(days=1)}
-
-    dt_col = "game_datetime_utc" if "game_datetime_utc" in df.columns else "game_date"
-    if dt_col in df.columns:
-        before_count = len(df)
-        dt_utc = pd.to_datetime(df[dt_col], errors="coerce", utc=True)
-        dt_pst_date = dt_utc.dt.tz_convert(PST_TZ).dt.date
-        in_window_mask = dt_pst_date.isin(target_dates)
-        dropped_invalid = int(dt_utc.isna().sum())
-        df = df[in_window_mask].copy()
-        print(
-            "[INFO] bet_recs: PST date window filter",
-            f"kept={len(df)} dropped_outside={before_count - len(df) - dropped_invalid} dropped_invalid_datetime={dropped_invalid}",
-            f"target_dates={[d.isoformat() for d in sorted(target_dates)]}",
-        )
-    else:
-        print("[WARN] bet_recs: missing game datetime column; unable to enforce PST date window")
+    df = _filter_upcoming_window(
+        df,
+        label="bet_recs",
+        start_hours=WINDOW_START_HOURS,
+        behind_hours=WINDOW_BEHIND_HOURS,
+        ahead_hours=WINDOW_AHEAD_HOURS,
+        timezone_name=WINDOW_TIMEZONE,
+    )
 
     recs = []
 
@@ -393,6 +437,14 @@ def build_team_form_snapshot_csv() -> None:
 def build_matchup_preview_csv(predictions: pd.DataFrame) -> None:
     """Build matchup_preview.csv: Today's games with team context."""
     df = predictions.copy()
+    df = _filter_upcoming_window(
+        df,
+        label="matchup_preview",
+        start_hours=WINDOW_START_HOURS,
+        behind_hours=WINDOW_BEHIND_HOURS,
+        ahead_hours=WINDOW_AHEAD_HOURS,
+        timezone_name=WINDOW_TIMEZONE,
+    )
 
     # Context sources
     form = _load(CSV_DIR / "team_form_snapshot.csv")
@@ -485,6 +537,14 @@ def build_player_leaders_csv() -> None:
 def build_upset_watch_csv(predictions: pd.DataFrame) -> None:
     """Build upset_watch.csv: Upset watch list."""
     df = predictions.copy()
+    df = _filter_upcoming_window(
+        df,
+        label="upset_watch",
+        start_hours=WINDOW_START_HOURS,
+        behind_hours=WINDOW_BEHIND_HOURS,
+        ahead_hours=WINDOW_AHEAD_HOURS,
+        timezone_name=WINDOW_TIMEZONE,
+    )
 
     # One row per game where market implies meaningful underdog (spread >= 4)
     if "spread_line" not in df.columns: return
@@ -587,8 +647,43 @@ def build_conference_summary_csv() -> None:
     _write(pd.DataFrame(standings), "conference_summary.csv", ["team_season_summary"])
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Build derived CBB CSVs")
+    parser.add_argument(
+        "--window-ahead-hours",
+        type=float,
+        default=48.0,
+        help="How many hours ahead from the window start to keep games (default: 48).",
+    )
+    parser.add_argument(
+        "--window-start-hours",
+        type=float,
+        default=0.0,
+        help="Offset in hours from run time before starting the filter window (default: 0).",
+    )
+    parser.add_argument(
+        "--window-behind-hours",
+        type=float,
+        default=0.0,
+        help="Hours behind run time to include before the window start (default: 0).",
+    )
+    parser.add_argument(
+        "--window-timezone",
+        type=str,
+        default="America/Los_Angeles",
+        help="IANA timezone used for window calculations (default: America/Los_Angeles).",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
     """Build all derived CSVs, enriching with matchup data when available."""
+    global WINDOW_AHEAD_HOURS, WINDOW_START_HOURS, WINDOW_BEHIND_HOURS, WINDOW_TIMEZONE
+    args = parse_args()
+    WINDOW_AHEAD_HOURS = args.window_ahead_hours
+    WINDOW_START_HOURS = args.window_start_hours
+    WINDOW_BEHIND_HOURS = args.window_behind_hours
+    WINDOW_TIMEZONE = args.window_timezone
 
     # 0. Load master prediction source
     preds = _load(DATA / "predictions_mc_latest.csv", "predictions_mc_latest")
