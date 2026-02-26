@@ -42,6 +42,7 @@ from espn_config import (
     OUT_TEAM_LOGS as CSV_LOGS,
     OUT_TOURNAMENT_SNAPSHOT as CSV_SNAPSHOT,
     OUT_RANKINGS as CSV_RANKINGS,
+    SEASON_ACTIVE,
     TZ,
 )
 try:
@@ -1201,6 +1202,10 @@ def main():
         help="Minimum games required to include a team (default: 3)",
     )
     args = parser.parse_args()
+
+    if not SEASON_ACTIVE:
+        log.info("Pipeline paused — SEASON_ACTIVE is False")
+        sys.exit(0)
 
     version = compute_model_version(DATA_DIR)
     save_version_to_history(version, DATA_DIR / "model_version_history.json")

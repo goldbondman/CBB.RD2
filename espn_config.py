@@ -171,6 +171,8 @@ RETRY_INITIAL_DELAY = float(os.getenv("ESPN_RETRY_DELAY", "1.0"))
 RETRY_BACKOFF      = float(os.getenv("ESPN_RETRY_BACKOFF", "2.0"))
 
 # ── Run window ────────────────────────────────────────────────────────────────
+SEASON_ACTIVE: bool = True
+
 # How many days back to fetch on each run.
 # Override via env var for backfill runs; default is 3 for daily cron.
 DAYS_BACK = int(os.getenv("DAYS_BACK", "3"))

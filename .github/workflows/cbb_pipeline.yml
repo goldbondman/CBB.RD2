@@ -1,3 +1,16 @@
+name: CBB Three-Tier Pipeline
+
+on:
+  schedule:
+    - cron: "0 9 * * *"
+    - cron: "0 10 1,15 * *"
+    - cron: "0 10 10 4 *"
+  workflow_dispatch:
+
+jobs:
+  daily:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 9 * * *'
+    runs-on: ubuntu-latest
 name: CBB Pipeline
 
 on:
@@ -38,12 +51,167 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
+          python-version: '3.11'
           python-version: "3.11"
           cache: "pip"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Run espn_pipeline.py
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timezone
+          import pathlib
+          import subprocess
+          import sys
+
+          step = "espn_pipeline.py"
+          log_path = pathlib.Path("data/pipeline_errors.log")
+          log_path.parent.mkdir(parents=True, exist_ok=True)
+          result = subprocess.run(["python", step], check=False)
+          ts = datetime.now(timezone.utc).isoformat()
+          status = "SUCCESS" if result.returncode == 0 else "FAIL"
+          with log_path.open("a", encoding="utf-8") as log:
+              log.write(f"{ts}\tDAILY\t{step}\t{status}\tcode={result.returncode}\n")
+          sys.exit(result.returncode)
+          PY
+
+      - name: Run cbb_market_lines.py --mode closing
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timezone
+          import pathlib
+          import subprocess
+          import sys
+
+          cmd = ["python", "cbb_market_lines.py", "--mode", "closing"]
+          step = "cbb_market_lines.py --mode closing"
+          log_path = pathlib.Path("data/pipeline_errors.log")
+          log_path.parent.mkdir(parents=True, exist_ok=True)
+          result = subprocess.run(cmd, check=False)
+          ts = datetime.now(timezone.utc).isoformat()
+          status = "SUCCESS" if result.returncode == 0 else "FAIL"
+          with log_path.open("a", encoding="utf-8") as log:
+              log.write(f"{ts}\tDAILY\t{step}\t{status}\tcode={result.returncode}\n")
+          sys.exit(result.returncode)
+          PY
+
+      - name: Run espn_prediction_runner.py (season-gated)
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timezone
+          import pathlib
+          import subprocess
+          import sys
+
+          from espn_config import SEASON_ACTIVE
+
+          step = "espn_prediction_runner.py"
+          log_path = pathlib.Path("data/pipeline_errors.log")
+          log_path.parent.mkdir(parents=True, exist_ok=True)
+          ts = datetime.now(timezone.utc).isoformat()
+
+          if not SEASON_ACTIVE:
+              msg = "Pipeline paused — SEASON_ACTIVE is False"
+              print(msg)
+              with log_path.open("a", encoding="utf-8") as log:
+                  log.write(f"{ts}\tDAILY\t{step}\tSKIP\t{msg}\n")
+              sys.exit(0)
+
+          result = subprocess.run(["python", step], check=False)
+          status = "SUCCESS" if result.returncode == 0 else "FAIL"
+          with log_path.open("a", encoding="utf-8") as log:
+              log.write(f"{ts}\tDAILY\t{step}\t{status}\tcode={result.returncode}\n")
+          sys.exit(result.returncode)
+          PY
+
+      - name: Run cbb_results_tracker.py
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timezone
+          import pathlib
+          import subprocess
+          import sys
+
+          step = "cbb_results_tracker.py"
+          log_path = pathlib.Path("data/pipeline_errors.log")
+          log_path.parent.mkdir(parents=True, exist_ok=True)
+          result = subprocess.run(["python", step], check=False)
+          ts = datetime.now(timezone.utc).isoformat()
+          status = "SUCCESS" if result.returncode == 0 else "FAIL"
+          with log_path.open("a", encoding="utf-8") as log:
+              log.write(f"{ts}\tDAILY\t{step}\t{status}\tcode={result.returncode}\n")
+          sys.exit(result.returncode)
+          PY
+
+      - name: Run cbb_grade_predictions.py
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timezone
+          import pathlib
+          import subprocess
+          import sys
+
+          step = "cbb_grade_predictions.py"
+          log_path = pathlib.Path("data/pipeline_errors.log")
+          log_path.parent.mkdir(parents=True, exist_ok=True)
+          result = subprocess.run(["python", step], check=False)
+          ts = datetime.now(timezone.utc).isoformat()
+          status = "SUCCESS" if result.returncode == 0 else "FAIL"
+          with log_path.open("a", encoding="utf-8") as log:
+              log.write(f"{ts}\tDAILY\t{step}\t{status}\tcode={result.returncode}\n")
+          sys.exit(result.returncode)
+          PY
+
+      - name: Run cbb_accuracy_report.py
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timezone
+          import pathlib
+          import subprocess
+          import sys
+
+          step = "cbb_accuracy_report.py"
+          log_path = pathlib.Path("data/pipeline_errors.log")
+          log_path.parent.mkdir(parents=True, exist_ok=True)
+          result = subprocess.run(["python", step], check=False)
+          ts = datetime.now(timezone.utc).isoformat()
+          status = "SUCCESS" if result.returncode == 0 else "FAIL"
+          with log_path.open("a", encoding="utf-8") as log:
+              log.write(f"{ts}\tDAILY\t{step}\t{status}\tcode={result.returncode}\n")
+          sys.exit(result.returncode)
+          PY
+
+      - name: Run cbb_season_summaries.py
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timezone
+          import pathlib
+          import subprocess
+          import sys
+
+          step = "cbb_season_summaries.py"
+          log_path = pathlib.Path("data/pipeline_errors.log")
+          log_path.parent.mkdir(parents=True, exist_ok=True)
+          result = subprocess.run(["python", step], check=False)
+          ts = datetime.now(timezone.utc).isoformat()
+          status = "SUCCESS" if result.returncode == 0 else "FAIL"
+          with log_path.open("a", encoding="utf-8") as log:
+              log.write(f"{ts}\tDAILY\t{step}\t{status}\tcode={result.returncode}\n")
+          sys.exit(result.returncode)
+          PY
+
+  biweekly_learning:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 10 1,15 * *'
+    runs-on: ubuntu-latest
       - name: Run DAILY tier
         run: |
           set +e
@@ -112,12 +280,71 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
+          python-version: '3.11'
           python-version: "3.11"
           cache: "pip"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Season active gate
+        id: season_gate
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+          from datetime import datetime, timezone
+          from espn_config import SEASON_ACTIVE
+
+          log_path = pathlib.Path("data/pipeline_errors.log")
+          log_path.parent.mkdir(parents=True, exist_ok=True)
+          ts = datetime.now(timezone.utc).isoformat()
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"season_active={'true' if SEASON_ACTIVE else 'false'}\n")
+
+          if not SEASON_ACTIVE:
+              msg = "Pipeline paused — SEASON_ACTIVE is False"
+              print(msg)
+              with log_path.open("a", encoding="utf-8") as log:
+                  log.write(f"{ts}\tBIWEEKLY\tseason_gate\tSKIP\t{msg}\n")
+          PY
+
+      - name: Graded-games gate (>=200)
+        if: steps.season_gate.outputs.season_active == 'true'
+        run: |
+          python - <<'PY'
+          import json, pandas as pd, sys
+
+          graded = pd.read_csv("data/predictions_graded.csv")
+          try:
+              last = json.load(open("data/active_weights.json"))["deployed_at"]
+          except Exception:
+              last = "2000-01-01"
+          n = graded[graded["game_datetime_utc"] > last].shape[0]
+          print(f"Graded games since last update: {n}")
+          sys.exit(0 if n >= 200 else 1)
+          PY
+
+      - name: Run optimize_weights.py --min-games 200
+        if: steps.season_gate.outputs.season_active == 'true'
+        run: python optimize_weights.py --min-games 200
+
+      - name: Run cbb_walk_forward.py --validate-candidate data/candidate_weights.json
+        if: steps.season_gate.outputs.season_active == 'true'
+        run: python cbb_walk_forward.py --validate-candidate data/candidate_weights.json
+
+      - name: Run weight_deployer.py
+        if: steps.season_gate.outputs.season_active == 'true'
+        run: python weight_deployer.py
+
+      - name: Run cbb_accuracy_report.py
+        if: steps.season_gate.outputs.season_active == 'true'
+        run: python cbb_accuracy_report.py
+
+  end_of_season:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 10 10 4 *'
+    runs-on: ubuntu-latest
       - name: Run BIWEEKLY LEARNING tier
         run: |
           set +e
@@ -240,12 +467,29 @@ PY
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
+          python-version: '3.11'
           python-version: "3.11"
           cache: "pip"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Run cbb_walk_forward.py
+        run: python cbb_walk_forward.py
+
+      - name: Run optimize_weights.py --full-season
+        run: python optimize_weights.py --full-season
+
+      - name: Run cbb_walk_forward.py --validate-candidate data/candidate_weights.json
+        run: python cbb_walk_forward.py --validate-candidate data/candidate_weights.json
+
+      - name: Run weight_deployer.py --force
+        run: python weight_deployer.py --force
+
+      - name: Archive results log
+        run: |
+          mkdir -p data/archive
+          cp data/results_log.csv "data/archive/results_log_$(date +%Y).csv"
       - name: Run END OF SEASON tier
         run: |
           set +e
