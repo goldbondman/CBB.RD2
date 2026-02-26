@@ -1056,7 +1056,7 @@ def print_top_n(df: pd.DataFrame, n: int = 25) -> None:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
-def run(output_dir: Path = OUT_RANKINGS.parent, top_n: int = 25) -> Path:
+def run(output_dir: Path = OUT_RANKINGS.parent, top_n: int = 25, keep_snapshots: int = 10) -> Path:
     """Full rankings pipeline."""
     log.info("=" * 60)
     log.info("CAGE Rankings Engine — Building D1 Team Rankings")
@@ -1093,8 +1093,29 @@ def run(output_dir: Path = OUT_RANKINGS.parent, top_n: int = 25) -> Path:
 
     # Data dictionary — human-readable metric descriptions alongside every output
     write_data_dictionary(output_dir)
+    prune_dated_snapshots(output_dir, keep=keep_snapshots)
 
     return out_latest
+
+
+def prune_dated_snapshots(output_dir: Path, keep: int = 10) -> None:
+    """Keep only the newest dated rankings snapshots to avoid unbounded file growth."""
+    if keep < 1:
+        keep = 1
+
+    snapshots = sorted(
+        output_dir.glob("cbb_rankings_????????T??????Z.csv"),
+        key=lambda p: p.name,
+        reverse=True,
+    )
+
+    to_delete = snapshots[keep:]
+    for path in to_delete:
+        try:
+            path.unlink()
+            log.info(f"Pruned old rankings snapshot → {path}")
+        except Exception as exc:
+            log.warning(f"Could not prune {path}: {exc}")
 
 
 def main():
@@ -1102,8 +1123,10 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=OUT_RANKINGS.parent)
     parser.add_argument("--top",        type=int,  default=25,
                         help="Print top-N teams to stdout")
+    parser.add_argument("--keep-snapshots", type=int, default=10,
+                        help="Number of dated rankings snapshots to retain")
     args = parser.parse_args()
-    run(output_dir=args.output_dir, top_n=args.top)
+    run(output_dir=args.output_dir, top_n=args.top, keep_snapshots=args.keep_snapshots)
 
 
 if __name__ == "__main__":
