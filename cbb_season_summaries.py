@@ -28,6 +28,7 @@ PLAYER_LOGS_CSV   = DATA_DIR / "player_game_logs.csv"
 PLAYER_METRICS_CSV = DATA_DIR / "player_game_metrics.csv"
 TEAM_WEIGHTED_CSV  = DATA_DIR / "team_game_weighted.csv"
 RESULTS_LOG_CSV    = DATA_DIR / "results_log.csv"
+RESULTS_LOG_BY_TEAM_CSV = DATA_DIR / "results_log_by_team.csv"
 TEAM_METRICS_CSV   = DATA_DIR / "team_game_metrics.csv"
 GAMES_CSV          = DATA_DIR / "games.csv"
 RANKINGS_CSV       = DATA_DIR / "cbb_rankings.csv"
@@ -192,9 +193,30 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
     Returns the summary DataFrame (empty if inputs are missing).
     """
     weighted = _safe_read_with_fallback(TEAM_WEIGHTED_CSV, low_memory=False)
-    results = _safe_read_with_fallback(DATA_DIR / "results_log_graded.csv", low_memory=False)
+    results = _safe_read_with_fallback(DATA_DIR / "results_log_by_team.csv", low_memory=False)
+    if results.empty:
+        results = _safe_read_with_fallback(DATA_DIR / "results_log_graded.csv", low_memory=False)
     if results.empty:
         results = _safe_read_with_fallback(RESULTS_LOG_CSV, low_memory=False)
+
+    # Normalize known alias columns from game-log schemas.
+    ALIAS_MAP = {
+        "primary_ats_correct": "ats_correct",
+        "primary_ou_correct": "ou_correct",
+        "market_spread": "spread_line",
+        "actual_margin": "actual_spread",
+        "ens_ens_spread": "ens_spread",
+    }
+    for src, dst in ALIAS_MAP.items():
+        if src in results.columns and dst not in results.columns:
+            results[dst] = results[src]
+
+    # Ensure team_id exists for team-level ATS/CLV merges.
+    if "team_id" not in results.columns and "home_team_id" in results.columns:
+        log.warning(
+            "[SUMMARIES] team_id missing — results_log_by_team.csv not yet available, "
+            "CLV aggregation will be incomplete"
+        )
 
     empty_cols = [
         "team_id", "team", "conference",
