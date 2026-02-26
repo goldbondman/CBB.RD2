@@ -16,7 +16,7 @@ LEAGUE_AVG_ORB  = 30.0
 LEAGUE_AVG_DRB  = 70.0
 
 HCA            = 3.2
-PYTH_EXP       = 11.5   # Used in espn_rankings.py compute_barthag
+PYTH_EXP       = 11.5
 SIGMA          = 11.0
 VIG_BREAK_EVEN = 52.38
 
@@ -70,7 +70,9 @@ def load_ensemble_weights() -> Dict[str, Dict[str, float]]:
             if isinstance(payload.get("weights"), dict):
                 spread.update(payload["weights"])
             if isinstance(payload.get("total_weights"), dict):
-                total.update(payload["total_weights"])
+                for k, v in payload["total_weights"].items():
+                    if k in total:
+                        total[k] = float(v)
         except (OSError, json.JSONDecodeError, TypeError):
             pass
     return {"spread": spread, "total": total}

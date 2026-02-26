@@ -65,7 +65,6 @@ from cbb_config import (
     LEAGUE_AVG_ORB,
     LEAGUE_AVG_DRB,
     HCA,
-    PYTH_EXP,
     SIGMA,
     DEFAULT_SPREAD_WEIGHTS,
     DEFAULT_TOTAL_WEIGHTS,
