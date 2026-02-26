@@ -22,7 +22,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SHARED SETUP — referenced by all three jobs via `uses` would require
@@ -230,6 +230,40 @@ jobs:
             data/walk_forward_validation.json
             data/active_weights.json
 
+      - name: Commit biweekly model weights
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add --ignore-missing \
+            data/active_weights.json \
+            data/candidate_weights.json \
+            data/backtest_optimized_weights.json \
+            data/model_weights.json \
+            data/walk_forward_validation.json
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No weight changes to commit"
+            exit 0
+          fi
+
+          git commit -m "chore: deploy updated model weights [biweekly] [skip ci]"
+
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "[OK] Push succeeded on attempt ${attempt}"
+              exit 0
+            fi
+
+            echo "[WARN] Push failed on attempt ${attempt}; rebasing and retrying"
+            git pull --rebase
+            sleep $((attempt * 2))
+          done
+
+          echo "[ERROR] Failed to push after 3 attempts"
+          exit 1
+
   # ───────────────────────────────────────────────────────────────────────────
   # END OF SEASON  (10:00 UTC on April 10 — also manually triggerable)
   # Steps: full walk-forward → full-season grid search → validate → force-deploy
@@ -295,3 +329,37 @@ jobs:
             data/archive/results_log_*.csv
             data/walk_forward_results.csv
             data/walk_forward_validation.json
+
+      - name: Commit end-of-season model weights
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add --ignore-missing \
+            data/active_weights.json \
+            data/candidate_weights.json \
+            data/backtest_optimized_weights.json \
+            data/model_weights.json \
+            data/walk_forward_validation.json
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No weight changes to commit"
+            exit 0
+          fi
+
+          git commit -m "chore: deploy end-of-season model weights [skip ci]"
+
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "[OK] Push succeeded on attempt ${attempt}"
+              exit 0
+            fi
+
+            echo "[WARN] Push failed on attempt ${attempt}; rebasing and retrying"
+            git pull --rebase
+            sleep $((attempt * 2))
+          done
+
+          echo "[ERROR] Failed to push after 3 attempts"
+          exit 1
