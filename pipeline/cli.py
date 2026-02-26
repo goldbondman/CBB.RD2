@@ -10,6 +10,8 @@ from pathlib import Path
 import pandas as pd
 
 from config.model_version import compute_model_version
+from .artifacts import resolve_run_dir, write_json
+from .backtest_outputs import BacktestOutputError, write_backtest_outputs
 from .context import RunContext
 from .evaluation import write_evaluation_outputs
 from .integrity import run_integrity_gate, write_integrity_report
@@ -17,7 +19,6 @@ from .update_policy import evaluate_update_eligibility
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
-ARTIFACTS = DATA_DIR / "artifacts"
 RUN_HISTORY = DATA_DIR / "run_evaluations.csv"
 LAST_UPDATE = DATA_DIR / "last_update.json"
 DECISIONS = ROOT / "DECISIONS_NEEDED.md"
@@ -52,8 +53,9 @@ def cmd_audit(_: argparse.Namespace) -> int:
             "data/ensemble_predictions_latest.csv",
         ],
     }
-    ARTIFACTS.mkdir(parents=True, exist_ok=True)
-    (ARTIFACTS / "current_state_map.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    artifacts = ROOT / "artifacts"
+    artifacts.mkdir(parents=True, exist_ok=True)
+    (artifacts / "current_state_map.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     if not DECISIONS.exists():
         DECISIONS.write_text(
             "# Decisions Needed\n\n"
@@ -62,7 +64,7 @@ def cmd_audit(_: argparse.Namespace) -> int:
             "3. ROI denominator convention: per-bet unit risked vs stake-weighted, currently mixed.\n",
             encoding="utf-8",
         )
-    print(f"[OK] Wrote {ARTIFACTS / 'current_state_map.json'}")
+    print(f"[OK] Wrote {artifacts / 'current_state_map.json'}")
     return 0
 
 
@@ -75,9 +77,11 @@ def cmd_run(args: argparse.Namespace) -> int:
     as_of = pd.Timestamp(args.date if args.date else _now_utc(), tz="UTC")
     model_version = compute_model_version([ROOT / "cbb_prediction_model.py"], additional_context=args.mode)
     ctx = RunContext.build(as_of=as_of.to_pydatetime(), model_version=model_version, feature_version="v1")
+    run_dir = resolve_run_dir(ctx.run_id)
 
     integrity = run_integrity_gate(data_dir=DATA_DIR, as_of=as_of, mode=args.mode)
-    integrity_path = ARTIFACTS / "integrity.json"
+    backtest_meta = None
+    integrity_path = run_dir / "manifest" / "integrity.json"
     write_integrity_report(integrity_path, integrity, ctx.to_dict())
     if not integrity.ok:
         print(f"[FAIL] Integrity gate failed. See {integrity_path}")
@@ -94,7 +98,29 @@ def cmd_run(args: argparse.Namespace) -> int:
             cmd.extend(["--since", args.start])
         rc = _run_subprocess(cmd)
         if rc == 0 and (DATA_DIR / "results_log_graded.csv").exists():
+            graded = pd.read_csv(DATA_DIR / "results_log_graded.csv", low_memory=False)
+            try:
+                backtest_meta = write_backtest_outputs(run_dir, graded)
+            except BacktestOutputError as exc:
+                DECISIONS.write_text(
+                    "# Decisions Needed\n\n"
+                    "Backtest output generation was halted due to ambiguity:\n\n"
+                    f"- {exc}\n",
+                    encoding="utf-8",
+                )
+                raise
+
             summary = write_evaluation_outputs(DATA_DIR)
+            (run_dir / "evaluation").mkdir(parents=True, exist_ok=True)
+            for eval_name in ["evaluation.csv", "evaluation.json", "rolling_metrics.csv"]:
+                src = DATA_DIR / eval_name
+                if src.exists():
+                    (run_dir / "evaluation" / eval_name).write_bytes(src.read_bytes())
+
+            pred_src = DATA_DIR / "predictions_combined_latest.csv"
+            if pred_src.exists():
+                (run_dir / "predictions" / "predictions.csv").write_bytes(pred_src.read_bytes())
+
             run_tag = "UNKNOWN"
             if RUN_HISTORY.exists() and not pd.read_csv(RUN_HISTORY).empty:
                 baseline = pd.read_csv(RUN_HISTORY).iloc[-1].to_dict()
@@ -126,9 +152,10 @@ def cmd_run(args: argparse.Namespace) -> int:
         "mode": args.mode,
         "command": cmd,
         "return_code": rc,
+        "artifact_run_dir": str(run_dir),
+        "backtest_outputs": backtest_meta if args.mode == "backtest" and rc == 0 else None,
     }
-    ARTIFACTS.mkdir(parents=True, exist_ok=True)
-    (ARTIFACTS / "run_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    write_json(manifest, run_dir / "manifest" / "run_manifest.json")
     return rc
 
 
