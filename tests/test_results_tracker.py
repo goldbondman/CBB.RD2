@@ -104,6 +104,7 @@ class TestProcessDate:
 
         log_df = pd.read_csv(data_dir / "results_log.csv")
         assert len(log_df) == 3
+        assert "predicted_spread" in log_df.columns
 
     def test_no_csv_when_no_predictions_exist(self, tmp_path, monkeypatch):
         """process_date should return empty when no prediction files exist."""

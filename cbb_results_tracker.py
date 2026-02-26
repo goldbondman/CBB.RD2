@@ -210,7 +210,11 @@ class GameOutcome:
     processed_at:      str = ""
 
     def to_dict(self) -> Dict:
-        return asdict(self)
+        row = asdict(self)
+        # Backward-compatible alias required by results_log schema validators.
+        if "predicted_spread" not in row:
+            row["predicted_spread"] = row.get("pred_spread")
+        return row
 
 
 @dataclass
