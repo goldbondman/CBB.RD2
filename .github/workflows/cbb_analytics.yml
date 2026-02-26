@@ -87,34 +87,46 @@ jobs:
             done | sort -rn | head -1 | awk '{print $2}')
           echo "run_id=$run_id" >> $GITHUB_OUTPUT
 
+      - name: Validate artifact run IDs
+        run: |
+          if [ -z "${{ steps.get_ml_run.outputs.run_id }}" ]; then
+            echo "[WARN] No successful market_lines run with cbb-market-lines artifact found; skipping market artifact downloads"
+          fi
+          if [ -z "${{ steps.get_espn_run.outputs.run_id }}" ]; then
+            echo "[WARN] No successful update_espn_cbb run with cbb-espn-data artifact found; skipping ESPN artifact download"
+          fi
+
       # Handoff from market_lines.yml
       - name: Download market lines
+        if: steps.get_ml_run.outputs.run_id != ""
         uses: actions/download-artifact@v4
         with:
           name: cbb-market-lines
           path: data/staging/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
-        continue-on-error: true
+
 
       - name: Download predictions with context
+        if: steps.get_ml_run.outputs.run_id != ""
         uses: actions/download-artifact@v4
         with:
           name: cbb-predictions-with-context
           path: data/staging/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
-        continue-on-error: true
+
 
       # Handoff from update_espn_cbb.yml
       - name: Download ESPN data
+        if: steps.get_espn_run.outputs.run_id != ""
         uses: actions/download-artifact@v4
         with:
           name: cbb-espn-data
           path: data/staging/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_espn_run.outputs.run_id }}
-        continue-on-error: true
+
 
       # Pattern 1: Verify artifacts or bootstrap from git history to prevent silent failures
       - name: Verify artifacts or bootstrap from git

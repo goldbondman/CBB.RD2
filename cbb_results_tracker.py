@@ -150,6 +150,7 @@ class GameOutcome:
 
     # Primary model prediction
     pred_spread:       Optional[float] = None    # Negative = home favored
+    pred_spread_source: str = ""
     pred_total:        Optional[float] = None
     pred_home_score:   Optional[float] = None
     pred_away_score:   Optional[float] = None
@@ -474,6 +475,23 @@ def _win_correct(pred_spread: Optional[float], actual_margin: float) -> Optional
     return 1 if pred_home_wins == actual_home_wins else 0
 
 
+def _resolve_pred_spread(pred_row: pd.Series) -> Tuple[Optional[float], str]:
+    """Resolve pred_spread from canonical field or known aliases."""
+    candidates = [
+        "pred_spread",
+        "predicted_spread",
+        "ensemble_spread",
+        "ens_ens_spread",
+        "ens_spread",
+    ]
+    for col in candidates:
+        if col in pred_row.index:
+            val = _safe_float(pred_row.get(col))
+            if val is not None:
+                return val, col
+    return None, ""
+
+
 def compute_outcomes(
     pred_row: pd.Series,
     result_row: pd.Series,
@@ -497,7 +515,7 @@ def compute_outcomes(
     away_ml     = _safe_float(result_row.get("away_ml"))
 
     # Primary model fields
-    pred_spread   = _safe_float(pred_row.get("pred_spread"))
+    pred_spread, pred_spread_source = _resolve_pred_spread(pred_row)
     pred_total    = _safe_float(pred_row.get("pred_total"))
     prim_conf     = _safe_float(pred_row.get("model_confidence"))
     edge_flag     = _safe_int(pred_row.get("edge_flag"), 0)
@@ -548,6 +566,7 @@ def compute_outcomes(
         pred_home_score    = _safe_float(pred_row.get("pred_home_score")),
         pred_away_score    = _safe_float(pred_row.get("pred_away_score")),
         primary_confidence = prim_conf,
+        pred_spread_source  = pred_spread_source,
 
         ens_spread         = ens_spread,
         ens_total          = ens_total,
@@ -1147,6 +1166,10 @@ class ResultsTracker:
         # ── Update results log ────────────────────────────────────────────────
         existing_log = load_results_log()
         new_rows     = pd.DataFrame([o.to_dict() for o in outcomes])
+        pred_missing = int(new_rows.get("pred_spread", pd.Series(dtype=float)).isna().sum()) if not new_rows.empty else 0
+        pred_total = len(new_rows)
+        pred_filled_from_alias = int((new_rows.get("pred_spread_source", "") != "pred_spread").sum()) if "pred_spread_source" in new_rows.columns else 0
+        log.info("[INTEGRITY] results_log pred_spread check: total=%s missing=%s alias_resolved=%s", pred_total, pred_missing, pred_filled_from_alias)
 
         if not existing_log.empty and "game_id" in existing_log.columns:
             # Deduplicate: overwrite existing game_ids with fresh outcomes
