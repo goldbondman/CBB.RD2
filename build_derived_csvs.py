@@ -505,7 +505,31 @@ def build_upset_watch_csv(predictions: pd.DataFrame) -> None:
     # underdog_spread_edge_pts
     # If home is fav (line < 0), edge for away = model_spread - line (if model > line, e.g. -2 vs -6 -> +4 edge)
     # If away is fav (line > 0), edge for home = line - model_spread (if model < line, e.g. 2 vs 6 -> +4 edge)
-    dogs["model_spread"] = dogs["ens_ens_spread"].combine_first(dogs["pred_spread"])
+    spread_candidates = [
+        "ens_ens_spread",
+        "pred_spread",
+        "predicted_spread",
+        "mc_spread_median",
+    ]
+    spread_candidates = [c for c in spread_candidates if c in dogs.columns]
+    dogs["model_spread"] = np.nan
+    selected_spread_col = None
+    for col in spread_candidates:
+        candidate = pd.to_numeric(dogs[col], errors="coerce")
+        unique_values = candidate.dropna().nunique()
+        if selected_spread_col is None and candidate.notna().any():
+            dogs["model_spread"] = candidate
+            selected_spread_col = col
+            continue
+        # Data quality guard: avoid using a degenerate near-constant series
+        # when a later fallback has per-game variation.
+        if candidate.notna().any() and unique_values > 1 and pd.to_numeric(dogs["model_spread"], errors="coerce").dropna().nunique() <= 1:
+            dogs["model_spread"] = candidate
+            selected_spread_col = col
+
+    if selected_spread_col:
+        print(f"[INFO] upset_watch: model_spread source = {selected_spread_col}")
+
     dogs["underdog_spread_edge_pts"] = np.where(
         dogs["spread_line"] < 0,
         dogs["model_spread"] - dogs["spread_line"],
