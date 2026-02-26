@@ -157,6 +157,13 @@ jobs:
               print(f"[OK] {fname}: {len(existing)} + {len(new_rows)} = {len(combined)} rows")
           PY
 
+      - name: Backfill historical market lines (rolling 14 days)
+        run: |
+          python ingestion/historical_backfill.py \
+            --days-back 14 \
+            --output data/market_lines.csv
+        continue-on-error: true
+
       - name: Check market join coverage
         continue-on-error: true
         run: |
