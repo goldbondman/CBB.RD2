@@ -7,6 +7,7 @@ import pandas as pd
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from espn_parsers import parse_summary, _parse_made_attempt, _map_player_stat_label
+import espn_player_metrics
 from espn_player_metrics import compute_player_metrics, add_role_split_metrics
 
 
@@ -136,3 +137,43 @@ def test_add_role_split_metrics_handles_string_booleans_for_starter_flag():
 
     # At game 4, bench rolling window should average prior bench rows (games 1 and 3 => (10+14)/2).
     assert out.loc[3, "pts_bench_l5"] == 12.0
+
+
+def test_write_player_splits_keeps_player_name_and_non_null_l5_rows(tmp_path):
+    df = pd.DataFrame([
+        {
+            "athlete_id": "1",
+            "player": "Starter One",
+            "event_id": "evt_1",
+            "team_id": "10",
+            "game_datetime_utc": "2025-01-01T00:00:00Z",
+            "pts_l5": pd.NA,
+            "min_l5": pd.NA,
+        },
+        {
+            "athlete_id": "1",
+            "player": "Starter One",
+            "event_id": "evt_2",
+            "team_id": "10",
+            "game_datetime_utc": "2025-01-02T00:00:00Z",
+            "pts_l5": 14.0,
+            "min_l5": 28.0,
+        },
+    ])
+
+    rolling_out = tmp_path / "player_rolling_l5.csv"
+    role_out = tmp_path / "player_role_splits.csv"
+
+    old_rolling = espn_player_metrics.OUT_PLAYER_ROLLING_L5
+    old_role = espn_player_metrics.OUT_PLAYER_ROLE_SPLITS
+    try:
+        espn_player_metrics.OUT_PLAYER_ROLLING_L5 = rolling_out
+        espn_player_metrics.OUT_PLAYER_ROLE_SPLITS = role_out
+        espn_player_metrics._write_player_splits(df)
+    finally:
+        espn_player_metrics.OUT_PLAYER_ROLLING_L5 = old_rolling
+        espn_player_metrics.OUT_PLAYER_ROLE_SPLITS = old_role
+
+    out = pd.read_csv(rolling_out)
+    assert list(out["player"]) == ["Starter One"]
+    assert out["pts_l5"].notna().all()

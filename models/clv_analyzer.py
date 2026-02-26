@@ -19,6 +19,7 @@ PRED_FALLBACK_PATHS = [
     DATA_DIR / "predictions_latest.csv",
     DATA_DIR / "predictions_primary.csv",
 ]
+FALLBACK_PRED_CONTEXT_PATH = DATA_DIR / "predictions_combined_latest.csv"
 
 LOG = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(message)s")
@@ -92,10 +93,10 @@ def _safe_read_csv(path: Path, label: str) -> pd.DataFrame:
 
 
 def _first_non_null(df: pd.DataFrame, candidates: list[str], fallback_dtype: str = "float") -> pd.Series:
-    series = pd.Series([pd.NA] * len(df), index=df.index)
+    series = pd.Series([pd.NA] * len(df), index=df.index, dtype="object")
     for col in candidates:
         if col in df.columns:
-            series = series.fillna(df[col])
+            series = series.where(series.notna(), df[col])
     if fallback_dtype == "float":
         return pd.to_numeric(series, errors="coerce")
     return series
@@ -137,6 +138,31 @@ def build_clv_reports(
 
     if acc.empty:
         LOG.warning("model_accuracy_report.csv has no rows; CLV report will omit outcome metrics.")
+    def _safe_read_csv(path: Path, label: str) -> pd.DataFrame:
+        try:
+            return pd.read_csv(path, low_memory=False)
+        except EmptyDataError:
+            LOG.warning("%s exists but is empty: %s", label, path)
+            return pd.DataFrame()
+
+    acc = _safe_read_csv(accuracy_path, "model_accuracy_report")
+    pred = _safe_read_csv(pred_context_path, "predictions_with_context")
+    if pred.empty and FALLBACK_PRED_CONTEXT_PATH.exists():
+        LOG.warning(
+            "Primary predictions_with_context is empty; falling back to %s",
+            FALLBACK_PRED_CONTEXT_PATH,
+        )
+        pred = _safe_read_csv(FALLBACK_PRED_CONTEXT_PATH, "predictions_combined_latest")
+
+    if pred.empty:
+        LOG.warning("No prediction rows available for CLV analysis. Writing empty outputs.")
+        _write_empty_outputs()
+        return pd.DataFrame(), pd.DataFrame()
+
+    pred = _prepare_join_key(pred, "predictions_with_context.csv")
+
+    if acc.empty:
+        LOG.warning("model_accuracy_report has no rows; continuing with predictions-only CLV metrics.")
         merged = pred.copy()
     else:
         acc = _prepare_join_key(acc, "model_accuracy_report.csv")
@@ -190,6 +216,15 @@ def build_clv_reports(
     game_report = game_report[
         game_report["clv_vs_open"].notna() | game_report["clv_vs_close"].notna()
     ].sort_values(["game_datetime_utc", "game_id"], na_position="last")
+    game_report = game_report[game_report["clv_vs_close"].notna()].sort_values(
+        ["game_datetime_utc", "game_id"],
+        na_position="last",
+    )
+    LOG.info(
+        "CLV game rows with close-line data: %d/%d",
+        int(game_report["clv_vs_close"].notna().sum()),
+        len(merged),
+    )
 
     submodel_rows = []
     for col in [c for c in SUBMODEL_SPREAD_COLS if c in merged.columns]:
@@ -199,21 +234,26 @@ def build_clv_reports(
         abs_error = (merged["actual_margin"] - pred_col).abs()
         outcome_edge = merged["actual_margin"] - merged["home_spread_current"]
 
-        valid = clv_open.notna() & clv_close.notna()
-        if valid.any():
-            corr_mask = valid & outcome_edge.notna()
+        valid_close = clv_close.notna()
+        valid_open = clv_open.notna()
+        if valid_close.any():
+            corr_mask = valid_close & outcome_edge.notna()
             corr_val = np.nan
             if int(corr_mask.sum()) >= 2:
                 corr_val = clv_close[corr_mask].corr(outcome_edge[corr_mask])
 
+            abs_error_mask = valid_close & abs_error.notna()
+            mean_abs_error = round(float(abs_error[abs_error_mask].mean()), 4) if abs_error_mask.any() else pd.NA
+            mean_clv_vs_open = round(float(clv_open[valid_open].mean()), 4) if valid_open.any() else pd.NA
+
             submodel_rows.append(
                 {
                     "model_name": col,
-                    "n_games_with_clv": int(valid.sum()),
-                    "mean_clv_vs_open": round(float(clv_open[valid].mean()), 4),
-                    "mean_clv_vs_close": round(float(clv_close[valid].mean()), 4),
-                    "pct_positive_clv": round(float((clv_close[valid] > 0).mean()), 4),
-                    "mean_abs_error": round(float(abs_error[valid].mean()), 4),
+                    "n_games_with_clv": int(valid_close.sum()),
+                    "mean_clv_vs_open": mean_clv_vs_open,
+                    "mean_clv_vs_close": round(float(clv_close[valid_close].mean()), 4),
+                    "pct_positive_clv": round(float((clv_close[valid_close] > 0).mean()), 4),
+                    "mean_abs_error": mean_abs_error,
                     "correlation_clv_to_outcome": (
                         round(float(corr_val), 4) if pd.notna(corr_val) else pd.NA
                     ),
