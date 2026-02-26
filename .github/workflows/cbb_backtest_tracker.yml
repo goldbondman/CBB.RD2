@@ -1,6 +1,6 @@
 name: CBB Backtest Tracker
 
-"on":
+on:
   workflow_dispatch:
   schedule:
     - cron: "30 11 * * *"
