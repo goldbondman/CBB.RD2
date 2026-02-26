@@ -69,6 +69,7 @@ from sklearn.metrics import brier_score_loss
 from config.logging_config import get_logger
 from espn_config import PIPELINE_RUN_ID
 from pipeline_csv_utils import safe_write_csv
+from pipeline.id_utils import canonicalize_espn_game_id
 
 warnings.filterwarnings("ignore")
 
@@ -412,7 +413,7 @@ def load_completed_games(game_log: pd.DataFrame) -> pd.DataFrame:
     """
     gl = game_log.copy()
     gl["team_id"]  = gl["team_id"].astype(str)
-    gl["event_id"] = gl["event_id"].astype(str)
+    gl["event_id"] = gl["event_id"].apply(canonicalize_espn_game_id)
 
     # Filter to completed games (have real scores)
     gl = gl.dropna(subset=["points_for", "points_against"])
@@ -708,14 +709,14 @@ def compute_model_metrics(
     m.n_ats_games = len(ats_df)
 
     if m.n_ats_games > 0:
-        mkt_spread  = ats_df["market_spread"].values    # negative = home favored
+        mkt_spread  = ats_df["market_spread"].values    # negative = home favored (convention)
         act_margin  = ats_df["actual_margin"].values
-        pred_margin = -ats_df[spread_col].values
+        pred_margin = -ats_df[spread_col].values        # pred_margin = -spread (positive = home win by)
 
         # ATS: did actual margin beat the market spread?
-        # e.g. market_spread=-7, actual_margin=+3: home +3 vs -7 line → home covers
-        # Our spread is home-perspective (negative = home favored, matches market convention)
-        home_cover = act_margin > (-mkt_spread)     # push = loss
+        # Convention: market_spread -7 means home is favorite by 7.
+        # Home covers if actual_margin > 7 (i.e. actual_margin > -market_spread)
+        home_cover = act_margin > (-mkt_spread)     # push = loss in this calc
         away_cover = act_margin < (-mkt_spread)
         push       = act_margin == (-mkt_spread)
 
@@ -1069,7 +1070,7 @@ class BacktestEngine:
 
             # ── Build record ──────────────────────────────────────────────────
             rec = {
-                "game_id":          event_id,
+                "game_id":          canonicalize_espn_game_id(event_id),
                 "game_datetime":    str(game_dt),
                 "home_team":        str(row.get("home_team", "")),
                 "away_team":        str(row.get("away_team", "")),
@@ -1115,43 +1116,87 @@ class BacktestEngine:
     def attach_market_lines(
         self,
         records: pd.DataFrame,
-        games_csv_path: Path = GAMES_CSV,
+        closing_lines_path: Path = DATA_DIR / "market_lines_closing.csv",
     ) -> pd.DataFrame:
         """
-        Join market spread / over-under from games.csv onto backtest records.
-        Many historical games won't have lines — that's expected.
+        Join market spread / over-under from market_lines_closing.csv onto backtest records.
+        Also computes ATS and Total margins for actual and predicted.
         """
-        games_csv_path = _resolve_data_path(games_csv_path)
-        if not games_csv_path.exists():
-            log.warning("games.csv not found — skipping market line attachment")
+        if not closing_lines_path.exists():
+            log.warning("%s not found — skipping market line attachment", closing_lines_path)
             return records
 
-        gdf = pd.read_csv(games_csv_path, dtype=str)
-        for col in ["spread", "over_under", "home_ml", "away_ml"]:
-            if col in gdf.columns:
-                gdf[col] = pd.to_numeric(gdf[col], errors="coerce")
+        gdf = pd.read_csv(closing_lines_path, dtype={"espn_game_id": str})
+        gdf["espn_game_id"] = gdf["espn_game_id"].apply(canonicalize_espn_game_id)
 
-        gdf["game_id"] = gdf["game_id"].astype(str)
-        records["game_id"] = records["game_id"].astype(str)
+        # Merge on canonical espn_game_id
+        records["game_id"] = records["game_id"].apply(canonicalize_espn_game_id)
+
+        # Canonicalize columns for join
+        gdf = gdf.rename(columns={
+            "close_home_spread": "home_market_spread",
+            "close_total": "market_total"
+        })
 
         records = records.merge(
-            gdf[["game_id", "spread", "over_under"]].rename(
-                columns={"spread": "market_spread", "over_under": "market_total"}
-            ),
-            on="game_id",
-            how="left",
-            suffixes=("", "_from_csv"),
+            gdf[["espn_game_id", "home_market_spread", "market_total"]],
+            left_on="game_id",
+            right_on="espn_game_id",
+            how="left"
         )
 
-        # Use _from_csv version if market_spread was previously None
-        for col in ["market_spread", "market_total"]:
-            dup = f"{col}_from_csv"
-            if dup in records.columns:
-                records[col] = records[col].combine_first(records[dup])
-                records = records.drop(columns=[dup])
+        # Cleanup
+        if "espn_game_id" in records.columns:
+            records = records.drop(columns=["espn_game_id"])
 
-        lined = records["market_spread"].notna().sum()
-        log.info(f"Market lines attached: {lined:,}/{len(records):,} games have a spread")
+        # Compute extended schema
+        # A) away_market_spread
+        records["away_market_spread"] = -records["home_market_spread"]
+
+        # B) Actual margins
+        # actual_margin_ATS = actual_home_margin + home_market_spread
+        # (Using + because home_market_spread is negative for home favorites)
+        records["actual_margin_ATS"] = records["actual_margin"] + records["home_market_spread"]
+        records["actual_margin_total"] = records["actual_total"] - records["market_total"]
+
+        # C) Predicted vs Market
+        # home_market_spread is from HOME perspective (negative = home favorite)
+        # ens_spread is ALSO from HOME perspective
+        records["pred_home_spread"] = records["ens_spread"]
+        records["pred_away_spread"] = -records["pred_home_spread"]
+        records["pred_total"] = records["ens_total"]
+
+        # pred_margin_ATS = pred_home_margin + home_market_spread
+        # (where pred_home_margin = -ens_spread)
+        records["pred_margin_ATS"] = (-records["ens_spread"]) + records["home_market_spread"]
+        records["pred_margin_total"] = records["pred_total"] - records["market_total"]
+
+        # Legacy field removal/bridging
+        if "market_spread" in records.columns:
+            records = records.drop(columns=["market_spread"])
+        # We'll use home_market_spread as the primary for metrics computation below
+        records["market_spread"] = records["home_market_spread"]
+
+        # D) Column ordering
+        # Insert new headers immediately to the RIGHT of: cage_em_diff
+        cols = records.columns.tolist()
+        if "cage_em_diff" in cols:
+            idx = cols.index("cage_em_diff") + 1
+            new_cols_ordered = [
+                "home_market_spread", "away_market_spread", "market_total",
+                "actual_margin_ATS", "actual_margin_total",
+                "pred_home_spread", "pred_away_spread", "pred_total",
+                "pred_margin_ATS", "pred_margin_total"
+            ]
+            # Remove them from their current positions first
+            other_cols = [c for c in cols if c not in new_cols_ordered]
+            # Re-insert
+            idx = other_cols.index("cage_em_diff") + 1
+            final_cols = other_cols[:idx] + new_cols_ordered + other_cols[idx:]
+            records = records[final_cols]
+
+        lined = records["home_market_spread"].notna().sum()
+        log.info(f"Market lines attached: {lined:,}/{len(records):,} games have a spread from closing table")
         return records
 
 
@@ -1202,8 +1247,9 @@ def print_report(report_df: pd.DataFrame, records: pd.DataFrame) -> None:
     """Print backtest summary to stdout."""
     print("=" * 100)
     print("  BACKTEST RESULTS — All Models")
+    mkt_count = records['home_market_spread'].notna().sum() if 'home_market_spread' in records.columns else 0
     print(f"  {len(records):,} games backtested  |  "
-          f"{records['market_spread'].notna().sum():,} with market lines")
+          f"{mkt_count:,} with market lines")
     print("=" * 100)
     print(
         f"  {'MODEL':<16} {'N':>5} {'MAE':>6} {'RMSE':>6} {'BIAS':>6} "
