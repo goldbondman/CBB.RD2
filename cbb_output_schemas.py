@@ -3,7 +3,7 @@ CBB Output File Schemas — Centralized schema contract.
 
 Single source of truth for required columns across all pipeline CSV outputs.
 Addresses Root Cause #3 (no centralized schema contract) and Root Cause #5
-(no pre-write integrity gate) from docs_pipeline_field_trace_report.md.
+(no pre-write integrity gate) from docs/reports/docs_pipeline_field_trace_report.md.
 
 Usage:
     from cbb_output_schemas import validate_output, OUTPUT_FILE_SCHEMAS
