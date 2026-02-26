@@ -1,39 +1,34 @@
 event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away,rest_days,games_l7,games_l14,fatigue_index,win_streak,cover_streak,close_win_pct_season,close_game_win_pct,scoring_consistency_l5,blowout_flag,close_game_flag,margin,margin_capped
 401820748,103,Boston College Eagles,52,Florida State Seminoles,2026-02-17T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-8.0,-8.0
 401820758,103,Boston College Eagles,2567,SMU Mustangs,2026-02-21T21:00:00Z,away,3.9,1,1,0.9,-1,0,,,,1.0,0.0,-24.0,-15.0
-401820764,103,Boston College Eagles,154,Wake Forest Demon Deacons,2026-02-25T23:00:00Z,home,4.1,1,2,1.2,-2,0,,,,0.0,0.0,9.0,9.0
+401820764,103,Boston College Eagles,154,Wake Forest Demon Deacons,2026-02-25T23:00:00Z,home,4.1,1,2,1.2,-2,0,,,,0.0,1.0,3.0,3.0
 401824374,104,Boston University Terriers,2142,Colgate Raiders,2026-02-16T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,27.0,15.0
 401824375,104,Boston University Terriers,2329,Lehigh Mountain Hawks,2026-02-22T17:00:00Z,away,5.8,1,1,0.9,1,0,,,,0.0,1.0,-3.0,-3.0
-401824376,104,Boston University Terriers,107,Holy Cross Crusaders,2026-02-26T00:00:00Z,home,3.3,1,2,1.2,-1,0,,,,0.0,0.0,11.0,11.0
+401824376,104,Boston University Terriers,107,Holy Cross Crusaders,2026-02-26T00:00:00Z,home,3.3,1,2,1.2,-1,0,,,,,,,
 401824394,107,Holy Cross Crusaders,322,Lafayette Leopards,2026-02-18T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-3.0,-3.0
 401824435,107,Holy Cross Crusaders,2083,Bucknell Bison,2026-02-22T17:00:00Z,away,3.8,1,1,0.9,-1,0,,,,0.0,0.0,9.0,9.0
-401824376,107,Holy Cross Crusaders,104,Boston University Terriers,2026-02-26T00:00:00Z,away,3.3,1,2,1.2,1,0,,,,0.0,0.0,-11.0,-11.0
+401824376,107,Holy Cross Crusaders,104,Boston University Terriers,2026-02-26T00:00:00Z,away,3.3,1,2,1.2,1,0,,,,,,,
 401812622,108,Harvard Crimson,172,Cornell Big Red,2026-02-21T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,19.0,15.0
 401812074,111,Northeastern Huskies,2182,Drexel Dragons,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-9.0,-9.0
 401812079,111,Northeastern Huskies,2275,Hofstra Pride,2026-02-21T19:00:00Z,home,1.8,1,1,1.5,-1,0,,,,0.0,0.0,-14.0,-14.0
-401812082,111,Northeastern Huskies,2729,William & Mary Tribe,2026-02-27T00:00:00Z,away,5.2,2,2,1.8,-2,0,,,,,,,
 401859836,112358,Long Island University Sharks,2681,Wagner Seahawks,2026-02-17T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,18.0,15.0
 401812376,112358,Long Island University Sharks,2598,Saint Francis Red Flash,2026-02-20T00:00:00Z,away,3.0,1,1,0.9,1,0,,,,0.0,1.0,2.0,2.0
 401812377,112358,Long Island University Sharks,2385,Mercyhurst Lakers,2026-02-21T19:00:00Z,away,1.8,2,2,2.4,2,0,,,,0.0,0.0,-8.0,-8.0
-401812378,112358,Long Island University Sharks,2130,Chicago State Cougars,2026-02-27T00:00:00Z,home,5.2,2,3,2.1,-1,0,,,10.71,,,,
 401814572,113,Massachusetts Minutemen,193,Miami (OH) RedHawks,2026-02-18T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-9.0,-9.0
 401814576,113,Massachusetts Minutemen,2084,Buffalo Bulls,2026-02-21T23:00:00Z,home,4.0,1,1,0.9,-1,0,,,,0.0,1.0,-4.0,-4.0
 401814582,113,Massachusetts Minutemen,2050,Ball State Cardinals,2026-02-25T00:00:00Z,away,3.0,2,2,1.8,-2,0,,,,0.0,1.0,-1.0,-1.0
 401813393,116,Mount St. Mary's Mountaineers,315,Niagara Purple Eagles,2026-02-21T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,13.0,13.0
 401813370,116,Mount St. Mary's Mountaineers,2099,Canisius Golden Griffins,2026-02-22T19:00:00Z,home,1.8,1,1,1.5,1,0,,,,1.0,0.0,21.0,15.0
 401812081,119,Towson Tigers,2182,Drexel Dragons,2026-02-22T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-6.0,-6.0
-401812085,119,Towson Tigers,2210,Elon Phoenix,2026-02-27T00:00:00Z,home,4.2,1,1,0.9,-1,0,,,,,,,
 401827689,12,Arizona Wildcats,252,BYU Cougars,2026-02-19T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,7.0,7.0
 401827695,12,Arizona Wildcats,248,Houston Cougars,2026-02-21T20:00:00Z,away,2.8,1,1,1.0,1,0,,,,0.0,0.0,7.0,7.0
 401827700,12,Arizona Wildcats,239,Baylor Bears,2026-02-25T02:00:00Z,away,3.2,2,2,1.8,2,0,,,,0.0,0.0,7.0,7.0
 401825525,120,Maryland Terrapins,77,Northwestern Wildcats,2026-02-19T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
 401825529,120,Maryland Terrapins,264,Washington Huskies,2026-02-21T20:00:00Z,home,2.8,1,1,1.0,-1,0,,,,0.0,1.0,4.0,4.0
-401825541,120,Maryland Terrapins,158,Nebraska Cornhuskers,2026-02-26T00:00:00Z,away,4.2,2,2,1.8,1,0,,0.5,,0.0,1.0,-5.0,-5.0
+401825541,120,Maryland Terrapins,158,Nebraska Cornhuskers,2026-02-26T00:00:00Z,away,4.2,2,2,1.8,1,0,,0.5,,,,,
 401825521,127,Michigan State Spartans,26,UCLA Bruins,2026-02-18T01:30:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,23.0,15.0
 401825534,127,Michigan State Spartans,194,Ohio State Buckeyes,2026-02-22T18:00:00Z,home,4.7,1,1,0.9,1,0,,,,0.0,0.0,6.0,6.0
-401825543,127,Michigan State Spartans,2509,Purdue Boilermakers,2026-02-27T01:00:00Z,away,4.3,1,2,1.2,2,0,,,,,,,
 401809148,13,Cal Poly Mustangs,62,Hawai'i Rainbow Warriors,2026-02-20T04:59:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,11.0,11.0
-401809163,13,Cal Poly Mustangs,299,Long Beach State Beach,2026-02-27T03:00:00Z,home,6.9,1,1,0.9,1,0,,,,,,,
 401825524,130,Michigan Wolverines,2509,Purdue Boilermakers,2026-02-17T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,11.0,11.0
 401817238,130,Michigan Wolverines,150,Duke Blue Devils,2026-02-21T23:30:00Z,away,4.0,1,1,0.9,1,0,,,,0.0,1.0,-5.0,-5.0
 401825537,130,Michigan Wolverines,135,Minnesota Golden Gophers,2026-02-25T01:30:00Z,home,3.1,1,2,1.2,-1,0,,,,0.0,0.0,10.0,10.0
@@ -45,7 +40,6 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401828443,139,Saint Louis Billikens,2168,Dayton Flyers,2026-02-25T00:00:00Z,away,4.0,2,2,1.8,1,0,,,,1.0,0.0,-15.0,-15.0
 401818427,140,Kansas City Roos,155,North Dakota Fighting Hawks,2026-02-20T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-15.0,-15.0
 401818431,140,Kansas City Roos,2449,North Dakota State Bison,2026-02-21T19:00:00Z,away,1.8,1,1,1.5,-1,0,,,,1.0,0.0,-36.0,-15.0
-401818433,140,Kansas City Roos,2571,South Dakota State Jackrabbits,2026-02-27T01:00:00Z,home,5.2,2,2,1.8,-2,0,,,,,,,
 401808246,142,Missouri Tigers,238,Vanderbilt Commodores,2026-02-19T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
 401808249,142,Missouri Tigers,8,Arkansas Razorbacks,2026-02-21T21:00:00Z,away,2.8,1,1,1.0,1,0,,,,0.0,0.0,-8.0,-8.0
 401808257,142,Missouri Tigers,2633,Tennessee Volunteers,2026-02-25T02:00:00Z,home,3.2,2,2,1.8,-1,0,,,,0.0,1.0,4.0,4.0
@@ -54,10 +48,8 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401808258,145,Ole Miss Rebels,99,LSU Tigers,2026-02-26T02:00:00Z,home,4.4,1,2,1.2,-2,0,,,,,,,
 401808519,147,Montana State Bobcats,2692,Weber State Wildcats,2026-02-20T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-3.0,-3.0
 401808498,147,Montana State Bobcats,304,Idaho State Bengals,2026-02-21T23:00:00Z,away,1.9,1,1,1.45,-1,0,,,,1.0,0.0,-15.0,-15.0
-401808520,147,Montana State Bobcats,2502,Portland State Vikings,2026-02-27T02:00:00Z,home,5.1,2,2,1.8,-2,0,,,,,,,
 401808497,149,Montana Grizzlies,304,Idaho State Bengals,2026-02-20T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
 401808509,149,Montana Grizzlies,2692,Weber State Wildcats,2026-02-22T02:30:00Z,away,2.0,1,1,1.4,-1,0,,,,1.0,0.0,-20.0,-15.0
-401808510,149,Montana Grizzlies,16,Sacramento State Hornets,2026-02-27T02:00:00Z,home,5.0,2,2,1.8,-2,0,,,,,,,
 401820747,150,Duke Blue Devils,183,Syracuse Orange,2026-02-17T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,37.0,15.0
 401817238,150,Duke Blue Devils,130,Michigan Wolverines,2026-02-21T23:30:00Z,home,5.0,1,1,0.9,1,0,,,,0.0,1.0,5.0,5.0
 401820767,150,Duke Blue Devils,87,Notre Dame Fighting Irish,2026-02-25T00:00:00Z,away,3.0,1,2,1.2,2,0,,,,1.0,0.0,44.0,15.0
@@ -71,7 +63,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401820762,153,North Carolina Tar Heels,97,Louisville Cardinals,2026-02-24T00:00:00Z,home,2.2,2,2,2.2,1,0,,,,0.0,1.0,3.0,3.0
 401820753,154,Wake Forest Demon Deacons,228,Clemson Tigers,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,8.0,8.0
 401820761,154,Wake Forest Demon Deacons,259,Virginia Tech Hokies,2026-02-21T17:00:00Z,away,2.7,1,1,1.05,1,0,,,,1.0,0.0,-19.0,-15.0
-401820764,154,Wake Forest Demon Deacons,103,Boston College Eagles,2026-02-25T23:00:00Z,away,4.2,2,2,1.8,-1,0,,,,0.0,0.0,-9.0,-9.0
+401820764,154,Wake Forest Demon Deacons,103,Boston College Eagles,2026-02-25T23:00:00Z,away,4.2,2,2,1.8,-1,0,,,,0.0,1.0,-3.0,-3.0
 401818427,155,North Dakota Fighting Hawks,140,Kansas City Roos,2026-02-20T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,15.0,15.0
 401818428,155,North Dakota Fighting Hawks,2571,South Dakota State Jackrabbits,2026-02-21T20:00:00Z,away,1.8,1,1,1.5,1,0,,,,0.0,0.0,-8.0,-8.0
 401822948,156,Creighton Bluejays,41,UConn Huskies,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,7.0,7.0
@@ -79,23 +71,19 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401822960,156,Creighton Bluejays,305,DePaul Blue Demons,2026-02-26T02:00:00Z,home,4.4,1,2,1.2,-1,0,,,,,,,
 401825520,158,Nebraska Cornhuskers,2294,Iowa Hawkeyes,2026-02-18T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
 401825531,158,Nebraska Cornhuskers,213,Penn State Nittany Lions,2026-02-21T19:00:00Z,home,3.7,1,1,0.9,-1,0,,,,1.0,0.0,23.0,15.0
-401825541,158,Nebraska Cornhuskers,120,Maryland Terrapins,2026-02-26T00:00:00Z,home,4.2,1,2,1.2,1,0,,,,0.0,1.0,5.0,5.0
+401825541,158,Nebraska Cornhuskers,120,Maryland Terrapins,2026-02-26T00:00:00Z,home,4.2,1,2,1.2,1,0,,,,,,,
 401818545,159,Dartmouth Big Green,171,Columbia Lions,2026-02-21T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
 401808466,16,Sacramento State Hornets,331,Eastern Washington Eagles,2026-02-20T03:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-8.0,-8.0
 401808484,16,Sacramento State Hornets,70,Idaho Vandals,2026-02-22T03:00:00Z,home,2.0,1,1,1.4,-1,0,,,,0.0,0.0,-6.0,-6.0
-401808510,16,Sacramento State Hornets,149,Montana Grizzlies,2026-02-27T02:00:00Z,away,5.0,2,2,1.8,-2,0,,,,,,,
 401812160,160,New Hampshire Wildcats,2349,UMass Lowell River Hawks,2026-02-19T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-22.0,-15.0
 401812164,160,New Hampshire Wildcats,311,Maine Black Bears,2026-02-21T21:00:00Z,home,1.9,1,1,1.45,-1,0,,,,0.0,1.0,-3.0,-3.0
-401812169,160,New Hampshire Wildcats,2066,Binghamton Bearcats,2026-02-26T23:00:00Z,away,5.1,2,2,1.8,-2,0,,,,,,,
 401812329,161,Fairleigh Dickinson Knights,2130,Chicago State Cougars,2026-02-20T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
 401812330,161,Fairleigh Dickinson Knights,2441,New Haven Chargers,2026-02-22T00:00:00Z,home,2.0,1,1,1.4,1,0,,,,0.0,0.0,-7.0,-7.0
-401812331,161,Fairleigh Dickinson Knights,2330,Le Moyne Dolphins,2026-02-27T00:00:00Z,away,5.0,2,2,1.8,-1,0,,,,,,,
 401818563,163,Princeton Tigers,225,Brown Bears,2026-02-21T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-9.0,-9.0
 401825526,164,Rutgers Scarlet Knights,213,Penn State Nittany Lions,2026-02-18T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,13.0,13.0
 401825530,164,Rutgers Scarlet Knights,135,Minnesota Golden Gophers,2026-02-21T17:00:00Z,away,2.8,1,1,1.0,1,0,,,,1.0,0.0,-19.0,-15.0
 401825538,164,Rutgers Scarlet Knights,264,Washington Huskies,2026-02-24T23:30:00Z,home,3.3,2,2,1.8,-1,0,,,,0.0,0.0,-7.0,-7.0
 401804939,166,New Mexico State Aggies,2638,UTEP Miners,2026-02-22T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,4.0,4.0
-401804945,166,New Mexico State Aggies,98,Western Kentucky Hilltoppers,2026-02-27T00:30:00Z,away,4.9,1,1,0.9,1,0,,,,,,,
 401820571,167,New Mexico Lobos,2005,Air Force Falcons,2026-02-18T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,37.0,15.0
 401828934,167,New Mexico Lobos,278,Fresno State Bulldogs,2026-02-22T01:00:00Z,away,4.0,1,1,0.9,1,0,,,,0.0,1.0,2.0,2.0
 401829320,167,New Mexico Lobos,2440,Nevada Wolf Pack,2026-02-25T04:00:00Z,away,3.1,1,2,1.2,2,0,,,,0.0,0.0,-7.0,-7.0
@@ -103,7 +91,6 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401812622,172,Cornell Big Red,108,Harvard Crimson,2026-02-21T19:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-19.0,-15.0
 401828436,179,St. Bonaventure Bonnies,2603,Saint Joseph's Hawks,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-6.0,-6.0
 401828442,179,St. Bonaventure Bonnies,257,Richmond Spiders,2026-02-21T23:00:00Z,away,3.0,1,1,0.9,-1,0,,,,0.0,1.0,-5.0,-5.0
-401828447,179,St. Bonaventure Bonnies,227,Rhode Island Rams,2026-02-26T22:00:00Z,home,5.0,1,2,1.2,-2,0,,,,,,,
 401820747,183,Syracuse Orange,150,Duke Blue Devils,2026-02-17T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-37.0,-15.0
 401820759,183,Syracuse Orange,153,North Carolina Tar Heels,2026-02-21T18:00:00Z,home,4.8,1,1,0.9,-1,0,,,,0.0,0.0,-13.0,-13.0
 401814571,189,Bowling Green Falcons,2309,Kent State Golden Flashes,2026-02-18T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-7.0,-7.0
@@ -122,13 +109,11 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401827702,197,Oklahoma State Cowboys,277,West Virginia Mountaineers,2026-02-25T00:00:00Z,home,3.1,2,2,1.8,-2,0,,,,0.0,0.0,7.0,7.0
 401818425,198,Oral Roberts Golden Eagles,2437,Omaha Mavericks,2026-02-19T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-9.0,-9.0
 401818429,198,Oral Roberts Golden Eagles,233,South Dakota Coyotes,2026-02-22T01:00:00Z,home,3.0,1,1,0.9,-1,0,,,,0.0,1.0,5.0,5.0
-401818435,198,Oral Roberts Golden Eagles,2172,Denver Pioneers,2026-02-27T01:00:00Z,home,5.0,1,2,1.2,1,0,,,,,,,
 401808242,2,Auburn Tigers,344,Mississippi State Bulldogs,2026-02-19T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-6.0,-6.0
 401808250,2,Auburn Tigers,96,Kentucky Wildcats,2026-02-22T01:38:00Z,home,3.0,1,1,0.9,-1,0,,,,0.0,1.0,1.0,1.0
 401808262,2,Auburn Tigers,201,Oklahoma Sooners,2026-02-25T02:00:00Z,away,3.0,2,2,1.8,1,0,,,,0.0,0.0,-12.0,-12.0
 401858742,2000,Abilene Christian Wildcats,2627,Tarleton State Texans,2026-02-17T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-3.0,-3.0
 401805202,2000,Abilene Christian Wildcats,253,Southern Utah Thunderbirds,2026-02-21T21:00:00Z,home,4.8,1,1,0.9,-1,0,,,,0.0,1.0,4.0,4.0
-401805205,2000,Abilene Christian Wildcats,3101,Utah Tech Trailblazers,2026-02-27T02:00:00Z,away,5.2,1,2,1.2,1,0,,0.5,,,,,
 401820571,2005,Air Force Falcons,167,New Mexico Lobos,2026-02-18T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-37.0,-15.0
 401820572,2005,Air Force Falcons,2439,UNLV Rebels,2026-02-21T20:00:00Z,home,3.8,1,1,0.9,-1,0,,,,1.0,0.0,-25.0,-15.0
 401820573,2005,Air Force Falcons,23,San José State Spartans,2026-02-25T02:00:00Z,home,3.2,2,2,1.8,-2,0,,,,0.0,0.0,-6.0,-6.0
@@ -146,10 +131,9 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401827168,2011,Alabama State Hornets,50,Florida A&M Rattlers,2026-02-21T23:45:00Z,away,2.0,2,2,2.3,-1,0,,,,0.0,0.0,-13.0,-13.0
 401829690,2016,Alcorn State Braves,50,Florida A&M Rattlers,2026-02-17T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-8.0,-8.0
 401828668,2016,Alcorn State Braves,2296,Jackson State Tigers,2026-02-21T21:45:00Z,home,4.9,1,1,0.9,-1,0,,,,1.0,0.0,18.0,15.0
-401829691,2016,Alcorn State Braves,2640,Texas Southern Tigers,2026-02-27T01:00:00Z,away,5.1,1,2,1.2,1,0,,,,,,,
 401828233,202,Tulsa Golden Hurricane,2429,Charlotte 49ers,2026-02-19T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
 401828243,202,Tulsa Golden Hurricane,2636,UTSA Roadrunners,2026-02-22T21:00:00Z,home,3.8,1,1,0.9,1,0,,,,1.0,0.0,26.0,15.0
-401828248,202,Tulsa Golden Hurricane,2655,Tulane Green Wave,2026-02-26T00:30:00Z,away,3.1,2,2,1.8,2,0,,,,0.0,1.0,0.0,0.0
+401828248,202,Tulsa Golden Hurricane,2655,Tulane Green Wave,2026-02-26T00:30:00Z,away,3.1,2,2,1.8,2,0,,,,,,,
 401808677,2026,App State Mountaineers,276,Marshall Thundering Herd,2026-02-19T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
 401808681,2026,App State Mountaineers,290,Georgia Southern Eagles,2026-02-21T18:00:00Z,home,1.8,1,1,1.5,-1,0,,,,1.0,0.0,15.0,15.0
 401827147,2029,Arkansas-Pine Bluff Golden Lions,2010,Alabama A&M Bulldogs,2026-02-17T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-12.0,-12.0
@@ -157,7 +141,6 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401827149,2029,Arkansas-Pine Bluff Golden Lions,2504,Prairie View A&M Panthers,2026-02-21T23:30:00Z,home,1.9,2,2,2.35,-2,0,,,,0.0,1.0,2.0,2.0
 401806494,2031,Little Rock Trojans,2630,UT Martin Skyhawks,2026-02-20T01:20:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,2.0,2.0
 401806499,2031,Little Rock Trojans,2546,Southeast Missouri State Redhawks,2026-02-21T21:00:00Z,home,1.8,1,1,1.5,1,0,,,,0.0,1.0,-5.0,-5.0
-401806504,2031,Little Rock Trojans,2413,Morehead State Eagles,2026-02-27T01:00:00Z,home,5.2,2,2,1.8,-1,0,,0.5,,,,,
 401808679,2032,Arkansas State Red Wolves,309,Louisiana Ragin' Cajuns,2026-02-20T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,17.0,15.0
 401808687,2032,Arkansas State Red Wolves,2433,UL Monroe Warhawks,2026-02-21T20:00:00Z,away,1.8,1,1,1.5,1,0,,,,0.0,0.0,8.0,8.0
 401808690,2032,Arkansas State Red Wolves,2572,Southern Miss Golden Eagles,2026-02-25T01:30:00Z,home,3.2,2,2,1.8,2,0,,,,0.0,1.0,5.0,5.0
@@ -170,14 +153,12 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401814574,2050,Ball State Cardinals,2006,Akron Zips,2026-02-20T23:30:00Z,home,3.0,1,1,0.9,-1,0,,,,0.0,0.0,-13.0,-13.0
 401814582,2050,Ball State Cardinals,113,Massachusetts Minutemen,2026-02-25T00:00:00Z,home,4.0,2,2,1.8,-2,0,,,,0.0,1.0,1.0,1.0
 401830215,2057,Belmont Bruins,282,Indiana State Sycamores,2026-02-22T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,17.0,15.0
-401830216,2057,Belmont Bruins,339,Evansville Purple Aces,2026-02-26T00:30:00Z,home,4.0,1,1,0.9,1,0,,,,0.0,1.0,3.0,3.0
+401830216,2057,Belmont Bruins,339,Evansville Purple Aces,2026-02-26T00:30:00Z,home,4.0,1,1,0.9,1,0,,,,,,,
 401827123,2065,Bethune-Cookman Wildcats,2296,Jackson State Tigers,2026-02-17T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
 401827124,2065,Bethune-Cookman Wildcats,2011,Alabama State Hornets,2026-02-20T00:30:00Z,home,3.0,1,1,0.9,-1,0,,,,0.0,0.0,11.0,11.0
 401827125,2065,Bethune-Cookman Wildcats,2010,Alabama A&M Bulldogs,2026-02-21T22:30:00Z,home,1.9,2,2,2.35,1,0,,,,0.0,0.0,9.0,9.0
-401827107,2065,Bethune-Cookman Wildcats,2755,Grambling Tigers,2026-02-26T22:00:00Z,away,5.0,2,3,2.1,2,0,,,7.12,,,,
 401812159,2066,Binghamton Bearcats,2803,Bryant Bulldogs,2026-02-19T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,12.0,12.0
 401812163,2066,Binghamton Bearcats,2349,UMass Lowell River Hawks,2026-02-21T18:00:00Z,away,1.8,1,1,1.5,1,0,,,,0.0,0.0,-13.0,-13.0
-401812169,2066,Binghamton Bearcats,160,New Hampshire Wildcats,2026-02-26T23:00:00Z,home,5.2,2,2,1.8,-1,0,,,,,,,
 401828678,2083,Bucknell Bison,44,American University Eagles,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-18.0,-15.0
 401824435,2083,Bucknell Bison,107,Holy Cross Crusaders,2026-02-22T17:00:00Z,home,3.7,1,1,0.9,-1,0,,,,0.0,0.0,-9.0,-9.0
 401826824,2083,Bucknell Bison,349,Army Black Knights,2026-02-25T16:00:00Z,away,3.0,2,2,1.8,-2,0,,,,0.0,1.0,2.0,2.0
@@ -186,10 +167,9 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401814580,2084,Buffalo Bulls,2006,Akron Zips,2026-02-25T00:00:00Z,away,3.0,1,2,1.2,1,0,,0.5,,0.0,0.0,-14.0,-14.0
 401822950,2086,Butler Bulldogs,46,Georgetown Hoyas,2026-02-18T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,4.0,4.0
 401822954,2086,Butler Bulldogs,2752,Xavier Musketeers,2026-02-21T18:30:00Z,home,2.8,1,1,1.0,1,0,,,,0.0,1.0,5.0,5.0
-401822961,2086,Butler Bulldogs,222,Villanova Wildcats,2026-02-26T00:00:00Z,away,4.2,1,2,1.2,2,0,,1.0,,0.0,1.0,-5.0,-5.0
+401822961,2086,Butler Bulldogs,222,Villanova Wildcats,2026-02-26T00:00:00Z,away,4.2,1,2,1.2,2,0,,1.0,,,,,
 401812073,2097,Campbell Fighting Camels,2729,William & Mary Tribe,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
 401812076,2097,Campbell Fighting Camels,350,UNC Wilmington Seahawks,2026-02-21T21:00:00Z,home,1.9,1,1,1.45,1,0,,,,0.0,1.0,-5.0,-5.0
-401812086,2097,Campbell Fighting Camels,2182,Drexel Dragons,2026-02-27T00:00:00Z,away,5.1,2,2,1.8,-1,0,,0.5,,,,,
 401813369,2099,Canisius Golden Griffins,2520,Rider Broncs,2026-02-21T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,6.0,6.0
 401813370,2099,Canisius Golden Griffins,116,Mount St. Mary's Mountaineers,2026-02-22T19:00:00Z,away,1.8,1,1,1.5,1,0,,,,1.0,0.0,-21.0,-15.0
 401823782,21,San Diego State Aztecs,2253,Grand Canyon Lopes,2026-02-18T03:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-10.0,-10.0
@@ -200,7 +180,6 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401807759,2110,Central Arkansas Bears,2046,Austin Peay Governors,2026-02-26T01:30:00Z,away,4.3,2,2,1.8,-1,0,,,,,,,
 401812347,2115,Central Connecticut Blue Devils,2330,Le Moyne Dolphins,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
 401812657,2115,Central Connecticut Blue Devils,2130,Chicago State Cougars,2026-02-21T19:00:00Z,away,1.8,1,1,1.5,1,0,,,,1.0,0.0,-19.0,-15.0
-401812658,2115,Central Connecticut Blue Devils,2385,Mercyhurst Lakers,2026-02-27T00:00:00Z,home,5.2,2,2,1.8,-1,0,,,,,,,
 401827687,2116,UCF Knights,2628,TCU Horned Frogs,2026-02-18T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,11.0,11.0
 401827699,2116,UCF Knights,254,Utah Utes,2026-02-22T02:00:00Z,away,4.1,1,1,0.9,1,0,,,,0.0,1.0,2.0,2.0
 401827701,2116,UCF Knights,252,BYU Cougars,2026-02-25T04:00:00Z,away,3.1,1,2,1.2,2,0,,,,0.0,0.0,13.0,13.0
@@ -209,22 +188,20 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401814581,2117,Central Michigan Chippewas,2309,Kent State Golden Flashes,2026-02-25T00:00:00Z,away,3.1,1,2,1.2,1,0,,,,0.0,1.0,-2.0,-2.0
 401823930,2127,Charleston Southern Buccaneers,2241,Gardner-Webb Runnin' Bulldogs,2026-02-17T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,9.0,9.0
 401823954,2127,Charleston Southern Buccaneers,2344,Longwood Lancers,2026-02-21T21:00:00Z,home,3.9,1,1,0.9,1,0,,,,0.0,0.0,-11.0,-11.0
-401823961,2127,Charleston Southern Buccaneers,2737,Winthrop Eagles,2026-02-27T00:00:00Z,home,5.1,1,2,1.2,-1,0,,,,,,,
 401825526,213,Penn State Nittany Lions,164,Rutgers Scarlet Knights,2026-02-18T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-13.0,-13.0
 401825531,213,Penn State Nittany Lions,158,Nebraska Cornhuskers,2026-02-21T19:00:00Z,away,2.8,1,1,1.0,-1,0,,,,1.0,0.0,-23.0,-15.0
 401812329,2130,Chicago State Cougars,161,Fairleigh Dickinson Knights,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
 401812657,2130,Chicago State Cougars,2115,Central Connecticut Blue Devils,2026-02-21T19:00:00Z,home,1.8,1,1,1.5,-1,0,,,,1.0,0.0,19.0,15.0
-401812378,2130,Chicago State Cougars,112358,Long Island University Sharks,2026-02-27T00:00:00Z,away,5.2,2,2,1.8,1,0,,,,,,,
 401827696,2132,Cincinnati Bearcats,2305,Kansas Jayhawks,2026-02-21T18:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,16.0,15.0
 401827704,2132,Cincinnati Bearcats,2641,Texas Tech Red Raiders,2026-02-25T00:00:00Z,away,3.2,1,1,0.9,1,0,,,,0.0,0.0,-12.0,-12.0
 401824374,2142,Colgate Raiders,104,Boston University Terriers,2026-02-16T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-27.0,-15.0
 401820207,2142,Colgate Raiders,2352,Loyola Maryland Greyhounds,2026-02-21T19:00:00Z,home,4.8,1,1,0.9,-1,0,,,,0.0,1.0,3.0,3.0
-401829410,2142,Colgate Raiders,322,Lafayette Leopards,2026-02-26T00:00:00Z,home,4.2,1,2,1.2,1,0,,,,0.0,1.0,-4.0,-4.0
+401829410,2142,Colgate Raiders,322,Lafayette Leopards,2026-02-26T00:00:00Z,home,4.2,1,2,1.2,1,0,,,,,,,
 401822776,2154,Coppin State Eagles,2569,South Carolina State Bulldogs,2026-02-16T21:45:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,2.0,2.0
 401822777,2154,Coppin State Eagles,2379,Maryland Eastern Shore Hawks,2026-02-21T21:30:00Z,home,5.0,1,1,0.9,1,0,,,,0.0,0.0,6.0,6.0
 401828432,2166,Davidson Wildcats,257,Richmond Spiders,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,2.0,2.0
 401828438,2166,Davidson Wildcats,2230,Fordham Rams,2026-02-21T19:00:00Z,away,2.8,1,1,1.0,1,0,,,,0.0,1.0,-4.0,-4.0
-401828445,2166,Davidson Wildcats,2184,Duquesne Dukes,2026-02-26T00:00:00Z,away,4.2,2,2,1.8,-1,0,,0.5,,0.0,0.0,14.0,14.0
+401828445,2166,Davidson Wildcats,2184,Duquesne Dukes,2026-02-26T00:00:00Z,away,4.2,2,2,1.8,-1,0,,0.5,,,,,
 401828433,2168,Dayton Flyers,2244,George Mason Patriots,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,15.0,15.0
 401828439,2168,Dayton Flyers,2184,Duquesne Dukes,2026-02-21T19:00:00Z,home,2.8,1,1,1.0,1,0,,,,0.0,0.0,12.0,12.0
 401828443,2168,Dayton Flyers,139,Saint Louis Billikens,2026-02-25T00:00:00Z,home,3.2,2,2,1.8,2,0,,,,1.0,0.0,15.0,15.0
@@ -232,59 +209,51 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401828715,2169,Delaware State Hornets,2415,Morgan State Bears,2026-02-21T22:00:00Z,away,4.9,1,1,0.9,-1,0,,,,0.0,0.0,-14.0,-14.0
 401818426,2172,Denver Pioneers,233,South Dakota Coyotes,2026-02-20T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,20.0,15.0
 401818430,2172,Denver Pioneers,2900,St. Thomas-Minnesota Tommies,2026-02-21T23:00:00Z,home,1.9,1,1,1.45,1,0,,,,0.0,1.0,2.0,2.0
-401818435,2172,Denver Pioneers,198,Oral Roberts Golden Eagles,2026-02-27T01:00:00Z,away,5.1,2,2,1.8,2,0,,,,,,,
 401817675,2174,Detroit Mercy Titans,270,Milwaukee Panthers,2026-02-21T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
 401817676,2174,Detroit Mercy Titans,2739,Green Bay Phoenix,2026-02-22T18:00:00Z,home,1.8,1,1,1.5,1,0,,,,0.0,1.0,4.0,4.0
-401817683,2174,Detroit Mercy Titans,2523,Robert Morris Colonials,2026-02-26T00:00:00Z,away,3.2,2,2,1.8,2,0,,1.0,,0.0,1.0,3.0,3.0
+401817683,2174,Detroit Mercy Titans,2523,Robert Morris Colonials,2026-02-26T00:00:00Z,away,3.2,2,2,1.8,2,0,,1.0,,,,,
 401828232,218,Temple Owls,5,UAB Blazers,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
 401828239,218,Temple Owls,2724,Wichita State Shockers,2026-02-21T23:00:00Z,away,3.0,1,1,0.9,-1,0,,,,0.0,0.0,-12.0,-12.0
-401828246,218,Temple Owls,2226,Florida Atlantic Owls,2026-02-27T00:00:00Z,away,5.0,1,2,1.2,-2,0,,,,,,,
 401830308,2181,Drake Bulldogs,79,Southern Illinois Salukis,2026-02-19T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
 401830314,2181,Drake Bulldogs,2674,Valparaiso Beacons,2026-02-26T01:00:00Z,away,7.0,0,1,0.3,-1,0,,,,,,,
 401812070,2182,Drexel Dragons,2619,Stony Brook Seawolves,2026-02-17T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-3.0,-3.0
 401812074,2182,Drexel Dragons,111,Northeastern Huskies,2026-02-20T00:00:00Z,away,3.0,1,1,0.9,-1,0,,,,0.0,0.0,9.0,9.0
 401812081,2182,Drexel Dragons,119,Towson Tigers,2026-02-22T19:00:00Z,home,2.8,2,2,1.9,1,0,,,,0.0,0.0,6.0,6.0
-401812086,2182,Drexel Dragons,2097,Campbell Fighting Camels,2026-02-27T00:00:00Z,home,4.2,2,3,2.1,2,0,,,5.1,,,,
 401828434,2184,Duquesne Dukes,2325,La Salle Explorers,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
 401828439,2184,Duquesne Dukes,2168,Dayton Flyers,2026-02-21T19:00:00Z,away,2.8,1,1,1.0,1,0,,,,0.0,0.0,-12.0,-12.0
-401828445,2184,Duquesne Dukes,2166,Davidson Wildcats,2026-02-26T00:00:00Z,home,4.2,2,2,1.8,-1,0,,,,0.0,0.0,-14.0,-14.0
+401828445,2184,Duquesne Dukes,2166,Davidson Wildcats,2026-02-26T00:00:00Z,home,4.2,2,2,1.8,-1,0,,,,,,,
 401812595,219,Pennsylvania Quakers,43,Yale Bulldogs,2026-02-21T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
 401809373,2193,East Tennessee State Buccaneers,231,Furman Paladins,2026-02-18T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,9.0,9.0
 401809380,2193,East Tennessee State Buccaneers,2430,UNC Greensboro Spartans,2026-02-21T21:00:00Z,away,2.9,1,1,0.95,1,0,,,,0.0,0.0,12.0,12.0
-401809383,2193,East Tennessee State Buccaneers,2747,Wofford Terriers,2026-02-26T00:00:00Z,home,4.1,1,2,1.2,2,0,,,,0.0,1.0,0.0,0.0
+401809383,2193,East Tennessee State Buccaneers,2747,Wofford Terriers,2026-02-26T00:00:00Z,home,4.1,1,2,1.2,2,0,,,,,,,
 401806492,2197,Eastern Illinois Panthers,2413,Morehead State Eagles,2026-02-20T01:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-3.0,-3.0
 401806497,2197,Eastern Illinois Panthers,88,Southern Indiana Screaming Eagles,2026-02-21T21:30:00Z,home,1.8,1,1,1.5,-1,0,,,,0.0,1.0,-2.0,-2.0
-401806503,2197,Eastern Illinois Panthers,2815,Lindenwood Lions,2026-02-27T01:30:00Z,away,5.2,2,2,1.8,-2,0,,0.0,,,,,
 401807750,2198,Eastern Kentucky Colonels,2698,West Georgia Wolves,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
 401807753,2198,Eastern Kentucky Colonels,91,Bellarmine Knights,2026-02-22T00:00:00Z,away,3.0,1,1,0.9,1,0,,,,0.0,1.0,3.0,3.0
-401807757,2198,Eastern Kentucky Colonels,2511,Queens University Royals,2026-02-26T00:00:00Z,home,4.0,2,2,1.8,2,0,,1.0,,0.0,0.0,10.0,10.0
+401807757,2198,Eastern Kentucky Colonels,2511,Queens University Royals,2026-02-26T00:00:00Z,home,4.0,2,2,1.8,2,0,,1.0,,,,,
 401814570,2199,Eastern Michigan Eagles,2117,Central Michigan Chippewas,2026-02-17T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,12.0,12.0
 401814577,2199,Eastern Michigan Eagles,2649,Toledo Rockets,2026-02-21T22:00:00Z,away,3.9,1,1,0.9,1,0,,,,1.0,0.0,-19.0,-15.0
 401814583,2199,Eastern Michigan Eagles,193,Miami (OH) RedHawks,2026-02-24T23:30:00Z,home,3.1,2,2,1.8,-1,0,,,,0.0,0.0,-10.0,-10.0
 401820757,221,Pittsburgh Panthers,87,Notre Dame Fighting Irish,2026-02-21T19:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
 401820768,221,Pittsburgh Panthers,24,Stanford Cardinal,2026-02-26T01:00:00Z,away,4.2,1,1,0.9,1,0,,,,,,,
 401812077,2210,Elon Phoenix,2448,North Carolina A&T Aggies,2026-02-22T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-20.0,-15.0
-401812085,2210,Elon Phoenix,119,Towson Tigers,2026-02-27T00:00:00Z,away,5.0,1,1,0.9,-1,0,,,,,,,
 401823320,2217,Fairfield Stags,2529,Sacred Heart Pioneers,2026-02-21T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,10.0,10.0
 401820593,2217,Fairfield Stags,2514,Quinnipiac Bobcats,2026-02-22T19:00:00Z,away,1.8,1,1,1.5,1,0,,,,0.0,0.0,6.0,6.0
 401822947,222,Villanova Wildcats,2752,Xavier Musketeers,2026-02-17T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
 401822953,222,Villanova Wildcats,41,UConn Huskies,2026-02-21T22:30:00Z,home,4.0,1,1,0.9,1,0,,,,0.0,0.0,-10.0,-10.0
-401822961,222,Villanova Wildcats,2086,Butler Bulldogs,2026-02-26T00:00:00Z,home,4.1,1,2,1.2,-1,0,,,,0.0,1.0,5.0,5.0
+401822961,222,Villanova Wildcats,2086,Butler Bulldogs,2026-02-26T00:00:00Z,home,4.1,1,2,1.2,-1,0,,,,,,,
 401828235,2226,Florida Atlantic Owls,2636,UTSA Roadrunners,2026-02-19T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,8.0,8.0
 401828241,2226,Florida Atlantic Owls,249,North Texas Mean Green,2026-02-22T21:00:00Z,away,3.8,1,1,0.9,1,0,,,,0.0,1.0,-1.0,-1.0
-401828246,2226,Florida Atlantic Owls,218,Temple Owls,2026-02-27T00:00:00Z,home,4.1,1,2,1.2,-1,0,,,,,,,
 401804938,2229,Florida International Panthers,2335,Liberty Flames,2026-02-19T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
 401804943,2229,Florida International Panthers,2623,Missouri State Bears,2026-02-21T20:00:00Z,home,1.9,1,1,1.45,-1,0,,,,0.0,1.0,3.0,3.0
-401804947,2229,Florida International Panthers,2534,Sam Houston Bearkats,2026-02-27T02:00:00Z,away,5.2,1,2,1.2,1,0,,0.5,,,,,
 401828435,2230,Fordham Rams,2350,Loyola Chicago Ramblers,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
 401828438,2230,Fordham Rams,2166,Davidson Wildcats,2026-02-21T19:00:00Z,home,2.8,1,1,1.0,1,0,,,,0.0,1.0,4.0,4.0
 401809135,2239,Cal State Fullerton Titans,302,UC Davis Aggies,2026-02-20T03:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
 401823185,2239,Cal State Fullerton Titans,2934,Cal State Bakersfield Roadrunners,2026-02-22T02:30:00Z,away,2.0,1,1,1.4,1,0,,,,0.0,0.0,8.0,8.0
 401823930,2241,Gardner-Webb Runnin' Bulldogs,2127,Charleston Southern Buccaneers,2026-02-17T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-9.0,-9.0
 401823950,2241,Gardner-Webb Runnin' Bulldogs,2515,Radford Highlanders,2026-02-20T00:00:00Z,away,2.0,1,1,1.4,-1,0,,,,0.0,0.0,-12.0,-12.0
-401823959,2241,Gardner-Webb Runnin' Bulldogs,2427,UNC Asheville Bulldogs,2026-02-27T00:00:00Z,home,7.0,1,2,1.2,-2,0,,,,,,,
 401828433,2244,George Mason Patriots,2168,Dayton Flyers,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-15.0,-15.0
-401828446,2244,George Mason Patriots,2603,Saint Joseph's Hawks,2026-02-26T00:00:00Z,away,7.0,1,1,0.9,-1,0,,,,1.0,0.0,-17.0,-15.0
+401828446,2244,George Mason Patriots,2603,Saint Joseph's Hawks,2026-02-26T00:00:00Z,away,7.0,1,1,0.9,-1,0,,,,,,,
 401808678,2247,Georgia State Panthers,290,Georgia Southern Eagles,2026-02-20T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,2.0,2.0
 401808683,2247,Georgia State Panthers,256,James Madison Dukes,2026-02-21T20:55:00Z,home,1.8,1,1,1.5,1,0,,,,1.0,0.0,-15.0,-15.0
 401808688,2247,Georgia State Panthers,324,Coastal Carolina Chanticleers,2026-02-25T00:30:00Z,home,3.1,2,2,1.8,-1,0,,,,0.0,1.0,-5.0,-5.0
@@ -297,13 +266,10 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401823804,2253,Grand Canyon Lopes,2439,UNLV Rebels,2026-02-26T02:00:00Z,home,4.0,1,2,1.2,-1,0,,,,,,,
 401812072,2261,Hampton Pirates,2275,Hofstra Pride,2026-02-20T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-36.0,-15.0
 401812078,2261,Hampton Pirates,2619,Stony Brook Seawolves,2026-02-21T21:00:00Z,away,1.8,1,1,1.5,-1,0,,,,0.0,0.0,-7.0,-7.0
-401812087,2261,Hampton Pirates,232,Charleston Cougars,2026-02-26T16:00:00Z,home,4.8,2,2,1.8,-2,0,,,,,,,
 401828431,227,Rhode Island Rams,139,Saint Louis Billikens,2026-02-18T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
 401828440,227,Rhode Island Rams,2325,La Salle Explorers,2026-02-21T19:30:00Z,away,3.8,1,1,0.9,1,0,,,,0.0,0.0,-13.0,-13.0
-401828447,227,Rhode Island Rams,179,St. Bonaventure Bonnies,2026-02-26T22:00:00Z,away,5.1,1,2,1.2,-1,0,,,,,,,
 401823952,2272,High Point Panthers,2427,UNC Asheville Bulldogs,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,26.0,15.0
 401823957,2272,High Point Panthers,2737,Winthrop Eagles,2026-02-21T21:00:00Z,home,1.9,1,1,1.45,1,0,,,,0.0,1.0,2.0,2.0
-401823958,2272,High Point Panthers,2506,Presbyterian Blue Hose,2026-02-27T00:00:00Z,away,5.1,2,2,1.8,2,0,,,,,,,
 401812072,2275,Hofstra Pride,2261,Hampton Pirates,2026-02-20T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,36.0,15.0
 401812079,2275,Hofstra Pride,111,Northeastern Huskies,2026-02-21T19:00:00Z,away,1.8,1,1,1.5,1,0,,,,0.0,0.0,14.0,14.0
 401808930,2277,Houston Christian Huskies,2447,Nicholls Colonels,2026-02-17T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,4.0,4.0
@@ -313,13 +279,12 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401820755,228,Clemson Tigers,52,Florida State Seminoles,2026-02-21T17:00:00Z,home,2.7,1,1,1.05,-1,0,,,,0.0,1.0,-5.0,-5.0
 401830306,2287,Illinois State Redbirds,93,Murray State Racers,2026-02-19T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,17.0,15.0
 401830223,2287,Illinois State Redbirds,71,Bradley Braves,2026-02-22T01:00:00Z,away,3.0,1,1,0.9,1,0,,,,0.0,0.0,-14.0,-14.0
-401830312,2287,Illinois State Redbirds,2460,Northern Iowa Panthers,2026-02-26T00:00:00Z,away,4.0,2,2,1.8,-1,0,,,,0.0,1.0,-1.0,-1.0
+401830312,2287,Illinois State Redbirds,2460,Northern Iowa Panthers,2026-02-26T00:00:00Z,away,4.0,2,2,1.8,-1,0,,,,,,,
 401825520,2294,Iowa Hawkeyes,158,Nebraska Cornhuskers,2026-02-18T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
 401825535,2294,Iowa Hawkeyes,275,Wisconsin Badgers,2026-02-22T21:00:00Z,away,4.8,1,1,0.9,1,0,,,,0.0,0.0,-13.0,-13.0
 401825540,2294,Iowa Hawkeyes,194,Ohio State Buckeyes,2026-02-26T02:00:00Z,home,3.2,1,2,1.2,-1,0,,,,,,,
 401827123,2296,Jackson State Tigers,2065,Bethune-Cookman Wildcats,2026-02-17T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
 401828668,2296,Jackson State Tigers,2016,Alcorn State Braves,2026-02-21T21:45:00Z,away,4.9,1,1,0.9,1,0,,,,1.0,0.0,-18.0,-15.0
-401827080,2296,Jackson State Tigers,2504,Prairie View A&M Panthers,2026-02-27T02:30:00Z,away,5.2,1,2,1.2,-1,0,,,,,,,
 401829318,23,San José State Spartans,2440,Nevada Wolf Pack,2026-02-18T03:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,16.0,15.0
 401823831,23,San José State Spartans,68,Boise State Broncos,2026-02-21T21:00:00Z,away,3.8,1,1,0.9,1,0,,,,1.0,0.0,-15.0,-15.0
 401820573,23,San José State Spartans,2005,Air Force Falcons,2026-02-25T02:00:00Z,away,3.2,2,2,1.8,-1,0,,,,0.0,0.0,6.0,6.0
@@ -333,10 +298,9 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401814581,2309,Kent State Golden Flashes,2117,Central Michigan Chippewas,2026-02-25T00:00:00Z,home,7.0,1,1,0.9,1,0,,,,0.0,1.0,2.0,2.0
 401809373,231,Furman Paladins,2193,East Tennessee State Buccaneers,2026-02-18T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-9.0,-9.0
 401809382,231,Furman Paladins,2747,Wofford Terriers,2026-02-22T00:00:00Z,away,3.0,1,1,0.9,-1,0,,,,0.0,0.0,9.0,9.0
-401809384,231,Furman Paladins,2643,The Citadel Bulldogs,2026-02-25T23:00:00Z,home,4.0,2,2,1.8,1,0,,,,0.0,0.0,11.0,11.0
+401809384,231,Furman Paladins,2643,The Citadel Bulldogs,2026-02-25T23:00:00Z,home,4.0,2,2,1.8,1,0,,,,0.0,1.0,0.0,0.0
 401812071,232,Charleston Cougars,2448,North Carolina A&T Aggies,2026-02-20T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,13.0,13.0
 401812080,232,Charleston Cougars,2405,Monmouth Hawks,2026-02-21T21:00:00Z,home,1.9,1,1,1.45,1,0,,,,0.0,0.0,11.0,11.0
-401812087,232,Charleston Cougars,2261,Hampton Pirates,2026-02-26T16:00:00Z,away,4.8,2,2,1.8,2,0,,,,,,,
 401808983,2320,Lamar Cardinals,292,UT Rio Grande Valley Vaqueros,2026-02-17T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
 401808915,2320,Lamar Cardinals,2443,New Orleans Privateers,2026-02-22T00:00:00Z,home,5.0,1,1,0.9,-1,0,,,,0.0,0.0,-6.0,-6.0
 401808932,2320,Lamar Cardinals,2447,Nicholls Colonels,2026-02-24T00:00:00Z,home,2.0,2,2,2.3,-2,0,,,,0.0,1.0,-1.0,-1.0
@@ -345,37 +309,31 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401828444,2325,La Salle Explorers,45,George Washington Revolutionaries,2026-02-24T23:30:00Z,home,3.2,2,2,1.8,1,0,,,,1.0,0.0,-27.0,-15.0
 401820174,2329,Lehigh Mountain Hawks,2426,Navy Midshipmen,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-23.0,-15.0
 401824375,2329,Lehigh Mountain Hawks,104,Boston University Terriers,2026-02-22T17:00:00Z,home,3.7,1,1,0.9,-1,0,,,,0.0,1.0,3.0,3.0
-401828680,2329,Lehigh Mountain Hawks,44,American University Eagles,2026-02-26T00:00:00Z,away,3.3,2,2,1.8,1,0,,,,0.0,1.0,5.0,5.0
+401828680,2329,Lehigh Mountain Hawks,44,American University Eagles,2026-02-26T00:00:00Z,away,3.3,2,2,1.8,1,0,,,,,,,
 401818426,233,South Dakota Coyotes,2172,Denver Pioneers,2026-02-20T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-20.0,-15.0
 401818429,233,South Dakota Coyotes,198,Oral Roberts Golden Eagles,2026-02-22T01:00:00Z,away,2.0,1,1,1.4,-1,0,,,,0.0,1.0,-5.0,-5.0
-401818434,233,South Dakota Coyotes,2437,Omaha Mavericks,2026-02-26T00:00:00Z,home,4.0,2,2,1.8,-2,0,,,,0.0,0.0,8.0,8.0
+401818434,233,South Dakota Coyotes,2437,Omaha Mavericks,2026-02-26T00:00:00Z,home,4.0,2,2,1.8,-2,0,,,,,,,
 401812347,2330,Le Moyne Dolphins,2115,Central Connecticut Blue Devils,2026-02-20T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
 401812348,2330,Le Moyne Dolphins,284,Stonehill Skyhawks,2026-02-21T19:00:00Z,away,1.8,1,1,1.5,-1,0,,,,0.0,0.0,-9.0,-9.0
-401812331,2330,Le Moyne Dolphins,161,Fairleigh Dickinson Knights,2026-02-27T00:00:00Z,home,5.2,2,2,1.8,-2,0,,,,,,,
 401804938,2335,Liberty Flames,2229,Florida International Panthers,2026-02-19T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
 401804942,2335,Liberty Flames,98,Western Kentucky Hilltoppers,2026-02-21T21:00:00Z,home,1.9,1,1,1.45,1,0,,,,1.0,0.0,-21.0,-15.0
-401804949,2335,Liberty Flames,338,Kennesaw State Owls,2026-02-27T00:00:00Z,away,5.1,1,2,1.2,-1,0,,,,,,,
 401823951,2344,Longwood Lancers,2506,Presbyterian Blue Hose,2026-02-20T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-7.0,-7.0
 401823954,2344,Longwood Lancers,2127,Charleston Southern Buccaneers,2026-02-21T21:00:00Z,away,1.9,1,1,1.45,-1,0,,,,0.0,0.0,11.0,11.0
 401804934,2348,Louisiana Tech Bulldogs,55,Jacksonville State Gamecocks,2026-02-19T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,6.0,6.0
 401804940,2348,Louisiana Tech Bulldogs,338,Kennesaw State Owls,2026-02-21T22:00:00Z,away,2.9,1,1,0.95,1,0,,,,0.0,1.0,-3.0,-3.0
-401804948,2348,Louisiana Tech Bulldogs,2623,Missouri State Bears,2026-02-27T00:30:00Z,home,5.1,1,2,1.2,-1,0,,,,,,,
 401812160,2349,UMass Lowell River Hawks,160,New Hampshire Wildcats,2026-02-19T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,22.0,15.0
 401812163,2349,UMass Lowell River Hawks,2066,Binghamton Bearcats,2026-02-21T18:00:00Z,home,1.8,1,1,1.5,1,0,,,,0.0,0.0,13.0,13.0
-401812168,2349,UMass Lowell River Hawks,261,Vermont Catamounts,2026-02-27T00:00:00Z,away,5.2,1,2,1.2,2,0,,,,,,,
 401828237,235,Memphis Tigers,58,South Florida Bulls,2026-02-20T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-21.0,-15.0
 401828240,235,Memphis Tigers,5,UAB Blazers,2026-02-22T17:00:00Z,home,2.7,1,1,1.05,-1,0,,,,0.0,0.0,-11.0,-11.0
-401828249,235,Memphis Tigers,2724,Wichita State Shockers,2026-02-27T02:00:00Z,home,4.4,1,2,1.2,-2,0,,,,,,,
 401828435,2350,Loyola Chicago Ramblers,2230,Fordham Rams,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-3.0,-3.0
 401828441,2350,Loyola Chicago Ramblers,2603,Saint Joseph's Hawks,2026-02-21T17:00:00Z,away,2.7,1,1,1.05,-1,0,,,,0.0,0.0,-14.0,-14.0
 401829254,2351,Loyola Marymount Lions,301,San Diego Toreros,2026-02-21T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,12.0,12.0
 401829264,2351,Loyola Marymount Lions,265,Washington State Cougars,2026-02-26T04:00:00Z,home,4.2,1,1,0.9,1,0,,,,,,,
 401820206,2352,Loyola Maryland Greyhounds,349,Army Black Knights,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-10.0,-10.0
 401820207,2352,Loyola Maryland Greyhounds,2142,Colgate Raiders,2026-02-21T19:00:00Z,away,2.8,1,1,1.0,-1,0,,,,0.0,1.0,-3.0,-3.0
-401820176,2352,Loyola Maryland Greyhounds,2426,Navy Midshipmen,2026-02-26T00:00:00Z,home,4.2,2,2,1.8,-2,0,,,,1.0,0.0,-18.0,-15.0
+401820176,2352,Loyola Maryland Greyhounds,2426,Navy Midshipmen,2026-02-26T00:00:00Z,home,4.2,2,2,1.8,-2,0,,,,,,,
 401809376,236,Chattanooga Mocs,2382,Mercer Bears,2026-02-20T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,4.0,4.0
 401809379,236,Chattanooga Mocs,2643,The Citadel Bulldogs,2026-02-21T18:00:00Z,away,1.8,1,1,1.5,1,0,,,,1.0,0.0,21.0,15.0
-401809386,236,Chattanooga Mocs,2430,UNC Greensboro Spartans,2026-02-27T00:00:00Z,home,5.2,2,2,1.8,2,0,,,,,,,
 401813307,2363,Manhattan Jaspers,2368,Marist Red Foxes,2026-02-21T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-14.0,-14.0
 401813307,2368,Marist Red Foxes,2363,Manhattan Jaspers,2026-02-21T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,14.0,14.0
 401813343,2368,Marist Red Foxes,2529,Sacred Heart Pioneers,2026-02-22T18:00:00Z,home,1.8,1,1,1.5,1,0,,,,0.0,1.0,2.0,2.0
@@ -384,18 +342,16 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401808887,2377,McNeese Cowboys,292,UT Rio Grande Valley Vaqueros,2026-02-24T00:30:00Z,home,2.0,2,2,2.3,2,0,,,,0.0,0.0,7.0,7.0
 401812161,2378,UMBC Retrievers,261,Vermont Catamounts,2026-02-19T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,13.0,13.0
 401812162,2378,UMBC Retrievers,399,UAlbany Great Danes,2026-02-21T18:00:00Z,home,1.8,1,1,1.5,1,0,,,,0.0,1.0,4.0,4.0
-401812166,2378,UMBC Retrievers,2803,Bryant Bulldogs,2026-02-26T23:00:00Z,home,5.2,2,2,1.8,2,0,,,,,,,
 401823053,2379,Maryland Eastern Shore Hawks,2450,Norfolk State Spartans,2026-02-17T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
 401822777,2379,Maryland Eastern Shore Hawks,2154,Coppin State Eagles,2026-02-21T21:30:00Z,away,4.9,1,1,0.9,-1,0,,,,0.0,0.0,-6.0,-6.0
 401808246,238,Vanderbilt Commodores,142,Missouri Tigers,2026-02-19T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
 401808255,238,Vanderbilt Commodores,2633,Tennessee Volunteers,2026-02-21T19:00:00Z,home,2.7,1,1,1.05,-1,0,,,,0.0,1.0,-4.0,-4.0
-401808261,238,Vanderbilt Commodores,61,Georgia Bulldogs,2026-02-26T00:00:00Z,home,4.2,2,2,1.8,-2,0,,0.0,,1.0,0.0,18.0,15.0
+401808261,238,Vanderbilt Commodores,61,Georgia Bulldogs,2026-02-26T00:00:00Z,home,4.2,2,2,1.8,-2,0,,0.0,,,,,
 401809376,2382,Mercer Bears,236,Chattanooga Mocs,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
 401809378,2382,Mercer Bears,2535,Samford Bulldogs,2026-02-21T19:00:00Z,home,1.8,1,1,1.5,-1,0,,,,0.0,1.0,3.0,3.0
-401809385,2382,Mercer Bears,2717,Western Carolina Catamounts,2026-02-26T00:00:00Z,away,4.2,2,2,1.8,1,0,,0.5,,0.0,1.0,-5.0,-5.0
+401809385,2382,Mercer Bears,2717,Western Carolina Catamounts,2026-02-26T00:00:00Z,away,4.2,2,2,1.8,1,0,,0.5,,,,,
 401812416,2385,Mercyhurst Lakers,2681,Wagner Seahawks,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-3.0,-3.0
 401812377,2385,Mercyhurst Lakers,112358,Long Island University Sharks,2026-02-21T19:00:00Z,home,1.8,1,1,1.5,-1,0,,,,0.0,0.0,8.0,8.0
-401812658,2385,Mercyhurst Lakers,2115,Central Connecticut Blue Devils,2026-02-27T00:00:00Z,away,5.2,2,2,1.8,1,0,,,,,,,
 401827688,239,Baylor Bears,2306,Kansas State Wildcats,2026-02-18T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-16.0,-15.0
 401827692,239,Baylor Bears,9,Arizona State Sun Devils,2026-02-21T21:00:00Z,home,3.8,1,1,0.9,-1,0,,,,0.0,1.0,5.0,5.0
 401827700,239,Baylor Bears,12,Arizona Wildcats,2026-02-25T02:00:00Z,home,3.2,2,2,1.8,1,0,,,,0.0,0.0,-7.0,-7.0
@@ -404,7 +360,6 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401820766,2390,Miami Hurricanes,52,Florida State Seminoles,2026-02-25T02:00:00Z,away,3.3,1,2,1.2,-1,0,,0.5,,0.0,0.0,10.0,10.0
 401804937,2393,Middle Tennessee Blue Raiders,2534,Sam Houston Bearkats,2026-02-19T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-8.0,-8.0
 401804944,2393,Middle Tennessee Blue Raiders,48,Delaware Blue Hens,2026-02-21T19:00:00Z,home,2.8,1,1,1.0,-1,0,,,,0.0,0.0,12.0,12.0
-401804946,2393,Middle Tennessee Blue Raiders,2638,UTEP Miners,2026-02-27T00:30:00Z,home,5.2,1,2,1.2,1,0,,,,,,,
 401820754,24,Stanford Cardinal,25,California Golden Bears,2026-02-21T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-6.0,-6.0
 401820768,24,Stanford Cardinal,221,Pittsburgh Panthers,2026-02-26T01:00:00Z,home,4.1,1,1,0.9,-1,0,,,,,,,
 401827167,2400,Mississippi Valley State Delta Devils,2011,Alabama State Hornets,2026-02-17T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-37.0,-15.0
@@ -413,36 +368,32 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401827098,2400,Mississippi Valley State Delta Devils,2755,Grambling Tigers,2026-02-24T02:00:00Z,away,2.1,2,3,2.55,1,0,,,15.97,1.0,0.0,-21.0,-15.0
 401812075,2405,Monmouth Hawks,350,UNC Wilmington Seahawks,2026-02-20T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-10.0,-10.0
 401812080,2405,Monmouth Hawks,232,Charleston Cougars,2026-02-21T21:00:00Z,away,1.9,1,1,1.45,-1,0,,,,0.0,0.0,-11.0,-11.0
-401812083,2405,Monmouth Hawks,2619,Stony Brook Seawolves,2026-02-27T00:00:00Z,home,5.1,2,2,1.8,-2,0,,,,,,,
 401806492,2413,Morehead State Eagles,2197,Eastern Illinois Panthers,2026-02-20T01:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
 401806500,2413,Morehead State Eagles,2710,Western Illinois Leathernecks,2026-02-21T21:30:00Z,away,1.8,1,1,1.5,1,0,,,,1.0,0.0,22.0,15.0
 401806502,2413,Morehead State Eagles,88,Southern Indiana Screaming Eagles,2026-02-25T00:30:00Z,home,3.1,2,2,1.8,2,0,,,,0.0,1.0,1.0,1.0
-401806504,2413,Morehead State Eagles,2031,Little Rock Trojans,2026-02-27T01:00:00Z,away,2.0,3,3,3.2,3,1,,1.0,9.46,,,,
 401828694,2415,Morgan State Bears,2428,North Carolina Central Eagles,2026-02-17T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
 401828715,2415,Morgan State Bears,2169,Delaware State Hornets,2026-02-21T22:00:00Z,home,4.9,1,1,0.9,-1,0,,,,0.0,0.0,14.0,14.0
-401861277,2415,Morgan State Bears,2569,South Carolina State Bulldogs,2026-02-25T23:00:00Z,away,4.0,1,2,1.2,1,0,,,,0.0,1.0,5.0,5.0
+401861277,2415,Morgan State Bears,2569,South Carolina State Bulldogs,2026-02-25T23:00:00Z,away,4.0,1,2,1.2,1,0,,,,0.0,0.0,6.0,6.0
 401828242,242,Rice Owls,2655,Tulane Green Wave,2026-02-22T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-6.0,-6.0
 401828247,242,Rice Owls,58,South Florida Bulls,2026-02-26T01:00:00Z,home,3.2,1,1,0.9,-1,0,,,,,,,
 401820174,2426,Navy Midshipmen,2329,Lehigh Mountain Hawks,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,23.0,15.0
 401820175,2426,Navy Midshipmen,349,Army Black Knights,2026-02-21T18:30:00Z,away,2.8,1,1,1.0,1,0,,,,1.0,0.0,18.0,15.0
-401820176,2426,Navy Midshipmen,2352,Loyola Maryland Greyhounds,2026-02-26T00:00:00Z,away,4.2,2,2,1.8,2,0,,,,1.0,0.0,18.0,15.0
+401820176,2426,Navy Midshipmen,2352,Loyola Maryland Greyhounds,2026-02-26T00:00:00Z,away,4.2,2,2,1.8,2,0,,,,,,,
 401823952,2427,UNC Asheville Bulldogs,2272,High Point Panthers,2026-02-20T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-26.0,-15.0
 401823956,2427,UNC Asheville Bulldogs,2515,Radford Highlanders,2026-02-21T21:30:00Z,home,1.9,1,1,1.45,-1,0,,,,0.0,1.0,1.0,1.0
-401823959,2427,UNC Asheville Bulldogs,2241,Gardner-Webb Runnin' Bulldogs,2026-02-27T00:00:00Z,away,5.1,2,2,1.8,1,0,,,,,,,
 401828694,2428,North Carolina Central Eagles,2415,Morgan State Bears,2026-02-17T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,4.0,4.0
 401858787,2428,North Carolina Central Eagles,2569,South Carolina State Bulldogs,2026-02-19T01:00:00Z,away,2.0,1,1,1.4,1,0,,,,0.0,0.0,-13.0,-13.0
 401830243,2428,North Carolina Central Eagles,47,Howard Bison,2026-02-21T17:00:00Z,away,2.7,2,2,1.95,-1,0,,,,1.0,0.0,-33.0,-15.0
 401828233,2429,Charlotte 49ers,202,Tulsa Golden Hurricane,2026-02-19T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
 401828238,2429,Charlotte 49ers,151,East Carolina Pirates,2026-02-21T17:00:00Z,home,2.7,1,1,1.05,-1,0,,,,0.0,0.0,12.0,12.0
-401828244,2429,Charlotte 49ers,249,North Texas Mean Green,2026-02-26T00:00:00Z,home,4.3,2,2,1.8,1,0,,,,0.0,1.0,-1.0,-1.0
+401828244,2429,Charlotte 49ers,249,North Texas Mean Green,2026-02-26T00:00:00Z,home,4.3,2,2,1.8,1,0,,,,,,,
 401809374,2430,UNC Greensboro Spartans,2717,Western Carolina Catamounts,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-14.0,-14.0
 401809380,2430,UNC Greensboro Spartans,2193,East Tennessee State Buccaneers,2026-02-21T21:00:00Z,home,2.9,1,1,0.95,-1,0,,,,0.0,0.0,-12.0,-12.0
-401809386,2430,UNC Greensboro Spartans,236,Chattanooga Mocs,2026-02-27T00:00:00Z,away,5.1,1,2,1.2,-2,0,,,,,,,
 401808676,2433,UL Monroe Warhawks,2653,Troy Trojans,2026-02-19T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
 401808687,2433,UL Monroe Warhawks,2032,Arkansas State Red Wolves,2026-02-21T20:00:00Z,home,2.8,1,1,1.0,-1,0,,,,0.0,0.0,-8.0,-8.0
 401808693,2433,UL Monroe Warhawks,6,South Alabama Jaguars,2026-02-26T01:30:00Z,away,4.2,1,2,1.2,-2,0,,,,,,,
 401818425,2437,Omaha Mavericks,198,Oral Roberts Golden Eagles,2026-02-19T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,9.0,9.0
-401818434,2437,Omaha Mavericks,233,South Dakota Coyotes,2026-02-26T00:00:00Z,away,7.0,1,1,0.9,1,0,,,,0.0,0.0,-8.0,-8.0
+401818434,2437,Omaha Mavericks,233,South Dakota Coyotes,2026-02-26T00:00:00Z,away,7.0,1,1,0.9,1,0,,,,,,,
 401830831,2439,UNLV Rebels,36,Colorado State Rams,2026-02-19T04:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
 401820572,2439,UNLV Rebels,2005,Air Force Falcons,2026-02-21T20:00:00Z,away,2.7,1,1,1.05,-1,0,,,,1.0,0.0,25.0,15.0
 401823804,2439,UNLV Rebels,2253,Grand Canyon Lopes,2026-02-26T02:00:00Z,away,4.2,2,2,1.8,1,0,,,,,,,
@@ -452,7 +403,6 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401812409,2441,New Haven Chargers,284,Stonehill Skyhawks,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,13.0,13.0
 401812330,2441,New Haven Chargers,161,Fairleigh Dickinson Knights,2026-02-22T00:00:00Z,away,2.0,1,1,1.4,1,0,,,,0.0,0.0,7.0,7.0
 401858739,2441,New Haven Chargers,2598,Saint Francis Red Flash,2026-02-24T23:00:00Z,home,3.0,2,2,1.8,2,0,,,,0.0,0.0,-6.0,-6.0
-401812417,2441,New Haven Chargers,2681,Wagner Seahawks,2026-02-27T00:00:00Z,away,2.0,3,3,3.2,-1,0,,,7.93,,,,
 401808914,2443,New Orleans Privateers,2916,Incarnate Word Cardinals,2026-02-17T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,14.0,14.0
 401808915,2443,New Orleans Privateers,2320,Lamar Cardinals,2026-02-22T00:00:00Z,away,5.0,1,1,0.9,1,0,,,,0.0,0.0,6.0,6.0
 401808916,2443,New Orleans Privateers,2617,Stephen F. Austin Lumberjacks,2026-02-24T00:30:00Z,away,2.0,2,2,2.3,2,0,,,,0.0,1.0,4.0,4.0
@@ -461,10 +411,8 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401808932,2447,Nicholls Colonels,2320,Lamar Cardinals,2026-02-24T00:00:00Z,away,2.0,2,2,2.3,-2,0,,0.0,,0.0,1.0,1.0,1.0
 401812071,2448,North Carolina A&T Aggies,232,Charleston Cougars,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-13.0,-13.0
 401812077,2448,North Carolina A&T Aggies,2210,Elon Phoenix,2026-02-22T00:00:00Z,away,2.0,1,1,1.4,-1,0,,,,1.0,0.0,20.0,15.0
-401812084,2448,North Carolina A&T Aggies,350,UNC Wilmington Seahawks,2026-02-27T00:00:00Z,away,5.0,2,2,1.8,1,0,,,,,,,
 401818424,2449,North Dakota State Bison,2571,South Dakota State Jackrabbits,2026-02-19T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,8.0,8.0
 401818431,2449,North Dakota State Bison,140,Kansas City Roos,2026-02-21T19:00:00Z,home,2.8,1,1,1.0,1,0,,,,1.0,0.0,36.0,15.0
-401818432,2449,North Dakota State Bison,2900,St. Thomas-Minnesota Tommies,2026-02-27T02:00:00Z,away,5.3,1,2,1.2,2,0,,,,,,,
 401808248,245,Texas A&M Aggies,145,Ole Miss Rebels,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
 401808256,245,Texas A&M Aggies,201,Oklahoma Sooners,2026-02-22T01:30:00Z,away,3.1,1,1,0.9,1,0,,,,0.0,1.0,4.0,4.0
 401808259,245,Texas A&M Aggies,8,Arkansas Razorbacks,2026-02-26T02:00:00Z,away,4.0,1,2,1.2,2,0,,1.0,,,,,
@@ -475,26 +423,22 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401807758,2453,North Alabama Lions,91,Bellarmine Knights,2026-02-26T01:45:00Z,home,4.1,1,2,1.2,-2,0,,,,,,,
 401807746,2454,North Florida Ospreys,2046,Austin Peay Governors,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
 401807755,2454,North Florida Ospreys,56,Stetson Hatters,2026-02-21T20:30:00Z,away,1.9,1,1,1.45,-1,0,,,,0.0,1.0,-5.0,-5.0
-401807760,2454,North Florida Ospreys,526,Florida Gulf Coast Eagles,2026-02-27T00:00:00Z,home,5.1,2,2,1.8,-2,0,,0.0,,,,,
 401808530,2458,Northern Colorado Bears,2464,Northern Arizona Lumberjacks,2026-02-22T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
-401808468,2458,Northern Colorado Bears,331,Eastern Washington Eagles,2026-02-27T02:00:00Z,away,5.0,1,1,0.9,1,0,,,,,,,
 401814573,2459,Northern Illinois Huskies,2084,Buffalo Bulls,2026-02-17T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,2.0,2.0
 401814578,2459,Northern Illinois Huskies,195,Ohio Bobcats,2026-02-21T20:00:00Z,home,3.9,1,1,0.9,1,0,,,,0.0,0.0,-8.0,-8.0
 401814584,2459,Northern Illinois Huskies,2649,Toledo Rockets,2026-02-25T00:00:00Z,away,3.2,1,2,1.2,-1,0,,,,0.0,0.0,-10.0,-10.0
 401830307,2460,Northern Iowa Panthers,282,Indiana State Sycamores,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,21.0,15.0
 401830310,2460,Northern Iowa Panthers,79,Southern Illinois Salukis,2026-02-21T23:00:00Z,home,3.0,1,1,0.9,1,0,,,,0.0,1.0,-2.0,-2.0
-401830312,2460,Northern Iowa Panthers,2287,Illinois State Redbirds,2026-02-26T00:00:00Z,home,4.0,2,2,1.8,-1,0,,,,0.0,1.0,1.0,1.0
+401830312,2460,Northern Iowa Panthers,2287,Illinois State Redbirds,2026-02-26T00:00:00Z,home,4.0,2,2,1.8,-1,0,,,,,,,
 401823268,2463,Cal State Northridge Matadors,2540,UC Santa Barbara Gauchos,2026-02-20T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,2.0,2.0
 401823269,2463,Cal State Northridge Matadors,299,Long Beach State Beach,2026-02-22T02:00:00Z,away,2.0,1,1,1.4,1,0,,,,0.0,1.0,2.0,2.0
-401809119,2463,Cal State Northridge Matadors,300,UC Irvine Anteaters,2026-02-27T03:00:00Z,home,5.0,1,2,1.2,2,0,,1.0,,,,,
 401808530,2464,Northern Arizona Lumberjacks,2458,Northern Colorado Bears,2026-02-22T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
-401808485,2464,Northern Arizona Lumberjacks,70,Idaho Vandals,2026-02-27T02:00:00Z,away,5.0,1,1,0.9,-1,0,,,,,,,
 401808885,2466,Northwestern State Demons,2377,McNeese Cowboys,2026-02-17T00:40:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-11.0,-11.0
 401808944,2466,Northwestern State Demons,2277,Houston Christian Huskies,2026-02-21T21:30:00Z,home,4.9,1,1,0.9,-1,0,,,,1.0,0.0,18.0,15.0
 401808945,2466,Northwestern State Demons,2916,Incarnate Word Cardinals,2026-02-24T00:30:00Z,home,2.1,2,2,2.25,1,0,,,,0.0,1.0,5.0,5.0
 401817674,2473,Oakland Golden Grizzlies,2739,Green Bay Phoenix,2026-02-21T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
 401817677,2473,Oakland Golden Grizzlies,270,Milwaukee Panthers,2026-02-22T20:00:00Z,home,1.8,1,1,1.5,-1,0,,,,0.0,0.0,11.0,11.0
-401817684,2473,Oakland Golden Grizzlies,85,IU Indianapolis Jaguars,2026-02-25T23:30:00Z,away,3.1,2,2,1.8,1,0,,,,0.0,0.0,12.0,12.0
+401817684,2473,Oakland Golden Grizzlies,85,IU Indianapolis Jaguars,2026-02-25T23:30:00Z,away,3.1,2,2,1.8,1,0,,,,,,,
 401820819,248,Houston Cougars,66,Iowa State Cyclones,2026-02-17T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-3.0,-3.0
 401827695,248,Houston Cougars,12,Arizona Wildcats,2026-02-21T20:00:00Z,home,4.8,1,1,0.9,-1,0,,,,0.0,0.0,-7.0,-7.0
 401820820,248,Houston Cougars,2305,Kansas Jayhawks,2026-02-24T02:00:00Z,away,2.2,2,2,2.2,-2,0,,,,0.0,0.0,-13.0,-13.0
@@ -503,7 +447,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401825542,2483,Oregon Ducks,275,Wisconsin Badgers,2026-02-26T04:00:00Z,home,4.3,1,2,1.2,1,0,,,,,,,
 401828236,249,North Texas Mean Green,2655,Tulane Green Wave,2026-02-20T02:10:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-6.0,-6.0
 401828241,249,North Texas Mean Green,2226,Florida Atlantic Owls,2026-02-22T21:00:00Z,home,2.8,1,1,1.0,-1,0,,,,0.0,1.0,1.0,1.0
-401828244,249,North Texas Mean Green,2429,Charlotte 49ers,2026-02-26T00:00:00Z,away,3.1,2,2,1.8,1,0,,,,0.0,1.0,1.0,1.0
+401828244,249,North Texas Mean Green,2429,Charlotte 49ers,2026-02-26T00:00:00Z,away,3.1,2,2,1.8,1,0,,,,,,,
 401829252,2492,Pepperdine Waves,2501,Portland Pilots,2026-02-19T03:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,8.0,8.0
 401829256,2492,Pepperdine Waves,204,Oregon State Beavers,2026-02-22T01:00:00Z,away,2.9,1,1,0.95,1,0,,,,0.0,0.0,-10.0,-10.0
 401829263,2492,Pepperdine Waves,2547,Seattle U Redhawks,2026-02-26T02:00:00Z,home,4.0,2,2,1.8,-1,0,,,,,,,
@@ -511,52 +455,44 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401820765,25,California Golden Bears,2567,SMU Mustangs,2026-02-26T03:00:00Z,home,4.2,1,1,0.9,1,0,,,,,,,
 401805200,250,UT Arlington Mavericks,3101,Utah Tech Trailblazers,2026-02-20T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,13.0,13.0
 401805204,250,UT Arlington Mavericks,3084,Utah Valley Wolverines,2026-02-21T20:00:00Z,home,1.8,1,1,1.5,1,0,,,,0.0,0.0,-12.0,-12.0
-401805207,250,UT Arlington Mavericks,2856,California Baptist Lancers,2026-02-27T03:00:00Z,away,5.3,1,2,1.2,-1,0,,,,,,,
 401829252,2501,Portland Pilots,2492,Pepperdine Waves,2026-02-19T03:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-8.0,-8.0
 401829257,2501,Portland Pilots,2547,Seattle U Redhawks,2026-02-22T03:00:00Z,away,3.0,1,1,0.9,-1,0,,,,0.0,0.0,-12.0,-12.0
 401829260,2501,Portland Pilots,2250,Gonzaga Bulldogs,2026-02-26T02:00:00Z,away,4.0,2,2,1.8,-2,0,,,,,,,
 401808483,2502,Portland State Vikings,70,Idaho Vandals,2026-02-20T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,10.0,10.0
 401808467,2502,Portland State Vikings,331,Eastern Washington Eagles,2026-02-21T22:00:00Z,home,1.8,1,1,1.5,1,0,,,,0.0,0.0,-12.0,-12.0
-401808520,2502,Portland State Vikings,147,Montana State Bobcats,2026-02-27T02:00:00Z,away,5.2,2,2,1.8,-1,0,,,,,,,
 401827077,2504,Prairie View A&M Panthers,2755,Grambling Tigers,2026-02-17T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
 401827078,2504,Prairie View A&M Panthers,2400,Mississippi Valley State Delta Devils,2026-02-20T01:50:00Z,away,3.1,1,1,0.9,1,0,,,,0.0,0.0,10.0,10.0
 401827149,2504,Prairie View A&M Panthers,2029,Arkansas-Pine Bluff Golden Lions,2026-02-21T23:30:00Z,away,1.9,2,2,2.35,2,0,,,,0.0,1.0,-2.0,-2.0
-401827080,2504,Prairie View A&M Panthers,2296,Jackson State Tigers,2026-02-27T02:30:00Z,home,5.1,1,3,1.5,-1,0,,0.5,4.92,,,,
 401823951,2506,Presbyterian Blue Hose,2344,Longwood Lancers,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,7.0,7.0
 401823955,2506,Presbyterian Blue Hose,2908,South Carolina Upstate Spartans,2026-02-21T22:05:00Z,away,1.9,1,1,1.45,1,0,,,,0.0,1.0,-2.0,-2.0
-401823958,2506,Presbyterian Blue Hose,2272,High Point Panthers,2026-02-27T00:00:00Z,home,5.1,2,2,1.8,-1,0,,,,,,,
 401822955,2507,Providence Friars,305,DePaul Blue Demons,2026-02-22T01:15:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
-401822958,2507,Providence Friars,2752,Xavier Musketeers,2026-02-26T00:30:00Z,home,4.0,1,1,0.9,1,0,,,,0.0,1.0,1.0,1.0
+401822958,2507,Providence Friars,2752,Xavier Musketeers,2026-02-26T00:30:00Z,home,4.0,1,1,0.9,1,0,,,,,,,
 401825524,2509,Purdue Boilermakers,130,Michigan Wolverines,2026-02-17T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-11.0,-11.0
 401825528,2509,Purdue Boilermakers,84,Indiana Hoosiers,2026-02-21T01:00:00Z,home,3.1,1,1,0.9,-1,0,,,,1.0,0.0,29.0,15.0
-401825543,2509,Purdue Boilermakers,127,Michigan State Spartans,2026-02-27T01:00:00Z,home,6.0,1,2,1.2,1,0,,,,,,,
 401808243,251,Texas Longhorns,99,LSU Tigers,2026-02-18T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
 401808251,251,Texas Longhorns,61,Georgia Bulldogs,2026-02-21T20:30:00Z,away,3.8,1,1,0.9,1,0,,,,0.0,0.0,-11.0,-11.0
-401808264,251,Texas Longhorns,57,Florida Gators,2026-02-26T00:00:00Z,home,4.1,1,2,1.2,-1,0,,,,0.0,1.0,2.0,2.0
+401808264,251,Texas Longhorns,57,Florida Gators,2026-02-26T00:00:00Z,home,4.1,1,2,1.2,-1,0,,,,,,,
 401807745,2511,Queens University Royals,2453,North Alabama Lions,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,7.0,7.0
 401807756,2511,Queens University Royals,2698,West Georgia Wolves,2026-02-21T20:00:00Z,home,2.8,1,1,1.0,1,0,,,,0.0,0.0,7.0,7.0
-401807757,2511,Queens University Royals,2198,Eastern Kentucky Colonels,2026-02-26T00:00:00Z,away,4.2,2,2,1.8,2,0,,,,0.0,0.0,-10.0,-10.0
+401807757,2511,Queens University Royals,2198,Eastern Kentucky Colonels,2026-02-26T00:00:00Z,away,4.2,2,2,1.8,2,0,,,,,,,
 401820593,2514,Quinnipiac Bobcats,2217,Fairfield Stags,2026-02-22T19:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-6.0,-6.0
 401823950,2515,Radford Highlanders,2241,Gardner-Webb Runnin' Bulldogs,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,12.0,12.0
 401823956,2515,Radford Highlanders,2427,UNC Asheville Bulldogs,2026-02-21T21:30:00Z,away,1.9,1,1,1.45,1,0,,,,0.0,1.0,-1.0,-1.0
-401823960,2515,Radford Highlanders,2908,South Carolina Upstate Spartans,2026-02-27T00:00:00Z,home,5.1,2,2,1.8,-1,0,,,,,,,
 401827689,252,BYU Cougars,12,Arizona Wildcats,2026-02-19T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-7.0,-7.0
 401827693,252,BYU Cougars,66,Iowa State Cyclones,2026-02-22T03:38:00Z,home,3.1,1,1,0.9,-1,0,,,,0.0,0.0,10.0,10.0
 401827701,252,BYU Cougars,2116,UCF Knights,2026-02-25T04:00:00Z,home,3.0,2,2,1.8,1,0,,,,0.0,0.0,-13.0,-13.0
 401813369,2520,Rider Broncs,2099,Canisius Golden Griffins,2026-02-21T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-6.0,-6.0
 401813394,2520,Rider Broncs,315,Niagara Purple Eagles,2026-02-22T17:00:00Z,home,1.7,1,1,1.55,-1,0,,,,0.0,1.0,5.0,5.0
 401817679,2523,Robert Morris Colonials,2750,Wright State Raiders,2026-02-22T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,13.0,13.0
-401817683,2523,Robert Morris Colonials,2174,Detroit Mercy Titans,2026-02-26T00:00:00Z,home,3.2,1,1,0.9,1,0,,,,0.0,1.0,-3.0,-3.0
+401817683,2523,Robert Morris Colonials,2174,Detroit Mercy Titans,2026-02-26T00:00:00Z,home,3.2,1,1,0.9,1,0,,,,,,,
 401823320,2529,Sacred Heart Pioneers,2217,Fairfield Stags,2026-02-21T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-10.0,-10.0
 401813343,2529,Sacred Heart Pioneers,2368,Marist Red Foxes,2026-02-22T18:00:00Z,away,1.8,1,1,1.5,-1,0,,,,0.0,1.0,-2.0,-2.0
 401805199,253,Southern Utah Thunderbirds,2627,Tarleton State Texans,2026-02-20T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
 401805202,253,Southern Utah Thunderbirds,2000,Abilene Christian Wildcats,2026-02-21T21:00:00Z,away,1.8,1,1,1.5,-1,0,,,,0.0,1.0,-4.0,-4.0
 401804937,2534,Sam Houston Bearkats,2393,Middle Tennessee Blue Raiders,2026-02-19T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,8.0,8.0
 401804941,2534,Sam Houston Bearkats,55,Jacksonville State Gamecocks,2026-02-21T20:30:00Z,home,2.8,1,1,1.0,1,0,,,,0.0,1.0,4.0,4.0
-401804947,2534,Sam Houston Bearkats,2229,Florida International Panthers,2026-02-27T02:00:00Z,home,5.2,1,2,1.2,2,0,,,,,,,
 401809377,2535,Samford Bulldogs,2643,The Citadel Bulldogs,2026-02-20T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
 401809378,2535,Samford Bulldogs,2382,Mercer Bears,2026-02-21T19:00:00Z,away,1.8,1,1,1.5,1,0,,,,0.0,1.0,-3.0,-3.0
-401809387,2535,Samford Bulldogs,2678,VMI Keydets,2026-02-27T01:00:00Z,home,5.2,1,2,1.2,-1,0,,0.5,,,,,
 401829250,2539,San Francisco Dons,2250,Gonzaga Bulldogs,2026-02-19T04:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-21.0,-15.0
 401829259,2539,San Francisco Dons,2541,Santa Clara Broncos,2026-02-22T03:00:00Z,home,3.0,1,1,0.9,-1,0,,,,1.0,0.0,-21.0,-15.0
 401827691,254,Utah Utes,277,West Virginia Mountaineers,2026-02-19T01:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
@@ -564,7 +500,6 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401827705,254,Utah Utes,66,Iowa State Cyclones,2026-02-25T02:00:00Z,home,3.0,2,2,1.8,-1,0,,0.5,,1.0,0.0,-16.0,-15.0
 401823268,2540,UC Santa Barbara Gauchos,2463,Cal State Northridge Matadors,2026-02-20T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-2.0,-2.0
 401809149,2540,UC Santa Barbara Gauchos,62,Hawai'i Rainbow Warriors,2026-02-22T03:00:00Z,away,2.0,1,1,1.4,-1,0,,,,0.0,1.0,-3.0,-3.0
-401826049,2540,UC Santa Barbara Gauchos,27,UC Riverside Highlanders,2026-02-27T02:00:00Z,home,5.0,2,2,1.8,-2,0,,0.0,,,,,
 401829259,2541,Santa Clara Broncos,2539,San Francisco Dons,2026-02-22T03:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,21.0,15.0
 401829262,2541,Santa Clara Broncos,2608,Saint Mary's Gaels,2026-02-26T04:00:00Z,away,4.0,1,1,0.9,1,0,,,,,,,
 401808719,2545,SE Louisiana Lions,2837,East Texas A&M Lions,2026-02-16T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-17.0,-15.0
@@ -572,7 +507,6 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401808965,2545,SE Louisiana Lions,357,Texas A&M-Corpus Christi Islanders,2026-02-24T00:00:00Z,home,2.1,1,2,1.65,-2,0,,,,0.0,1.0,-5.0,-5.0
 401806491,2546,Southeast Missouri State Redhawks,2630,UT Martin Skyhawks,2026-02-18T01:50:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
 401806499,2546,Southeast Missouri State Redhawks,2031,Little Rock Trojans,2026-02-21T21:00:00Z,away,3.8,1,1,0.9,1,0,,,,0.0,1.0,5.0,5.0
-401806505,2546,Southeast Missouri State Redhawks,2634,Tennessee State Tigers,2026-02-27T01:30:00Z,home,5.2,1,2,1.2,2,0,,1.0,,,,,
 401829253,2547,Seattle U Redhawks,2608,Saint Mary's Gaels,2026-02-19T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-2.0,-2.0
 401829257,2547,Seattle U Redhawks,2501,Portland Pilots,2026-02-22T03:00:00Z,home,3.0,1,1,0.9,-1,0,,,,0.0,0.0,12.0,12.0
 401829263,2547,Seattle U Redhawks,2492,Pepperdine Waves,2026-02-26T02:00:00Z,away,4.0,2,2,1.8,1,0,,,,,,,
@@ -585,19 +519,17 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401813431,2561,Siena Saints,2612,Saint Peter's Peacocks,2026-02-22T19:00:00Z,home,1.8,1,1,1.5,-1,0,,,,0.0,0.0,9.0,9.0
 401806495,2565,SIU Edwardsville Cougars,2635,Tennessee Tech Golden Eagles,2026-02-20T01:50:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-10.0,-10.0
 401806501,2565,SIU Edwardsville Cougars,2634,Tennessee State Tigers,2026-02-21T19:00:00Z,away,1.7,1,1,1.55,-1,0,,,,1.0,0.0,-27.0,-15.0
-401806506,2565,SIU Edwardsville Cougars,2710,Western Illinois Leathernecks,2026-02-27T01:30:00Z,home,5.3,2,2,1.8,-2,0,,,,,,,
 401820749,2567,SMU Mustangs,97,Louisville Cardinals,2026-02-18T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,10.0,10.0
 401820758,2567,SMU Mustangs,103,Boston College Eagles,2026-02-21T21:00:00Z,home,3.9,1,1,0.9,1,0,,,,1.0,0.0,24.0,15.0
 401820765,2567,SMU Mustangs,25,California Golden Bears,2026-02-26T03:00:00Z,away,4.2,1,2,1.2,2,0,,,,,,,
 401822776,2569,South Carolina State Bulldogs,2154,Coppin State Eagles,2026-02-16T21:45:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-2.0,-2.0
 401858787,2569,South Carolina State Bulldogs,2428,North Carolina Central Eagles,2026-02-19T01:00:00Z,home,2.1,1,1,1.35,-1,0,,,,0.0,0.0,13.0,13.0
 401828731,2569,South Carolina State Bulldogs,2450,Norfolk State Spartans,2026-02-21T21:00:00Z,away,2.8,2,2,1.9,1,0,,,,1.0,0.0,-19.0,-15.0
-401861277,2569,South Carolina State Bulldogs,2415,Morgan State Bears,2026-02-25T23:00:00Z,home,4.1,2,3,2.1,-1,0,,,13.07,0.0,1.0,-5.0,-5.0
+401861277,2569,South Carolina State Bulldogs,2415,Morgan State Bears,2026-02-25T23:00:00Z,home,4.1,2,3,2.1,-1,0,,,13.07,0.0,0.0,-6.0,-6.0
 401828432,257,Richmond Spiders,2166,Davidson Wildcats,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-2.0,-2.0
 401828442,257,Richmond Spiders,179,St. Bonaventure Bonnies,2026-02-21T23:00:00Z,home,3.0,1,1,0.9,-1,0,,,,0.0,1.0,5.0,5.0
 401818424,2571,South Dakota State Jackrabbits,2449,North Dakota State Bison,2026-02-19T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-8.0,-8.0
 401818428,2571,South Dakota State Jackrabbits,155,North Dakota Fighting Hawks,2026-02-21T20:00:00Z,home,2.8,1,1,1.0,-1,0,,,,0.0,0.0,8.0,8.0
-401818433,2571,South Dakota State Jackrabbits,140,Kansas City Roos,2026-02-27T01:00:00Z,away,5.2,1,2,1.2,1,0,,,,,,,
 401808684,2572,Southern Miss Golden Eagles,295,Old Dominion Monarchs,2026-02-21T20:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
 401808690,2572,Southern Miss Golden Eagles,2032,Arkansas State Red Wolves,2026-02-25T01:30:00Z,away,3.2,1,1,0.9,1,0,,,,0.0,1.0,-5.0,-5.0
 401808241,2579,South Carolina Gamecocks,57,Florida Gators,2026-02-18T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-14.0,-14.0
@@ -608,28 +540,25 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401820763,258,Virginia Cavaliers,152,NC State Wolfpack,2026-02-25T00:00:00Z,home,3.2,2,2,1.8,2,0,,,,1.0,0.0,29.0,15.0
 401827033,2582,Southern Jaguars,2640,Texas Southern Tigers,2026-02-17T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
 401827034,2582,Southern Jaguars,2755,Grambling Tigers,2026-02-21T23:00:00Z,home,4.9,1,1,0.9,-1,0,,,,0.0,0.0,14.0,14.0
-401827035,2582,Southern Jaguars,50,Florida A&M Rattlers,2026-02-27T01:30:00Z,home,5.1,1,2,1.2,1,0,,,,,,,
 401820751,259,Virginia Tech Hokies,2390,Miami Hurricanes,2026-02-18T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
 401820761,259,Virginia Tech Hokies,154,Wake Forest Demon Deacons,2026-02-21T17:00:00Z,home,3.7,1,1,0.9,-1,0,,,,1.0,0.0,19.0,15.0
 401812376,2598,Saint Francis Red Flash,112358,Long Island University Sharks,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-2.0,-2.0
 401812398,2598,Saint Francis Red Flash,2681,Wagner Seahawks,2026-02-21T19:00:00Z,home,1.8,1,1,1.5,-1,0,,,,0.0,0.0,-9.0,-9.0
 401858739,2598,Saint Francis Red Flash,2441,New Haven Chargers,2026-02-24T23:00:00Z,away,3.2,2,2,1.8,-2,0,,,,0.0,0.0,6.0,6.0
-401812399,2598,Saint Francis Red Flash,284,Stonehill Skyhawks,2026-02-27T00:00:00Z,away,2.0,3,3,3.2,1,0,,,6.13,,,,
 401822949,2599,St. John's Red Storm,269,Marquette Golden Eagles,2026-02-19T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,6.0,6.0
 401822952,2599,St. John's Red Storm,156,Creighton Bluejays,2026-02-21T17:00:00Z,home,2.6,1,1,1.1,1,0,,,,1.0,0.0,29.0,15.0
-401822959,2599,St. John's Red Storm,41,UConn Huskies,2026-02-26T00:00:00Z,away,4.3,2,2,1.8,2,0,,,,1.0,0.0,-18.0,-15.0
+401822959,2599,St. John's Red Storm,41,UConn Huskies,2026-02-26T00:00:00Z,away,4.3,2,2,1.8,2,0,,,,,,,
 401825521,26,UCLA Bruins,127,Michigan State Spartans,2026-02-18T01:30:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-23.0,-15.0
 401825532,26,UCLA Bruins,356,Illinois Fighting Illini,2026-02-22T01:00:00Z,home,4.0,1,1,0.9,-1,0,,,,0.0,1.0,1.0,1.0
 401825539,26,UCLA Bruins,30,USC Trojans,2026-02-25T04:00:00Z,home,3.1,1,2,1.2,1,0,,,,1.0,0.0,19.0,15.0
 401828436,2603,Saint Joseph's Hawks,179,St. Bonaventure Bonnies,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,6.0,6.0
 401828441,2603,Saint Joseph's Hawks,2350,Loyola Chicago Ramblers,2026-02-21T17:00:00Z,home,2.7,1,1,1.05,1,0,,,,0.0,0.0,14.0,14.0
-401828446,2603,Saint Joseph's Hawks,2244,George Mason Patriots,2026-02-26T00:00:00Z,home,4.3,2,2,1.8,2,0,,,,1.0,0.0,17.0,15.0
+401828446,2603,Saint Joseph's Hawks,2244,George Mason Patriots,2026-02-26T00:00:00Z,home,4.3,2,2,1.8,2,0,,,,,,,
 401829253,2608,Saint Mary's Gaels,2547,Seattle U Redhawks,2026-02-19T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,2.0,2.0
 401829258,2608,Saint Mary's Gaels,265,Washington State Cougars,2026-02-22T03:07:00Z,away,3.0,1,1,0.9,1,0,,,,1.0,0.0,16.0,15.0
 401829262,2608,Saint Mary's Gaels,2541,Santa Clara Broncos,2026-02-26T04:00:00Z,home,4.0,1,2,1.2,2,0,,,,,,,
 401812161,261,Vermont Catamounts,2378,UMBC Retrievers,2026-02-19T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-13.0,-13.0
 401812165,261,Vermont Catamounts,2885,NJIT Highlanders,2026-02-22T00:00:00Z,away,2.0,1,1,1.4,-1,0,,,,0.0,0.0,6.0,6.0
-401812168,261,Vermont Catamounts,2349,UMass Lowell River Hawks,2026-02-27T00:00:00Z,home,5.0,1,2,1.2,1,0,,,,,,,
 401823851,2612,Saint Peter's Peacocks,314,Iona Gaels,2026-02-21T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-8.0,-8.0
 401813431,2612,Saint Peter's Peacocks,2561,Siena Saints,2026-02-22T19:00:00Z,away,1.8,1,1,1.5,-1,0,,,,0.0,0.0,-9.0,-9.0
 401808973,2617,Stephen F. Austin Lumberjacks,357,Texas A&M-Corpus Christi Islanders,2026-02-17T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,10.0,10.0
@@ -637,46 +566,38 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401808916,2617,Stephen F. Austin Lumberjacks,2443,New Orleans Privateers,2026-02-24T00:30:00Z,home,2.1,2,2,2.25,2,0,,,,0.0,1.0,-4.0,-4.0
 401812070,2619,Stony Brook Seawolves,2182,Drexel Dragons,2026-02-17T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
 401812078,2619,Stony Brook Seawolves,2261,Hampton Pirates,2026-02-21T21:00:00Z,home,4.8,1,1,0.9,1,0,,,,0.0,0.0,7.0,7.0
-401812083,2619,Stony Brook Seawolves,2405,Monmouth Hawks,2026-02-27T00:00:00Z,away,5.1,1,2,1.2,2,0,,,,,,,
 401804935,2623,Missouri State Bears,338,Kennesaw State Owls,2026-02-19T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
 401804943,2623,Missouri State Bears,2229,Florida International Panthers,2026-02-21T20:00:00Z,away,2.8,1,1,1.0,-1,0,,,,0.0,1.0,-3.0,-3.0
-401804948,2623,Missouri State Bears,2348,Louisiana Tech Bulldogs,2026-02-27T00:30:00Z,away,5.2,1,2,1.2,-2,0,,0.0,,,,,
 401858742,2627,Tarleton State Texans,2000,Abilene Christian Wildcats,2026-02-17T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
 401805199,2627,Tarleton State Texans,253,Southern Utah Thunderbirds,2026-02-20T01:00:00Z,home,3.0,1,1,0.9,1,0,,,,0.0,1.0,4.0,4.0
 401805203,2627,Tarleton State Texans,3101,Utah Tech Trailblazers,2026-02-21T22:00:00Z,home,1.9,2,2,2.35,2,0,,1.0,,0.0,0.0,-8.0,-8.0
-401805206,2627,Tarleton State Texans,3084,Utah Valley Wolverines,2026-02-27T01:00:00Z,away,5.1,2,3,2.1,-1,0,,1.0,5.44,,,,
 401827687,2628,TCU Horned Frogs,2116,UCF Knights,2026-02-18T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-11.0,-11.0
 401827697,2628,TCU Horned Frogs,277,West Virginia Mountaineers,2026-02-21T22:00:00Z,home,3.9,1,1,0.9,-1,0,,,,0.0,0.0,6.0,6.0
 401827703,2628,TCU Horned Frogs,9,Arizona State Sun Devils,2026-02-25T02:00:00Z,home,3.2,1,2,1.2,1,0,,,,0.0,0.0,12.0,12.0
 401806491,2630,UT Martin Skyhawks,2546,Southeast Missouri State Redhawks,2026-02-18T01:50:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-3.0,-3.0
 401806494,2630,UT Martin Skyhawks,2031,Little Rock Trojans,2026-02-20T01:20:00Z,away,2.0,1,1,1.4,-1,0,,,,0.0,1.0,-2.0,-2.0
-401806507,2630,UT Martin Skyhawks,2635,Tennessee Tech Golden Eagles,2026-02-27T01:30:00Z,home,7.0,0,2,0.6,-2,0,,0.0,,,,,
 401808247,2633,Tennessee Volunteers,201,Oklahoma Sooners,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,23.0,15.0
 401808255,2633,Tennessee Volunteers,238,Vanderbilt Commodores,2026-02-21T19:00:00Z,away,2.8,1,1,1.0,1,0,,,,0.0,1.0,4.0,4.0
 401808257,2633,Tennessee Volunteers,142,Missouri Tigers,2026-02-25T02:00:00Z,away,3.3,2,2,1.8,2,0,,,,0.0,1.0,-4.0,-4.0
 401806493,2634,Tennessee State Tigers,2815,Lindenwood Lions,2026-02-20T01:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,9.0,9.0
 401806501,2634,Tennessee State Tigers,2565,SIU Edwardsville Cougars,2026-02-21T19:00:00Z,home,1.7,1,1,1.55,1,0,,,,1.0,0.0,27.0,15.0
-401806505,2634,Tennessee State Tigers,2546,Southeast Missouri State Redhawks,2026-02-27T01:30:00Z,away,5.3,2,2,1.8,2,0,,,,,,,
 401806495,2635,Tennessee Tech Golden Eagles,2565,SIU Edwardsville Cougars,2026-02-20T01:50:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,10.0,10.0
 401806498,2635,Tennessee Tech Golden Eagles,2815,Lindenwood Lions,2026-02-21T21:00:00Z,home,1.8,1,1,1.5,1,0,,,,1.0,0.0,15.0,15.0
-401806507,2635,Tennessee Tech Golden Eagles,2630,UT Martin Skyhawks,2026-02-27T01:30:00Z,away,5.2,2,2,1.8,2,0,,,,,,,
 401828235,2636,UTSA Roadrunners,2226,Florida Atlantic Owls,2026-02-19T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-8.0,-8.0
 401828243,2636,UTSA Roadrunners,202,Tulsa Golden Hurricane,2026-02-22T21:00:00Z,away,3.8,1,1,0.9,-1,0,,,,1.0,0.0,-26.0,-15.0
 401828245,2636,UTSA Roadrunners,151,East Carolina Pirates,2026-02-26T01:00:00Z,home,3.2,2,2,1.8,-2,0,,,,,,,
 401804939,2638,UTEP Miners,166,New Mexico State Aggies,2026-02-22T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
-401804946,2638,UTEP Miners,2393,Middle Tennessee Blue Raiders,2026-02-27T00:30:00Z,away,4.9,1,1,0.9,-1,0,,,,,,,
 401825529,264,Washington Huskies,120,Maryland Terrapins,2026-02-21T20:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
 401825538,264,Washington Huskies,164,Rutgers Scarlet Knights,2026-02-24T23:30:00Z,away,3.1,1,1,0.9,-1,0,,,,0.0,0.0,7.0,7.0
 401827033,2640,Texas Southern Tigers,2582,Southern Jaguars,2026-02-17T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
 401827148,2640,Texas Southern Tigers,2029,Arkansas-Pine Bluff Golden Lions,2026-02-20T02:00:00Z,away,3.0,1,1,0.9,1,0,,,,1.0,0.0,19.0,15.0
 401829503,2640,Texas Southern Tigers,2400,Mississippi Valley State Delta Devils,2026-02-22T00:30:00Z,away,1.9,2,2,2.35,2,0,,,,0.0,1.0,-1.0,-1.0
-401829691,2640,Texas Southern Tigers,2016,Alcorn State Braves,2026-02-27T01:00:00Z,home,5.0,2,3,2.1,-1,0,,0.5,8.99,,,,
 401827686,2641,Texas Tech Red Raiders,9,Arizona State Sun Devils,2026-02-18T04:10:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
 401827698,2641,Texas Tech Red Raiders,2306,Kansas State Wildcats,2026-02-21T19:30:00Z,home,3.6,1,1,0.9,-1,0,,,,1.0,0.0,28.0,15.0
 401827704,2641,Texas Tech Red Raiders,2132,Cincinnati Bearcats,2026-02-25T00:00:00Z,home,3.2,2,2,1.8,1,0,,,,0.0,0.0,12.0,12.0
 401809377,2643,The Citadel Bulldogs,2535,Samford Bulldogs,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-3.0,-3.0
 401809379,2643,The Citadel Bulldogs,236,Chattanooga Mocs,2026-02-21T18:00:00Z,home,1.8,1,1,1.5,-1,0,,,,1.0,0.0,-21.0,-15.0
-401809384,2643,The Citadel Bulldogs,231,Furman Paladins,2026-02-25T23:00:00Z,away,4.2,2,2,1.8,-2,0,,,,0.0,0.0,-11.0,-11.0
+401809384,2643,The Citadel Bulldogs,231,Furman Paladins,2026-02-25T23:00:00Z,away,4.2,2,2,1.8,-2,0,,,,0.0,1.0,0.0,0.0
 401814577,2649,Toledo Rockets,2199,Eastern Michigan Eagles,2026-02-21T22:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,19.0,15.0
 401814584,2649,Toledo Rockets,2459,Northern Illinois Huskies,2026-02-25T00:00:00Z,home,3.1,1,1,0.9,1,0,,,,0.0,0.0,10.0,10.0
 401829251,265,Washington State Cougars,279,Pacific Tigers,2026-02-19T02:30:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,17.0,15.0
@@ -687,7 +608,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401808691,2653,Troy Trojans,309,Louisiana Ragin' Cajuns,2026-02-25T00:00:00Z,home,3.1,2,2,1.8,-1,0,,,,1.0,0.0,19.0,15.0
 401828236,2655,Tulane Green Wave,249,North Texas Mean Green,2026-02-20T02:10:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,6.0,6.0
 401828242,2655,Tulane Green Wave,242,Rice Owls,2026-02-22T19:00:00Z,home,2.7,1,1,1.05,1,0,,,,0.0,0.0,6.0,6.0
-401828248,2655,Tulane Green Wave,202,Tulsa Golden Hurricane,2026-02-26T00:30:00Z,home,3.2,2,2,1.8,2,0,,,,0.0,1.0,0.0,0.0
+401828248,2655,Tulane Green Wave,202,Tulsa Golden Hurricane,2026-02-26T00:30:00Z,home,3.2,2,2,1.8,2,0,,,,,,,
 401828430,2670,VCU Rams,45,George Washington Revolutionaries,2026-02-18T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,14.0,14.0
 401828437,2670,VCU Rams,139,Saint Louis Billikens,2026-02-21T00:00:00Z,away,3.0,1,1,0.9,1,0,,,,0.0,0.0,-13.0,-13.0
 401830224,2674,Valparaiso Beacons,71,Bradley Braves,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,7.0,7.0
@@ -695,65 +616,57 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401830314,2674,Valparaiso Beacons,2181,Drake Bulldogs,2026-02-26T01:00:00Z,home,4.2,1,2,1.2,2,0,,,,,,,
 401809375,2678,VMI Keydets,2747,Wofford Terriers,2026-02-18T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-6.0,-6.0
 401809381,2678,VMI Keydets,2717,Western Carolina Catamounts,2026-02-21T18:00:00Z,home,2.8,1,1,1.0,-1,0,,,,1.0,0.0,-19.0,-15.0
-401809387,2678,VMI Keydets,2535,Samford Bulldogs,2026-02-27T01:00:00Z,away,5.3,1,2,1.2,-2,0,,,,,,,
 401859836,2681,Wagner Seahawks,112358,Long Island University Sharks,2026-02-17T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-18.0,-15.0
 401812416,2681,Wagner Seahawks,2385,Mercyhurst Lakers,2026-02-20T00:00:00Z,away,3.0,1,1,0.9,-1,0,,,,0.0,1.0,3.0,3.0
 401812398,2681,Wagner Seahawks,2598,Saint Francis Red Flash,2026-02-21T19:00:00Z,away,1.8,2,2,2.4,1,0,,,,0.0,0.0,9.0,9.0
-401812417,2681,Wagner Seahawks,2441,New Haven Chargers,2026-02-27T00:00:00Z,home,5.2,2,3,2.1,2,0,,,11.58,,,,
 401822949,269,Marquette Golden Eagles,2599,St. John's Red Storm,2026-02-19T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-6.0,-6.0
 401822957,269,Marquette Golden Eagles,46,Georgetown Hoyas,2026-02-25T00:00:00Z,away,5.9,1,1,0.9,-1,0,,,,1.0,0.0,16.0,15.0
 401808519,2692,Weber State Wildcats,147,Montana State Bobcats,2026-02-20T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
 401808509,2692,Weber State Wildcats,149,Montana Grizzlies,2026-02-22T02:30:00Z,home,2.0,1,1,1.4,1,0,,,,1.0,0.0,20.0,15.0
 401807750,2698,West Georgia Wolves,2198,Eastern Kentucky Colonels,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
 401807756,2698,West Georgia Wolves,2511,Queens University Royals,2026-02-21T20:00:00Z,away,2.8,1,1,1.0,-1,0,,,,0.0,0.0,-7.0,-7.0
-401807761,2698,West Georgia Wolves,288,Lipscomb Bisons,2026-02-26T00:00:00Z,home,4.2,2,2,1.8,-2,0,,,,0.0,0.0,9.0,9.0
+401807761,2698,West Georgia Wolves,288,Lipscomb Bisons,2026-02-26T00:00:00Z,home,4.2,2,2,1.8,-2,0,,,,,,,
 401823743,27,UC Riverside Highlanders,2934,Cal State Bakersfield Roadrunners,2026-02-20T03:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,28.0,15.0
 401809136,27,UC Riverside Highlanders,302,UC Davis Aggies,2026-02-21T22:00:00Z,home,1.8,1,1,1.5,1,0,,,,0.0,1.0,-5.0,-5.0
-401826049,27,UC Riverside Highlanders,2540,UC Santa Barbara Gauchos,2026-02-27T02:00:00Z,away,5.2,2,2,1.8,-1,0,,,,,,,
 401817675,270,Milwaukee Panthers,2174,Detroit Mercy Titans,2026-02-21T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
 401817677,270,Milwaukee Panthers,2473,Oakland Golden Grizzlies,2026-02-22T20:00:00Z,away,1.8,1,1,1.5,-1,0,,,,0.0,0.0,-11.0,-11.0
 401817685,270,Milwaukee Panthers,2754,Youngstown State Penguins,2026-02-26T01:00:00Z,home,3.2,2,2,1.8,-2,0,,,,,,,
 401806496,2710,Western Illinois Leathernecks,88,Southern Indiana Screaming Eagles,2026-02-20T01:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-7.0,-7.0
 401806500,2710,Western Illinois Leathernecks,2413,Morehead State Eagles,2026-02-21T21:30:00Z,home,1.8,1,1,1.5,-1,0,,,,1.0,0.0,-22.0,-15.0
-401806506,2710,Western Illinois Leathernecks,2565,SIU Edwardsville Cougars,2026-02-27T01:30:00Z,away,5.2,2,2,1.8,-2,0,,,,,,,
 401814568,2711,Western Michigan Broncos,2006,Akron Zips,2026-02-18T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-17.0,-15.0
 401814579,2711,Western Michigan Broncos,2117,Central Michigan Chippewas,2026-02-21T22:00:00Z,away,3.9,1,1,0.9,-1,0,,,,0.0,0.0,-13.0,-13.0
 401814585,2711,Western Michigan Broncos,189,Bowling Green Falcons,2026-02-25T00:00:00Z,away,3.1,2,2,1.8,-2,0,,,,0.0,0.0,9.0,9.0
 401809374,2717,Western Carolina Catamounts,2430,UNC Greensboro Spartans,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,14.0,14.0
 401809381,2717,Western Carolina Catamounts,2678,VMI Keydets,2026-02-21T18:00:00Z,away,2.8,1,1,1.0,1,0,,,,1.0,0.0,19.0,15.0
-401809385,2717,Western Carolina Catamounts,2382,Mercer Bears,2026-02-26T00:00:00Z,home,4.2,2,2,1.8,2,0,,,,0.0,1.0,5.0,5.0
+401809385,2717,Western Carolina Catamounts,2382,Mercer Bears,2026-02-26T00:00:00Z,home,4.2,2,2,1.8,2,0,,,,,,,
 401828234,2724,Wichita State Shockers,151,East Carolina Pirates,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
 401828239,2724,Wichita State Shockers,218,Temple Owls,2026-02-21T23:00:00Z,home,3.0,1,1,0.9,1,0,,,,0.0,0.0,12.0,12.0
-401828249,2724,Wichita State Shockers,235,Memphis Tigers,2026-02-27T02:00:00Z,away,5.1,1,2,1.2,2,0,,,,,,,
 401812073,2729,William & Mary Tribe,2097,Campbell Fighting Camels,2026-02-20T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
-401812082,2729,William & Mary Tribe,111,Northeastern Huskies,2026-02-27T00:00:00Z,home,7.0,1,1,0.9,-1,0,,,,,,,
 401823953,2737,Winthrop Eagles,2908,South Carolina Upstate Spartans,2026-02-19T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,4.0,4.0
 401823957,2737,Winthrop Eagles,2272,High Point Panthers,2026-02-21T21:00:00Z,away,1.9,1,1,1.45,1,0,,,,0.0,1.0,-2.0,-2.0
-401823961,2737,Winthrop Eagles,2127,Charleston Southern Buccaneers,2026-02-27T00:00:00Z,away,5.1,1,2,1.2,-1,0,,0.5,,,,,
 401817674,2739,Green Bay Phoenix,2473,Oakland Golden Grizzlies,2026-02-21T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
 401817676,2739,Green Bay Phoenix,2174,Detroit Mercy Titans,2026-02-22T18:00:00Z,away,1.8,1,1,1.5,1,0,,,,0.0,1.0,-4.0,-4.0
 401809375,2747,Wofford Terriers,2678,VMI Keydets,2026-02-18T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,6.0,6.0
 401809382,2747,Wofford Terriers,231,Furman Paladins,2026-02-22T00:00:00Z,home,3.0,1,1,0.9,1,0,,,,0.0,0.0,-9.0,-9.0
-401809383,2747,Wofford Terriers,2193,East Tennessee State Buccaneers,2026-02-26T00:00:00Z,away,4.0,1,2,1.2,-1,0,,,,0.0,1.0,0.0,0.0
+401809383,2747,Wofford Terriers,2193,East Tennessee State Buccaneers,2026-02-26T00:00:00Z,away,4.0,1,2,1.2,-1,0,,,,,,,
 401825522,275,Wisconsin Badgers,194,Ohio State Buckeyes,2026-02-18T01:30:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-17.0,-15.0
 401825535,275,Wisconsin Badgers,2294,Iowa Hawkeyes,2026-02-22T21:00:00Z,home,4.8,1,1,0.9,-1,0,,,,0.0,0.0,13.0,13.0
 401825542,275,Wisconsin Badgers,2483,Oregon Ducks,2026-02-26T04:00:00Z,away,3.3,1,2,1.2,1,0,,,,,,,
 401817673,2750,Wright State Raiders,85,IU Indianapolis Jaguars,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,12.0,12.0
 401817679,2750,Wright State Raiders,2523,Robert Morris Colonials,2026-02-22T19:00:00Z,home,2.8,1,1,1.0,1,0,,,,0.0,0.0,-13.0,-13.0
-401817682,2750,Wright State Raiders,2870,Purdue Fort Wayne Mastodons,2026-02-26T00:00:00Z,away,3.2,2,2,1.8,-1,0,,,,0.0,0.0,-8.0,-8.0
+401817682,2750,Wright State Raiders,2870,Purdue Fort Wayne Mastodons,2026-02-26T00:00:00Z,away,3.2,2,2,1.8,-1,0,,,,,,,
 401828933,2751,Wyoming Cowboys,278,Fresno State Bulldogs,2026-02-18T01:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,10.0,10.0
 401823803,2751,Wyoming Cowboys,2253,Grand Canyon Lopes,2026-02-22T01:00:00Z,away,4.0,1,1,0.9,1,0,,,,0.0,1.0,5.0,5.0
 401823832,2751,Wyoming Cowboys,68,Boise State Broncos,2026-02-25T02:00:00Z,away,3.0,1,2,1.2,2,0,,,,0.0,0.0,-10.0,-10.0
 401822947,2752,Xavier Musketeers,222,Villanova Wildcats,2026-02-17T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-3.0,-3.0
 401822954,2752,Xavier Musketeers,2086,Butler Bulldogs,2026-02-21T18:30:00Z,away,3.8,1,1,0.9,-1,0,,,,0.0,1.0,-5.0,-5.0
-401822958,2752,Xavier Musketeers,2507,Providence Friars,2026-02-26T00:30:00Z,away,4.2,1,2,1.2,-2,0,,0.0,,0.0,1.0,-1.0,-1.0
+401822958,2752,Xavier Musketeers,2507,Providence Friars,2026-02-26T00:30:00Z,away,4.2,1,2,1.2,-2,0,,0.0,,,,,
 401817672,2754,Youngstown State Penguins,325,Cleveland State Vikings,2026-02-18T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,24.0,15.0
 401817680,2754,Youngstown State Penguins,94,Northern Kentucky Norse,2026-02-22T19:00:00Z,home,3.8,1,1,0.9,1,0,,,,0.0,0.0,6.0,6.0
 401817685,2754,Youngstown State Penguins,270,Milwaukee Panthers,2026-02-26T01:00:00Z,away,3.2,1,2,1.2,2,0,,,,,,,
 401827077,2755,Grambling Tigers,2504,Prairie View A&M Panthers,2026-02-17T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
 401827034,2755,Grambling Tigers,2582,Southern Jaguars,2026-02-21T23:00:00Z,away,5.0,1,1,0.9,-1,0,,,,0.0,0.0,-14.0,-14.0
 401827098,2755,Grambling Tigers,2400,Mississippi Valley State Delta Devils,2026-02-24T02:00:00Z,home,2.1,1,2,1.65,-2,0,,,,1.0,0.0,21.0,15.0
-401827107,2755,Grambling Tigers,2065,Bethune-Cookman Wildcats,2026-02-26T22:00:00Z,home,2.8,2,3,2.2,1,0,,,14.84,,,,
 401808639,276,Marshall Thundering Herd,6,South Alabama Jaguars,2026-02-17T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,4.0,4.0
 401808677,276,Marshall Thundering Herd,2026,App State Mountaineers,2026-02-19T23:30:00Z,away,3.0,1,1,0.9,1,0,,,,0.0,1.0,1.0,1.0
 401808682,276,Marshall Thundering Herd,324,Coastal Carolina Chanticleers,2026-02-21T18:00:00Z,away,1.8,2,2,2.4,2,0,,1.0,,0.0,1.0,-4.0,-4.0
@@ -769,12 +682,9 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401829251,279,Pacific Tigers,265,Washington State Cougars,2026-02-19T02:30:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-17.0,-15.0
 401829255,279,Pacific Tigers,2250,Gonzaga Bulldogs,2026-02-22T02:00:00Z,away,3.0,1,1,0.9,-1,0,,,,0.0,0.0,-9.0,-9.0
 401809100,28,UC San Diego Tritons,300,UC Irvine Anteaters,2026-02-22T03:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,2.0,2.0
-401809101,28,UC San Diego Tritons,2934,Cal State Bakersfield Roadrunners,2026-02-27T03:00:00Z,home,5.0,1,1,0.9,1,0,,,,,,,
 401812159,2803,Bryant Bulldogs,2066,Binghamton Bearcats,2026-02-19T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-12.0,-12.0
-401812166,2803,Bryant Bulldogs,2378,UMBC Retrievers,2026-02-26T23:00:00Z,away,7.0,1,1,0.9,-1,0,,,,,,,
 401806493,2815,Lindenwood Lions,2634,Tennessee State Tigers,2026-02-20T01:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-9.0,-9.0
 401806498,2815,Lindenwood Lions,2635,Tennessee Tech Golden Eagles,2026-02-21T21:00:00Z,away,1.8,1,1,1.5,-1,0,,,,1.0,0.0,-15.0,-15.0
-401806503,2815,Lindenwood Lions,2197,Eastern Illinois Panthers,2026-02-27T01:30:00Z,home,5.2,2,2,1.8,-2,0,,,,,,,
 401830307,282,Indiana State Sycamores,2460,Northern Iowa Panthers,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-21.0,-15.0
 401830215,282,Indiana State Sycamores,2057,Belmont Bruins,2026-02-22T01:00:00Z,away,3.0,1,1,0.9,-1,0,,,,1.0,0.0,-17.0,-15.0
 401830313,282,Indiana State Sycamores,79,Southern Illinois Salukis,2026-02-26T01:00:00Z,away,4.0,1,2,1.2,-2,0,,,,,,,
@@ -783,25 +693,21 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401808721,2837,East Texas A&M Lions,2277,Houston Christian Huskies,2026-02-24T00:30:00Z,home,2.1,1,2,1.65,-1,0,,,,0.0,1.0,-1.0,-1.0
 401812409,284,Stonehill Skyhawks,2441,New Haven Chargers,2026-02-20T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-13.0,-13.0
 401812348,284,Stonehill Skyhawks,2330,Le Moyne Dolphins,2026-02-21T19:00:00Z,home,1.8,1,1,1.5,-1,0,,,,0.0,0.0,9.0,9.0
-401812399,284,Stonehill Skyhawks,2598,Saint Francis Red Flash,2026-02-27T00:00:00Z,home,5.2,2,2,1.8,1,0,,,,,,,
 401805201,2856,California Baptist Lancers,3084,Utah Valley Wolverines,2026-02-20T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-19.0,-15.0
-401805207,2856,California Baptist Lancers,250,UT Arlington Mavericks,2026-02-27T03:00:00Z,home,7.1,0,1,0.3,-1,0,,,,,,,
 401817671,2870,Purdue Fort Wayne Mastodons,94,Northern Kentucky Norse,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-16.0,-15.0
 401817678,2870,Purdue Fort Wayne Mastodons,325,Cleveland State Vikings,2026-02-22T19:00:00Z,away,3.8,1,1,0.9,-1,0,,,,0.0,0.0,6.0,6.0
-401817682,2870,Purdue Fort Wayne Mastodons,2750,Wright State Raiders,2026-02-26T00:00:00Z,home,3.2,2,2,1.8,1,0,,,,0.0,0.0,8.0,8.0
+401817682,2870,Purdue Fort Wayne Mastodons,2750,Wright State Raiders,2026-02-26T00:00:00Z,home,3.2,2,2,1.8,1,0,,,,,,,
 401807749,288,Lipscomb Bisons,91,Bellarmine Knights,2026-02-19T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
 401807754,288,Lipscomb Bisons,2453,North Alabama Lions,2026-02-21T22:30:00Z,home,2.9,1,1,0.95,1,0,,,,1.0,0.0,22.0,15.0
-401807761,288,Lipscomb Bisons,2698,West Georgia Wolves,2026-02-26T00:00:00Z,away,4.1,2,2,1.8,2,0,,,,0.0,0.0,-9.0,-9.0
+401807761,288,Lipscomb Bisons,2698,West Georgia Wolves,2026-02-26T00:00:00Z,away,4.1,2,2,1.8,2,0,,,,,,,
 401812158,2885,NJIT Highlanders,399,UAlbany Great Danes,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-18.0,-15.0
 401812165,2885,NJIT Highlanders,261,Vermont Catamounts,2026-02-22T00:00:00Z,home,2.0,1,1,1.4,-1,0,,,,0.0,0.0,-6.0,-6.0
 401808678,290,Georgia Southern Eagles,2247,Georgia State Panthers,2026-02-20T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-2.0,-2.0
 401808681,290,Georgia Southern Eagles,2026,App State Mountaineers,2026-02-21T18:00:00Z,away,1.7,1,1,1.55,-1,0,,,,1.0,0.0,-15.0,-15.0
 401808692,290,Georgia Southern Eagles,256,James Madison Dukes,2026-02-26T01:00:00Z,away,4.3,2,2,1.8,-2,0,,,,,,,
 401818430,2900,St. Thomas-Minnesota Tommies,2172,Denver Pioneers,2026-02-21T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-2.0,-2.0
-401818432,2900,St. Thomas-Minnesota Tommies,2449,North Dakota State Bison,2026-02-27T02:00:00Z,home,5.1,1,1,0.9,-1,0,,,,,,,
 401823953,2908,South Carolina Upstate Spartans,2737,Winthrop Eagles,2026-02-19T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
 401823955,2908,South Carolina Upstate Spartans,2506,Presbyterian Blue Hose,2026-02-21T22:05:00Z,home,1.9,1,1,1.45,-1,0,,,,0.0,1.0,2.0,2.0
-401823960,2908,South Carolina Upstate Spartans,2515,Radford Highlanders,2026-02-27T00:00:00Z,away,5.1,1,2,1.2,1,0,,0.5,,,,,
 401808914,2916,Incarnate Word Cardinals,2443,New Orleans Privateers,2026-02-17T00:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-14.0,-14.0
 401808720,2916,Incarnate Word Cardinals,2837,East Texas A&M Lions,2026-02-21T23:00:00Z,away,4.9,1,1,0.9,-1,0,,,,0.0,0.0,9.0,9.0
 401808945,2916,Incarnate Word Cardinals,2466,Northwestern State Demons,2026-02-24T00:30:00Z,away,2.1,2,2,2.25,1,0,,,,0.0,1.0,-5.0,-5.0
@@ -810,27 +716,22 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401808887,292,UT Rio Grande Valley Vaqueros,2377,McNeese Cowboys,2026-02-24T00:30:00Z,away,2.1,2,2,2.25,2,0,,,,0.0,0.0,-7.0,-7.0
 401823743,2934,Cal State Bakersfield Roadrunners,27,UC Riverside Highlanders,2026-02-20T03:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-28.0,-15.0
 401823185,2934,Cal State Bakersfield Roadrunners,2239,Cal State Fullerton Titans,2026-02-22T02:30:00Z,home,2.0,1,1,1.4,-1,0,,,,0.0,0.0,-8.0,-8.0
-401809101,2934,Cal State Bakersfield Roadrunners,28,UC San Diego Tritons,2026-02-27T03:00:00Z,away,5.0,2,2,1.8,-2,0,,,,,,,
 401807748,294,Jacksonville Dolphins,526,Florida Gulf Coast Eagles,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-2.0,-2.0
 401807751,294,Jacksonville Dolphins,2046,Austin Peay Governors,2026-02-22T00:00:00Z,home,3.0,1,1,0.9,-1,0,,,,0.0,1.0,-4.0,-4.0
-401807762,294,Jacksonville Dolphins,56,Stetson Hatters,2026-02-27T00:00:00Z,home,5.0,1,2,1.2,-2,0,,0.0,,,,,
 401808640,295,Old Dominion Monarchs,309,Louisiana Ragin' Cajuns,2026-02-16T22:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,11.0,11.0
 401808684,295,Old Dominion Monarchs,2572,Southern Miss Golden Eagles,2026-02-21T20:00:00Z,away,4.9,1,1,0.9,1,0,,,,0.0,1.0,-5.0,-5.0
 401808689,295,Old Dominion Monarchs,276,Marshall Thundering Herd,2026-02-25T00:00:00Z,away,3.2,1,2,1.2,-1,0,,,,0.0,0.0,-9.0,-9.0
 401809118,299,Long Beach State Beach,300,UC Irvine Anteaters,2026-02-20T03:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-11.0,-11.0
 401823269,299,Long Beach State Beach,2463,Cal State Northridge Matadors,2026-02-22T02:00:00Z,home,2.0,1,1,1.4,-1,0,,,,0.0,1.0,-2.0,-2.0
-401809163,299,Long Beach State Beach,13,Cal Poly Mustangs,2026-02-27T03:00:00Z,away,5.0,2,2,1.8,-2,0,,,,,,,
 401825527,30,USC Trojans,356,Illinois Fighting Illini,2026-02-19T03:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-36.0,-15.0
 401825533,30,USC Trojans,2483,Oregon Ducks,2026-02-21T21:00:00Z,home,2.8,1,1,1.0,-1,0,,,,0.0,1.0,-1.0,-1.0
 401825539,30,USC Trojans,26,UCLA Bruins,2026-02-25T04:00:00Z,away,3.3,2,2,1.8,-2,0,,,,1.0,0.0,-19.0,-15.0
 401809118,300,UC Irvine Anteaters,299,Long Beach State Beach,2026-02-20T03:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,11.0,11.0
 401809100,300,UC Irvine Anteaters,28,UC San Diego Tritons,2026-02-22T03:00:00Z,home,2.0,1,1,1.4,1,0,,,,0.0,1.0,-2.0,-2.0
-401809119,300,UC Irvine Anteaters,2463,Cal State Northridge Matadors,2026-02-27T03:00:00Z,away,5.0,2,2,1.8,-1,0,,,,,,,
 401829254,301,San Diego Toreros,2351,Loyola Marymount Lions,2026-02-21T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-12.0,-12.0
 401829261,301,San Diego Toreros,204,Oregon State Beavers,2026-02-26T03:00:00Z,away,4.2,1,1,0.9,-1,0,,,,,,,
 401809135,302,UC Davis Aggies,2239,Cal State Fullerton Titans,2026-02-20T03:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
 401809136,302,UC Davis Aggies,27,UC Riverside Highlanders,2026-02-21T22:00:00Z,away,1.8,1,1,1.5,-1,0,,,,0.0,1.0,5.0,5.0
-401809137,302,UC Davis Aggies,62,Hawai'i Rainbow Warriors,2026-02-27T02:00:00Z,home,5.2,2,2,1.8,1,0,,0.5,,,,,
 401808497,304,Idaho State Bengals,149,Montana Grizzlies,2026-02-20T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,4.0,4.0
 401808498,304,Idaho State Bengals,147,Montana State Bobcats,2026-02-21T23:00:00Z,home,1.9,1,1,1.45,1,0,,,,1.0,0.0,15.0,15.0
 401822951,305,DePaul Blue Demons,2550,Seton Hall Pirates,2026-02-19T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,12.0,12.0
@@ -838,29 +739,26 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401822960,305,DePaul Blue Demons,156,Creighton Bluejays,2026-02-26T02:00:00Z,away,4.0,1,2,1.2,-1,0,,,,,,,
 401805201,3084,Utah Valley Wolverines,2856,California Baptist Lancers,2026-02-20T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,19.0,15.0
 401805204,3084,Utah Valley Wolverines,250,UT Arlington Mavericks,2026-02-21T20:00:00Z,away,1.8,1,1,1.5,1,0,,,,0.0,0.0,12.0,12.0
-401805206,3084,Utah Valley Wolverines,2627,Tarleton State Texans,2026-02-27T01:00:00Z,home,5.2,2,2,1.8,2,0,,,,,,,
 401808640,309,Louisiana Ragin' Cajuns,295,Old Dominion Monarchs,2026-02-16T22:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-11.0,-11.0
 401808679,309,Louisiana Ragin' Cajuns,2032,Arkansas State Red Wolves,2026-02-20T01:00:00Z,home,3.1,1,1,0.9,-1,0,,,,1.0,0.0,-17.0,-15.0
 401808686,309,Louisiana Ragin' Cajuns,326,Texas State Bobcats,2026-02-21T18:00:00Z,home,1.7,2,2,2.45,-2,0,,,,0.0,0.0,13.0,13.0
 401808691,309,Louisiana Ragin' Cajuns,2653,Troy Trojans,2026-02-25T00:00:00Z,away,3.2,2,3,2.1,1,0,,,12.96,1.0,0.0,-19.0,-15.0
 401805200,3101,Utah Tech Trailblazers,250,UT Arlington Mavericks,2026-02-20T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-13.0,-13.0
 401805203,3101,Utah Tech Trailblazers,2627,Tarleton State Texans,2026-02-21T22:00:00Z,away,1.9,1,1,1.45,-1,0,,,,0.0,0.0,8.0,8.0
-401805205,3101,Utah Tech Trailblazers,2000,Abilene Christian Wildcats,2026-02-27T02:00:00Z,home,5.2,1,2,1.2,1,0,,,,,,,
 401812164,311,Maine Black Bears,160,New Hampshire Wildcats,2026-02-21T21:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
-401812167,311,Maine Black Bears,399,UAlbany Great Danes,2026-02-26T23:30:00Z,away,5.1,1,1,0.9,1,0,,,,,,,
 401823851,314,Iona Gaels,2612,Saint Peter's Peacocks,2026-02-21T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,8.0,8.0
 401824312,314,Iona Gaels,2771,Merrimack Warriors,2026-02-22T18:00:00Z,away,1.8,1,1,1.5,1,0,,,,0.0,1.0,-2.0,-2.0
 401813393,315,Niagara Purple Eagles,116,Mount St. Mary's Mountaineers,2026-02-21T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-13.0,-13.0
 401813394,315,Niagara Purple Eagles,2520,Rider Broncs,2026-02-22T17:00:00Z,away,1.7,1,1,1.55,-1,0,,,,0.0,1.0,-5.0,-5.0
 401824394,322,Lafayette Leopards,107,Holy Cross Crusaders,2026-02-18T23:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
 401828679,322,Lafayette Leopards,44,American University Eagles,2026-02-22T17:00:00Z,home,3.8,1,1,0.9,1,0,,,,0.0,0.0,-14.0,-14.0
-401829410,322,Lafayette Leopards,2142,Colgate Raiders,2026-02-26T00:00:00Z,away,3.3,1,2,1.2,-1,0,,,,0.0,1.0,4.0,4.0
+401829410,322,Lafayette Leopards,2142,Colgate Raiders,2026-02-26T00:00:00Z,away,3.3,1,2,1.2,-1,0,,,,,,,
 401808675,324,Coastal Carolina Chanticleers,256,James Madison Dukes,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-2.0,-2.0
 401808682,324,Coastal Carolina Chanticleers,276,Marshall Thundering Herd,2026-02-21T18:00:00Z,home,2.8,1,1,1.0,-1,0,,,,0.0,1.0,4.0,4.0
 401808688,324,Coastal Carolina Chanticleers,2247,Georgia State Panthers,2026-02-25T00:30:00Z,away,3.3,2,2,1.8,1,0,,0.5,,0.0,1.0,5.0,5.0
 401817672,325,Cleveland State Vikings,2754,Youngstown State Penguins,2026-02-18T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-24.0,-15.0
 401817678,325,Cleveland State Vikings,2870,Purdue Fort Wayne Mastodons,2026-02-22T19:00:00Z,home,3.8,1,1,0.9,-1,0,,,,0.0,0.0,-6.0,-6.0
-401817681,325,Cleveland State Vikings,94,Northern Kentucky Norse,2026-02-26T00:00:00Z,home,3.2,1,2,1.2,-2,0,,,,0.0,0.0,-14.0,-14.0
+401817681,325,Cleveland State Vikings,94,Northern Kentucky Norse,2026-02-26T00:00:00Z,home,3.2,1,2,1.2,-2,0,,,,,,,
 401808680,326,Texas State Bobcats,6,South Alabama Jaguars,2026-02-20T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,8.0,8.0
 401808686,326,Texas State Bobcats,309,Louisiana Ragin' Cajuns,2026-02-21T18:00:00Z,away,1.7,1,1,1.55,1,0,,,,0.0,0.0,-13.0,-13.0
 401823830,328,Utah State Aggies,68,Boise State Broncos,2026-02-19T03:30:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,19.0,15.0
@@ -868,16 +766,14 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401823784,328,Utah State Aggies,21,San Diego State Aztecs,2026-02-26T04:00:00Z,away,4.0,1,2,1.2,-1,0,,,,,,,
 401808466,331,Eastern Washington Eagles,16,Sacramento State Hornets,2026-02-20T03:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,8.0,8.0
 401808467,331,Eastern Washington Eagles,2502,Portland State Vikings,2026-02-21T22:00:00Z,away,1.8,1,1,1.5,1,0,,,,0.0,0.0,12.0,12.0
-401808468,331,Eastern Washington Eagles,2458,Northern Colorado Bears,2026-02-27T02:00:00Z,home,5.2,2,2,1.8,2,0,,,,,,,
 401808244,333,Alabama Crimson Tide,8,Arkansas Razorbacks,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,2.0,2.0
 401808252,333,Alabama Crimson Tide,99,LSU Tigers,2026-02-21T23:00:00Z,away,3.0,1,1,0.9,1,0,,,,0.0,0.0,7.0,7.0
 401808263,333,Alabama Crimson Tide,344,Mississippi State Bulldogs,2026-02-26T02:00:00Z,home,4.1,1,2,1.2,2,0,,,,,,,
 401804935,338,Kennesaw State Owls,2623,Missouri State Bears,2026-02-19T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,4.0,4.0
 401804940,338,Kennesaw State Owls,2348,Louisiana Tech Bulldogs,2026-02-21T22:00:00Z,home,2.9,1,1,0.95,1,0,,,,0.0,1.0,3.0,3.0
-401804949,338,Kennesaw State Owls,2335,Liberty Flames,2026-02-27T00:00:00Z,home,5.1,1,2,1.2,2,0,,1.0,,,,,
 401830305,339,Evansville Purple Aces,82,UIC Flames,2026-02-19T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-38.0,-15.0
 401830309,339,Evansville Purple Aces,93,Murray State Racers,2026-02-21T21:00:00Z,away,2.8,1,1,1.0,-1,0,,,,0.0,0.0,-13.0,-13.0
-401830216,339,Evansville Purple Aces,2057,Belmont Bruins,2026-02-26T00:30:00Z,away,4.1,2,2,1.8,-2,0,,,,0.0,1.0,-3.0,-3.0
+401830216,339,Evansville Purple Aces,2057,Belmont Bruins,2026-02-26T00:30:00Z,away,4.1,2,2,1.8,-2,0,,,,,,,
 401808242,344,Mississippi State Bulldogs,2,Auburn Tigers,2026-02-19T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,6.0,6.0
 401808254,344,Mississippi State Bulldogs,2579,South Carolina Gamecocks,2026-02-21T18:00:00Z,away,2.7,1,1,1.05,1,0,,,,0.0,0.0,-8.0,-8.0
 401808263,344,Mississippi State Bulldogs,333,Alabama Crimson Tide,2026-02-26T02:00:00Z,away,4.3,2,2,1.8,-1,0,,,,,,,
@@ -886,7 +782,6 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401826824,349,Army Black Knights,2083,Bucknell Bison,2026-02-25T16:00:00Z,home,3.9,2,2,1.8,-1,0,,,,0.0,1.0,-2.0,-2.0
 401812075,350,UNC Wilmington Seahawks,2405,Monmouth Hawks,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,10.0,10.0
 401812076,350,UNC Wilmington Seahawks,2097,Campbell Fighting Camels,2026-02-21T21:00:00Z,away,1.9,1,1,1.45,1,0,,,,0.0,1.0,5.0,5.0
-401812084,350,UNC Wilmington Seahawks,2448,North Carolina A&T Aggies,2026-02-27T00:00:00Z,home,5.1,2,2,1.8,2,0,,,,,,,
 401825527,356,Illinois Fighting Illini,30,USC Trojans,2026-02-19T03:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,36.0,15.0
 401825532,356,Illinois Fighting Illini,26,UCLA Bruins,2026-02-22T01:00:00Z,away,2.9,1,1,0.95,1,0,,,,0.0,1.0,-1.0,-1.0
 401808973,357,Texas A&M-Corpus Christi Islanders,2617,Stephen F. Austin Lumberjacks,2026-02-17T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-10.0,-10.0
@@ -899,14 +794,13 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401827706,38,Colorado Buffaloes,2306,Kansas State Wildcats,2026-02-26T02:00:00Z,home,4.2,1,1,0.9,1,0,,,,,,,
 401812158,399,UAlbany Great Danes,2885,NJIT Highlanders,2026-02-20T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,18.0,15.0
 401812162,399,UAlbany Great Danes,2378,UMBC Retrievers,2026-02-21T18:00:00Z,away,1.8,1,1,1.5,1,0,,,,0.0,1.0,-4.0,-4.0
-401812167,399,UAlbany Great Danes,311,Maine Black Bears,2026-02-26T23:30:00Z,home,5.2,2,2,1.8,-1,0,,,,,,,
 401822948,41,UConn Huskies,156,Creighton Bluejays,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-7.0,-7.0
 401822953,41,UConn Huskies,222,Villanova Wildcats,2026-02-21T22:30:00Z,away,2.9,1,1,0.95,-1,0,,,,0.0,0.0,10.0,10.0
-401822959,41,UConn Huskies,2599,St. John's Red Storm,2026-02-26T00:00:00Z,home,4.1,2,2,1.8,1,0,,,,1.0,0.0,18.0,15.0
+401822959,41,UConn Huskies,2599,St. John's Red Storm,2026-02-26T00:00:00Z,home,4.1,2,2,1.8,1,0,,,,,,,
 401812595,43,Yale Bulldogs,219,Pennsylvania Quakers,2026-02-21T19:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,4.0,4.0
 401828678,44,American University Eagles,2083,Bucknell Bison,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,18.0,15.0
 401828679,44,American University Eagles,322,Lafayette Leopards,2026-02-22T17:00:00Z,away,3.7,1,1,0.9,1,0,,,,0.0,0.0,14.0,14.0
-401828680,44,American University Eagles,2329,Lehigh Mountain Hawks,2026-02-26T00:00:00Z,home,3.3,2,2,1.8,2,0,,,,0.0,1.0,-5.0,-5.0
+401828680,44,American University Eagles,2329,Lehigh Mountain Hawks,2026-02-26T00:00:00Z,home,3.3,2,2,1.8,2,0,,,,,,,
 401828430,45,George Washington Revolutionaries,2670,VCU Rams,2026-02-18T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-14.0,-14.0
 401828444,45,George Washington Revolutionaries,2325,La Salle Explorers,2026-02-24T23:30:00Z,away,6.9,1,1,0.9,-1,0,,,,1.0,0.0,27.0,15.0
 401822950,46,Georgetown Hoyas,2086,Butler Bulldogs,2026-02-18T23:30:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
@@ -916,28 +810,23 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401830243,47,Howard Bison,2428,North Carolina Central Eagles,2026-02-21T17:00:00Z,home,4.7,1,1,0.9,1,0,,,,1.0,0.0,33.0,15.0
 401804936,48,Delaware Blue Hens,98,Western Kentucky Hilltoppers,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,-1.0,-1.0
 401804944,48,Delaware Blue Hens,2393,Middle Tennessee Blue Raiders,2026-02-21T19:00:00Z,away,2.8,1,1,1.0,-1,0,,,,0.0,0.0,-12.0,-12.0
-401804950,48,Delaware Blue Hens,55,Jacksonville State Gamecocks,2026-02-27T00:00:00Z,away,5.2,1,2,1.2,-2,0,,,,,,,
 401828232,5,UAB Blazers,218,Temple Owls,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,5.0,5.0
 401828240,5,UAB Blazers,235,Memphis Tigers,2026-02-22T17:00:00Z,away,3.7,1,1,0.9,1,0,,,,0.0,0.0,11.0,11.0
 401829690,50,Florida A&M Rattlers,2016,Alcorn State Braves,2026-02-17T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,8.0,8.0
 401827207,50,Florida A&M Rattlers,2010,Alabama A&M Bulldogs,2026-02-20T02:15:00Z,home,3.1,1,1,0.9,1,0,,,,0.0,1.0,-2.0,-2.0
 401827168,50,Florida A&M Rattlers,2011,Alabama State Hornets,2026-02-21T23:45:00Z,home,1.9,2,2,2.35,-1,0,,,,0.0,0.0,13.0,13.0
-401827035,50,Florida A&M Rattlers,2582,Southern Jaguars,2026-02-27T01:30:00Z,away,5.1,2,3,2.1,1,0,,,6.24,,,,
 401820748,52,Florida State Seminoles,103,Boston College Eagles,2026-02-17T23:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,8.0,8.0
 401820755,52,Florida State Seminoles,228,Clemson Tigers,2026-02-21T17:00:00Z,away,3.8,1,1,0.9,1,0,,,,0.0,1.0,5.0,5.0
 401820766,52,Florida State Seminoles,2390,Miami Hurricanes,2026-02-25T02:00:00Z,home,3.4,1,2,1.2,2,0,,,,0.0,0.0,-10.0,-10.0
 401807748,526,Florida Gulf Coast Eagles,294,Jacksonville Dolphins,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,2.0,2.0
 401807752,526,Florida Gulf Coast Eagles,2110,Central Arkansas Bears,2026-02-21T19:00:00Z,home,2.8,1,1,1.0,1,0,,,,0.0,1.0,4.0,4.0
-401807760,526,Florida Gulf Coast Eagles,2454,North Florida Ospreys,2026-02-27T00:00:00Z,away,5.2,1,2,1.2,2,0,,1.0,,,,,
 401804934,55,Jacksonville State Gamecocks,2348,Louisiana Tech Bulldogs,2026-02-19T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-6.0,-6.0
 401804941,55,Jacksonville State Gamecocks,2534,Sam Houston Bearkats,2026-02-21T20:30:00Z,away,2.8,1,1,1.0,-1,0,,,,0.0,1.0,-4.0,-4.0
-401804950,55,Jacksonville State Gamecocks,48,Delaware Blue Hens,2026-02-27T00:00:00Z,home,5.1,1,2,1.2,-2,0,,,,,,,
 401807747,56,Stetson Hatters,2110,Central Arkansas Bears,2026-02-20T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-12.0,-12.0
 401807755,56,Stetson Hatters,2454,North Florida Ospreys,2026-02-21T20:30:00Z,home,1.8,1,1,1.5,-1,0,,,,0.0,1.0,5.0,5.0
-401807762,56,Stetson Hatters,294,Jacksonville Dolphins,2026-02-27T00:00:00Z,away,5.1,2,2,1.8,1,0,,,,,,,
 401808241,57,Florida Gators,2579,South Carolina Gamecocks,2026-02-18T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,14.0,14.0
 401808253,57,Florida Gators,145,Ole Miss Rebels,2026-02-21T17:00:00Z,away,3.7,1,1,0.9,1,0,,,,1.0,0.0,19.0,15.0
-401808264,57,Florida Gators,251,Texas Longhorns,2026-02-26T00:00:00Z,away,4.3,1,2,1.2,2,0,,,,0.0,1.0,-2.0,-2.0
+401808264,57,Florida Gators,251,Texas Longhorns,2026-02-26T00:00:00Z,away,4.3,1,2,1.2,2,0,,,,,,,
 401828237,58,South Florida Bulls,235,Memphis Tigers,2026-02-20T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,21.0,15.0
 401828247,58,South Florida Bulls,242,Rice Owls,2026-02-26T01:00:00Z,away,6.0,1,1,0.9,1,0,,,,,,,
 401820750,59,Georgia Tech Yellow Jackets,258,Virginia Cavaliers,2026-02-19T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,-26.0,-15.0
@@ -948,10 +837,9 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401808693,6,South Alabama Jaguars,2433,UL Monroe Warhawks,2026-02-26T01:30:00Z,home,4.2,2,3,2.1,1,0,,,8.18,,,,
 401808245,61,Georgia Bulldogs,96,Kentucky Wildcats,2026-02-18T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,8.0,8.0
 401808251,61,Georgia Bulldogs,251,Texas Longhorns,2026-02-21T20:30:00Z,home,3.8,1,1,0.9,1,0,,,,0.0,0.0,11.0,11.0
-401808261,61,Georgia Bulldogs,238,Vanderbilt Commodores,2026-02-26T00:00:00Z,away,4.1,1,2,1.2,2,0,,,,1.0,0.0,-18.0,-15.0
+401808261,61,Georgia Bulldogs,238,Vanderbilt Commodores,2026-02-26T00:00:00Z,away,4.1,1,2,1.2,2,0,,,,,,,
 401809148,62,Hawai'i Rainbow Warriors,13,Cal Poly Mustangs,2026-02-20T04:59:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-11.0,-11.0
 401809149,62,Hawai'i Rainbow Warriors,2540,UC Santa Barbara Gauchos,2026-02-22T03:00:00Z,home,1.9,1,1,1.45,-1,0,,,,0.0,1.0,3.0,3.0
-401809137,62,Hawai'i Rainbow Warriors,302,UC Davis Aggies,2026-02-27T02:00:00Z,away,5.0,2,2,1.8,1,0,,,,,,,
 401820819,66,Iowa State Cyclones,248,Houston Cougars,2026-02-17T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,1.0,3.0,3.0
 401827693,66,Iowa State Cyclones,252,BYU Cougars,2026-02-22T03:38:00Z,away,5.1,1,1,0.9,1,0,,,,0.0,0.0,-10.0,-10.0
 401827705,66,Iowa State Cyclones,254,Utah Utes,2026-02-25T02:00:00Z,away,2.9,1,2,1.25,-1,0,,,,1.0,0.0,16.0,15.0
@@ -960,7 +848,6 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401823832,68,Boise State Broncos,2751,Wyoming Cowboys,2026-02-25T02:00:00Z,home,3.2,2,2,1.8,1,0,,,,0.0,0.0,10.0,10.0
 401808483,70,Idaho Vandals,2502,Portland State Vikings,2026-02-20T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-10.0,-10.0
 401808484,70,Idaho Vandals,16,Sacramento State Hornets,2026-02-22T03:00:00Z,away,2.0,1,1,1.4,-1,0,,,,0.0,0.0,6.0,6.0
-401808485,70,Idaho Vandals,2464,Northern Arizona Lumberjacks,2026-02-27T02:00:00Z,home,5.0,2,2,1.8,1,0,,,,,,,
 401830224,71,Bradley Braves,2674,Valparaiso Beacons,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-7.0,-7.0
 401830223,71,Bradley Braves,2287,Illinois State Redbirds,2026-02-22T01:00:00Z,home,3.0,1,1,0.9,-1,0,,,,0.0,0.0,14.0,14.0
 401830222,71,Bradley Braves,82,UIC Flames,2026-02-25T01:00:00Z,away,3.0,2,2,1.8,1,0,,,,0.0,0.0,-7.0,-7.0
@@ -978,7 +865,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401825528,84,Indiana Hoosiers,2509,Purdue Boilermakers,2026-02-21T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-29.0,-15.0
 401825536,84,Indiana Hoosiers,77,Northwestern Wildcats,2026-02-25T00:00:00Z,home,4.0,1,1,0.9,-1,0,,,,0.0,1.0,-4.0,-4.0
 401817673,85,IU Indianapolis Jaguars,2750,Wright State Raiders,2026-02-20T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-12.0,-12.0
-401817684,85,IU Indianapolis Jaguars,2473,Oakland Golden Grizzlies,2026-02-25T23:30:00Z,home,6.0,1,1,0.9,-1,0,,,,0.0,0.0,-12.0,-12.0
+401817684,85,IU Indianapolis Jaguars,2473,Oakland Golden Grizzlies,2026-02-25T23:30:00Z,home,6.0,1,1,0.9,-1,0,,,,,,,
 401820757,87,Notre Dame Fighting Irish,221,Pittsburgh Panthers,2026-02-21T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-5.0,-5.0
 401820767,87,Notre Dame Fighting Irish,150,Duke Blue Devils,2026-02-25T00:00:00Z,home,3.2,1,1,0.9,-1,0,,,,1.0,0.0,-44.0,-15.0
 401806496,88,Southern Indiana Screaming Eagles,2710,Western Illinois Leathernecks,2026-02-20T01:30:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,7.0,7.0
@@ -994,7 +881,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401830309,93,Murray State Racers,339,Evansville Purple Aces,2026-02-21T21:00:00Z,home,2.8,1,1,1.0,-1,0,,,,0.0,0.0,13.0,13.0
 401817671,94,Northern Kentucky Norse,2870,Purdue Fort Wayne Mastodons,2026-02-19T00:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,16.0,15.0
 401817680,94,Northern Kentucky Norse,2754,Youngstown State Penguins,2026-02-22T19:00:00Z,away,3.8,1,1,0.9,1,0,,,,0.0,0.0,-6.0,-6.0
-401817681,94,Northern Kentucky Norse,325,Cleveland State Vikings,2026-02-26T00:00:00Z,away,3.2,2,2,1.8,-1,0,,,,0.0,0.0,14.0,14.0
+401817681,94,Northern Kentucky Norse,325,Cleveland State Vikings,2026-02-26T00:00:00Z,away,3.2,2,2,1.8,-1,0,,,,,,,
 401808245,96,Kentucky Wildcats,61,Georgia Bulldogs,2026-02-18T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-8.0,-8.0
 401808250,96,Kentucky Wildcats,2,Auburn Tigers,2026-02-22T01:38:00Z,away,4.0,1,1,0.9,-1,0,,,,0.0,1.0,-1.0,-1.0
 401808260,96,Kentucky Wildcats,2579,South Carolina Gamecocks,2026-02-25T00:00:00Z,away,2.9,2,2,1.85,-2,0,,,,0.0,0.0,9.0,9.0
@@ -1003,7 +890,6 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401820762,97,Louisville Cardinals,153,North Carolina Tar Heels,2026-02-24T00:00:00Z,away,2.2,2,2,2.2,1,0,,,,0.0,1.0,-3.0,-3.0
 401804936,98,Western Kentucky Hilltoppers,48,Delaware Blue Hens,2026-02-19T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,1.0,1.0
 401804942,98,Western Kentucky Hilltoppers,2335,Liberty Flames,2026-02-21T21:00:00Z,away,2.9,1,1,0.95,1,0,,,,1.0,0.0,21.0,15.0
-401804945,98,Western Kentucky Hilltoppers,166,New Mexico State Aggies,2026-02-27T00:30:00Z,home,5.1,1,2,1.2,2,0,,,,,,,
 401808243,99,LSU Tigers,251,Texas Longhorns,2026-02-18T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-3.0,-3.0
 401808252,99,LSU Tigers,333,Alabama Crimson Tide,2026-02-21T23:00:00Z,home,3.9,1,1,0.9,-1,0,,,,0.0,0.0,-7.0,-7.0
 401808258,99,LSU Tigers,145,Ole Miss Rebels,2026-02-26T02:00:00Z,away,4.1,1,2,1.2,-2,0,,,,,,,
