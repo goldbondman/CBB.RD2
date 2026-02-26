@@ -81,10 +81,11 @@ MODEL_ID_TO_NAME = {
     "m1": "FourFactors",
     "m2": "AdjEfficiency",
     "m3": "Pythagorean",
-    "m4": "Momentum",
-    "m5": "Situational",
-    "m6": "CAGERankings",
-    "m7": "RegressedEff",
+    "m4": "Situational",
+    "m5": "CAGERankings",
+    "m6": "LuckRegression",
+    "m7": "Variance",
+    "m8": "HomeAwayForm",
 }
 
 # Legacy 5-model diagnostic blend (M2 reduced by 0.05 to allocate room for M8 primary).
@@ -403,10 +404,13 @@ class EnsembleConfig:
                 if pd.notna(computed_at) and computed_at >= cutoff:
                     blended = dynamic_payload.get("blended_weights", {})
                     if isinstance(blended, dict) and blended:
-                        for mid, model_name in MODEL_ID_TO_NAME.items():
-                            if mid in blended:
-                                config.spread_weights[model_name] = float(blended[mid])
-                                config.total_weights[model_name] = float(blended[mid])
+                        for mid in blended:
+                            model_name = MODEL_ID_TO_NAME.get(mid)
+                            if model_name is None:
+                                log.warning("[ENSEMBLE] Unknown or retired model_id=%s in dynamic weights — skipping", mid)
+                                continue
+                            config.spread_weights[model_name] = float(blended[mid])
+                            config.total_weights[model_name] = float(blended[mid])
                         log.info("Loaded dynamic model weights (computed %s)", computed_at.strftime("%Y-%m-%d"))
                 else:
                     log.warning("Dynamic model weights stale or invalid; using backtest weights")
