@@ -6,7 +6,7 @@ name: CBB Backtest Tracker
     - cron: "30 11 * * *"
 
 concurrency:
-  group: cbb-backtest-tracker
+  group: cbb-data-pipeline
   cancel-in-progress: false
 
 permissions:
