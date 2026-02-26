@@ -679,6 +679,43 @@ class CBBPredictionModel:
 
         return prediction
 
+    def predict_game_with_components(
+        self,
+        home_games: List[GameData],
+        away_games: List[GameData],
+        neutral_site: bool = False,
+        game_type: Optional[str] = None,
+        home_team_profile: Optional[Dict] = None,
+        away_team_profile: Optional[Dict] = None,
+    ) -> Dict:
+        """
+        Predict spread/total and expose matchup components as top-level keys.
+
+        This wraps predict_game() and lifts selected values from breakdown so
+        downstream pipelines can consume them without nested dict access.
+        """
+        prediction = self.predict_game(
+            home_games=home_games,
+            away_games=away_games,
+            neutral_site=neutral_site,
+            game_type=game_type,
+            home_team_profile=home_team_profile,
+            away_team_profile=away_team_profile,
+        )
+
+        breakdown = prediction.get('breakdown', {}) or {}
+        component_keys = [
+            'efg_delta', 'tov_delta', 'orb_delta', 'drb_delta', 'ftr_delta',
+            'eff_edge', 'composite_edge', 'raw_edge',
+        ]
+        for key in component_keys:
+            prediction[key] = breakdown.get(key)
+
+        prediction['home_pace'] = prediction.get('pace')
+        prediction['away_pace'] = prediction.get('pace')
+
+        return prediction
+
     # ── Window blending ───────────────────────────────────────────────────────
 
     def _blend_windows(self, l5: Dict, l10: Dict) -> Dict:
