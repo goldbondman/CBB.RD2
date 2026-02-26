@@ -71,6 +71,7 @@ class ModelConfig:
     # ─── Raw vs Vs-Expectation Blending ───
     vs_exp_weight: float = 0.70
     raw_weight: float = 0.30
+    eff_composite_weight: float = 0.60
 
     # ─── Opponent Quality Weighting ───
     min_opp_weight: float = 0.5
@@ -79,6 +80,10 @@ class ModelConfig:
 
     # ─── Schedule Adjustment ───
     schedule_adjustment_factor: float = 0.5
+
+    # ─── Smooth Decay Controls ───
+    decay_floor: float = 0.50
+    decay_cliff: float = 0.75
 
     # ─── Baseline Values ───
     avg_pace: float = 67.2
@@ -243,7 +248,12 @@ def calculate_efficiency(points: float, poss: float) -> float:
 # GAME WEIGHTING (DECAY FUNCTIONS)
 # ============================================================================
 
-def get_game_weight(game_n: int, decay_type: str = 'smooth') -> float:
+def get_game_weight(
+    game_n: int,
+    decay_type: str = 'smooth',
+    decay_cliff: float = 0.75,
+    decay_floor: float = 0.50,
+) -> float:
     """
     Calculate recency weight for game N (1 = most recent).
 
@@ -258,7 +268,7 @@ def get_game_weight(game_n: int, decay_type: str = 'smooth') -> float:
         if game_n <= 5:
             return 1.00 - 0.02 * (game_n - 1)     # 1.00, 0.98, 0.96, 0.94, 0.92
         else:
-            return max(0.50, 0.75 - 0.05 * (game_n - 5))  # 0.75 → 0.50
+            return max(decay_floor, decay_cliff - 0.05 * (game_n - 5))
 
     elif decay_type == 'plateau':
         if game_n <= 4:   return 1.00
@@ -539,7 +549,12 @@ class PerformanceVsExpectationAnalyzer:
 
         for idx, game_metrics in enumerate(reversed(analyzed_games)):
             game_n = idx + 1
-            weight = get_game_weight(game_n, decay_type)
+            weight = get_game_weight(
+                game_n,
+                decay_type,
+                decay_cliff=self.config.decay_cliff,
+                decay_floor=self.config.decay_floor,
+            )
 
             for key, value in game_metrics.items():
                 if key not in ('baseline_confidence', 'opponent_baseline', 'is_high_foul'):
@@ -796,8 +811,11 @@ class CBBPredictionModel:
         vs_exp_eff = home['off_eff_vs_exp']  - away['off_eff_vs_exp']
         eff_edge   = cfg.raw_weight * raw_eff + cfg.vs_exp_weight * vs_exp_eff
 
-        # ── Combined edge (60/40: efficiency / composite) ─────────────────────
-        raw_edge = 0.60 * eff_edge + 0.40 * composite_edge
+        # ── Combined edge (efficiency / composite split from config) ───────────
+        raw_edge = (
+            cfg.eff_composite_weight * eff_edge +
+            (1 - cfg.eff_composite_weight) * composite_edge
+        )
 
         # ── HCA and final spread ──────────────────────────────────────────────
         # Note: NO SOS adjustment (embedded in normalization)
