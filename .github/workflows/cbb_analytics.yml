@@ -80,7 +80,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: cbb-market-lines
-          path: data/
+          path: data/staging/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
         continue-on-error: true
@@ -89,7 +89,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: cbb-predictions-with-context
-          path: data/
+          path: data/staging/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
         continue-on-error: true
@@ -99,7 +99,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: cbb-espn-data
-          path: data/
+          path: data/staging/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_espn_run.outputs.run_id }}
         continue-on-error: true
@@ -113,6 +113,35 @@ jobs:
               git show HEAD:"$f" > "$f" 2>/dev/null || echo "[WARN] $f not in git"
             fi
           done
+
+      - name: Merge staged artifacts into committed history
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          from pathlib import Path
+
+          MERGE_SPECS = [
+              ("team_game_weighted.csv",  ["event_id", "team_id"]),
+              ("team_game_logs.csv",      ["event_id", "team_id"]),
+              ("games.csv",               ["game_id"]),
+              ("player_game_logs.csv",    ["event_id", "team_id", "athlete_id"]),
+              ("market_lines.csv",        ["event_id", "capture_type"]),
+              ("predictions_with_context.csv", ["game_id"]),
+          ]
+          for fname, keys in MERGE_SPECS:
+              committed = Path(f"data/{fname}")
+              staged = Path(f"data/staging/{fname}")
+              if not staged.exists() or staged.stat().st_size == 0:
+                  print(f"[SKIP] No staged {fname}")
+                  continue
+              existing = pd.read_csv(committed, dtype=str) if committed.exists() else pd.DataFrame()
+              new_rows = pd.read_csv(staged, dtype=str)
+              combined = pd.concat([existing, new_rows], ignore_index=True)
+              combined = combined.drop_duplicates(subset=keys, keep="last")
+              committed.parent.mkdir(parents=True, exist_ok=True)
+              combined.to_csv(committed, index=False)
+              print(f"[OK] {fname}: {len(existing)} + {len(new_rows)} = {len(combined)} rows")
+          PY
 
       # Step 4: Pattern 5: Install dependencies with import guards
       - name: Install dependencies

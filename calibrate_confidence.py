@@ -84,6 +84,8 @@ def apply_calibration_example(raw_confidence: float, cal_data: dict) -> float:
     Example of applying calibration.
     Note: iso_x_thresholds was fit on 50-100 scale.
     Input raw_confidence must be on 0-1 scale.
+    """Example of applying calibration.
+    iso_x_thresholds are fit on the same raw model_confidence scale used in training (50-100).
     """
     if not cal_data.get("calibrated"):
         return raw_confidence
@@ -94,6 +96,7 @@ def apply_calibration_example(raw_confidence: float, cal_data: dict) -> float:
     # Standardize 0-1 input to 50-100 for interpolation
     raw_scaled = raw_confidence * 100
 
+    raw_scaled = raw_confidence * 100
     cal_scaled = float(np.interp(raw_scaled, iso_x, iso_y))
     return cal_scaled / 100
 
@@ -115,10 +118,11 @@ def main() -> None:
     df = pd.read_csv(graded_path, dtype={"event_id": str})
 
     graded = df[df['graded'] == True] if 'graded' in df.columns else df
+    graded_df = df[df['graded'] == True] if 'graded' in df.columns else df
 
-    log.info("Graded predictions loaded: %s", len(graded))
+    log.info("Graded predictions loaded: %s", len(graded_df))
 
-    cal_data = fit_calibration(graded)
+    cal_data = fit_calibration(graded_df)
     cal_path.parent.mkdir(parents=True, exist_ok=True)
     cal_path.write_text(json.dumps(cal_data, indent=2))
     log.info("confidence_calibration.json → %s", cal_path)

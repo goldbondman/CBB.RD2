@@ -22,6 +22,20 @@ SIG_LEVEL = 0.10
 MAX_CORRECTION = 4.0
 
 
+def _ats_metrics(grp: pd.DataFrame) -> dict:
+    metrics = {
+        "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
+    }
+    if "model_picked_home" in grp.columns:
+        picked_home = grp["model_picked_home"].astype(str).str.lower().isin(["true", "1", "yes"])
+        model_correct = np.where(picked_home, grp["home_covered_pred"], ~grp["home_covered_pred"].astype(bool))
+        metrics["ats_pct"] = round(pd.Series(model_correct, index=grp.index).mean() * 100, 1)
+    else:
+        # model_picked_home/model_picked_side missing, so true model ATS% cannot be derived.
+        pass
+    return metrics
+
+
 def load_graded(path: Path, rolling_days: int) -> pd.DataFrame:
     """Load graded predictions and attach conference tier labels."""
     if not path.exists():
@@ -51,6 +65,8 @@ def load_graded(path: Path, rolling_days: int) -> pd.DataFrame:
             pd.to_datetime(graded["game_datetime_utc"], utc=True, errors="coerce")
             .dt.tz_convert(None)
         )
+        cutoff = (pd.Timestamp.now('UTC') - pd.Timedelta(days=rolling_days)).tz_localize(None)
+        graded["game_datetime_utc"] = pd.to_datetime(graded["game_datetime_utc"], utc=True, errors="coerce").dt.tz_convert(None)
         graded = graded[graded["game_datetime_utc"] >= cutoff]
         log.info("Rolling %sd window: %s graded rows", rolling_days, len(graded))
 
@@ -134,6 +150,21 @@ def analyze_conference_bias(df: pd.DataFrame, min_sample: int, sig_level: float)
             # If model_picked_side is not available, leave ats_pct absent.
             # (No model_picked_side/model_picked_home found in graded data)
             results.append(res)
+            results.append(
+                {
+                    "dimension": "conference",
+                    "group": str(conf),
+                    "sample_n": len(grp),
+                    "mean_error": round(bias, 3),
+                    "ci_lo": round(ci_lo, 3),
+                    "ci_hi": round(ci_hi, 3),
+                    "p_value": round(p_val, 4),
+                    "actionable": p_val < sig_level and abs(bias) > 0.5,
+                    "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
+                    **_ats_metrics(grp),
+                    "mae": round(grp["abs_spread_error"].mean(), 2),
+                }
+            )
 
     for tier, grp in df.groupby("game_tier"):
         if len(grp) < min_sample:
@@ -150,7 +181,7 @@ def analyze_conference_bias(df: pd.DataFrame, min_sample: int, sig_level: float)
                 "p_value": round(p_val, 4),
                 "actionable": p_val < sig_level and abs(bias) > 0.5,
                 "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
+                **_ats_metrics(grp),
                 "mae": round(grp["abs_spread_error"].mean(), 2),
             }
         )
@@ -194,7 +225,7 @@ def analyze_variance_tier_bias(df: pd.DataFrame, min_sample: int, sig_level: flo
                 "p_value": round(p_val, 4),
                 "actionable": p_val < sig_level and abs(bias) > 0.5,
                 "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
+                **_ats_metrics(grp),
                 "mae": round(grp["abs_spread_error"].mean(), 2),
             }
         )
@@ -229,7 +260,7 @@ def analyze_rest_bias(df: pd.DataFrame, min_sample: int, sig_level: float) -> li
                 "p_value": round(p_val, 4),
                 "actionable": p_val < sig_level and abs(bias) > 0.5,
                 "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
+                **_ats_metrics(grp),
                 "mae": round(grp["abs_spread_error"].mean(), 2),
             }
         )
@@ -276,7 +307,7 @@ def analyze_luck_bias(df: pd.DataFrame, min_sample: int, sig_level: float) -> li
                 "p_value": round(p_val, 4),
                 "actionable": p_val < sig_level and abs(bias) > 0.3,
                 "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
+                **_ats_metrics(grp),
                 "mae": round(grp["abs_spread_error"].mean(), 2),
             }
         )
@@ -322,7 +353,7 @@ def analyze_line_size_bias(df: pd.DataFrame, min_sample: int, sig_level: float) 
                 "p_value": round(p_val, 4),
                 "actionable": p_val < sig_level and abs(bias) > 0.5,
                 "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                "home_cover_rate": round(hcr, 1),
+                **_ats_metrics(grp),
                 "mae": round(grp["abs_spread_error"].mean(), 2),
                 "note": "Large favorites home cover rate caution" if (bucket == "large_14plus" and hcr < 48) else "",
             }
@@ -363,7 +394,7 @@ def analyze_momentum_bias(df: pd.DataFrame, min_sample: int, sig_level: float) -
                 "p_value": round(p_val, 4),
                 "actionable": p_val < sig_level and abs(bias) > 0.5,
                 "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
+                **_ats_metrics(grp),
                 "mae": round(grp["abs_spread_error"].mean(), 2),
             }
         )
@@ -391,7 +422,7 @@ def analyze_cross_tier_bias(df: pd.DataFrame, min_sample: int, sig_level: float)
                 "p_value": round(p_val, 4),
                 "actionable": p_val < sig_level and abs(bias) > 0.5,
                 "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                "home_cover_rate": round(hcr, 1),
+                **_ats_metrics(grp),
                 "mae": round(grp["abs_spread_error"].mean(), 2),
                 "error_direction": direction,
                 "note": f"⚠️ Systematic {abs(bias):.1f}pt error on {tier} games — {direction}" if p_val < sig_level else "",
@@ -425,8 +456,13 @@ def write_bias_report(all_biases: list[dict], df_graded: pd.DataFrame, report_pa
                 tier_ats[str(tier)] = {
                     "n": len(grp),
                     "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
+                    **_ats_metrics(grp),
                     "mae": round(grp["abs_spread_error"].mean(), 2),
                 }
+                if "model_picked_home" in grp.columns:
+                    picked_home = grp["model_picked_home"].astype(str).str.lower().isin(["true", "1", "yes"])
+                    model_correct = np.where(picked_home, grp["home_covered_pred"], ~grp["home_covered_pred"].astype(bool))
+                    tier_ats[str(tier)]["ats_pct"] = round(pd.Series(model_correct, index=grp.index).mean() * 100, 1)
 
     report = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),

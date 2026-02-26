@@ -67,6 +67,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import brier_score_loss
 
 from config.logging_config import get_logger
+from cbb_config import (
+    ENSEMBLE_MODEL_NAMES,
+    DEFAULT_SPREAD_WEIGHTS as CONFIG_DEFAULT_SPREAD_WEIGHTS,
+)
 from espn_config import PIPELINE_RUN_ID
 from pipeline_csv_utils import safe_write_csv
 from pipeline.id_utils import canonicalize_espn_game_id
@@ -157,8 +161,9 @@ def train_stacking_meta_model(backtest_results: pd.DataFrame, output_dir: Path) 
         "m3_spread": ["pythagorean_spread"],
         "m4_spread": ["situational_spread"],
         "m5_spread": ["cagerankings_spread"],
-        "m6_spread": ["regressedeff_spread", "luckregression_spread"],
-        "m7_spread": ["homeawayform_spread", "variance_spread"],
+        "m6_spread": ["luckregression_spread"],
+        "m7_spread": ["variance_spread"],
+        "m8_spread": ["homeawayform_spread"],
     }
 
     stack_df = backtest_results.copy()
@@ -169,7 +174,7 @@ def train_stacking_meta_model(backtest_results: pd.DataFrame, output_dir: Path) 
         if src:
             stack_df[alias] = pd.to_numeric(stack_df[src], errors="coerce")
 
-    model_cols = ["m1_spread", "m2_spread", "m3_spread", "m4_spread", "m5_spread", "m6_spread", "m7_spread"]
+    model_cols = ["m1_spread", "m2_spread", "m3_spread", "m4_spread", "m5_spread", "m6_spread", "m7_spread", "m8_spread"]
     aux_cols = ["cage_edge", "barthag_diff"]
     feature_cols = [c for c in model_cols + aux_cols if c in stack_df.columns]
     stacker_df = stack_df[feature_cols + ["actual_margin", "ens_spread"]].dropna()
@@ -841,18 +846,15 @@ def build_calibration_curve(
 # NOTE: If cbb_ensemble model composition changes (add/remove/merge models),
 # retrain this stacking/meta-model and refresh MODEL_NAMES/DEFAULT_WEIGHTS before backtesting.
 
-MODEL_NAMES = [
-    "fourfactors", "adjefficiency", "pythagorean",
-    "momentum", "situational", "cagerankings", "regressedeff",
-]
+MODEL_NAMES = list(ENSEMBLE_MODEL_NAMES)
 
-DEFAULT_WEIGHTS = np.array([0.12, 0.22, 0.14, 0.16, 0.10, 0.18, 0.08])
+DEFAULT_WEIGHTS = np.array([CONFIG_DEFAULT_SPREAD_WEIGHTS[name] for name in MODEL_NAMES], dtype=float)
 
 
 def _ensemble_from_weights(records: pd.DataFrame, weights: np.ndarray) -> np.ndarray:
     """Compute ensemble spread from per-model spreads with given weights."""
     w = np.abs(weights) / np.abs(weights).sum()   # Normalize, force positive
-    cols = [f"{n}_spread" for n in MODEL_NAMES]
+    cols = [f"{n.lower()}_spread" for n in MODEL_NAMES]
 
     available = [c for c in cols if c in records.columns]
     if not available:
@@ -936,7 +938,7 @@ def optimize_weights(
     ats_df = records.dropna(subset=["market_spread", "actual_margin"]).copy()
 
     # Need at least one per-model spread column
-    model_cols = [f"{n}_spread" for n in MODEL_NAMES if f"{n}_spread" in ats_df.columns]
+    model_cols = [f"{n.lower()}_spread" for n in MODEL_NAMES if f"{n.lower()}_spread" in ats_df.columns]
     if len(model_cols) < 3:
         log.warning("Too few model columns for weight optimization")
         return {n: w for n, w in zip(MODEL_NAMES, DEFAULT_WEIGHTS)}, 0.0
@@ -1213,14 +1215,15 @@ def build_full_report(
     Returns (model_report_df, calibration_df).
     """
     model_map = {
-        "FourFactors":   ("fourfactors_spread",   "fourfactors_total",   "fourfactors_conf"),
-        "AdjEfficiency": ("adjefficiency_spread",  "adjefficiency_total", "adjefficiency_conf"),
-        "Pythagorean":   ("pythagorean_spread",    "pythagorean_total",   "pythagorean_conf"),
-        "Momentum":      ("momentum_spread",       "momentum_total",      "momentum_conf"),
-        "Situational":   ("situational_spread",    "situational_total",   "situational_conf"),
-        "CAGERankings":  ("cagerankings_spread",   "cagerankings_total",  "cagerankings_conf"),
-        "RegressedEff":  ("regressedeff_spread",   "regressedeff_total",  "regressedeff_conf"),
-        "Ensemble":      ("ens_spread",            None,                   "ens_confidence"),
+        "FourFactors":    ("fourfactors_spread",    "fourfactors_total",    "fourfactors_conf"),
+        "AdjEfficiency":  ("adjefficiency_spread",   "adjefficiency_total",  "adjefficiency_conf"),
+        "Pythagorean":    ("pythagorean_spread",     "pythagorean_total",    "pythagorean_conf"),
+        "Situational":    ("situational_spread",     "situational_total",    "situational_conf"),
+        "CAGERankings":   ("cagerankings_spread",    "cagerankings_total",   "cagerankings_conf"),
+        "LuckRegression": ("luckregression_spread",  "luckregression_total", "luckregression_conf"),
+        "Variance":       ("variance_spread",        "variance_total",       "variance_conf"),
+        "HomeAwayForm":   ("homeawayform_spread",    "homeawayform_total",   "homeawayform_conf"),
+        "Ensemble":       ("ens_spread",             None,                     "ens_confidence"),
     }
 
     report_rows = []

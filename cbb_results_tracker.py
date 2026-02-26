@@ -285,7 +285,12 @@ def load_predictions(date_filter: Optional[str] = None) -> pd.DataFrame:
             DATA_DIR / f"ensemble_predictions_{date_filter}.csv",
             DATA_DIR / f"predictions_{date_filter}.csv",
         ]
-    candidates += [PREDICTIONS_CSV, ENSEMBLE_CSV, PRIMARY_CSV]
+    pred_path = Path("data/predictions_history.csv")
+    if not pred_path.exists() or pred_path.stat().st_size == 0:
+        pred_path = Path("data/predictions_combined_latest.csv")
+        log.warning("[TRACKER] predictions_history.csv not found, falling back to latest")
+
+    candidates += [pred_path, PREDICTIONS_CSV, ENSEMBLE_CSV, PRIMARY_CSV]
 
     for path in candidates:
         if path.exists() and path.stat().st_size > 50:
@@ -1011,8 +1016,15 @@ class ResultsTracker:
             return [], []
 
         # ── Match predictions to results ──────────────────────────────────────
-        preds["game_id"]   = preds["game_id"].astype(str)
-        results["game_id"] = results["game_id"].astype(str)
+        # Alias normalization: legacy sources may emit event_id; normalize to game_id for joins.
+        if "event_id" in preds.columns and "game_id" not in preds.columns:
+            preds = preds.rename(columns={"event_id": "game_id"})
+        if "event_id" in results.columns and "game_id" not in results.columns:
+            results = results.rename(columns={"event_id": "game_id"})
+        preds["game_id"] = preds["game_id"].astype(str).str.lstrip("0")
+        results["game_id"] = results["game_id"].astype(str).str.lstrip("0")
+        preds.loc[preds["game_id"] == "", "game_id"] = "0"
+        results.loc[results["game_id"] == "", "game_id"] = "0"
 
         # Ensure all required merge columns exist in results (fill missing
         # with NaN so the column selection never raises KeyError).

@@ -1,23 +1,25 @@
 {
   "weights": {
-    "fourfactors": 0.3654,
-    "adjefficiency": 0.0765,
-    "pythagorean": 0.0216,
-    "momentum": 0.2428,
-    "situational": 0.1222,
-    "cagerankings": 0.0274,
-    "regressedeff": 0.144
+    "FourFactors": 0.3654,
+    "AdjEfficiency": 0.0765,
+    "Pythagorean": 0.0216,
+    "Situational": 0.365,
+    "CAGERankings": 0.0274,
+    "LuckRegression": 0.144,
+    "Variance": 0.0,
+    "HomeAwayForm": 0.0
   },
   "metric": "ats",
   "value": 0.5227,
   "default_weights": {
-    "fourfactors": 0.12,
-    "adjefficiency": 0.22,
-    "pythagorean": 0.14,
-    "momentum": 0.16,
-    "situational": 0.1,
-    "cagerankings": 0.18,
-    "regressedeff": 0.08
+    "FourFactors": 0.12,
+    "AdjEfficiency": 0.22,
+    "Pythagorean": 0.14,
+    "Situational": 0.26,
+    "CAGERankings": 0.18,
+    "LuckRegression": 0.08,
+    "Variance": 0.0,
+    "HomeAwayForm": 0.0
   },
   "n_games_used": 88,
   "generated_at": "2026-02-26T12:00:10.359951",
