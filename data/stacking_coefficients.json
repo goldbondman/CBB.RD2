@@ -1,0 +1,34 @@
+{
+  "coef": [
+    -1.0204244130934,
+    -1.4191308186048563,
+    -0.22978982239967927,
+    -2.5864578416281643,
+    0.25972855256758565,
+    0.14025743051452783,
+    0.6304114092027854,
+    -1.6180651508213737,
+    0.0
+  ],
+  "intercept": 3.7044938215025147,
+  "features": [
+    "m1_spread",
+    "m2_spread",
+    "m3_spread",
+    "m4_spread",
+    "m5_spread",
+    "m6_spread",
+    "m7_spread",
+    "cage_edge",
+    "barthag_diff"
+  ],
+  "trained_at": "2026-02-26T12:00:10.065631+00:00",
+  "n_samples": 3297,
+  "train_samples": 2638,
+  "holdout_samples": 659,
+  "train_mae": 10.227479616089088,
+  "holdout_mae_ridge": 10.57197242384001,
+  "holdout_mae_weighted": 17.423065250379363,
+  "holdout_mae_improvement": 6.851092826539352,
+  "use_stacking_recommended": true
+}
