@@ -13,12 +13,14 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 DATA_DIR = Path("data")
-INPUT_CANDIDATES = [
-    DATA_DIR / "predictions_with_context.csv",
-    DATA_DIR / "results_log_graded.csv",
-    DATA_DIR / "predictions_combined_latest.csv",
-]
 OUTPUT_PATH = DATA_DIR / "predictions_graded.csv"
+
+
+_CANDIDATES = [
+    Path("data/predictions_with_context.csv"),
+    Path("data/results_log_graded.csv"),
+    Path("data/predictions_combined_latest.csv"),
+]
 
 
 def _safe_float(val: Any) -> Optional[float]:
@@ -156,22 +158,19 @@ def grade_row(row: pd.Series) -> Dict[str, Any]:
     }
 
 
-def _resolve_input() -> Optional[Path]:
-    for p in INPUT_CANDIDATES:
-        if p.exists() and p.stat().st_size > 0:
-            return p
-    return None
-
 
 def main() -> None:
-    input_path = _resolve_input()
-    if input_path is None:
-        log.warning("No source predictions found; writing empty graded output.")
-        OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-        pd.DataFrame().to_csv(OUTPUT_PATH, index=False)
-        return
+    _src = next((p for p in _CANDIDATES if p.exists() and p.stat().st_size > 0), None)
+    if _src is None:
+        raise FileNotFoundError("No prediction input found for grading")
+    if _src.name != "predictions_with_context.csv":
+        log.warning(
+            "[GRADING] Falling back to %s — predictions_with_context.csv missing or empty. "
+            "CLV fields will be null. Run enrichment/predictions_with_context.py first.",
+            _src,
+        )
 
-    df = pd.read_csv(input_path, low_memory=False)
+    df = pd.read_csv(_src, low_memory=False)
     # Alias normalization: legacy files may ship event_id; standardize joins/exports on game_id.
     if "event_id" in df.columns and "game_id" not in df.columns:
         df = df.rename(columns={"event_id": "game_id"})
@@ -180,7 +179,7 @@ def main() -> None:
         df.loc[df["game_id"] == "", "game_id"] = "0"
     if df.empty:
         pd.DataFrame().to_csv(OUTPUT_PATH, index=False)
-        log.info("Input %s empty; wrote empty graded output.", input_path)
+        log.info("Input %s empty; wrote empty graded output.", _src)
         return
 
     graded = df.apply(grade_row, axis=1, result_type="expand")

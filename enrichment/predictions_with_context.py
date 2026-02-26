@@ -1136,7 +1136,17 @@ def build_predictions_with_context(
             pass
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(out_path, index=False)
+    # Merge new rows into existing output, preserving historical enriched rows
+    _out_path = out_path
+    if _out_path.exists() and _out_path.stat().st_size > 0:
+        _existing = pd.read_csv(_out_path, dtype=str)
+        _combined = pd.concat([_existing, df.astype(str)], ignore_index=True)
+        _combined = _combined.drop_duplicates(subset=["game_id"], keep="last")
+    else:
+        _combined = df.astype(str)
+    _combined.to_csv(_out_path, index=False)
+    log.info("[ENRICH] Wrote %d rows to %s (was %d)", len(_combined), _out_path,
+             len(_existing) if '_existing' in dir() else 0)
 
     # [DIAG] Final results logging
     null_spread = df["pred_spread"].isna().sum() if "pred_spread" in df.columns else len(df)

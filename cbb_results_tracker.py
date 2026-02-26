@@ -521,9 +521,15 @@ def compute_outcomes(
         for name in MODEL_NAMES
     }
 
+    _raw_date = str(row.get("game_date", "")).strip()
+    if len(_raw_date) == 8 and _raw_date.isdigit():
+        _normalized_game_date = f"{_raw_date[:4]}-{_raw_date[4:6]}-{_raw_date[6:]}"
+    else:
+        _normalized_game_date = _raw_date
+
     outcome = GameOutcome(
         game_id           = game_id,
-        game_date         = game_dt[:10].replace("-", ""),
+        game_date         = _normalized_game_date,
         game_datetime_utc = game_dt,
         home_team         = str(pred_row.get("home_team", result_row.get("home_team", ""))),
         away_team         = str(pred_row.get("away_team", result_row.get("away_team", ""))),
