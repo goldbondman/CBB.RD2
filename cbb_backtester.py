@@ -1727,8 +1727,10 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
         opt_weights, opt_metric = optimize_weights(
             records, metric=config.optimizer_metric, method=config.optimizer_method
         )
+        optimized_total_weights = {n: round(float(w), 4) for n, w in zip(MODEL_NAMES, DEFAULT_WEIGHTS)}  # TODO: optimize total weights
         optimized_weights = {
             "weights":          opt_weights,
+            "total_weights":    optimized_total_weights,
             "metric":           config.optimizer_metric,
             "value":            opt_metric,
             "default_weights":  {n: round(float(w), 4)

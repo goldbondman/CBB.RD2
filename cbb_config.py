@@ -62,6 +62,8 @@ WEIGHTS_PATH = Path("data") / "backtest_optimized_weights.json"
 
 
 def load_ensemble_weights() -> Dict[str, Dict[str, float]]:
+    # DEPRECATED: not called at runtime. Active loader is EnsembleConfig.from_optimized()
+    # in espn_prediction_runner.py. Do not add call sites here.
     spread = dict(DEFAULT_SPREAD_WEIGHTS)
     total = dict(DEFAULT_TOTAL_WEIGHTS)
     if WEIGHTS_PATH.exists() and WEIGHTS_PATH.stat().st_size > 10:
