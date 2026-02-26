@@ -225,6 +225,7 @@ def load_team_context_data() -> pd.DataFrame:
     for src in team_context_sources:
         if src.exists() and src.stat().st_size > 100:
             ctx_df = pd.read_csv(src, dtype=str, low_memory=False)
+            ctx_df = normalize_numeric_dtypes(ctx_df)
             if "game_datetime_utc" in ctx_df.columns:
                 ctx_df["game_datetime_utc"] = pd.to_datetime(
                     ctx_df["game_datetime_utc"], utc=True, errors="coerce"
@@ -619,6 +620,15 @@ def run_predictions(
         try:
             home_ctx = _latest_team_context(all_data, context_df, str(home_id), cutoff_dt)
             away_ctx = _latest_team_context(all_data, context_df, str(away_id), cutoff_dt)
+            _home_has_pace = home_ctx.get("pace") is not None or home_ctx.get("poss") is not None
+            _away_has_pace = away_ctx.get("pace") is not None or away_ctx.get("poss") is not None
+            if not _home_has_pace or not _away_has_pace:
+                log.warning(
+                    "[CTX] game_id=%s missing pace context: home_pace=%s away_pace=%s",
+                    game_id,
+                    home_ctx.get("pace") or home_ctx.get("poss"),
+                    away_ctx.get("pace") or away_ctx.get("poss"),
+                )
             prediction = model.predict_game_with_components(
                 home_games=home_games,
                 away_games=away_games,
@@ -1000,12 +1010,16 @@ def _latest_team_context(
     if not context_df.empty and "team_id" in context_df.columns:
         rows = context_df[context_df["team_id"].astype(str) == str(team_id)].copy()
         if "game_datetime_utc" in rows.columns and cutoff_dt is not None:
-            rows = rows[rows["game_datetime_utc"] < cutoff_dt]
+            _gdt = pd.to_datetime(rows["game_datetime_utc"], utc=True, errors="coerce")
+            _cutoff_safe = cutoff_dt if cutoff_dt.tzinfo is not None else cutoff_dt.tz_localize("UTC")
+            rows = rows[_gdt < _cutoff_safe]
 
     if rows.empty:
         rows = all_data[all_data["team_id"].astype(str) == str(team_id)].copy()
         if cutoff_dt is not None:
-            rows = rows[rows["game_datetime_utc"] < cutoff_dt]
+            _gdt = pd.to_datetime(rows["game_datetime_utc"], utc=True, errors="coerce")
+            _cutoff_safe = cutoff_dt if cutoff_dt.tzinfo is not None else cutoff_dt.tz_localize("UTC")
+            rows = rows[_gdt < _cutoff_safe]
         rows = rows.sort_values("game_datetime_utc")
 
     if rows.empty:
@@ -1056,6 +1070,22 @@ def _latest_team_context(
         log.debug("Could not compute season record for %s: %s", team_id, e)
         out.setdefault("wins", 0)
         out.setdefault("losses", 0)
+
+    _NUMERIC_CTX_FIELDS = [
+        "pace", "ortg", "drtg", "poss", "net_rtg",
+        "ortg_l5", "ortg_l10", "drtg_l5", "drtg_l10",
+        "pace_l5", "pace_l10", "poss_l5", "poss_l10",
+        "adj_pace", "adj_ortg", "adj_drtg", "adj_net_rtg",
+        "net_eff", "net_rtg_l5", "net_rtg_l10",
+        "efg_pct", "tov_pct", "orb_pct", "drb_pct", "ftr",
+        "efg_pct_l5", "tov_pct_l5", "orb_pct_l5",
+    ]
+    for _nf in _NUMERIC_CTX_FIELDS:
+        if _nf in out and out[_nf] is not None:
+            try:
+                out[_nf] = float(out[_nf])
+            except (TypeError, ValueError):
+                out[_nf] = None
 
     for k in REQUIRED_TEAM_CONTEXT_FIELDS:
         out.setdefault(k, None)
