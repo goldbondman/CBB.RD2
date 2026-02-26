@@ -503,6 +503,25 @@ def build_predictions_with_context(
                 market_latest[available], on="event_id", how="left"
             )
 
+            # Sign convention check: model pred_spread and market home_spread_current
+            # should have the same sign for the same game. If >30% of matched rows
+            # disagree in sign, log a warning — do not silently invert.
+            if {"home_spread_current", "pred_spread"}.issubset(df.columns):
+                matched_sign = df[df["home_spread_current"].notna() & df["pred_spread"].notna()].copy()
+                if len(matched_sign) >= 3:
+                    sign_agree = (
+                        (pd.to_numeric(matched_sign["pred_spread"], errors="coerce")
+                         * pd.to_numeric(matched_sign["home_spread_current"], errors="coerce")) > 0
+                    ).mean()
+                    if pd.notna(sign_agree) and sign_agree < 0.70:
+                        log.warning(
+                            "[ENRICH] Spread sign convention mismatch: %.0f%% of %d matched rows "
+                            "have opposing signs between pred_spread and home_spread_current. "
+                            "Check ingestion sign convention.",
+                            (1 - sign_agree) * 100,
+                            len(matched_sign),
+                        )
+
             log.info(
                 "[DIAG] build_predictions_with_context | post-market-merge | pred_spread non-null: %d/%d (%.1f%% null)",
                 int(df["pred_spread"].notna().sum()) if "pred_spread" in df.columns else 0,
