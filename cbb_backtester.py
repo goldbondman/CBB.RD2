@@ -1759,10 +1759,10 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
     latest_results_path = output_dir / "backtest_results_latest.csv"
     safe_write_csv(records, latest_results_path, index=False, label="backtest_results_latest", allow_empty=False)
 
-    # Prediction records should NOT go to predictions_with_context.csv as it overwrites enrichment output
-    # Rename to backtest_predictions_with_context.csv if needed for debugging
-    context_path = output_dir / "backtest_predictions_with_context.csv"
-    safe_write_csv(records, context_path, index=False, label="backtest_predictions_with_context", allow_empty=False)
+    # Prediction records should NOT go to final context output as it overwrites enrichment output
+    # Rename to backtest_context_records.csv if needed for debugging
+    context_path = output_dir / "backtest_context_records.csv"
+    safe_write_csv(records, context_path, index=False, label="backtest_context_records", allow_empty=False)
 
     outputs["results"] = results_path
     outputs["results_latest"] = latest_results_path
