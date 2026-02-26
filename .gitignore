@@ -6,6 +6,8 @@ data/*
 !data/*.csv
 !data/*.json
 !data/*.md
+!data/archive/
+!data/archive/**
 *.egg-info/
 .pytest_cache/
 
