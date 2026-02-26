@@ -3,8 +3,11 @@ CBB analytics/model configuration shared across cbb_* and espn_* modules.
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import Dict
+
+log = logging.getLogger(__name__)
 
 LEAGUE_AVG_ORTG = 103.0
 LEAGUE_AVG_DRTG = 103.0
@@ -75,4 +78,14 @@ def load_ensemble_weights() -> Dict[str, Dict[str, float]]:
                         total[k] = float(v)
         except (OSError, json.JSONDecodeError, TypeError):
             pass
+
+    _zero = [name for name, w in spread.items() if float(w) == 0.0]
+    if _zero:
+        log.warning(
+            "[CONFIG] Zero-weight spread models (effectively disabled): %s. "
+            "These models still execute each prediction cycle. "
+            "Set weight to None or remove from MODELS list to skip execution.",
+            ", ".join(_zero),
+        )
+
     return {"spread": spread, "total": total}
