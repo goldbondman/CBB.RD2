@@ -52,9 +52,15 @@ jobs:
           run_id=$(gh run list \
             --workflow=update_espn_cbb.yml \
             --status=success \
-            --limit=1 \
+            --limit=5 \
             --json=databaseId \
-            --jq='.[0].databaseId // ""')
+            --jq='.[].databaseId' | while read rid; do
+              count=$(gh api \
+                /repos/${{ github.repository }}/actions/runs/${rid}/artifacts \
+                --jq '.artifacts[] | select(.name=="cbb-espn-data") | .size_in_bytes' \
+                2>/dev/null || echo 0)
+              echo "$count $rid"
+            done | sort -rn | head -1 | awk '{print $2}')
           echo "run_id=$run_id" >> $GITHUB_OUTPUT
 
       - name: Get latest predictions run ID
@@ -78,9 +84,15 @@ jobs:
           run_id=$(gh run list \
             --workflow=market_lines.yml \
             --status=success \
-            --limit=1 \
+            --limit=5 \
             --json=databaseId \
-            --jq='.[0].databaseId // ""')
+            --jq='.[].databaseId' | while read rid; do
+              count=$(gh api \
+                /repos/${{ github.repository }}/actions/runs/${rid}/artifacts \
+                --jq '.artifacts[] | select(.name=="cbb-market-lines") | .size_in_bytes' \
+                2>/dev/null || echo 0)
+              echo "$count $rid"
+            done | sort -rn | head -1 | awk '{print $2}')
           echo "run_id=$run_id" >> $GITHUB_OUTPUT
 
       - name: Get latest analytics run ID

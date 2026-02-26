@@ -88,11 +88,11 @@ jobs:
       - name: Verify artifact or bootstrap from git
         run: |
           for f in data/games.csv data/team_game_weighted.csv; do
-            if [ ! -s "$f" ]; then
-              echo "[WARN] $f missing or empty — attempting git restore"
-              git show HEAD:"$f" > "$f" 2>/dev/null && \
-                echo "[OK] Restored $f from git" || \
-                echo "[WARN] $f not in git either"
+            _git_lines=$(git show HEAD:"$f" 2>/dev/null | wc -l || echo 0)
+            _local_lines=$(wc -l < "$f" 2>/dev/null || echo 0)
+            if [ ! -s "$f" ] || [ "$_local_lines" -lt "$_git_lines" ]; then
+              echo "[BOOTSTRAP] $f: local=${_local_lines} git=${_git_lines} — restoring from git"
+              git show HEAD:"$f" > "$f" 2>/dev/null || echo "[WARN] $f not in git history"
             fi
           done
           if [ ! -s data/team_game_weighted.csv ]; then
@@ -294,6 +294,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/predictions_history.csv
+          git add data/predictions_combined_latest.csv
           git add data/
           if git diff --staged --quiet; then
             echo "[SKIP] No changes to commit"

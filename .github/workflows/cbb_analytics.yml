@@ -57,9 +57,15 @@ jobs:
           run_id=$(gh run list \
             --workflow=market_lines.yml \
             --status=success \
-            --limit=1 \
+            --limit=5 \
             --json=databaseId \
-            --jq='.[0].databaseId')
+            --jq='.[].databaseId' | while read rid; do
+              count=$(gh api \
+                /repos/${{ github.repository }}/actions/runs/${rid}/artifacts \
+                --jq '.artifacts[] | select(.name=="cbb-market-lines") | .size_in_bytes' \
+                2>/dev/null || echo 0)
+              echo "$count $rid"
+            done | sort -rn | head -1 | awk '{print $2}')
           echo "run_id=$run_id" >> $GITHUB_OUTPUT
 
       - name: Get latest ESPN data run ID
@@ -70,9 +76,15 @@ jobs:
           run_id=$(gh run list \
             --workflow=update_espn_cbb.yml \
             --status=success \
-            --limit=1 \
+            --limit=5 \
             --json=databaseId \
-            --jq='.[0].databaseId')
+            --jq='.[].databaseId' | while read rid; do
+              count=$(gh api \
+                /repos/${{ github.repository }}/actions/runs/${rid}/artifacts \
+                --jq '.artifacts[] | select(.name=="cbb-espn-data") | .size_in_bytes' \
+                2>/dev/null || echo 0)
+              echo "$count $rid"
+            done | sort -rn | head -1 | awk '{print $2}')
           echo "run_id=$run_id" >> $GITHUB_OUTPUT
 
       # Handoff from market_lines.yml
@@ -108,9 +120,11 @@ jobs:
       - name: Verify artifacts or bootstrap from git
         run: |
           for f in data/market_lines.csv data/predictions_with_context.csv data/team_game_weighted.csv; do
-            if [ ! -s "$f" ]; then
-              echo "[WARN] $f missing or empty — attempting git restore"
-              git show HEAD:"$f" > "$f" 2>/dev/null || echo "[WARN] $f not in git"
+            _git_lines=$(git show HEAD:"$f" 2>/dev/null | wc -l || echo 0)
+            _local_lines=$(wc -l < "$f" 2>/dev/null || echo 0)
+            if [ ! -s "$f" ] || [ "$_local_lines" -lt "$_git_lines" ]; then
+              echo "[BOOTSTRAP] $f: local=${_local_lines} git=${_git_lines} — restoring from git"
+              git show HEAD:"$f" > "$f" 2>/dev/null || echo "[WARN] $f not in git history"
             fi
           done
 

@@ -117,6 +117,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cbb-daily-logs-${{ github.run_id }}
+          retention-days: 30
           path: |
             data/pipeline_errors.log
             data/pipeline_step_runs.csv
@@ -242,6 +243,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cbb-biweekly-logs-${{ github.run_id }}
+          retention-days: 90
           path: |
             data/pipeline_errors.log
             data/pipeline_step_runs.csv
@@ -340,6 +342,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cbb-end-of-season-${{ github.run_id }}
+          retention-days: 365
           path: |
             data/pipeline_errors.log
             data/pipeline_step_runs.csv
