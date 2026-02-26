@@ -87,9 +87,10 @@ MODEL_ID_TO_NAME = {
     "m7": "RegressedEff",
 }
 
+# Legacy 5-model diagnostic blend (M2 reduced by 0.05 to allocate room for M8 primary).
 DEFAULT_WEIGHTS = {
     "w_schedule":      0.25,
-    "w_four_factors":  0.20,
+    "w_four_factors":  0.15,
     "w_bidirectional": 0.25,
     "w_ats":           0.15,
     "w_situational":   0.10,
@@ -305,6 +306,7 @@ class EnsembleConfig:
     edge_threshold_total:  float = 4.0
     agreement_strong:      float = 0.70    # fraction of models on same side
     agreement_moderate:    float = 0.55
+    primary_weight:        float = 0.15
     calibration: Optional[Dict] = field(default=None, init=False)
 
     def __post_init__(self) -> None:
@@ -1146,6 +1148,7 @@ class EnsemblePredictor:
         neutral: bool = False,
         spread_line: Optional[float] = None,
         total_line: Optional[float] = None,
+        primary_spread: Optional[float] = None,
     ) -> EnsembleResult:
         """Run all sub-models, aggregate, and return EnsembleResult."""
 
@@ -1168,14 +1171,32 @@ class EnsemblePredictor:
 
         spread_sum, spread_w = 0.0, 0.0
         total_sum,  total_w  = 0.0, 0.0
+        model_spreads: Dict[str, float] = {}
+        model_weights: Dict[str, float] = {}
 
         for mp in preds:
             ws = sw.get(mp.model_name, 1.0 / len(preds))
             wt = tw.get(mp.model_name, 1.0 / len(preds))
+            model_spreads[mp.model_name] = mp.spread
+            model_weights[mp.model_name] = ws
             spread_sum += mp.spread * ws
             spread_w   += ws
             total_sum  += mp.total * wt
             total_w    += wt
+
+        if primary_spread is not None:
+            model_spreads["m8"] = float(primary_spread)
+            model_weights["m8"] = float(self.config.primary_weight)
+            spread_sum += float(primary_spread) * float(self.config.primary_weight)
+            spread_w += float(self.config.primary_weight)
+            preds.append(
+                ModelPrediction(
+                    model_name="m8",
+                    spread=float(primary_spread),
+                    total=total_sum / total_w if total_w > 0 else 140.0,
+                    confidence=float(np.mean([mp.confidence for mp in preds])) if preds else 0.60,
+                )
+            )
 
         ens_spread = spread_sum / spread_w if spread_w > 0 else 0.0
         ens_total  = total_sum  / total_w  if total_w  > 0 else 140.0

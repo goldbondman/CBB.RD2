@@ -87,6 +87,12 @@ except ImportError as e:
     )
 
 try:
+    from cbb_ensemble import EnsemblePredictor, EnsembleConfig, TeamProfile
+    ENSEMBLE_AVAILABLE = True
+except ImportError:
+    ENSEMBLE_AVAILABLE = False
+
+try:
     from espn_tournament import (
         compute_underdog_winner_score,
         build_pretournament_snapshot,
@@ -563,6 +569,7 @@ def run_predictions(
     schedule_df = load_games_schedule()
     team_schedule_df = build_team_schedule_index(schedule_df)
     args_min_games = int(getattr(getattr(model, "config", None), "min_games_for_full_confidence", 0) or 0)
+    ensemble = EnsemblePredictor(EnsembleConfig.from_optimized()) if ENSEMBLE_AVAILABLE else None
 
     for i, matchup in enumerate(matchups):
         home_id = matchup.get("home_team_id")
@@ -847,6 +854,40 @@ def run_predictions(
             "is_alpha": alpha.get("is_alpha", False),
             "edge_types": alpha.get("edge_types", ""),
         }
+
+        if ensemble is not None:
+            home_profile = TeamProfile(
+                team_id=str(home_id or ""),
+                team_name=str(home_name or ""),
+                conference=str(home_ctx.get("conference") or ""),
+                games_before=int(len(home_games)),
+                cage_em=float(home_ctx.get("adj_net_rtg") or home_ctx.get("net_eff") or 0.0),
+                cage_o=float(home_ctx.get("adj_ortg") or home_ctx.get("ortg") or 0.0),
+                cage_d=float(home_ctx.get("adj_drtg") or home_ctx.get("drtg") or 0.0),
+                cage_t=float(home_ctx.get("adj_pace") or home_ctx.get("pace") or 0.0),
+                barthag=float(home_ctx.get("barthag") or 0.5),
+            )
+            away_profile = TeamProfile(
+                team_id=str(away_id or ""),
+                team_name=str(away_name or ""),
+                conference=str(away_ctx.get("conference") or ""),
+                games_before=int(len(away_games)),
+                cage_em=float(away_ctx.get("adj_net_rtg") or away_ctx.get("net_eff") or 0.0),
+                cage_o=float(away_ctx.get("adj_ortg") or away_ctx.get("ortg") or 0.0),
+                cage_d=float(away_ctx.get("adj_drtg") or away_ctx.get("drtg") or 0.0),
+                cage_t=float(away_ctx.get("adj_pace") or away_ctx.get("pace") or 0.0),
+                barthag=float(away_ctx.get("barthag") or 0.5),
+            )
+            ens_result = ensemble.predict(
+                home_profile,
+                away_profile,
+                neutral=neutral,
+                spread_line=spread_line,
+                total_line=total_line,
+                primary_spread=prediction["predicted_spread"],
+            )
+            row["ensemble_spread"] = round(ens_result.spread, 2)
+            row["m8_spread"] = round(float(prediction["predicted_spread"]), 2)
 
         row.update(uws_result)
         results.append(row)
