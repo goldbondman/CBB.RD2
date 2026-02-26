@@ -7,12 +7,18 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from pandas.errors import EmptyDataError
 
 DATA_DIR = Path("data")
 ACCURACY_PATH = DATA_DIR / "model_accuracy_report.csv"
 PRED_CONTEXT_PATH = DATA_DIR / "predictions_with_context.csv"
 OUT_CLV_REPORT = DATA_DIR / "clv_report.csv"
 OUT_CLV_BY_SUBMODEL = DATA_DIR / "clv_by_submodel.csv"
+PRED_FALLBACK_PATHS = [
+    DATA_DIR / "predictions_combined_latest.csv",
+    DATA_DIR / "predictions_latest.csv",
+    DATA_DIR / "predictions_primary.csv",
+]
 
 LOG = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(message)s")
@@ -74,6 +80,17 @@ def _prepare_join_key(df: pd.DataFrame, name: str) -> pd.DataFrame:
     return out
 
 
+def _safe_read_csv(path: Path, label: str) -> pd.DataFrame:
+    if not path.exists():
+        LOG.warning("%s not found: %s", label, path)
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(path, low_memory=False)
+    except EmptyDataError:
+        LOG.warning("%s is empty (0 bytes or no rows): %s", label, path)
+        return pd.DataFrame()
+
+
 def _first_non_null(df: pd.DataFrame, candidates: list[str], fallback_dtype: str = "float") -> pd.Series:
     series = pd.Series([pd.NA] * len(df), index=df.index)
     for col in candidates:
@@ -98,25 +115,41 @@ def build_clv_reports(
             pred_context_path,
             pred_context_path.exists(),
         )
+    acc = _safe_read_csv(accuracy_path, "model_accuracy_report.csv")
+    pred = _safe_read_csv(pred_context_path, "predictions_with_context.csv")
+    if pred.empty:
+        for fallback in PRED_FALLBACK_PATHS:
+            pred = _safe_read_csv(fallback, f"fallback predictions ({fallback.name})")
+            if not pred.empty:
+                LOG.warning(
+                    "Using fallback predictions source for CLV report: %s (%d rows)",
+                    fallback,
+                    len(pred),
+                )
+                break
+
+    if pred.empty:
+        LOG.warning("No prediction rows available for CLV report. Writing empty outputs.")
         _write_empty_outputs()
         return pd.DataFrame(), pd.DataFrame()
 
-    acc = pd.read_csv(accuracy_path, low_memory=False)
-    pred = pd.read_csv(pred_context_path, low_memory=False)
-
-    acc = _prepare_join_key(acc, "model_accuracy_report.csv")
     pred = _prepare_join_key(pred, "predictions_with_context.csv")
 
-    merged = pred.merge(
-        acc,
-        on="join_game_id",
-        how="left",
-        suffixes=("", "_acc"),
-    )
+    if acc.empty:
+        LOG.warning("model_accuracy_report.csv has no rows; CLV report will omit outcome metrics.")
+        merged = pred.copy()
+    else:
+        acc = _prepare_join_key(acc, "model_accuracy_report.csv")
+        merged = pred.merge(
+            acc,
+            on="join_game_id",
+            how="left",
+            suffixes=("", "_acc"),
+        )
 
     merged["game_id"] = _first_non_null(merged, ["game_id", "event_id", "game_id_acc", "event_id_acc"], fallback_dtype="str")
     merged["pred_spread"] = _first_non_null(merged, ["pred_spread", "predicted_spread", "ens_ens_spread"])
-    merged["home_spread_open"] = _first_non_null(merged, ["home_spread_open", "spread_open", "opening_spread"])
+    merged["home_spread_open"] = _first_non_null(merged, ["home_spread_open", "spread_open", "opening_spread", "spread_line"])
     merged["home_spread_current"] = _first_non_null(
         merged,
         ["home_spread_current", "market_spread", "spread", "spread_line", "closing_spread"],
@@ -155,7 +188,7 @@ def build_clv_reports(
 
     game_report = merged[game_cols].copy()
     game_report = game_report[
-        game_report["clv_vs_open"].notna() & game_report["clv_vs_close"].notna()
+        game_report["clv_vs_open"].notna() | game_report["clv_vs_close"].notna()
     ].sort_values(["game_datetime_utc", "game_id"], na_position="last")
 
     submodel_rows = []
