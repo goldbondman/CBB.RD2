@@ -87,34 +87,46 @@ jobs:
             done | sort -rn | head -1 | awk '{print $2}')
           echo "run_id=$run_id" >> $GITHUB_OUTPUT
 
+      - name: Validate artifact run IDs
+        run: |
+          if [ -z "${{ steps.get_ml_run.outputs.run_id }}" ]; then
+            echo "[WARN] No successful market_lines run with cbb-market-lines artifact found; skipping market artifact downloads"
+          fi
+          if [ -z "${{ steps.get_espn_run.outputs.run_id }}" ]; then
+            echo "[WARN] No successful update_espn_cbb run with cbb-espn-data artifact found; skipping ESPN artifact download"
+          fi
+
       # Handoff from market_lines.yml
       - name: Download market lines
+        if: steps.get_ml_run.outputs.run_id != ""
         uses: actions/download-artifact@v4
         with:
           name: cbb-market-lines
           path: data/staging/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
-        continue-on-error: true
+
 
       - name: Download predictions with context
+        if: steps.get_ml_run.outputs.run_id != ""
         uses: actions/download-artifact@v4
         with:
           name: cbb-predictions-with-context
           path: data/staging/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
-        continue-on-error: true
+
 
       # Handoff from update_espn_cbb.yml
       - name: Download ESPN data
+        if: steps.get_espn_run.outputs.run_id != ""
         uses: actions/download-artifact@v4
         with:
           name: cbb-espn-data
           path: data/staging/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_espn_run.outputs.run_id }}
-        continue-on-error: true
+
 
       # Pattern 1: Verify artifacts or bootstrap from git history to prevent silent failures
       - name: Verify artifacts or bootstrap from git
@@ -138,7 +150,15 @@ jobs:
         run: |
           python - <<'PY'
           import pandas as pd
+          from pandas.errors import EmptyDataError
           from pathlib import Path
+
+          def safe_read_csv(path: Path) -> pd.DataFrame:
+              try:
+                  return pd.read_csv(path, dtype=str)
+              except EmptyDataError:
+                  print(f"[WARN] {path.name} is empty or headerless; treating as no rows")
+                  return pd.DataFrame()
 
           MERGE_SPECS = [
               ("team_game_weighted.csv",  ["event_id", "team_id"]),
@@ -154,8 +174,11 @@ jobs:
               if not staged.exists() or staged.stat().st_size == 0:
                   print(f"[SKIP] No staged {fname}")
                   continue
-              existing = pd.read_csv(committed, dtype=str) if committed.exists() else pd.DataFrame()
-              new_rows = pd.read_csv(staged, dtype=str)
+              existing = safe_read_csv(committed) if committed.exists() else pd.DataFrame()
+              new_rows = safe_read_csv(staged)
+              if new_rows.empty:
+                  print(f"[SKIP] Staged {fname} has no parseable rows")
+                  continue
               combined = pd.concat([existing, new_rows], ignore_index=True)
               combined = combined.drop_duplicates(subset=keys, keep="last")
               committed.parent.mkdir(parents=True, exist_ok=True)
@@ -212,7 +235,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          python -c "import pandas, numpy, requests, scipy" || \
+          python -c "import pandas, numpy, requests, scipy; import bs4" || \
             { echo "[ERROR] Core dependency import failed"; exit 1; }
 
       # Step 5: Run backtester (if requested or weekly)
