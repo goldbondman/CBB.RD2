@@ -28,6 +28,7 @@ Important:
 """
 
 import argparse
+import dataclasses
 import json
 import math
 import sys
@@ -125,6 +126,28 @@ REQUIRED_TEAM_CONTEXT_FIELDS = [
 
 OPP_HISTORY_WINDOW = 5
 TEAM_GAMES_WINDOW = 10
+
+
+def apply_active_weights(config: ModelConfig) -> None:
+    """Overlay deployed weights onto ModelConfig when available."""
+    active_weights_path = Path("data/active_weights.json")
+    if not active_weights_path.exists():
+        return
+
+    try:
+        weights = json.loads(active_weights_path.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001 - keep runner resilient to malformed weight files
+        log.warning("Unable to load %s: %s", active_weights_path, exc)
+        return
+
+    applied = 0
+    for field in dataclasses.fields(config):
+        if field.name in weights:
+            setattr(config, field.name, weights[field.name])
+            applied += 1
+
+    if applied:
+        log.info("Applied %d active weight override(s) from %s", applied, active_weights_path)
 
 
 
@@ -1227,6 +1250,7 @@ def main():
         decay_type=args.decay,
         min_games_for_full_confidence=args.min_games,
     )
+    apply_active_weights(config)
     model = CBBPredictionModel(config)
 
     results_df = run_predictions(
