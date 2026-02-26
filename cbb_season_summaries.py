@@ -303,11 +303,8 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
         summary["conference"] = None
 
     # ── ATS / O-U from results_log ────────────────────────────────────────────
-    summary["ats_wins"]            = None
-    summary["ats_losses"]          = None
-    summary["ou_over"]             = None
-    summary["ou_under"]            = None
-    summary["avg_pred_spread_error"] = None
+    # Use a normalized team merge key so summary/results dtypes don't block joins.
+    summary["_team_merge_key"] = summary["team_id"].astype(str).str.strip()
 
     ats_source = results if (not results.empty and "team_id" in results.columns) else played
     if not ats_source.empty and "team_id" in ats_source.columns:
@@ -315,35 +312,40 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
         ou_col = "ou_correct" if "ou_correct" in ats_source.columns else None
         err_col = next((c for c in ["spread_error", "absolute_error", "pred_error", "primary_margin_error"] if c in ats_source.columns), None)
 
+        ats_source = ats_source.copy()
+        ats_source["_team_merge_key"] = ats_source["team_id"].astype(str).str.strip()
+
         if ats_col:
             ats_source[ats_col] = pd.to_numeric(ats_source[ats_col], errors="coerce")
-            ats = ats_source[ats_source[ats_col].notna()].groupby("team_id").agg(
+            ats = ats_source[ats_source[ats_col].notna()].groupby("_team_merge_key").agg(
                 ats_wins=(ats_col, lambda x: (x == 1).sum()),
                 ats_losses=(ats_col, lambda x: (x == 0).sum()),
             ).reset_index()
-            summary = summary.merge(ats, on="team_id", how="left")
+            summary = summary.merge(ats, on="_team_merge_key", how="left")
 
         if ou_col:
             ats_source[ou_col] = pd.to_numeric(ats_source[ou_col], errors="coerce")
-            ou = ats_source[ats_source[ou_col].notna()].groupby("team_id").agg(
+            ou = ats_source[ats_source[ou_col].notna()].groupby("_team_merge_key").agg(
                 ou_over=(ou_col, lambda x: (x == 1).sum()),
                 ou_under=(ou_col, lambda x: (x == 0).sum()),
             ).reset_index()
-            summary = summary.merge(ou, on="team_id", how="left")
+            summary = summary.merge(ou, on="_team_merge_key", how="left")
         elif {"event_id", "over_under", "points_for"}.issubset(played.columns):
             event_totals = played.groupby("event_id").agg(total_pts=("points_for", "sum"), ou_line=("over_under", "first")).reset_index()
             event_totals["went_over"] = (event_totals["total_pts"] > event_totals["ou_line"]).astype(float)
-            event_teams = played[["event_id", "team_id"]].merge(event_totals[["event_id", "went_over"]], on="event_id", how="left")
-            ou = event_teams[event_teams["went_over"].notna()].groupby("team_id").agg(
+            event_teams = played[["event_id", "team_id"]].copy()
+            event_teams["_team_merge_key"] = event_teams["team_id"].astype(str).str.strip()
+            event_teams = event_teams.merge(event_totals[["event_id", "went_over"]], on="event_id", how="left")
+            ou = event_teams[event_teams["went_over"].notna()].groupby("_team_merge_key").agg(
                 ou_over=("went_over", lambda x: (x == 1).sum()),
                 ou_under=("went_over", lambda x: (x == 0).sum()),
             ).reset_index()
-            summary = summary.merge(ou, on="team_id", how="left")
+            summary = summary.merge(ou, on="_team_merge_key", how="left")
 
         if err_col:
             ats_source[err_col] = pd.to_numeric(ats_source[err_col], errors="coerce")
-            err = ats_source.groupby("team_id")[err_col].mean().reset_index().rename(columns={err_col: "avg_pred_spread_error"})
-            summary = summary.merge(err, on="team_id", how="left")
+            err = ats_source.groupby("_team_merge_key")[err_col].mean().reset_index().rename(columns={err_col: "avg_pred_spread_error"})
+            summary = summary.merge(err, on="_team_merge_key", how="left")
 
     # CLV metrics
     pred_col = next((c for c in ["pred_spread", "ensemble_spread", "prediction", "model_spread"] if c in results.columns), None)
@@ -351,20 +353,21 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
     edge_col = next((c for c in ["edge_flag", "is_alpha"] if c in results.columns), None)
     if pred_col and close_col and "team_id" in results.columns:
         clv_df = results[["team_id", pred_col, close_col] + ([edge_col] if edge_col else [])].copy()
+        clv_df["_team_merge_key"] = clv_df["team_id"].astype(str).str.strip()
         clv_df[pred_col] = pd.to_numeric(clv_df[pred_col], errors="coerce")
         clv_df[close_col] = pd.to_numeric(clv_df[close_col], errors="coerce")
         clv_df["clv"] = clv_df[pred_col] - clv_df[close_col]
         clv_df = clv_df[clv_df["clv"].notna()]
         if not clv_df.empty:
-            clv_agg = clv_df.groupby("team_id").agg(
+            clv_agg = clv_df.groupby("_team_merge_key").agg(
                 avg_clv=("clv", "mean"),
                 clv_positive_rate=("clv", lambda x: (x > 0).mean()),
                 clv_sample_size=("clv", "count"),
             ).reset_index()
             if edge_col:
                 edge_games = clv_df[pd.to_numeric(clv_df[edge_col], errors="coerce") == 1]
-                edge_agg = edge_games.groupby("team_id")["clv"].mean().reset_index().rename(columns={"clv": "avg_clv_edge_games"})
-                clv_agg = clv_agg.merge(edge_agg, on="team_id", how="left")
+                edge_agg = edge_games.groupby("_team_merge_key")["clv"].mean().reset_index().rename(columns={"clv": "avg_clv_edge_games"})
+                clv_agg = clv_agg.merge(edge_agg, on="_team_merge_key", how="left")
             else:
                 clv_agg["avg_clv_edge_games"] = None
 
@@ -382,7 +385,7 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
                 return "F"
 
             clv_agg["clv_grade"] = clv_agg.apply(_clv_grade, axis=1)
-            summary = summary.merge(clv_agg, on="team_id", how="left")
+            summary = summary.merge(clv_agg, on="_team_merge_key", how="left")
 
     summary["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
