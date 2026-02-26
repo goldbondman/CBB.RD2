@@ -44,11 +44,12 @@ def load_graded(path: Path, rolling_days: int) -> pd.DataFrame:
 
     if rolling_days and "game_datetime_utc" in graded.columns:
         # pd.Timestamp.now('UTC') is preferred over utcnow() in modern pandas
-        now_utc = pd.Timestamp.now('UTC')
-        cutoff = (now_utc - pd.Timedelta(days=rolling_days)).tz_localize(None)
-        # Use tz_convert(None) for aware series, tz_localize(None) for naive
-        graded["game_datetime_utc"] = pd.to_datetime(graded["game_datetime_utc"], errors="coerce").apply(
-            lambda x: x.tz_convert(None) if x.tzinfo else x
+        now_utc = pd.Timestamp.now('UTC').tz_localize(None)
+        cutoff = now_utc - pd.Timedelta(days=rolling_days)
+        # Fix tz handling to avoid TypeErrors and correctly normalize
+        graded["game_datetime_utc"] = (
+            pd.to_datetime(graded["game_datetime_utc"], utc=True, errors="coerce")
+            .dt.tz_convert(None)
         )
         graded = graded[graded["game_datetime_utc"] >= cutoff]
         log.info("Rolling %sd window: %s graded rows", rolling_days, len(graded))
@@ -116,21 +117,23 @@ def analyze_conference_bias(df: pd.DataFrame, min_sample: int, sig_level: float)
             if len(grp) < min_sample:
                 continue
             bias, p_val, ci_lo, ci_hi = _mean_bias_stats(grp["spread_error"])
-            results.append(
-                {
-                    "dimension": "conference",
-                    "group": str(conf),
-                    "sample_n": len(grp),
-                    "mean_error": round(bias, 3),
-                    "ci_lo": round(ci_lo, 3),
-                    "ci_hi": round(ci_hi, 3),
-                    "p_value": round(p_val, 4),
-                    "actionable": p_val < sig_level and abs(bias) > 0.5,
-                    "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
-                    "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
-                    "mae": round(grp["abs_spread_error"].mean(), 2),
-                }
-            )
+
+            res = {
+                "dimension": "conference",
+                "group": str(conf),
+                "sample_n": len(grp),
+                "mean_error": round(bias, 3),
+                "ci_lo": round(ci_lo, 3),
+                "ci_hi": round(ci_hi, 3),
+                "p_value": round(p_val, 4),
+                "actionable": p_val < sig_level and abs(bias) > 0.5,
+                "correction": round(np.clip(-bias, -MAX_CORRECTION, MAX_CORRECTION), 3),
+                "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
+                "mae": round(grp["abs_spread_error"].mean(), 2),
+            }
+            # If model_picked_side is not available, leave ats_pct absent.
+            # (No model_picked_side/model_picked_home found in graded data)
+            results.append(res)
 
     for tier, grp in df.groupby("game_tier"):
         if len(grp) < min_sample:
@@ -421,7 +424,7 @@ def write_bias_report(all_biases: list[dict], df_graded: pd.DataFrame, report_pa
             if len(grp) >= 5:
                 tier_ats[str(tier)] = {
                     "n": len(grp),
-                    "ats_pct": round(grp["home_covered_pred"].mean() * 100, 1),
+                    "home_cover_rate": round(grp["home_covered_pred"].mean() * 100, 1),
                     "mae": round(grp["abs_spread_error"].mean(), 2),
                 }
 

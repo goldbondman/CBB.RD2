@@ -16,6 +16,7 @@ def normalize_game_id(series: pd.Series) -> pd.Series:
         .str.strip()
         .str.replace(r"\.0$", "", regex=True)
         .str.lstrip("0")
+        .replace("", "0")
     )
 
 
@@ -59,11 +60,11 @@ def main():
         games = pd.read_csv(games_path)
         games['game_id_norm'] = normalize_game_id(games['game_id'])
 
-        if 'completed' in games.columns:
-            completed = games[games['completed'].astype(str).str.lower().isin(['true', '1', 'yes'])].copy()
+        if 'completed' not in games.columns:
+            print("[WARN] Missing 'completed' column in games.csv — skipping completed-game filter")
+            completed = games
         else:
-            print('[WARN] Missing "completed" column in games.csv — skipping completed check')
-            completed = pd.DataFrame(columns=games.columns)
+            completed = games[games['completed'].astype(str).str.lower().isin(['true', '1', 'yes'])].copy()
 
         matched_completed = preds['game_id_norm'].isin(completed['game_id_norm']).sum()
         pct_completed = matched_completed / len(preds) * 100

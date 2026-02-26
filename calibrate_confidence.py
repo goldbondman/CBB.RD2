@@ -80,15 +80,19 @@ def fit_calibration(df: pd.DataFrame) -> dict:
 
 
 def apply_calibration_example(raw_confidence: float, cal_data: dict) -> float:
-    """Example of applying calibration. Input raw_confidence is 0-1 scale."""
+    """
+    Example of applying calibration.
+    Note: iso_x_thresholds was fit on 50-100 scale.
+    Input raw_confidence must be on 0-1 scale.
+    """
     if not cal_data.get("calibrated"):
         return raw_confidence
 
     iso_x = cal_data["iso_x_thresholds"]
     iso_y = cal_data["iso_y_thresholds"]
 
-    # Input may be 0.65 (0-1) or 65 (50-100). Standardize to 50-100 for interpolation.
-    raw_scaled = raw_confidence * 100 if raw_confidence <= 1.0 else raw_confidence
+    # Standardize 0-1 input to 50-100 for interpolation
+    raw_scaled = raw_confidence * 100
 
     cal_scaled = float(np.interp(raw_scaled, iso_x, iso_y))
     return cal_scaled / 100
@@ -110,10 +114,7 @@ def main() -> None:
 
     df = pd.read_csv(graded_path, dtype={"event_id": str})
 
-    if "graded" in df.columns:
-        graded = df[df["graded"] == True].copy()
-    else:
-        graded = df.copy()
+    graded = df[df['graded'] == True] if 'graded' in df.columns else df
 
     log.info("Graded predictions loaded: %s", len(graded))
 
