@@ -299,7 +299,13 @@ class EnsembleResult:
             "bias_corrections_applied": "|".join(self.bias_corrections_applied),
         }
         for mp in self.model_predictions:
-            name = mp.model_name.lower()
+            name = mp.model_name.lower().replace(" ", "")
+            legacy_export_name_map = {
+                "momentum": "luckregression",
+                "atsintelligence": "variance",
+                "regressedeff": "homeawayform",
+            }
+            name = legacy_export_name_map.get(name, name)
             d[f"{name}_spread"] = round(mp.spread, 2)
             d[f"{name}_total"]  = round(mp.total, 1)
             d[f"{name}_conf"]   = round(mp.confidence, 3)
@@ -1774,6 +1780,19 @@ def results_to_csv(
 
     if rows:
         out_df = _coalesce_pred_spread(pd.DataFrame(rows))
+
+        _spread_cols = [
+            c for c in out_df.columns
+            if c.endswith("_spread") and c not in {"ens_spread", "pred_spread"}
+        ]
+        for _col in _spread_cols:
+            _nunique = out_df[_col].nunique(dropna=True)
+            if _nunique <= 1:
+                log.warning(
+                    "[ENSEMBLE] %s is constant across all %d games (value=%s). "
+                    "Sub-model may be receiving null/default inputs.",
+                    _col, len(out_df), out_df[_col].iloc[0] if len(out_df) else "N/A",
+                )
 
         model_spread_cols = [c for c in out_df.columns if c.endswith("_spread") and c not in {"ens_spread", "pred_spread"}]
         model_total_cols = [c for c in out_df.columns if c.endswith("_total") and c != "ens_total"]
