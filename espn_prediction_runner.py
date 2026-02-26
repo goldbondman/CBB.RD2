@@ -5,7 +5,7 @@ Bridges team_game_weighted.csv → CBBPredictionModel → predictions_YYYYMMDD.c
 
 Reads from the same data/ directory the main pipeline writes.
 Fetches scheduled games, builds GameData objects (including recursive opponent_history),
-runs CBBPredictionModel.predict_game(), and writes outputs.
+runs CBBPredictionModel.predict_game_with_components(), and writes outputs.
 
 Usage:
     python espn_prediction_runner.py
@@ -588,7 +588,7 @@ def run_predictions(
         try:
             home_ctx = _latest_team_context(all_data, context_df, str(home_id), cutoff_dt)
             away_ctx = _latest_team_context(all_data, context_df, str(away_id), cutoff_dt)
-            prediction = model.predict_game(
+            prediction = model.predict_game_with_components(
                 home_games=home_games,
                 away_games=away_games,
                 neutral_site=neutral,
@@ -714,15 +714,17 @@ def run_predictions(
             "away_net_eff": round(prediction["away_net_eff"], 2),
             "home_off_eff_vs_exp": round(prediction["home_off_eff_vs_exp"], 2),
             "away_off_eff_vs_exp": round(prediction["away_off_eff_vs_exp"], 2),
-            "eff_edge": round(bd.get("eff_edge", 0), 2),
-            "composite_edge": round(bd.get("composite_edge", 0), 2),
+            "eff_edge": round(prediction.get("eff_edge", 0), 2),
+            "composite_edge": round(prediction.get("composite_edge", 0), 2),
             "hca": round(bd.get("hca", 0), 2),
 
-            "efg_delta": round(bd.get("efg_delta", 0), 2),
-            "tov_delta": round(bd.get("tov_delta", 0), 2),
-            "orb_delta": round(bd.get("orb_delta", 0), 2),
-            "drb_delta": round(bd.get("drb_delta", 0), 2),
-            "ftr_delta": round(bd.get("ftr_delta", 0), 2),
+            "model_efg_delta": round(prediction.get("efg_delta", 0), 2),
+            "model_tov_delta": round(prediction.get("tov_delta", 0), 2),
+            "model_orb_delta": round(prediction.get("orb_delta", 0), 2),
+            "model_drb_delta": round(prediction.get("drb_delta", 0), 2),
+            "model_ftr_delta": round(prediction.get("ftr_delta", 0), 2),
+            "model_eff_edge": round(prediction.get("eff_edge", 0), 2),
+            "model_composite_edge": round(prediction.get("composite_edge", 0), 2),
 
             "spread_line": spread_line,
             "total_line": total_line,
