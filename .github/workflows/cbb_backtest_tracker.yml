@@ -30,10 +30,19 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Build run id
+        id: run_meta
+        run: |
+          short_sha="${GITHUB_SHA::7}"
+          ts=$(date -u +"%Y%m%dT%H%M%SZ")
+          run_id="${ts}-${short_sha}"
+          echo "run_id=$run_id" >> $GITHUB_OUTPUT
+          echo "RUN_ID=$run_id" >> $GITHUB_ENV
+
       - name: Ensure data directories exist
         run: |
           mkdir -p data
-          mkdir -p data/artifacts
+          mkdir -p artifacts/${RUN_ID}
 
       - name: Get latest ESPN data run ID
         id: get_espn_run
@@ -168,6 +177,14 @@ jobs:
       - name: Governed backtest run (integrity gate + evaluation outputs)
         run: python -m pipeline run --mode backtest
 
+      - name: Align generated artifact folder to workflow run_id
+        run: |
+          latest_dir=$(ls -1 artifacts | tail -n 1)
+          if [ -n "$latest_dir" ] && [ "$latest_dir" != "$RUN_ID" ] && [ -d "artifacts/$latest_dir" ]; then
+            mkdir -p "artifacts/$RUN_ID"
+            cp -R "artifacts/$latest_dir"/* "artifacts/$RUN_ID"/ || true
+          fi
+
       - name: Grade predictions (legacy outputs)
         run: python build_backtest_csvs.py --section grade-only
 
@@ -184,13 +201,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-backtest-governance
-          path: |
-            data/artifacts/integrity.json
-            data/artifacts/run_manifest.json
-            data/evaluation.csv
-            data/evaluation.json
-            data/run_evaluations.csv
+          name: cbb-backtest-${{ env.RUN_ID }}
+          path: artifacts/${{ env.RUN_ID }}/**
 
       - name: Accuracy and CLV summary
         run: |
