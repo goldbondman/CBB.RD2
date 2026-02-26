@@ -71,6 +71,8 @@ class ModelConfig:
 
     # ─── Raw vs Vs-Expectation Blending ───
     vs_exp_weight: float = 0.70
+    raw_weight: float = 0.30
+    eff_composite_weight: float = 0.60
 
     # ─── Opponent Quality Weighting ───
     min_opp_weight: float = 0.5
@@ -80,6 +82,10 @@ class ModelConfig:
     # ─── Schedule Adjustment ───
     schedule_adjustment_factor: float = 0.5
     eff_composite_weight: float = 0.60
+
+    # ─── Smooth Decay Controls ───
+    decay_floor: float = 0.50
+    decay_cliff: float = 0.75
 
     # ─── Baseline Values ───
     avg_pace: float = 67.2
@@ -715,6 +721,43 @@ class CBBPredictionModel:
 
         return prediction
 
+    def predict_game_with_components(
+        self,
+        home_games: List[GameData],
+        away_games: List[GameData],
+        neutral_site: bool = False,
+        game_type: Optional[str] = None,
+        home_team_profile: Optional[Dict] = None,
+        away_team_profile: Optional[Dict] = None,
+    ) -> Dict:
+        """
+        Predict spread/total and expose matchup components as top-level keys.
+
+        This wraps predict_game() and lifts selected values from breakdown so
+        downstream pipelines can consume them without nested dict access.
+        """
+        prediction = self.predict_game(
+            home_games=home_games,
+            away_games=away_games,
+            neutral_site=neutral_site,
+            game_type=game_type,
+            home_team_profile=home_team_profile,
+            away_team_profile=away_team_profile,
+        )
+
+        breakdown = prediction.get('breakdown', {}) or {}
+        component_keys = [
+            'efg_delta', 'tov_delta', 'orb_delta', 'drb_delta', 'ftr_delta',
+            'eff_edge', 'composite_edge', 'raw_edge',
+        ]
+        for key in component_keys:
+            prediction[key] = breakdown.get(key)
+
+        prediction['home_pace'] = prediction.get('pace')
+        prediction['away_pace'] = prediction.get('pace')
+
+        return prediction
+
     # ── Window blending ───────────────────────────────────────────────────────
 
     def _blend_windows(self, l5: Dict, l10: Dict) -> Dict:
@@ -850,6 +893,11 @@ class CBBPredictionModel:
 
         # ── Combined edge (60/40: efficiency / composite) ─────────────────────
         raw_edge = cfg.eff_composite_weight * eff_edge + (1.0 - cfg.eff_composite_weight) * composite_edge
+        # ── Combined edge (efficiency / composite split from config) ───────────
+        raw_edge = (
+            cfg.eff_composite_weight * eff_edge +
+            (1 - cfg.eff_composite_weight) * composite_edge
+        )
 
         # ── HCA and final spread ──────────────────────────────────────────────
         # Note: NO SOS adjustment (embedded in normalization)
