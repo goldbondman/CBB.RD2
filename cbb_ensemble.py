@@ -68,7 +68,7 @@ from cbb_config import (
     SIGMA,
     DEFAULT_SPREAD_WEIGHTS,
     DEFAULT_TOTAL_WEIGHTS,
-    WEIGHTS_PATH,
+    WEIGHT_SOURCES,
 )
 
 log = logging.getLogger(__name__)
@@ -367,11 +367,15 @@ class EnsembleConfig:
 
     @classmethod
     def from_optimized(cls) -> "EnsembleConfig":
-        """Load backtest-optimized weights if available, else defaults."""
+        """Load deployed/optimized weights if available, else defaults."""
         config = cls()
-        if WEIGHTS_PATH.exists() and WEIGHTS_PATH.stat().st_size > 10:
+        weight_source = next((p for p in WEIGHT_SOURCES if p.exists() and p.stat().st_size > 10), None)
+        if weight_source is None:
+            log.warning("[CONFIG] No weight file found — using hardcoded defaults")
+        else:
+            log.info("[CONFIG] Loading weights from %s", weight_source)
             try:
-                payload = json.loads(WEIGHTS_PATH.read_text())
+                payload = json.loads(weight_source.read_text())
                 if isinstance(payload.get("weights"), dict):
                     config.spread_weights.update(payload["weights"])
                 if isinstance(payload.get("total_weights"), dict):

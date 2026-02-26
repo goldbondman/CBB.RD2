@@ -58,15 +58,20 @@ DEFAULT_TOTAL_WEIGHTS = {
 }
 
 
-WEIGHTS_PATH = Path("data") / "backtest_optimized_weights.json"
+WEIGHT_SOURCES = [
+    Path("data") / "active_weights.json",
+    Path("data") / "backtest_optimized_weights.json",
+]
+WEIGHTS_PATH = WEIGHT_SOURCES[0]
 
 
 def load_ensemble_weights() -> Dict[str, Dict[str, float]]:
     spread = dict(DEFAULT_SPREAD_WEIGHTS)
     total = dict(DEFAULT_TOTAL_WEIGHTS)
-    if WEIGHTS_PATH.exists() and WEIGHTS_PATH.stat().st_size > 10:
+    resolved = next((p for p in WEIGHT_SOURCES if p.exists() and p.stat().st_size > 10), None)
+    if resolved is not None:
         try:
-            payload = json.loads(WEIGHTS_PATH.read_text())
+            payload = json.loads(resolved.read_text())
             if isinstance(payload.get("weights"), dict):
                 spread.update(payload["weights"])
             if isinstance(payload.get("total_weights"), dict):

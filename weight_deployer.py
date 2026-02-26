@@ -4,11 +4,15 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
+import logging
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
+
+log = logging.getLogger(__name__)
 
 DATA_DIR = Path("data")
 CANDIDATE_PATH = DATA_DIR / "candidate_weights.json"
@@ -48,11 +52,40 @@ def reject(candidate_weights: Dict[str, Any], stamp: str) -> int:
     return 0
 
 
+def _append_gate_audit(
+    recommendation: str,
+    validation: Dict[str, Any],
+    candidate_path: Path,
+) -> None:
+    _audit_path = Path("data/weight_gate_audit.csv")
+    _audit_row = {
+        "decided_at_utc": datetime.now(timezone.utc).isoformat(),
+        "recommendation": recommendation,
+        "deployed": recommendation == "DEPLOY",
+        "improvement_pp": validation.get("improvement_pp"),
+        "candidate_clv_mean": validation.get("candidate_clv_mean"),
+        "default_clv_mean": validation.get("default_clv_mean"),
+        "folds_won": validation.get("folds_candidate_won"),
+        "folds_total": validation.get("folds_total"),
+        "n_games_used": validation.get("n_games_used"),
+        "candidate_file": str(candidate_path),
+        "pipeline_run_id": validation.get("pipeline_run_id", ""),
+    }
+    _write_header = not _audit_path.exists() or _audit_path.stat().st_size == 0
+    with open(_audit_path, "a", newline="", encoding="utf-8") as _f:
+        _w = csv.DictWriter(_f, fieldnames=list(_audit_row.keys()))
+        if _write_header:
+            _w.writeheader()
+        _w.writerow(_audit_row)
+    log.info("[DEPLOYER] Gate decision appended to %s: %s", _audit_path, recommendation)
+
+
 def deploy(force: bool = False) -> int:
     HISTORY_DIR.mkdir(parents=True, exist_ok=True)
 
     validation = _load_json(VALIDATION_PATH)
-    candidate_weights = _load_json(CANDIDATE_PATH)
+    candidate_path = CANDIDATE_PATH
+    candidate_weights = _load_json(candidate_path)
 
     recommendation = str(validation.get("recommendation", "")).strip().upper()
     if recommendation not in {"DEPLOY", "REJECT", "INSUFFICIENT_DATA"}:
@@ -64,10 +97,13 @@ def deploy(force: bool = False) -> int:
     stamp = _timestamp()
     if recommendation == "INSUFFICIENT_DATA":
         print("Insufficient data — need 4+ walk-forward folds.")
+        _append_gate_audit(recommendation, validation, candidate_path)
         return 0
 
     if recommendation == "REJECT":
-        return reject(candidate_weights, stamp)
+        status = reject(candidate_weights, stamp)
+        _append_gate_audit(recommendation, validation, candidate_path)
+        return status
 
     if ACTIVE_PATH.exists():
         shutil.copy2(ACTIVE_PATH, HISTORY_DIR / f"weights_{stamp}.json")
@@ -88,6 +124,7 @@ def deploy(force: bool = False) -> int:
         f"Deployed. CLV improvement: +{improvement_pp:.4f} "
         f"({folds_candidate_won}/{folds_total} folds)"
     )
+    _append_gate_audit(recommendation, validation, candidate_path)
     return 0
 
 
