@@ -33,6 +33,7 @@ Consumed by:
 import json
 import logging
 from dataclasses import dataclass, field
+from datetime import timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -70,6 +71,17 @@ from cbb_config import (
 log = logging.getLogger(__name__)
 
 DATA_DIR = Path("data")
+DYNAMIC_WEIGHTS_PATH = DATA_DIR / "dynamic_model_weights.json"
+
+MODEL_ID_TO_NAME = {
+    "m1": "FourFactors",
+    "m2": "AdjEfficiency",
+    "m3": "Pythagorean",
+    "m4": "Momentum",
+    "m5": "Situational",
+    "m6": "CAGERankings",
+    "m7": "RegressedEff",
+}
 
 DEFAULT_WEIGHTS = {
     "w_schedule":      0.25,
@@ -312,6 +324,26 @@ class EnsembleConfig:
                     config.total_weights.update(payload["total_weights"])
             except (OSError, json.JSONDecodeError, TypeError):
                 pass
+
+        if DYNAMIC_WEIGHTS_PATH.exists() and DYNAMIC_WEIGHTS_PATH.stat().st_size > 10:
+            try:
+                dynamic_payload = json.loads(DYNAMIC_WEIGHTS_PATH.read_text())
+                computed_at = pd.to_datetime(dynamic_payload.get("computed_at"), utc=True, errors="coerce")
+                cutoff = pd.Timestamp.now(tz="UTC") - timedelta(hours=48)
+                if pd.notna(computed_at) and computed_at >= cutoff:
+                    blended = dynamic_payload.get("blended_weights", {})
+                    if isinstance(blended, dict) and blended:
+                        for mid, model_name in MODEL_ID_TO_NAME.items():
+                            if mid in blended:
+                                config.spread_weights[model_name] = float(blended[mid])
+                                config.total_weights[model_name] = float(blended[mid])
+                        log.info("Loaded dynamic model weights (computed %s)", computed_at.strftime("%Y-%m-%d"))
+                else:
+                    log.warning("Dynamic model weights stale or invalid; using backtest weights")
+            except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
+                log.warning("Failed to load dynamic model weights (%s); using backtest weights", exc)
+        else:
+            log.warning("Dynamic model weights file missing; using backtest weights")
         return config
 
 
