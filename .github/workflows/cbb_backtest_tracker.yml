@@ -29,7 +29,10 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Grade predictions
+      - name: Governed backtest run (integrity gate + evaluation outputs)
+        run: python -m pipeline run --mode backtest
+
+      - name: Grade predictions (legacy outputs)
         run: python build_backtest_csvs.py --section grade-only
 
       - name: Walk-forward validation
@@ -37,6 +40,21 @@ jobs:
 
       - name: Feature audit
         run: python -m evaluation.feature_audit
+
+      - name: Update governance status
+        run: python -m pipeline update-check
+
+      - name: Upload governance artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-backtest-governance
+          path: |
+            data/artifacts/integrity.json
+            data/artifacts/run_manifest.json
+            data/evaluation.csv
+            data/evaluation.json
+            data/run_evaluations.csv
 
       - name: Accuracy and CLV summary
         run: |
