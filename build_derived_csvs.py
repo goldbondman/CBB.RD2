@@ -24,6 +24,7 @@ import sys
 import traceback
 from datetime import datetime, timezone, timedelta
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -38,6 +39,7 @@ CSV_DIR.mkdir(parents=True, exist_ok=True)
 NOW_UTC     = datetime.now(timezone.utc)
 NOW_ISO     = NOW_UTC.strftime("%Y-%m-%dT%H:%M:%SZ")
 TODAY_STAMP = NOW_UTC.strftime("%Y%m%d")
+PST_TZ      = ZoneInfo("America/Los_Angeles")
 
 # Track results for summary table
 _results: list[dict] = []
@@ -158,6 +160,27 @@ def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
     elif "game_status" in df.columns:
         df = df[df["game_status"].astype(str).str.lower() == "scheduled"]
 
+    # Keep only today + tomorrow in Pacific time so recs match the intended slate.
+    # This avoids pulling in UTC-dated rows that are "yesterday" in PST.
+    pst_today = NOW_UTC.astimezone(PST_TZ).date()
+    target_dates = {pst_today, pst_today + timedelta(days=1)}
+
+    dt_col = "game_datetime_utc" if "game_datetime_utc" in df.columns else "game_date"
+    if dt_col in df.columns:
+        before_count = len(df)
+        dt_utc = pd.to_datetime(df[dt_col], errors="coerce", utc=True)
+        dt_pst_date = dt_utc.dt.tz_convert(PST_TZ).dt.date
+        in_window_mask = dt_pst_date.isin(target_dates)
+        dropped_invalid = int(dt_utc.isna().sum())
+        df = df[in_window_mask].copy()
+        print(
+            "[INFO] bet_recs: PST date window filter",
+            f"kept={len(df)} dropped_outside={before_count - len(df) - dropped_invalid} dropped_invalid_datetime={dropped_invalid}",
+            f"target_dates={[d.isoformat() for d in sorted(target_dates)]}",
+        )
+    else:
+        print("[WARN] bet_recs: missing game datetime column; unable to enforce PST date window")
+
     recs = []
 
     # Use ens_ spreads if they exist, else primary
@@ -214,9 +237,21 @@ def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
                 "confidence": "MEDIUM"
             })
 
-    if recs:
-        out_df = pd.DataFrame(recs)
-        _write(out_df, "bet_recs.csv", ["predictions_mc_latest"])
+    out_df = pd.DataFrame(recs)
+    if out_df.empty:
+        out_df = pd.DataFrame(columns=[
+            "game_id", "date", "home_team", "away_team", "bet_type", "pick",
+            "market_line", "model_line", "edge", "model_prob", "market_prob",
+            "expected_roi", "confidence",
+        ])
+        out_df["generated_at"] = NOW_ISO
+        for out_path in (CSV_DIR / "bet_recs.csv", DATA / "bet_recs.csv"):
+            out_df.to_csv(out_path, index=False)
+        print("[INFO] bet_recs: wrote empty file after PST date filtering (prevents stale recs)")
+        _results.append({"file": "bet_recs.csv", "rows": 0, "sources": "predictions_mc_latest", "status": "OK"})
+        return
+
+    _write(out_df, "bet_recs.csv", ["predictions_mc_latest"])
 
 
 def build_team_form_snapshot_csv() -> None:
