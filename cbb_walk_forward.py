@@ -5,4 +5,4 @@ from evaluation.walk_forward import main
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
