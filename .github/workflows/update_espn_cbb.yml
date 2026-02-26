@@ -122,14 +122,18 @@ jobs:
           git commit -m "pipeline: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
           for i in 1 2 3 4 5; do
             git fetch origin main
-            git rebase -X ours origin/main --no-stat 2>&1 || {
+            git rebase origin/main --no-stat 2>&1 || {
               git rebase --abort 2>/dev/null || true
-              git merge origin/main -X ours --no-edit
+              git merge origin/main -X ours --no-edit 2>&1 || {
+                git merge --abort 2>/dev/null || true
+                git reset --hard HEAD
+              }
             }
             git push origin HEAD:main && { echo "[OK] Push succeeded attempt $i"; exit 0; }
             sleep $((i * 3))
           done
           echo "[WARN] Push failed after 5 attempts"
+          exit 1
 
   # ════════════════════════════════════════════════════════════════════════════
   # JOB 2 — CAGE RANKINGS
@@ -181,13 +185,22 @@ jobs:
 
       # Build CAGE rankings
       - name: Build CAGE rankings
-        run: python espn_rankings.py --top 25
+        run: |
+          python espn_rankings.py --top 25
+          # Backward-compatible fallback if rankings are emitted under data/csv/
+          if [ ! -f data/cbb_rankings.csv ] && [ -f data/csv/cbb_rankings.csv ]; then
+            cp data/csv/cbb_rankings.csv data/cbb_rankings.csv
+            echo "[OK] Copied data/csv/cbb_rankings.csv -> data/cbb_rankings.csv"
+          fi
 
       # Pattern 2: Validate rankings output
       - name: Validate rankings output
         run: |
           if [ -f data/cbb_rankings.csv ]; then
             rows=$(( $(wc -l < data/cbb_rankings.csv) - 1 ))
+            if [ "$rows" -lt 1 ]; then
+              echo "[ERROR] data/cbb_rankings.csv exists but has no data rows"; exit 1
+            fi
             echo "[OK] cbb_rankings.csv: $rows rows"
           else
             echo "[ERROR] data/cbb_rankings.csv was not created"; exit 1
@@ -216,14 +229,18 @@ jobs:
           git commit -m "rankings: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
           for i in 1 2 3 4 5; do
             git fetch origin main
-            git rebase -X ours origin/main --no-stat 2>&1 || {
+            git rebase origin/main --no-stat 2>&1 || {
               git rebase --abort 2>/dev/null || true
-              git merge origin/main -X ours --no-edit
+              git merge origin/main -X ours --no-edit 2>&1 || {
+                git merge --abort 2>/dev/null || true
+                git reset --hard HEAD
+              }
             }
             git push origin HEAD:main && { echo "[OK] Push succeeded attempt $i"; exit 0; }
             sleep $((i * 3))
           done
           echo "[WARN] Push failed after 5 attempts"
+          exit 1
 
       # Final health check to verify all workflows meet standards
       - name: Validate workflow health
