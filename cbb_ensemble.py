@@ -68,7 +68,7 @@ from cbb_config import (
     SIGMA,
     DEFAULT_SPREAD_WEIGHTS,
     DEFAULT_TOTAL_WEIGHTS,
-    WEIGHTS_PATH,
+    WEIGHT_SOURCES,
 )
 
 log = logging.getLogger(__name__)
@@ -299,7 +299,13 @@ class EnsembleResult:
             "bias_corrections_applied": "|".join(self.bias_corrections_applied),
         }
         for mp in self.model_predictions:
-            name = mp.model_name.lower()
+            name = mp.model_name.lower().replace(" ", "")
+            legacy_export_name_map = {
+                "momentum": "luckregression",
+                "atsintelligence": "variance",
+                "regressedeff": "homeawayform",
+            }
+            name = legacy_export_name_map.get(name, name)
             d[f"{name}_spread"] = round(mp.spread, 2)
             d[f"{name}_total"]  = round(mp.total, 1)
             d[f"{name}_conf"]   = round(mp.confidence, 3)
@@ -367,11 +373,15 @@ class EnsembleConfig:
 
     @classmethod
     def from_optimized(cls) -> "EnsembleConfig":
-        """Load backtest-optimized weights if available, else defaults."""
+        """Load deployed/optimized weights if available, else defaults."""
         config = cls()
-        if WEIGHTS_PATH.exists() and WEIGHTS_PATH.stat().st_size > 10:
+        weight_source = next((p for p in WEIGHT_SOURCES if p.exists() and p.stat().st_size > 10), None)
+        if weight_source is None:
+            log.warning("[CONFIG] No weight file found — using hardcoded defaults")
+        else:
+            log.info("[CONFIG] Loading weights from %s", weight_source)
             try:
-                payload = json.loads(WEIGHTS_PATH.read_text())
+                payload = json.loads(weight_source.read_text())
                 if isinstance(payload.get("weights"), dict):
                     config.spread_weights.update(payload["weights"])
                 if isinstance(payload.get("total_weights"), dict):
@@ -1774,6 +1784,19 @@ def results_to_csv(
 
     if rows:
         out_df = _coalesce_pred_spread(pd.DataFrame(rows))
+
+        _spread_cols = [
+            c for c in out_df.columns
+            if c.endswith("_spread") and c not in {"ens_spread", "pred_spread"}
+        ]
+        for _col in _spread_cols:
+            _nunique = out_df[_col].nunique(dropna=True)
+            if _nunique <= 1:
+                log.warning(
+                    "[ENSEMBLE] %s is constant across all %d games (value=%s). "
+                    "Sub-model may be receiving null/default inputs.",
+                    _col, len(out_df), out_df[_col].iloc[0] if len(out_df) else "N/A",
+                )
 
         model_spread_cols = [c for c in out_df.columns if c.endswith("_spread") and c not in {"ens_spread", "pred_spread"}]
         model_total_cols = [c for c in out_df.columns if c.endswith("_total") and c != "ens_total"]

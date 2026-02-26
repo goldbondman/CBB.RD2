@@ -3,8 +3,11 @@ CBB analytics/model configuration shared across cbb_* and espn_* modules.
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import Dict
+
+log = logging.getLogger(__name__)
 
 LEAGUE_AVG_ORTG = 103.0
 LEAGUE_AVG_DRTG = 103.0
@@ -58,15 +61,20 @@ DEFAULT_TOTAL_WEIGHTS = {
 }
 
 
-WEIGHTS_PATH = Path("data") / "backtest_optimized_weights.json"
+WEIGHT_SOURCES = [
+    Path("data") / "active_weights.json",
+    Path("data") / "backtest_optimized_weights.json",
+]
+WEIGHTS_PATH = WEIGHT_SOURCES[0]
 
 
 def load_ensemble_weights() -> Dict[str, Dict[str, float]]:
     spread = dict(DEFAULT_SPREAD_WEIGHTS)
     total = dict(DEFAULT_TOTAL_WEIGHTS)
-    if WEIGHTS_PATH.exists() and WEIGHTS_PATH.stat().st_size > 10:
+    resolved = next((p for p in WEIGHT_SOURCES if p.exists() and p.stat().st_size > 10), None)
+    if resolved is not None:
         try:
-            payload = json.loads(WEIGHTS_PATH.read_text())
+            payload = json.loads(resolved.read_text())
             if isinstance(payload.get("weights"), dict):
                 spread.update(payload["weights"])
             if isinstance(payload.get("total_weights"), dict):
@@ -75,4 +83,14 @@ def load_ensemble_weights() -> Dict[str, Dict[str, float]]:
                         total[k] = float(v)
         except (OSError, json.JSONDecodeError, TypeError):
             pass
+
+    _zero = [name for name, w in spread.items() if float(w) == 0.0]
+    if _zero:
+        log.warning(
+            "[CONFIG] Zero-weight spread models (effectively disabled): %s. "
+            "These models still execute each prediction cycle. "
+            "Set weight to None or remove from MODELS list to skip execution.",
+            ", ".join(_zero),
+        )
+
     return {"spread": spread, "total": total}
