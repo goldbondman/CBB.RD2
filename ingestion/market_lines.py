@@ -78,6 +78,8 @@ MARKET_LINES_SCHEMA_COLUMNS = [
     "away_ats_losses",
     "home_team_id",
     "away_team_id",
+    "home_team_name",
+    "away_team_name",
     "home_ml",
     "away_ml",
     "spread",
@@ -87,13 +89,6 @@ MARKET_LINES_SCHEMA_COLUMNS = [
 ]
 
 
-def bootstrap_market_lines_schema(data_dir: Path) -> Path:
-    """Ensure market_lines.csv exists and has required schema columns."""
-    market_path = data_dir / "market_lines.csv"
-    market_path.parent.mkdir(parents=True, exist_ok=True)
-
-    if market_path.exists():
-        df = pd.read_csv(market_path, dtype={"event_id": str}, low_memory=False)
 def bootstrap_market_lines_schema(path: str | Path) -> Path:
     """Ensure market_lines.csv exists and has required schema columns."""
     market_path = Path(path)
@@ -549,6 +544,8 @@ def build_market_row(
         "home_ats_losses": market_data.get("home_ats_losses"),
         "away_ats_wins": market_data.get("away_ats_wins"),
         "away_ats_losses": market_data.get("away_ats_losses"),
+        "home_team_name": market_data.get("home_team_name"),
+        "away_team_name": market_data.get("away_team_name"),
     }
 
 
@@ -693,6 +690,8 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
         row = build_market_row(event_id, capture_type, parsed, pinn_match, dk_match, existing)
         row["home_team_id"] = parsed.get("home_team_id")
         row["away_team_id"] = parsed.get("away_team_id")
+        row["home_team_name"] = parsed.get("home_team_name")
+        row["away_team_name"] = parsed.get("away_team_name")
 
         # Attempt unofficial ESPN endpoints only for still-missing gap fields.
         row = fill_market_row_gaps(row)
