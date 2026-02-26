@@ -1011,8 +1011,15 @@ class ResultsTracker:
             return [], []
 
         # ── Match predictions to results ──────────────────────────────────────
-        preds["game_id"]   = preds["game_id"].astype(str)
-        results["game_id"] = results["game_id"].astype(str)
+        # Alias normalization: legacy sources may emit event_id; normalize to game_id for joins.
+        if "event_id" in preds.columns and "game_id" not in preds.columns:
+            preds = preds.rename(columns={"event_id": "game_id"})
+        if "event_id" in results.columns and "game_id" not in results.columns:
+            results = results.rename(columns={"event_id": "game_id"})
+        preds["game_id"] = preds["game_id"].astype(str).str.lstrip("0")
+        results["game_id"] = results["game_id"].astype(str).str.lstrip("0")
+        preds.loc[preds["game_id"] == "", "game_id"] = "0"
+        results.loc[results["game_id"] == "", "game_id"] = "0"
 
         # Ensure all required merge columns exist in results (fill missing
         # with NaN so the column selection never raises KeyError).
