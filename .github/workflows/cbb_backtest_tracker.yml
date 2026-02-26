@@ -11,6 +11,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
   backtest-tracker:
@@ -29,7 +30,145 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Grade predictions
+      - name: Ensure data directories exist
+        run: |
+          mkdir -p data
+          mkdir -p data/artifacts
+
+      - name: Get latest ESPN data run ID
+        id: get_espn_run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_id=$(gh run list \
+            --workflow=update_espn_cbb.yml \
+            --status=success \
+            --limit=1 \
+            --json=databaseId \
+            --jq='.[0].databaseId // ""')
+          echo "run_id=$run_id" >> $GITHUB_OUTPUT
+
+      - name: Get latest predictions run ID
+        id: get_pred_run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_id=$(gh run list \
+            --workflow=cbb_predictions_rolling.yml \
+            --status=success \
+            --limit=1 \
+            --json=databaseId \
+            --jq='.[0].databaseId // ""')
+          echo "run_id=$run_id" >> $GITHUB_OUTPUT
+
+      - name: Get latest market-lines run ID
+        id: get_market_run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_id=$(gh run list \
+            --workflow=market_lines.yml \
+            --status=success \
+            --limit=1 \
+            --json=databaseId \
+            --jq='.[0].databaseId // ""')
+          echo "run_id=$run_id" >> $GITHUB_OUTPUT
+
+      - name: Get latest analytics run ID
+        id: get_analytics_run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_id=$(gh run list \
+            --workflow=cbb_analytics.yml \
+            --status=success \
+            --limit=1 \
+            --json=databaseId \
+            --jq='.[0].databaseId // ""')
+          echo "run_id=$run_id" >> $GITHUB_OUTPUT
+
+      - name: Download ESPN data artifact
+        if: steps.get_espn_run.outputs.run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-espn-data
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.get_espn_run.outputs.run_id }}
+        continue-on-error: true
+
+      - name: Download predictions artifact
+        if: steps.get_pred_run.outputs.run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-predictions-rolling-latest
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.get_pred_run.outputs.run_id }}
+        continue-on-error: true
+
+      - name: Download market-lines artifact
+        if: steps.get_market_run.outputs.run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-market-lines
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.get_market_run.outputs.run_id }}
+        continue-on-error: true
+
+      - name: Download analytics artifact
+        if: steps.get_analytics_run.outputs.run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: cbb-results-log
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.get_analytics_run.outputs.run_id }}
+        continue-on-error: true
+
+      - name: Verify artifacts required for governed backtest
+        id: verify_artifacts
+        run: |
+          missing=0
+          for f in \
+            data/games.csv \
+            data/team_game_weighted.csv \
+            data/predictions_combined_latest.csv \
+            data/market_lines.csv \
+            data/results_log.csv; do
+            if [ ! -s "$f" ]; then
+              echo "[MISSING] $f"
+              missing=1
+            else
+              echo "[OK] $f"
+            fi
+          done
+
+          if [ "$missing" -eq 1 ]; then
+            echo "missing=true" >> $GITHUB_OUTPUT
+          else
+            echo "missing=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger upstream workflows if artifacts are missing
+        if: steps.verify_artifacts.outputs.missing == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "[WARN] Required artifacts missing. Triggering upstream workflows..."
+          gh workflow run update_espn_cbb.yml || true
+          gh workflow run cbb_predictions_rolling.yml || true
+          gh workflow run market_lines.yml || true
+          gh workflow run cbb_analytics.yml || true
+          echo "[ERROR] Backtest tracker halted because required artifacts were unavailable."
+          echo "[ERROR] Re-run this workflow after upstream workflows complete."
+          exit 1
+
+      - name: Governed backtest run (integrity gate + evaluation outputs)
+        run: python -m pipeline run --mode backtest
+
+      - name: Grade predictions (legacy outputs)
         run: python build_backtest_csvs.py --section grade-only
 
       - name: Walk-forward validation
@@ -37,6 +176,21 @@ jobs:
 
       - name: Feature audit
         run: python -m evaluation.feature_audit
+
+      - name: Update governance status
+        run: python -m pipeline update-check
+
+      - name: Upload governance artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-backtest-governance
+          path: |
+            data/artifacts/integrity.json
+            data/artifacts/run_manifest.json
+            data/evaluation.csv
+            data/evaluation.json
+            data/run_evaluations.csv
 
       - name: Accuracy and CLV summary
         run: |
