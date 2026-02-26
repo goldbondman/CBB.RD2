@@ -63,11 +63,41 @@ ESPN Scoreboard API ─→ espn_client.py ─→ espn_parsers.py ─→ espn_pip
 |----------|----------|---------|
 | `update_espn_cbb.yml` | Daily 10:00 UTC | ESPN data ingest + rankings + primary predictions |
 | `cbb_predictions_rolling.yml` | After ESPN update | Primary + ensemble predictions, merge, divergence checks |
-| `cbb_analytics.yml` | Daily 8 AM / Weekly Mon 10 AM | Results tracking (daily) + backtesting with weight optimization (weekly) |
+| `market_lines.yml` | Daily + manual | Market line capture + predictions-with-context artifact generation |
+| `cbb_analytics.yml` | Daily 08:00 UTC / Weekly Mon 10:00 UTC | Results tracking + weekly backtest/weight optimization |
+| `cbb_backtest_tracker.yml` | Daily 11:30 UTC | Standalone backtest tracker + artifact validation |
 
 ---
 
-## 2. Model Evaluation Audit
+## 2.5 Supabase Data Architecture Status (Repo Reality)
+
+The repository now includes an initial Supabase migration at `supabase/migrations/20260219_000001_init_cbb.sql` that implements the core analytics schema and baseline RLS.
+
+### Implemented
+
+- Core tables present: `teams`, `raw_games`, `games`, `market_lines`, `team_game_features`, `predictions`, `bets`, `dq_audit`
+- Required uniqueness constraints are present for ingestion idempotency (`raw_games`, `games`, `predictions`)
+- Required indexes are present for key model queries (games by season/date, lines by `game_id/pulled_at`, predictions by version)
+- RLS is enabled on user-facing read tables (`teams`, `games`, `predictions`, `team_game_features`, `market_lines`) and `bets`
+- Owner-only policies are implemented for `bets` (select/insert/update/delete tied to `auth.uid()`)
+
+### Gaps to close next
+
+1. **RLS coverage gap on ingestion/audit tables**
+   - `raw_games` and `dq_audit` are not RLS-enabled in the current migration.
+   - Recommendation: enable RLS and create server-only write policies (or no client policies) to prevent accidental client access.
+
+2. **Missing explicit write policies for pipeline-writable model tables**
+   - Current migration defines read policies for analytics tables, but no insert/update policies.
+   - Recommendation: keep client write disabled, and route writes through server-side service role only (Edge Function/API/cron).
+
+3. **Deterministic upsert SQL is only documented as comments**
+   - Migration includes upsert guidance comments but not executable helper SQL.
+   - Recommendation: add canonical upsert statements (or SQL functions) used by ingestion jobs to guarantee conflict handling consistency.
+
+---
+
+## 3. Model Evaluation Audit
 
 ### Model Inventory
 
@@ -130,7 +160,7 @@ M7 ──┘──(w=0.08)──┘                      Confidence
 
 ---
 
-## 3. ML Improvement Opportunities (No DB Required)
+## 4. ML Improvement Opportunities (No DB Required)
 
 ### Priority Matrix
 
@@ -149,7 +179,7 @@ M7 ──┘──(w=0.08)──┘                      Confidence
 
 ---
 
-## 4. Top 3 MVP Recommendations
+## 5. Top 3 MVP Recommendations
 
 ### MVP 1: Calibration Layer (Platt Scaling)
 
@@ -212,14 +242,14 @@ Pipeline fit: Results tracker computes L14 accuracy daily → saves weights → 
 
 ---
 
-## 5. Implementation Roadmap
+## 6. Implementation Roadmap
 
-### Phase 1 — Immediate (This PR)
-- [x] Complete `cbb_ensemble.py` (was a 3-line stub)
-- [x] Implement all 7 sub-models with distinct analytical approaches
-- [x] Add 62 tests covering all models, ensemble, config, and integration
-- [x] Verify all existing tests still pass (90/90)
-- [x] Document full architecture audit
+### Phase 1 — Baseline (Completed)
+- [x] `cbb_ensemble.py` implements 7-model ensemble architecture
+- [x] Weekly optimization artifact support exists (`data/backtest_optimized_weights.json` + `data/model_weights.json` handoff)
+- [x] Results tracker and backtester are both automated in workflows
+- [x] Supabase baseline schema migration added under `supabase/migrations/`
+- [x] Architecture audit document established
 
 ### Phase 2 — Next Sprint (Low-Lift)
 - [ ] **MVP 1**: Add Platt calibration layer to backtester + ensemble
@@ -241,7 +271,7 @@ Pipeline fit: Results tracker computes L14 accuracy daily → saves weights → 
 
 ---
 
-## Appendix: Feature Overlap Matrix
+## Appendix A: Feature Overlap Matrix
 
 ```
                       Primary  M1-FF  M2-AdjE  M3-Pyth  M4-Mom  M5-Sit  M6-CAGE  M7-Reg
