@@ -340,10 +340,8 @@ def compute_period_stats(df: pd.DataFrame, label: str) -> dict:
     graded_ou  = df[df["ou_result"].isin(["WIN", "LOSS"])]
     graded_ml  = df[df["winner_correct"].notna()]
 
-    if "edge_flag" in df.columns:
-        edge_games = graded_ats[graded_ats["edge_flag"].eq(1)]
-    else:
-        edge_games = pd.DataFrame()
+    edge_series = df["edge_flag"] if "edge_flag" in df.columns else pd.Series(False, index=df.index)
+    edge_games = graded_ats[edge_series.reindex(graded_ats.index).fillna(False)]
 
     high_conf = graded_ats[graded_ats["model_confidence"] >= 0.75] if "model_confidence" in graded_ats.columns else pd.DataFrame()
 
@@ -428,12 +426,15 @@ def _detect_sub_model_source(df: pd.DataFrame):
     if "model_confidence" in df.columns and df["model_confidence"].notna().sum() > 20:
         print("[WARN] sub_model missing — creating synthetic M1-M7 labels from confidence quintiles")
         df = df.copy()
+        labels = [f"M{i}" for i in range(1, min(8, max(3, len(df) // 10 + 1)))]
         df["sub_model"] = pd.qcut(
             df["model_confidence"].rank(method="first"),
             q=min(7, max(2, len(df) // 10)),
-            labels=[f"M{i}" for i in range(1, min(8, max(3, len(df) // 10 + 1)))],
+            labels=labels,
             duplicates="drop",
         )
+        # Guardrail: avoid presenting confidence-derived bins as real model IDs.
+        df["sub_model"] = "PROXY_" + df["sub_model"].astype(str)
         return "confidence_proxy", df
 
     return "unknown", df
@@ -600,7 +601,9 @@ def build_by_model(df: pd.DataFrame) -> pd.DataFrame:
 
     warns = []
     rows = []
-    for mid, mname in MODELS.items():
+    model_ids = [m for m in sorted(df["sub_model"].dropna().astype(str).unique())]
+    for mid in model_ids:
+        mname = MODELS.get(mid, mid)
         mdf = df[df["sub_model"] == mid]
         if mdf.empty:
             continue
@@ -636,7 +639,9 @@ def build_weekly(df: pd.DataFrame) -> pd.DataFrame:
 
     # Group by week
     # Handle mixed timezones by converting all to UTC naive if aware
-    dates_no_tz = df["_date"].apply(lambda x: x.tz_convert(None) if x.tzinfo else x)
+    dates_no_tz = df["_date"].apply(
+        lambda dt: dt.tz_convert(None) if hasattr(dt, "tz") and dt.tz is not None else dt
+    )
     df["_week_start"] = dates_no_tz.dt.to_period("W").apply(
         lambda p: p.start_time if pd.notna(p) else pd.NaT
     )
@@ -650,10 +655,8 @@ def build_weekly(df: pd.DataFrame) -> pd.DataFrame:
         if len(ats_g) < MIN_SAMPLE_WEEKLY and len(ml_g) < MIN_SAMPLE_WEEKLY:
             continue
 
-        if "edge_flag" in wdf.columns:
-            edge_g = ats_g[ats_g["edge_flag"].eq(1)]
-        else:
-            edge_g = pd.DataFrame()
+        edge_series = wdf["edge_flag"] if "edge_flag" in wdf.columns else pd.Series(False, index=wdf.index)
+        edge_g = ats_g[edge_series.reindex(ats_g.index).fillna(False)]
 
         row = {
             "week_label":       wl,
@@ -718,10 +721,8 @@ def build_by_conference(df: pd.DataFrame) -> pd.DataFrame:
         if len(ats_g) < MIN_SAMPLE_CONF:
             continue
 
-        if "edge_flag" in cdf.columns:
-            edge_g = ats_g[ats_g["edge_flag"].eq(1)]
-        else:
-            edge_g = pd.DataFrame()
+        edge_series = cdf["edge_flag"] if "edge_flag" in cdf.columns else pd.Series(False, index=cdf.index)
+        edge_g = ats_g[edge_series.reindex(ats_g.index).fillna(False)]
 
         # Best/worst model in this conference
         best_model = worst_model = None
@@ -902,62 +903,31 @@ def build_model_matrix(df: pd.DataFrame) -> pd.DataFrame:
             return pd.DataFrame()
         ats_g = work[work["ats_result"].isin(["WIN", "LOSS"])]
 
-    available_models = sorted(set(ats_g["sub_model"].dropna()) & set(MODELS.keys()))
+    available_models = sorted(set(ats_g["sub_model"].dropna().astype(str)))
 
     if len(available_models) < 2:
         print("[WARN] Fewer than 2 models available — cannot build comparison matrix")
         return pd.DataFrame()
 
+    if "game_id" not in ats_g.columns:
+        print("[WARN] No game_id column — cannot build comparison matrix")
+        return pd.DataFrame()
+
+    matrix = ats_g.pivot_table(
+        index="game_id",
+        columns="sub_model",
+        values="ats_result",
+        aggfunc="first",
+    )
+    matrix = matrix[[c for c in available_models if c in matrix.columns]]
+
+    if matrix.shape[1] < 2:
+        print("[WARN] sub_model missing or only one unique value — cannot build comparison matrix")
+        return pd.DataFrame()
+
     rows = []
     for ma, mb in combinations(available_models, 2):
-        if "game_id" in ats_g.columns:
-            # Drop duplicates to ensure one entry per game per model
-            ma_df = ats_g[ats_g["sub_model"] == ma].drop_duplicates("game_id").set_index("game_id")
-            mb_df = ats_g[ats_g["sub_model"] == mb].drop_duplicates("game_id").set_index("game_id")
-            common_ids = ma_df.index.intersection(mb_df.index)
-
-            if len(common_ids) == 0:
-                rows.append({
-                    "model_a": ma, "model_b": mb,
-                    "agreement_rate": None, "disagreement_games": 0,
-                    "model_a_wins_when_split": None,
-                    "model_b_wins_when_split": None,
-                    "better_model_when_split": None,
-                })
-                continue
-
-            ma_res = ma_df.loc[common_ids, "ats_result"]
-            mb_res = mb_df.loc[common_ids, "ats_result"]
-
-            # Agreement: both WIN or both LOSS
-            agree = (ma_res == mb_res).sum()
-            agreement_rate = round(float(agree / len(common_ids)), 4)
-
-            disagree_mask = ma_res != mb_res
-            n_disagree = int(disagree_mask.sum())
-
-            a_wins = b_wins = None
-            better = None
-            if n_disagree >= MIN_SAMPLE_MATRIX:
-                a_wins = round(float((ma_res[disagree_mask] == "WIN").mean()), 4)
-                b_wins = round(float((mb_res[disagree_mask] == "WIN").mean()), 4)
-                if abs(a_wins - b_wins) < MODEL_COMPARISON_EVEN_THRESHOLD:
-                    better = "EVEN"
-                elif a_wins > b_wins:
-                    better = "A"
-                else:
-                    better = "B"
-
-            rows.append({
-                "model_a":                 ma,
-                "model_b":                 mb,
-                "agreement_rate":          agreement_rate,
-                "disagreement_games":      n_disagree,
-                "model_a_wins_when_split": a_wins,
-                "model_b_wins_when_split": b_wins,
-                "better_model_when_split": better,
-            })
-        else:
+        if ma not in matrix.columns or mb not in matrix.columns:
             rows.append({
                 "model_a": ma, "model_b": mb,
                 "agreement_rate": None, "disagreement_games": 0,
@@ -965,6 +935,49 @@ def build_model_matrix(df: pd.DataFrame) -> pd.DataFrame:
                 "model_b_wins_when_split": None,
                 "better_model_when_split": None,
             })
+            continue
+
+        pair = matrix[[ma, mb]].dropna()
+        if pair.empty:
+            rows.append({
+                "model_a": ma, "model_b": mb,
+                "agreement_rate": None, "disagreement_games": 0,
+                "model_a_wins_when_split": None,
+                "model_b_wins_when_split": None,
+                "better_model_when_split": None,
+            })
+            continue
+
+        ma_res = pair[ma]
+        mb_res = pair[mb]
+
+        agree = (ma_res == mb_res).sum()
+        agreement_rate = round(float(agree / len(pair)), 4)
+
+        disagree_mask = ma_res != mb_res
+        n_disagree = int(disagree_mask.sum())
+
+        a_wins = b_wins = None
+        better = None
+        if n_disagree >= MIN_SAMPLE_MATRIX:
+            a_wins = round(float((ma_res[disagree_mask] == "WIN").mean()), 4)
+            b_wins = round(float((mb_res[disagree_mask] == "WIN").mean()), 4)
+            if abs(a_wins - b_wins) < MODEL_COMPARISON_EVEN_THRESHOLD:
+                better = "EVEN"
+            elif a_wins > b_wins:
+                better = "A"
+            else:
+                better = "B"
+
+        rows.append({
+            "model_a":                 ma,
+            "model_b":                 mb,
+            "agreement_rate":          agreement_rate,
+            "disagreement_games":      n_disagree,
+            "model_a_wins_when_split": a_wins,
+            "model_b_wins_when_split": b_wins,
+            "better_model_when_split": better,
+        })
 
     return pd.DataFrame(rows)
 

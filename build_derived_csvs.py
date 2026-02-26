@@ -57,6 +57,37 @@ WINDOW_AHEAD_HOURS = 48.0
 WINDOW_TIMEZONE = "America/Los_Angeles"
 
 
+EXPECTED_OUTPUT_SCHEMAS = {
+    "bet_recs.csv": [
+        "game_id", "event_id", "game_datetime_utc", "home_team", "away_team",
+        "spread_pick", "spread_edge", "total_pick", "total_edge",
+        "ml_pick", "ml_edge", "recommendation_tier",
+    ],
+    "team_form_snapshot.csv": [
+        "team_id", "team", "conference", "games_last_10", "record_last_10",
+        "avg_margin_last_10", "form_score",
+    ],
+    "matchup_preview.csv": [
+        "game_id", "event_id", "game_datetime_utc", "home_team", "away_team",
+        "home_team_id", "away_team_id", "home_adj_net", "away_adj_net",
+        "pred_spread", "pred_total",
+    ],
+    "player_leaders.csv": [
+        "player_id", "player_name", "team_id", "team", "conference",
+        "games", "minutes", "points", "rebounds", "assists",
+    ],
+    "upset_watch.csv": [
+        "game_id", "event_id", "game_datetime_utc", "favorite_team", "underdog_team",
+        "market_spread", "model_spread", "upset_probability", "uws_total",
+    ],
+    "conference_summary.csv": [
+        "conference", "team_id", "team", "wins", "losses", "conference_win_pct",
+        "ats_wins", "ats_losses", "ats_pct",
+    ],
+}
+
+
+
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 def _load(path: str | pathlib.Path, label: str = "") -> Optional[pd.DataFrame]:
@@ -167,7 +198,7 @@ def enrich_with_matchup_summary(df: pd.DataFrame) -> pd.DataFrame:
     # Normalise join keys to strings to prevent silent NaN merges from long game IDs
     for col in ("event_id", "team_id"):
         if col in tms.columns:
-            tms[col] = tms[col].astype(str).str.replace(r"\.0$", "", regex=True)
+            tms[col] = tms[col].astype(str).str.strip().str.lstrip("0").str.replace(r"^$", "0", regex=True)
 
     pick_cols = [
         "star_pcs", "expected_pts_impact", "star_underperform_risk",
@@ -184,7 +215,7 @@ def enrich_with_matchup_summary(df: pd.DataFrame) -> pd.DataFrame:
         join_cols_h = [f"home_{c}" for c in pick_cols]
         home_tms = home_tms[["event_id", "home_team_id"] + join_cols_h].copy()
         for c in ("event_id", "home_team_id"):
-            df[c] = df[c].astype(str).str.replace(r"\.0$", "", regex=True)
+            df[c] = df[c].astype(str).str.strip().str.lstrip("0").str.replace(r"^$", "0", regex=True)
         df = df.merge(home_tms, on=["event_id", "home_team_id"], how="left")
 
     if "away_team_id" in df.columns and "event_id" in df.columns:
@@ -193,7 +224,7 @@ def enrich_with_matchup_summary(df: pd.DataFrame) -> pd.DataFrame:
         join_cols_a = [f"away_{c}" for c in pick_cols]
         away_tms = away_tms[["event_id", "away_team_id"] + join_cols_a].copy()
         for c in ("event_id", "away_team_id"):
-            df[c] = df[c].astype(str).str.replace(r"\.0$", "", regex=True)
+            df[c] = df[c].astype(str).str.strip().str.lstrip("0").str.replace(r"^$", "0", regex=True)
         df = df.merge(away_tms, on=["event_id", "away_team_id"], how="left")
 
     # Compute matchup_pts_edge (positive = conditions favour home outscoring baseline)
@@ -647,6 +678,23 @@ def build_conference_summary_csv() -> None:
     _write(pd.DataFrame(standings), "conference_summary.csv", ["team_season_summary"])
 
 
+
+
+def write_stub_output(stem: str, reason: str) -> None:
+    """Write an empty, schema-correct stub output for a documented derived CSV."""
+    cols = EXPECTED_OUTPUT_SCHEMAS.get(stem, [])
+    print(f"[WARN] {stem}: stub writer active — {reason}")
+    _write(pd.DataFrame(columns=cols), stem, ["stub"], dated_copy=False)
+
+
+def ensure_documented_outputs() -> None:
+    """Ensure all six documented outputs exist with at least schema headers."""
+    for stem in EXPECTED_OUTPUT_SCHEMAS:
+        csv_path = CSV_DIR / stem
+        root_path = DATA / stem
+        if not csv_path.exists() or csv_path.stat().st_size < 10 or not root_path.exists() or root_path.stat().st_size < 10:
+            write_stub_output(stem, "builder unavailable or produced no output")
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build derived CBB CSVs")
     parser.add_argument(
@@ -710,6 +758,10 @@ def main() -> None:
 
         # 6. Conference Summary
         build_conference_summary_csv()
+    else:
+        print("[WARN] predictions input unavailable — writing documented derived CSV stubs")
+        for stem in EXPECTED_OUTPUT_SCHEMAS:
+            write_stub_output(stem, "predictions source missing")
 
     # Enrich matchup_preview.csv and bet_recs.csv if they now exist
     for stem in ("matchup_preview.csv", "bet_recs.csv"):
@@ -722,6 +774,11 @@ def main() -> None:
                     _write(enriched, stem, ["team_matchup_summary"])
                     print(f"[OK]  {stem}: enriched with matchup summary columns")
                 break  # only process once per stem
+
+    ensure_documented_outputs()
+
+    for r in _results:
+        print(f"[BUILD] {r}")
 
     # Print results summary
     if _results:
