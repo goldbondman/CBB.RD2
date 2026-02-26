@@ -70,6 +70,7 @@ from cbb_config import (
 log = logging.getLogger(__name__)
 
 DATA_DIR = Path("data")
+STACKING_PATH = DATA_DIR / "stacking_coefficients.json"
 
 DEFAULT_WEIGHTS = {
     "w_schedule":      0.25,
@@ -93,6 +94,28 @@ def load_model_weights(weights_path: Path = Path("data/model_weights.json")) -> 
         except Exception as e:
             log.warning("Could not load model_weights.json (%s) — using defaults", e)
     return DEFAULT_WEIGHTS.copy()
+
+def load_stacking_params(stacking_path: Path = STACKING_PATH) -> Optional[Dict[str, object]]:
+    """Load ridge stacking coefficients when available and well-formed."""
+    if not stacking_path.exists() or stacking_path.stat().st_size <= 10:
+        return None
+    try:
+        payload = json.loads(stacking_path.read_text())
+    except (OSError, json.JSONDecodeError):
+        log.warning("Failed to parse stacking coefficients at %s", stacking_path, exc_info=True)
+        return None
+
+    required = {"coef", "intercept", "features"}
+    if not required.issubset(payload):
+        log.warning("Ignoring stacking coefficients missing required keys: %s", required - set(payload))
+        return None
+
+    if not isinstance(payload.get("features"), list) or not payload["features"]:
+        log.warning("Ignoring stacking coefficients with empty feature list")
+        return None
+
+    return payload
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -234,6 +257,8 @@ class EnsembleResult:
     total_edge_pts:    float = 0.0
     bias_corrections_applied: List[str] = field(default_factory=list)
     pre_correction_prediction: float = 0.0
+    stacked_spread: float = 0.0
+    stacked_spread_weighted: float = 0.0
 
     def to_flat_dict(self) -> Dict:
         """Flatten for CSV output — one row per game."""
@@ -250,6 +275,9 @@ class EnsembleResult:
             "spread_edge_pts":     round(self.spread_edge_pts, 2),
             "total_edge_pts":      round(self.total_edge_pts, 2),
             "pre_correction_prediction": round(self.pre_correction_prediction, 2),
+            "stacked_spread": round(self.stacked_spread, 2),
+            "stacked_spread_weighted": round(self.stacked_spread_weighted, 2),
+            "ensemble_spread": round(self.stacked_spread_weighted, 2),
             "bias_corrections_applied": "|".join(self.bias_corrections_applied),
         }
         for mp in self.model_predictions:
@@ -287,6 +315,7 @@ class EnsembleConfig:
     edge_threshold_total:  float = 4.0
     agreement_strong:      float = 0.70    # fraction of models on same side
     agreement_moderate:    float = 0.55
+    use_stacking:          bool = False
 
     @classmethod
     def from_optimized(cls) -> "EnsembleConfig":
@@ -301,6 +330,10 @@ class EnsembleConfig:
                     config.total_weights.update(payload["total_weights"])
             except (OSError, json.JSONDecodeError, TypeError):
                 pass
+
+        stacking = load_stacking_params()
+        if stacking and bool(stacking.get("use_stacking_recommended", False)):
+            config.use_stacking = True
         return config
 
 
@@ -932,6 +965,26 @@ def _apply_bias_corrections(
 # ENSEMBLE PREDICTOR
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def apply_stacking(model_spreads: Dict[str, float], aux: Dict[str, float], params: Dict[str, object]) -> float:
+    """Apply ridge stacking coefficients to model spread outputs."""
+    features = params.get("features", [])
+    coef = np.array(params.get("coef", []), dtype=float)
+    intercept = float(params.get("intercept", 0.0))
+
+    if len(features) != len(coef):
+        raise ValueError("Stacking features/coefs length mismatch")
+
+    values = []
+    for feature in features:
+        if feature in model_spreads:
+            values.append(float(model_spreads.get(feature, 0.0) or 0.0))
+        else:
+            values.append(float(aux.get(feature, 0.0) or 0.0))
+
+    X = np.array([values], dtype=float)
+    return float(X @ coef + intercept)
+
+
 class EnsemblePredictor:
     """
     Aggregates the 7 sub-model predictions into a consensus line.
@@ -1032,6 +1085,7 @@ class EnsemblePredictor:
         self.config = config or EnsembleConfig()
         self.models = [cls() for cls in self.MODELS]
         self.model_weights = load_model_weights()
+        self.stacking_params = load_stacking_params()
 
     def predict(
         self,
@@ -1073,11 +1127,36 @@ class EnsemblePredictor:
 
         ens_spread = spread_sum / spread_w if spread_w > 0 else 0.0
         ens_total  = total_sum  / total_w  if total_w  > 0 else 140.0
+        weighted_spread = ens_spread
+        model_map = {mp.model_name: mp.spread for mp in preds}
+
+        model_spreads_for_stacking = {
+            "m1_spread": float(model_map.get("FourFactors", ens_spread)),
+            "m2_spread": float(model_map.get("AdjEfficiency", ens_spread)),
+            "m3_spread": float(model_map.get("Pythagorean", ens_spread)),
+            "m4_spread": float(model_map.get("Situational", ens_spread)),
+            "m5_spread": float(model_map.get("CAGERankings", ens_spread)),
+            "m6_spread": float(model_map.get("LuckRegression", ens_spread)),
+            "m7_spread": float(model_map.get("HomeAwayForm", model_map.get("Variance", ens_spread))),
+        }
+        aux_features = {
+            "cage_edge": float(home.cage_em - away.cage_em),
+            "barthag_diff": float(home.barthag - away.barthag),
+        }
+
+        stacked_spread = weighted_spread
+        if self.config.use_stacking and self.stacking_params:
+            try:
+                stacked_spread = apply_stacking(model_spreads_for_stacking, aux_features, self.stacking_params)
+            except Exception:
+                log.warning("Failed to apply stacking meta-model; falling back to weighted spread", exc_info=True)
+                stacked_spread = weighted_spread
+
+        ens_spread = stacked_spread
 
         # pre_correction: 5-model blend stored for compatibility columns
         # ens_spread: 8-model weighted average from config.spread_weights
         # (ens_spread from spread_sum/spread_w above is the authoritative output)
-        model_map = {mp.model_name: mp.spread for mp in preds}
         m1 = model_map.get("Situational", ens_spread)
         m2 = model_map.get("FourFactors", ens_spread)
         m3 = model_map.get("AdjEfficiency", ens_spread)
@@ -1171,6 +1250,8 @@ class EnsemblePredictor:
             total_edge_pts=round(total_edge_pts, 2),
             bias_corrections_applied=bias_applied,
             pre_correction_prediction=round(pre_correction, 2),
+            stacked_spread=round(stacked_spread, 2),
+            stacked_spread_weighted=round(weighted_spread, 2),
         )
 
 

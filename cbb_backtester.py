@@ -62,6 +62,7 @@ np.random.seed(SEED)
 import pandas as pd
 from scipy import stats as scipy_stats
 from scipy.optimize import minimize
+from sklearn.linear_model import Ridge
 
 from config.logging_config import get_logger
 from espn_config import PIPELINE_RUN_ID
@@ -81,6 +82,7 @@ GRADED_RESULTS_CSV = DATA_DIR / "results_log_graded.csv"
 TIER_CLASSIFICATIONS_CSV = DATA_DIR / "tier_classifications.csv"
 MODEL_ACCURACY_REPORT_CSV = DATA_DIR / "model_accuracy_report.csv"
 MODEL_ACCURACY_BY_DIMENSION_CSV = DATA_DIR / "model_accuracy_by_dimension.csv"
+STACKING_COEFFICIENTS_JSON = DATA_DIR / "stacking_coefficients.json"
 
 
 def _resolve_data_path(primary: Path) -> Path:
@@ -142,6 +144,92 @@ def _append_weight_history_snapshot(history_path: Path, current_weights: dict) -
             snapshots = []
     snapshots.append(current_weights)
     history_path.write_text(json.dumps(snapshots, indent=2))
+
+
+def train_stacking_meta_model(backtest_results: pd.DataFrame, output_dir: Path) -> Optional[Dict[str, object]]:
+    """Train ridge stacker on model outputs and validate vs weighted average on holdout."""
+    model_alias_map = {
+        "m1_spread": ["fourfactors_spread"],
+        "m2_spread": ["adjefficiency_spread"],
+        "m3_spread": ["pythagorean_spread"],
+        "m4_spread": ["situational_spread"],
+        "m5_spread": ["cagerankings_spread"],
+        "m6_spread": ["regressedeff_spread", "luckregression_spread"],
+        "m7_spread": ["homeawayform_spread", "variance_spread"],
+    }
+
+    stack_df = backtest_results.copy()
+    for alias, candidates in model_alias_map.items():
+        if alias in stack_df.columns:
+            continue
+        src = next((col for col in candidates if col in stack_df.columns), None)
+        if src:
+            stack_df[alias] = pd.to_numeric(stack_df[src], errors="coerce")
+
+    model_cols = ["m1_spread", "m2_spread", "m3_spread", "m4_spread", "m5_spread", "m6_spread", "m7_spread"]
+    aux_cols = ["cage_edge", "barthag_diff"]
+    feature_cols = [c for c in model_cols + aux_cols if c in stack_df.columns]
+    stacker_df = stack_df[feature_cols + ["actual_margin", "ens_spread"]].dropna()
+
+    if len(stacker_df) < 80 or not feature_cols:
+        log.info(
+            "Skipping stacking meta-model training: need >=80 rows and non-empty features (rows=%d, features=%d)",
+            len(stacker_df),
+            len(feature_cols),
+        )
+        return None
+
+    holdout_n = max(16, int(len(stacker_df) * 0.20))
+    train_df = stacker_df.iloc[:-holdout_n].copy()
+    holdout_df = stacker_df.iloc[-holdout_n:].copy()
+
+    if len(train_df) < 50 or holdout_df.empty:
+        log.info(
+            "Skipping stacking validation split: train=%d holdout=%d",
+            len(train_df),
+            len(holdout_df),
+        )
+        return None
+
+    X_train = train_df[feature_cols].to_numpy()
+    y_train = train_df["actual_margin"].to_numpy()
+    X_holdout = holdout_df[feature_cols].to_numpy()
+    y_holdout = holdout_df["actual_margin"].to_numpy()
+
+    stacker = Ridge(alpha=1.0)
+    stacker.fit(X_train, y_train)
+
+    train_mae = float(np.abs(stacker.predict(X_train) - y_train).mean())
+    ridge_holdout_mae = float(np.abs(stacker.predict(X_holdout) - y_holdout).mean())
+    weighted_holdout_mae = float(np.abs(holdout_df["ens_spread"].to_numpy() - y_holdout).mean())
+    improvement = weighted_holdout_mae - ridge_holdout_mae
+    use_stacking_recommended = improvement >= 0.3
+
+    stacking_params = {
+        "coef": stacker.coef_.tolist(),
+        "intercept": float(stacker.intercept_),
+        "features": feature_cols,
+        "trained_at": pd.Timestamp.utcnow().isoformat(),
+        "n_samples": len(stacker_df),
+        "train_samples": len(train_df),
+        "holdout_samples": len(holdout_df),
+        "train_mae": train_mae,
+        "holdout_mae_ridge": ridge_holdout_mae,
+        "holdout_mae_weighted": weighted_holdout_mae,
+        "holdout_mae_improvement": improvement,
+        "use_stacking_recommended": use_stacking_recommended,
+    }
+    output_path = output_dir / STACKING_COEFFICIENTS_JSON.name
+    output_path.write_text(json.dumps(stacking_params, indent=2))
+    log.info(
+        "Stacking meta-model trained: train_MAE=%.2f | holdout ridge=%.2f vs weighted=%.2f | use_stacking=%s",
+        train_mae,
+        ridge_holdout_mae,
+        weighted_holdout_mae,
+        use_stacking_recommended,
+    )
+
+    return stacking_params
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1512,6 +1600,8 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
 
     records = engine.attach_market_lines(records)
 
+    stacking_params = train_stacking_meta_model(records, output_dir)
+
     # ── Build reports ─────────────────────────────────────────────────────────
     report_df, calib_df = build_full_report(records, config)
     print_report(report_df, records)
@@ -1567,6 +1657,10 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
     safe_write_csv(report_df, output_dir / "backtest_model_report_latest.csv", index=False, label="backtest_model_report_latest", allow_empty=True)
     outputs["report"] = report_path
     log.info(f"Report  -> {report_path}")
+
+    if stacking_params:
+        outputs["stacking"] = output_dir / STACKING_COEFFICIENTS_JSON.name
+        log.info("Stacking coefficients -> %s", outputs["stacking"])
 
     if not calib_df.empty:
         calib_path = output_dir / f"backtest_calibration_{today}.csv"
