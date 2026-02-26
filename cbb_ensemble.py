@@ -37,6 +37,7 @@ Consumed by:
 import json
 import logging
 from dataclasses import dataclass, field
+from datetime import timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -74,6 +75,17 @@ from cbb_config import (
 log = logging.getLogger(__name__)
 
 DATA_DIR = Path("data")
+DYNAMIC_WEIGHTS_PATH = DATA_DIR / "dynamic_model_weights.json"
+
+MODEL_ID_TO_NAME = {
+    "m1": "FourFactors",
+    "m2": "AdjEfficiency",
+    "m3": "Pythagorean",
+    "m4": "Momentum",
+    "m5": "Situational",
+    "m6": "CAGERankings",
+    "m7": "RegressedEff",
+}
 
 DEFAULT_WEIGHTS = {
     "w_schedule":      0.25,
@@ -225,6 +237,7 @@ class EnsembleResult:
     spread:            float = 0.0
     total:             float = 0.0
     confidence:        float = 0.0
+    calibrated_confidence: float = 0.0
     model_agreement:   str   = ""      # "STRONG", "MODERATE", "SPLIT"
     spread_std:        float = 0.0
     cage_edge:         float = 0.0
@@ -245,6 +258,7 @@ class EnsembleResult:
             "ens_spread":          round(self.spread, 2),
             "ens_total":           round(self.total, 1),
             "ens_confidence":      round(self.confidence, 3),
+            "calibrated_confidence": round(self.calibrated_confidence, 3),
             "ens_agreement":       self.model_agreement,
             "ens_spread_std":      round(self.spread_std, 2),
             "cage_edge":           round(self.cage_edge, 2),
@@ -291,6 +305,15 @@ class EnsembleConfig:
     edge_threshold_total:  float = 4.0
     agreement_strong:      float = 0.70    # fraction of models on same side
     agreement_moderate:    float = 0.55
+    calibration: Optional[Dict] = field(default=None, init=False)
+
+    def __post_init__(self) -> None:
+        calib_path = Path("data/calibration_params.json")
+        if calib_path.exists():
+            try:
+                self.calibration = json.loads(calib_path.read_text())
+            except (OSError, json.JSONDecodeError):
+                self.calibration = None
 
     @staticmethod
     def _sanitize_weights(weights: Dict[str, float]) -> Dict[str, float]:
@@ -327,7 +350,53 @@ class EnsembleConfig:
                 pass
         config.spread_weights = cls._sanitize_weights(config.spread_weights)
         config.total_weights = cls._sanitize_weights(config.total_weights)
+
+        if DYNAMIC_WEIGHTS_PATH.exists() and DYNAMIC_WEIGHTS_PATH.stat().st_size > 10:
+            try:
+                dynamic_payload = json.loads(DYNAMIC_WEIGHTS_PATH.read_text())
+                computed_at = pd.to_datetime(dynamic_payload.get("computed_at"), utc=True, errors="coerce")
+                cutoff = pd.Timestamp.now(tz="UTC") - timedelta(hours=48)
+                if pd.notna(computed_at) and computed_at >= cutoff:
+                    blended = dynamic_payload.get("blended_weights", {})
+                    if isinstance(blended, dict) and blended:
+                        for mid, model_name in MODEL_ID_TO_NAME.items():
+                            if mid in blended:
+                                config.spread_weights[model_name] = float(blended[mid])
+                                config.total_weights[model_name] = float(blended[mid])
+                        log.info("Loaded dynamic model weights (computed %s)", computed_at.strftime("%Y-%m-%d"))
+                else:
+                    log.warning("Dynamic model weights stale or invalid; using backtest weights")
+            except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
+                log.warning("Failed to load dynamic model weights (%s); using backtest weights", exc)
+        else:
+            log.warning("Dynamic model weights file missing; using backtest weights")
         return config
+
+
+def apply_calibration(
+    raw_confidence: float,
+    spread_std: float,
+    cage_edge: float,
+    calib: Optional[Dict],
+) -> float:
+    if calib is None:
+        return float(raw_confidence)
+
+    X = np.array([[raw_confidence, spread_std or 0.0, cage_edge or 0.0]], dtype=float)
+    coef = np.array(calib.get("coef", []), dtype=float)
+    intercept = float(calib.get("intercept", 0.0))
+
+    if coef.size != X.shape[1]:
+        log.warning(
+            "Calibration coefficient length mismatch (got=%d expected=%d); using raw confidence",
+            coef.size,
+            X.shape[1],
+        )
+        return float(raw_confidence)
+
+    logit = float(X @ coef + intercept)
+    calibrated = float(1 / (1 + np.exp(-logit)))
+    return max(0.0, min(1.0, calibrated))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1153,7 +1222,7 @@ class EnsemblePredictor:
             0.05 if agreement == "STRONG"
             else (-0.05 if agreement == "SPLIT" else 0.0)
         )
-        ensemble_conf = max(0.05, min(0.95, avg_conf + agreement_bonus))
+        raw_confidence = max(0.05, min(0.95, avg_conf + agreement_bonus))
 
         # ── CAGE edge & barthag diff (metadata) ──────────────────────────
         cage_edge    = home.cage_em - away.cage_em
@@ -1165,6 +1234,12 @@ class EnsemblePredictor:
                 home.team_name, away.team_name,
             )
         barthag_diff = home.barthag - away.barthag
+        calibrated_confidence = apply_calibration(
+            raw_confidence=raw_confidence,
+            spread_std=spread_std,
+            cage_edge=cage_edge,
+            calib=self.config.calibration,
+        )
 
         # ── Edge flags ────────────────────────────────────────────────────
         edge_spread = False
@@ -1196,7 +1271,8 @@ class EnsemblePredictor:
         return EnsembleResult(
             spread=round(corrected_spread, 2),
             total=round(ens_total, 1),
-            confidence=round(ensemble_conf, 3),
+            confidence=round(raw_confidence, 3),
+            calibrated_confidence=round(calibrated_confidence, 3),
             model_agreement=agreement,
             spread_std=round(spread_std, 2),
             cage_edge=round(cage_edge, 2),
