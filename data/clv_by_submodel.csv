@@ -1,1 +1,9 @@
 model_name,n_games_with_clv,mean_clv_vs_open,mean_clv_vs_close,pct_positive_clv,mean_abs_error,correlation_clv_to_outcome
+ens_ens_spread,15,,3.3167,0.6667,,
+ens_fourfactors_spread,15,,3.3667,0.6667,,
+ens_adjefficiency_spread,15,,3.3667,0.6667,,
+ens_pythagorean_spread,15,,3.3667,0.6667,,
+ens_momentum_spread,15,,3.3667,0.6667,,
+ens_situational_spread,15,,2.7667,0.6667,,
+ens_cagerankings_spread,15,,3.3667,0.6667,,
+ens_regressedeff_spread,15,,3.3667,0.6667,,
