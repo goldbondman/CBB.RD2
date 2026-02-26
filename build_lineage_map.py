@@ -17,9 +17,9 @@ def unparse(node):
 
 def build_constant_map(py_files):
     const_map = {}
-    # Catch both string literals and Path-based constructions like DATA_DIR / 'file.csv'
+    # Catch string literals and Path-based constructions like DATA_DIR / 'file.csv'
     pattern = re.compile(r'([A-Z][A-Z0-9_]*)\s*=\s*.*?[\"\']([^\"\']+\.csv)[\"\']')
-    path_pattern = re.compile(r'([A-Z][A-Z0-9_]*)\s*=\s*.*?\/\s*[\"\']([^\"\']+\.csv)[\"\']')
+    path_pattern = re.compile(r'([A-Z][A-Z0-9_]*)\s*=\s*(?:DATA_DIR|data_dir|output_dir)\s*/\s*[\"\']([^\"\']+\.csv)[\"\']')
 
     for py in py_files:
         text = py.read_text(errors='ignore')
@@ -93,12 +93,10 @@ def load_existing_csv_headers():
     csv_headers = {}
     if not DATA_DIR.exists():
         return csv_headers
-    # Avoid double-counting data/csv/ subdirectory duplicates by only looking at top-level CSVs in data/
-    # or specifically handling the duplicates.
-    for csv in DATA_DIR.rglob('*.csv'):
-        # Skip if in data/csv/ to avoid duplication with data/
-        if 'data/csv' in str(csv.as_posix()):
-            continue
+    csv_paths = list(DATA_DIR.rglob('*.csv'))
+    csv_paths = list({p.resolve(): p for p in csv_paths}.values())
+
+    for csv in csv_paths:
 
         try:
             with csv.open('r', encoding='utf-8', errors='ignore') as f:
@@ -147,17 +145,18 @@ def main():
             traced |= set(lineage[csv_path].get('column_lineage', {}).keys())
 
         # Fallback to stem-match only if no direct path match, but restrict to same directory if known
-        base = pathlib.Path(csv_path).name
-        csv_dir = pathlib.Path(csv_path).parent
+        found_path = ROOT / csv_path
         for key, val in lineage.items():
             if key.startswith('__'):
                 continue
-            key_path = pathlib.Path(str(key))
-            if key_path.name == base and isinstance(val, dict):
-                # If key has a directory, it must match or be a substring
-                if len(key_path.parts) > 1:
-                    if str(csv_dir) not in str(key_path.parent):
-                        continue
+            if isinstance(val, dict):
+                key_path = pathlib.Path(str(key))
+                try:
+                    key_is_match = key_path.resolve() == pathlib.Path(found_path).resolve()
+                except Exception:
+                    key_is_match = False
+                if not key_is_match:
+                    continue
                 traced |= set(val.get('column_lineage', {}).keys())
 
         missing = sorted(set(cols) - traced)

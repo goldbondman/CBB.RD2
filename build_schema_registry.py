@@ -6,10 +6,6 @@ import pandas as pd
 
 registry = {}
 for path in sorted(pathlib.Path('data').rglob('*.csv')):
-    # Skip if in data/csv/ to avoid duplication with data/
-    if 'data/csv' in str(path.as_posix()):
-        continue
-
     try:
         df = pd.read_csv(path, nrows=500, low_memory=False)
         registry[str(path)] = {
@@ -22,20 +18,15 @@ for path in sorted(pathlib.Path('data').rglob('*.csv')):
                 }
                 for col in df.columns
             },
-            'row_count_sample': len(df),
+            'row_count_sample': min(len(df), 500),
+            'stats_are_sampled': len(df) >= 500,
             'registered_at': datetime.now(timezone.utc).isoformat(),
         }
         print(f"[OK] {path}: {len(df.columns)} columns")
     except Exception as e:
         print(f"[FAIL] {path}: {e}")
 
-# Handle numpy types in JSON serialization
-def numpy_encoder(obj):
-    if hasattr(obj, 'item'):
-        return obj.item()
-    return str(obj)
-
 pathlib.Path('data/schema_registry.json').write_text(
-    json.dumps(registry, indent=2, default=numpy_encoder)
+    json.dumps(registry, indent=2, default=lambda x: x.item() if hasattr(x, 'item') else str(x))
 )
 print(f"\nRegistry written: {len(registry)} files")

@@ -19,10 +19,9 @@ PRIMARY_KEYS = {
 import sys
 
 issues = []
-for path in sorted(pathlib.Path('data').rglob('*.csv')):
-    # Skip if in data/csv/ to avoid duplication with data/
-    if 'data/csv' in str(path.as_posix()):
-        continue
+csv_paths = sorted(pathlib.Path('data').rglob('*.csv'))
+csv_paths = list({p.resolve(): p for p in csv_paths}.values())
+for path in csv_paths:
 
     try:
         df = pd.read_csv(path, low_memory=False)
@@ -57,7 +56,7 @@ for path in sorted(pathlib.Path('data').rglob('*.csv')):
         if len(full_dupes) > 0:
             issues.append({
                 'file': str(path),
-                'pk_cols': ['ALL_COLUMNS'],
+                'pk_cols': [],
                 'duplicate_rows': int(len(full_dupes)),
                 'severity': 'WARNING',
             })
