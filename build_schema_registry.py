@@ -18,6 +18,8 @@ for path in sorted(pathlib.Path('data').rglob('*.csv')):
                 }
                 for col in df.columns
             },
+            'row_count_sample': int(min(len(df), 500)),
+            'stats_are_sampled': bool(len(df) >= 500),
             'row_count_sample': min(len(df), 500),
             'stats_are_sampled': len(df) >= 500,
             'registered_at': datetime.now(timezone.utc).isoformat(),

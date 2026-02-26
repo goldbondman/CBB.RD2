@@ -19,10 +19,13 @@ PRIMARY_KEYS = {
 import sys
 
 issues = []
+csv_paths = list(pathlib.Path('data').rglob('*.csv'))
+csv_paths = list({p.resolve(): p for p in csv_paths}.values())
 csv_paths = sorted(pathlib.Path('data').rglob('*.csv'))
 csv_paths = list({p.resolve(): p for p in csv_paths}.values())
 for path in csv_paths:
 
+for path in sorted(csv_paths):
     try:
         df = pd.read_csv(path, low_memory=False)
     except Exception as exc:

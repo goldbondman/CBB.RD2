@@ -19,6 +19,8 @@ def build_constant_map(py_files):
     const_map = {}
     # Catch string literals and Path-based constructions like DATA_DIR / 'file.csv'
     pattern = re.compile(r'([A-Z][A-Z0-9_]*)\s*=\s*.*?[\"\']([^\"\']+\.csv)[\"\']')
+    path_pattern = re.compile(r'([A-Z][A-Z0-9_]*)\s*=\s*.*?\/\s*[\"\']([^\"\']+\.csv)[\"\']')
+    dir_pattern = re.compile(r'(?:DATA_DIR|data_dir|output_dir)\s*/\s*[\'"]([^\'\"]+\.csv)[\'"]')
     path_pattern = re.compile(r'([A-Z][A-Z0-9_]*)\s*=\s*(?:DATA_DIR|data_dir|output_dir)\s*/\s*[\"\']([^\"\']+\.csv)[\"\']')
 
     for py in py_files:
@@ -31,7 +33,19 @@ def build_constant_map(py_files):
             if '/' not in csv:
                 csv = f"data/{csv}"
             const_map[name] = csv
+        for m in dir_pattern.finditer(text):
+            const_map[m.group(0)] = f"data/{m.group(1)}"
+            const_map[m.group(1)] = f"data/{m.group(1)}"
     return const_map
+
+
+def resolve_csv_arg(arg_node, const_map):
+    if isinstance(arg_node, ast.Constant) and isinstance(arg_node.value, str):
+        return const_map.get(arg_node.value, arg_node.value)
+    if isinstance(arg_node, ast.Name):
+        return const_map.get(arg_node.id, arg_node.id)
+    res = unparse(arg_node)
+    return const_map.get(res, res)
 
 
 def extract_df_columns_from_expr(expr):
@@ -43,14 +57,6 @@ def extract_df_columns_from_expr(expr):
             if n.args and isinstance(n.args[0], ast.Constant) and isinstance(n.args[0].value, str):
                 cols.add(n.args[0].value)
     return cols
-
-
-def resolve_csv_arg(arg_node, const_map):
-    if isinstance(arg_node, ast.Constant) and isinstance(arg_node.value, str):
-        return arg_node.value
-    if isinstance(arg_node, ast.Name):
-        return const_map.get(arg_node.id, arg_node.id)
-    return unparse(arg_node)
 
 
 def collect_script_lineage(path, const_map):
@@ -98,6 +104,10 @@ def load_existing_csv_headers():
 
     for csv in csv_paths:
 
+    csv_paths = list(DATA_DIR.rglob('*.csv'))
+    csv_paths = list({p.resolve(): p for p in csv_paths}.values())
+
+    for csv in csv_paths:
         try:
             with csv.open('r', encoding='utf-8', errors='ignore') as f:
                 header = f.readline().strip()
@@ -144,6 +154,15 @@ def main():
         if csv_path in lineage:
             traced |= set(lineage[csv_path].get('column_lineage', {}).keys())
 
+        # Fallback check: require path identity if no direct string match
+        for key, val in lineage.items():
+            if key.startswith('__'):
+                continue
+            try:
+                if pathlib.Path(key).resolve() == pathlib.Path(csv_path).resolve() and isinstance(val, dict):
+                    traced |= set(val.get('column_lineage', {}).keys())
+            except Exception:
+                continue
         # Fallback to stem-match only if no direct path match, but restrict to same directory if known
         found_path = ROOT / csv_path
         for key, val in lineage.items():

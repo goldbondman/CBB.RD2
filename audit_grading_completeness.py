@@ -16,6 +16,7 @@ def normalize_game_id(series: pd.Series) -> pd.Series:
         .str.strip()
         .str.replace(r"\.0$", "", regex=True)
         .str.lstrip("0")
+        .replace("", "0")
         .replace('', '0')
     )
 
@@ -61,6 +62,7 @@ def main():
         games['game_id_norm'] = normalize_game_id(games['game_id'])
 
         if 'completed' not in games.columns:
+            print("[WARN] Missing 'completed' column in games.csv — skipping completed-game filter")
             print("[WARN] [RECONCILE] 'completed' column missing from games.csv — skipping completed-game filter")
             completed = games
         else:
