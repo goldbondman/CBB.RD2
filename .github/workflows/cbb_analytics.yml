@@ -157,6 +157,44 @@ jobs:
               print(f"[OK] {fname}: {len(existing)} + {len(new_rows)} = {len(combined)} rows")
           PY
 
+      - name: Check market join coverage
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          from pathlib import Path
+          from datetime import date
+
+          preds = Path("data/predictions_with_context.csv")
+          mkt   = Path("data/market_lines.csv")
+          if not preds.exists() or preds.stat().st_size == 0:
+              preds = Path("data/predictions_combined_latest.csv")
+          if not preds.exists() or not mkt.exists():
+              print("[MARKET-GATE] Missing input files — skipping coverage check")
+              raise SystemExit(0)
+
+          df  = pd.read_csv(preds, dtype=str)
+          mdf = pd.read_csv(mkt,   dtype=str)
+
+          today = str(date.today())
+          if "game_date" in df.columns:
+              df = df[df["game_date"].str.startswith(today, na=False)]
+          if df.empty:
+              print(f"[MARKET-GATE] No predictions for {today} — skipping")
+              raise SystemExit(0)
+
+          df["_eid"]  = df.get("event_id", df.get("game_id", pd.Series(dtype=str))).astype(str).str.strip()
+          mdf["_eid"] = mdf["event_id"].astype(str).str.strip()
+
+          matched  = df["_eid"].isin(mdf["_eid"]).sum()
+          total    = len(df)
+          coverage = matched / total if total else 0
+
+          print(f"[MARKET-GATE] Today's market join coverage: {matched}/{total} ({coverage:.0%})")
+          if coverage < 0.80:
+              print(f"[MARKET-GATE] WARNING: coverage {coverage:.0%} is below 80% threshold")
+          PY
+
       # Step 4: Pattern 5: Install dependencies with import guards
       - name: Install dependencies
         run: |

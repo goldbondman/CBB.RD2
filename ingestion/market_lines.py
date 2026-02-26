@@ -671,6 +671,27 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
             "all": "opening",
         }.get(mode, "pregame")
 
+        if capture_type == "pregame":
+            status_type = (event.get("status") or {}).get("type") or {}
+            status_tokens = [
+                status_type.get("name"),
+                status_type.get("state"),
+                status_type.get("description"),
+                status_type.get("detail"),
+            ]
+            status_upper = " ".join(str(token).upper() for token in status_tokens if token)
+
+            if not status_upper:
+                log.warning("[MARKET] event_id=%s: game status unavailable, defaulting to pregame", event_id)
+            elif "FINAL" in status_upper:
+                continue
+            elif "IN_PROGRESS" in status_upper:
+                capture_type = "live"
+            elif "STATUS_SCHEDULED" in status_upper or "STATUS_DELAYED" in status_upper:
+                capture_type = "pregame"
+            elif "SCHEDULED" in status_upper or "DELAYED" in status_upper:
+                capture_type = "pregame"
+
         team_key = (
             normalize_team_name(str(parsed.get("home_team_name", ""))),
             normalize_team_name(str(parsed.get("away_team_name", ""))),
