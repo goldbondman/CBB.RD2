@@ -67,10 +67,10 @@ class ModelConfig:
     orb_weight: float = 0.18
     ftr_weight: float = 0.16
     drb_weight: float = 0.16
+    three_par_weight: float = 0.00
 
     # ─── Raw vs Vs-Expectation Blending ───
     vs_exp_weight: float = 0.70
-    raw_weight: float = 0.30
 
     # ─── Opponent Quality Weighting ───
     min_opp_weight: float = 0.5
@@ -79,15 +79,22 @@ class ModelConfig:
 
     # ─── Schedule Adjustment ───
     schedule_adjustment_factor: float = 0.5
+    eff_composite_weight: float = 0.60
 
     # ─── Baseline Values ───
     avg_pace: float = 67.2
+    adj_pace_weight: float = 0.00
+    pace_regression_factor: float = 0.00
     default_hca: float = 3.2
     league_avg_off_eff: float = 105.0
+    cage_prior_weight: float = 0.00
+    cage_prior_decay_games: int = 10
 
     # ─── Confidence Parameters ───
     min_games_for_full_confidence: int = 5
     consistency_threshold: float = 20.0
+    decay_floor: float = 0.50
+    decay_cliff: float = 0.75
     foul_confidence_penalty: bool = True   # v2.1: penalize high-foul teams
 
     # ─── v2.1: Tournament context ───────────────────────────────────────────
@@ -114,6 +121,9 @@ class ModelConfig:
 
     def get_tournament_multiplier(self) -> float:
         return self.tournament_multipliers.get(self.game_type, 1.000)
+
+    def __post_init__(self):
+        self.raw_weight = round(1.0 - self.vs_exp_weight, 6)
 
 
 @dataclass
@@ -243,7 +253,12 @@ def calculate_efficiency(points: float, poss: float) -> float:
 # GAME WEIGHTING (DECAY FUNCTIONS)
 # ============================================================================
 
-def get_game_weight(game_n: int, decay_type: str = 'smooth') -> float:
+def get_game_weight(
+    game_n: int,
+    decay_type: str = 'smooth',
+    decay_cliff: float = 0.75,
+    decay_floor: float = 0.50,
+) -> float:
     """
     Calculate recency weight for game N (1 = most recent).
 
@@ -258,7 +273,7 @@ def get_game_weight(game_n: int, decay_type: str = 'smooth') -> float:
         if game_n <= 5:
             return 1.00 - 0.02 * (game_n - 1)     # 1.00, 0.98, 0.96, 0.94, 0.92
         else:
-            return max(0.50, 0.75 - 0.05 * (game_n - 5))  # 0.75 → 0.50
+            return max(decay_floor, decay_cliff - 0.05 * (game_n - 5))
 
     elif decay_type == 'plateau':
         if game_n <= 4:   return 1.00
@@ -463,6 +478,8 @@ class PerformanceVsExpectationAnalyzer:
         # Four-factor vs-expectation (use league averages as baseline when
         # opponent-specific baselines unavailable)
         efg_vs_exp = (team_factors['efg']     - 0.50)  * 100 * baseline_conf
+        team_three_par = (game.team_box['tpa'] / game.team_box['fga']) if game.team_box['fga'] > 0 else 0.30
+        tpar_vs_exp = (team_three_par - 0.30) * 100 * baseline_conf
         orb_vs_exp = (team_factors['orb_pct'] - 0.30)  * 100 * baseline_conf
         ftr_vs_exp = (team_factors['ftr']     - 0.30)  * 100 * baseline_conf
         tov_vs_exp = (15.0 - team_factors['tov_pct'])        * baseline_conf
@@ -485,11 +502,13 @@ class PerformanceVsExpectationAnalyzer:
             'team_drb_pct':     team_factors['drb_pct'],
             'team_ftr':         team_factors['ftr'],
             'team_ft_pct':      team_factors['ft_pct'],
+            'team_three_par':   team_three_par,
             'team_foul_rate':   foul_rate,
             'is_high_foul':     float(high_foul),
 
             # Performance vs normalized expectation
             'efg_vs_exp':       efg_vs_exp,
+            'tpar_vs_exp':      tpar_vs_exp,
             'orb_vs_exp':       orb_vs_exp,
             'ftr_vs_exp':       ftr_vs_exp,
             'tov_vs_exp':       tov_vs_exp,
@@ -539,7 +558,12 @@ class PerformanceVsExpectationAnalyzer:
 
         for idx, game_metrics in enumerate(reversed(analyzed_games)):
             game_n = idx + 1
-            weight = get_game_weight(game_n, decay_type)
+            weight = get_game_weight(
+                game_n,
+                decay_type,
+                decay_cliff=self.config.decay_cliff,
+                decay_floor=self.config.decay_floor,
+            )
 
             for key, value in game_metrics.items():
                 if key not in ('baseline_confidence', 'opponent_baseline', 'is_high_foul'):
@@ -576,9 +600,11 @@ class PerformanceVsExpectationAnalyzer:
             'team_drb_pct':     0.70,
             'team_ftr':         0.30,
             'team_ft_pct':      0.70,
+            'team_three_par':   0.30,
             'team_foul_rate':   15.0,
             'is_high_foul':     0.0,
             'efg_vs_exp':       0.0,
+            'tpar_vs_exp':      0.0,
             'orb_vs_exp':       0.0,
             'ftr_vs_exp':       0.0,
             'tov_vs_exp':       0.0,
@@ -648,6 +674,16 @@ class CBBPredictionModel:
 
         home_blended = self._blend_windows(home_l5, home_l10)
         away_blended = self._blend_windows(away_l5, away_l10)
+
+        for blended, profile in [(home_blended, home_team_profile), (away_blended, away_team_profile)]:
+            if self.config.cage_prior_weight > 0 and profile and profile.get('cage_net') is not None:
+                n_games = blended.get('n_games', 10)
+                fade = max(0.0, 1.0 - n_games / self.config.cage_prior_decay_games)
+                effective_prior = self.config.cage_prior_weight * fade
+                blended['team_net_eff'] = (
+                    (1 - effective_prior) * blended['team_net_eff']
+                    + effective_prior * float(profile['cage_net'])
+                )
 
         # ── Core matchup calculation ───────────────────────────────────────────
         prediction = self._calculate_matchup(
@@ -750,7 +786,16 @@ class CBBPredictionModel:
             return 3.2
 
         # ── Expected pace ─────────────────────────────────────────────────────
-        exp_pace = (home['team_pace'] + away['team_pace']) / 2.0
+        raw_avg_pace = (home['team_pace'] + away['team_pace']) / 2.0
+        exp_pace = raw_avg_pace * (1 - cfg.pace_regression_factor) + cfg.avg_pace * cfg.pace_regression_factor
+        if (
+            home_team_profile
+            and away_team_profile
+            and home_team_profile.get('cage_t') is not None
+            and away_team_profile.get('cage_t') is not None
+        ):
+            adj_avg_pace = (home_team_profile['cage_t'] + away_team_profile['cage_t']) / 2.0
+            exp_pace = exp_pace * (1 - cfg.adj_pace_weight) + adj_avg_pace * cfg.adj_pace_weight
 
         # ── Four-factor deltas (blend raw + vs-expectation) ───────────────────
         def _delta(raw_home, raw_away, vsexp_home, vsexp_away) -> float:
@@ -778,15 +823,22 @@ class CBBPredictionModel:
             _to_unit_rate(home['team_ftr']), _to_unit_rate(away['team_ftr']),
             home['ftr_vs_exp'],          away['ftr_vs_exp'],
         )
+        tpar_delta = _delta(
+            _to_unit_rate(home['team_three_par']), _to_unit_rate(away['team_three_par']),
+            home['tpar_vs_exp'],                    away['tpar_vs_exp'],
+        )
 
         # ── Weighted composite edge ────────────────────────────────────────────
-        composite_edge = (
-            cfg.efg_weight * efg_delta +
-            cfg.tov_weight * tov_delta +
-            cfg.orb_weight * orb_delta +
-            cfg.drb_weight * drb_delta +
-            cfg.ftr_weight * ftr_delta
-        )
+        factor_deltas = [
+            (cfg.efg_weight, efg_delta),
+            (cfg.tov_weight, tov_delta),
+            (cfg.orb_weight, orb_delta),
+            (cfg.drb_weight, drb_delta),
+            (cfg.ftr_weight, ftr_delta),
+            (cfg.three_par_weight, tpar_delta),
+        ]
+        weight_sum = sum(weight for weight, _ in factor_deltas)
+        composite_edge = sum(weight * delta for weight, delta in factor_deltas) / max(weight_sum, 1e-9)
 
         # ── Efficiency edge ───────────────────────────────────────────────────
         raw_eff = (
@@ -797,7 +849,7 @@ class CBBPredictionModel:
         eff_edge   = cfg.raw_weight * raw_eff + cfg.vs_exp_weight * vs_exp_eff
 
         # ── Combined edge (60/40: efficiency / composite) ─────────────────────
-        raw_edge = 0.60 * eff_edge + 0.40 * composite_edge
+        raw_edge = cfg.eff_composite_weight * eff_edge + (1.0 - cfg.eff_composite_weight) * composite_edge
 
         # ── HCA and final spread ──────────────────────────────────────────────
         # Note: NO SOS adjustment (embedded in normalization)
@@ -841,6 +893,7 @@ class CBBPredictionModel:
                 'orb_delta':      round(orb_delta,      2),
                 'drb_delta':      round(drb_delta,      2),
                 'ftr_delta':      round(ftr_delta,      2),
+                'tpar_delta':     round(tpar_delta,     2),
                 'raw_total':      round(raw_total,      1),
                 'tourn_mult':     tourn_mult,
             },
