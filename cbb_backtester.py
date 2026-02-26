@@ -511,7 +511,7 @@ def predict_game_historical(
     weights: Optional[Dict[str, float]] = None,
 ) -> Dict:
     """
-    Run all 7 ensemble sub-models on pre-game team states.
+    Run all active ensemble sub-models on pre-game team states.
     Returns dict with per-model predictions + ensemble.
 
     weights: if provided, overrides EnsembleConfig defaults (for optimizer).
@@ -519,7 +519,7 @@ def predict_game_historical(
     from cbb_ensemble import (
         EnsemblePredictor, EnsembleConfig,
         FourFactorsModel, AdjustedEfficiencyModel, PythagoreanModel,
-        MomentumModel, SituationalModel, CAGERankingsModel, RegressedEfficiencyModel,
+        MomentumModel, SituationalModel, CAGERankingsModel,
         TeamProfile,
     )
 
@@ -746,6 +746,9 @@ def build_calibration_curve(
 # ═══════════════════════════════════════════════════════════════════════════════
 # WEIGHT OPTIMIZER
 # ═══════════════════════════════════════════════════════════════════════════════
+
+# NOTE: If cbb_ensemble model composition changes (add/remove/merge models),
+# retrain this stacking/meta-model and refresh MODEL_NAMES/DEFAULT_WEIGHTS before backtesting.
 
 MODEL_NAMES = [
     "fourfactors", "adjefficiency", "pythagorean",

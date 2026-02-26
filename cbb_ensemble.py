@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
 """
-cbb_ensemble.py — 7-Model Ensemble Predictor for College Basketball
+cbb_ensemble.py — 8-Model Ensemble Predictor for College Basketball
 
-Implements seven analytically-distinct sub-models that each predict a
-spread and total for a CBB matchup.  ``EnsemblePredictor`` aggregates
-them via configurable weighted averaging to produce a consensus line.
+Implements analytically-distinct sub-models that each predict a spread
+and total for a CBB matchup. ``EnsemblePredictor`` aggregates them via
+configurable weighted averaging to produce a consensus line.
 
 Model Descriptions
 ──────────────────────────────────────────────────────────────────────
   M1  FourFactors       Dean Oliver's four factors (eFG%, TOV%, ORB%, FTR)
-  M2  AdjEfficiency     Adjusted offensive / defensive efficiency edge
+  M2  AdjEfficiency     Efficiency edge with built-in consistency regression
   M3  Pythagorean       Pythagorean expected win % → implied margin
   M4  Momentum          Recency-weighted L5 trend vs season baseline
   M5  Situational       Rest, home/away splits, scheduling fatigue
   M6  CAGERankings      Composite CAGE power-index rating system
-  M7  RegressedEff      Mean-regressed efficiency toward league average
+  M7  LuckRegression    Pythagorean/luck regression-to-mean signal
+  M8  Variance          Volatility-aware efficiency moderation
+
+Note: the legacy standalone ``RegressedEff`` model has been folded into
+M2 to reduce redundant dependence on CAGE efficiency signals.
 
 Pipeline Integration
 ──────────────────────────────────────────────────────────────────────
@@ -288,6 +292,26 @@ class EnsembleConfig:
     agreement_strong:      float = 0.70    # fraction of models on same side
     agreement_moderate:    float = 0.55
 
+    @staticmethod
+    def _sanitize_weights(weights: Dict[str, float]) -> Dict[str, float]:
+        """Drop retired model keys and normalize only when composition actually changes."""
+        clean = dict(weights)
+
+        # M7 RegressedEff retired as standalone model; reassign its mass.
+        retired_w = float(clean.pop("RegressedEff", 0.0) or 0.0)
+        if retired_w <= 0:
+            return clean
+
+        for key in ("FourFactors", "Pythagorean", "Situational"):
+            clean[key] = float(clean.get(key, 0.0)) + retired_w / 3.0
+
+        active = set(EnsemblePredictor.model_names())
+        clean = {k: float(v) for k, v in clean.items() if k in active and float(v) > 0}
+        total = sum(clean.values())
+        if total <= 0:
+            return {name: 1.0 / len(active) for name in sorted(active)}
+        return {k: v / total for k, v in clean.items()}
+
     @classmethod
     def from_optimized(cls) -> "EnsembleConfig":
         """Load backtest-optimized weights if available, else defaults."""
@@ -301,6 +325,8 @@ class EnsembleConfig:
                     config.total_weights.update(payload["total_weights"])
             except (OSError, json.JSONDecodeError, TypeError):
                 pass
+        config.spread_weights = cls._sanitize_weights(config.spread_weights)
+        config.total_weights = cls._sanitize_weights(config.total_weights)
         return config
 
 
@@ -478,7 +504,14 @@ class AdjustedEfficiencyModel(_BaseModel):
     ) -> ModelPrediction:
         eff_edge = home.cage_em - away.cage_em
         pace = self._expected_pace(home, away)
-        margin = eff_edge * (pace / 100.0) + self._hca(neutral)
+        base_scale = pace / 100.0
+        consistency_blend = np.clip(
+            (home.consistency_score + away.consistency_score) / 200.0,
+            0.0,
+            1.0,
+        )
+        consistency_reg = 1.0 - 0.15 * (1.0 - consistency_blend)
+        margin = eff_edge * base_scale * consistency_reg + self._hca(neutral)
         spread = -margin
 
         base_total = self._eff_to_total(home.cage_o, away.cage_o, pace)
@@ -934,7 +967,7 @@ def _apply_bias_corrections(
 
 class EnsemblePredictor:
     """
-    Aggregates the 7 sub-model predictions into a consensus line.
+    Aggregates the active sub-model predictions into a consensus line.
 
     Aggregation method: weighted average of spread and total,
     with separate weight vectors for each.
@@ -955,6 +988,10 @@ class EnsemblePredictor:
         VarianceModel,
         HomeAwayFormModel,
     ]
+
+    @classmethod
+    def model_names(cls) -> List[str]:
+        return [m.name for m in cls.MODELS]
 
     def _apply_bias_corrections(
         self,
