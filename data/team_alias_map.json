@@ -1,0 +1,41 @@
+{
+  "global": {
+    "unc": "north carolina",
+    "ku": "kansas",
+    "ucla": "ucla",
+    "uconn": "connecticut",
+    "lsu": "louisiana state",
+    "msu": "michigan state",
+    "nc state": "north carolina state",
+    "ohio st": "ohio state",
+    "oklahoma st": "oklahoma state",
+    "penn st": "penn state",
+    "st johns": "st johns",
+    "st marys": "st marys",
+    "st peters": "st peters",
+    "st thomas": "st thomas",
+    "vcu": "virginia commonwealth",
+    "wvu": "west virginia",
+    "byu": "brigham young",
+    "tcu": "texas christian",
+    "smu": "southern methodist",
+    "utep": "texas el paso",
+    "unlv": "nevada las vegas",
+    "usf": "south florida",
+    "ucf": "central florida",
+    "umass": "massachusetts",
+    "umbc": "maryland baltimore county",
+    "umkc": "missouri kansas city",
+    "uncw": "north carolina wilmington",
+    "uncc": "charlotte",
+    "unco": "northern colorado",
+    "unf": "north florida",
+    "usi": "southern indiana"
+  },
+  "source_specific": {
+    "espn": {},
+    "teamrankings": {},
+    "vegasinsider": {},
+    "oddsshark": {}
+  }
+}

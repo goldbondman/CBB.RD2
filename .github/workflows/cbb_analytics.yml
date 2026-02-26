@@ -125,23 +125,31 @@ jobs:
       - name: Run backtester
         if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 10 * * 1' || github.event.inputs.run_mode == 'both' || github.event.inputs.run_mode == 'backtest_only'
         run: |
+          BACKFILL_ARGS=""
           BACKTEST_ARGS="--min-games 5"
           if [ -n "${{ github.event.inputs.start_date }}" ]; then
+            BACKFILL_ARGS="$BACKFILL_ARGS --start-date ${{ github.event.inputs.start_date }}"
             BACKTEST_ARGS="$BACKTEST_ARGS --start-date ${{ github.event.inputs.start_date }}"
           fi
           if [ -n "${{ github.event.inputs.end_date }}" ]; then
+            BACKFILL_ARGS="$BACKFILL_ARGS --end-date ${{ github.event.inputs.end_date }}"
             BACKTEST_ARGS="$BACKTEST_ARGS --end-date ${{ github.event.inputs.end_date }}"
           fi
+
+          echo "Running historical backfill with args: $BACKFILL_ARGS"
+          python ingestion/historical_backfill.py $BACKFILL_ARGS
+
           echo "Running backtester with args: $BACKTEST_ARGS"
           python cbb_backtester.py $BACKTEST_ARGS
 
       # Step 6: Pattern 2: Validate backtester outputs
       - name: Validate backtester outputs
-        if: always()
+        if: success()
         run: |
           if [ -f data/backtest_results_latest.csv ]; then
             rows=$(( $(wc -l < data/backtest_results_latest.csv) - 1 ))
             echo "[OK] backtest_results_latest.csv: $rows rows"
+            python scripts/validate_backtest_market_data.py
           else
             echo "[WARN] No backtester output found"
           fi
@@ -160,7 +168,7 @@ jobs:
       - name: Run season summaries
         run: python cbb_season_summaries.py || echo "Summaries failed (non-fatal)"
 
-      # Step 8: Pattern 10: Upload results even on failure
+      # Step 8: Pattern 10: Upload results on success
       - name: Grade predictions
         run: python evaluation/predictions_graded.py
         continue-on-error: false
@@ -170,7 +178,7 @@ jobs:
         continue-on-error: false
 
       - name: Upload analytics results
-        if: always()
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: cbb-results-log
@@ -179,11 +187,14 @@ jobs:
             data/results_summary.csv
             data/backtest_results_latest.csv
             data/team_season_summary.csv
+            data/market_lines_closing.csv
+            data/unresolved_games.csv
+            data/market_line_backfill_audit.csv
           retention-days: 90
 
       # Step 9: Pattern 9: Standardized commit step with retry logic
       - name: Commit to repo
-        if: always()
+        if: success()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
