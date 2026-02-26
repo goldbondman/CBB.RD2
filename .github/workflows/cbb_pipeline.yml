@@ -11,6 +11,39 @@ jobs:
   daily:
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 9 * * *'
     runs-on: ubuntu-latest
+name: CBB Pipeline
+
+on:
+  schedule:
+    - cron: "0 9 * * *"      # DAILY @ 09:00 UTC
+    - cron: "0 10 1,15 * *"  # BIWEEKLY LEARNING @ 10:00 UTC on 1st and 15th
+    - cron: "0 10 10 4 *"    # END OF SEASON @ 10:00 UTC on April 10
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: "Pipeline tier to run"
+        required: true
+        default: daily
+        type: choice
+        options:
+          - daily
+          - biweekly
+          - end_of_season
+
+concurrency:
+  group: cbb-pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  daily:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.tier == 'daily' || github.event.schedule == '0 9 * * *'
+    runs-on: ubuntu-latest
+    env:
+      DATA_DIR: ${{ secrets.DATA_DIR }}
+      TZ: America/Los_Angeles
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,6 +52,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -177,6 +212,67 @@ jobs:
   biweekly_learning:
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 10 1,15 * *'
     runs-on: ubuntu-latest
+      - name: Run DAILY tier
+        run: |
+          set +e
+          mkdir -p data
+          touch data/pipeline_errors.log
+          if [ ! -f data/pipeline_step_runs.csv ]; then
+            echo "run_timestamp_utc,tier,step,command,status,error_message" > data/pipeline_step_runs.csv
+          fi
+
+          log_step_result() {
+            local tier="$1"
+            local step="$2"
+            local command="$3"
+            local status="$4"
+            local error_message="$5"
+            local ts
+            ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            local escaped_error
+            escaped_error="${error_message//\"/\"\"}"
+            printf '%s,%s,%s,"%s",%s,"%s"\n' "$ts" "$tier" "$step" "$command" "$status" "$escaped_error" >> data/pipeline_step_runs.csv
+          }
+
+          run_step() {
+            local tier="$1"
+            local step="$2"
+            shift 2
+            local cmd=("$@")
+            echo "[INFO] Running ${step}: ${cmd[*]}"
+            if "${cmd[@]}"; then
+              log_step_result "$tier" "$step" "${cmd[*]}" "success" ""
+            else
+              rc=$?
+              msg="${step} failed with exit code ${rc}"
+              echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") | ${tier} | ${msg}" | tee -a data/pipeline_errors.log
+              log_step_result "$tier" "$step" "${cmd[*]}" "failed" "$msg"
+            fi
+          }
+
+          run_step "daily" "espn_pipeline" python espn_pipeline.py
+          run_step "daily" "cbb_market_lines_closing" python cbb_market_lines.py --mode closing
+          run_step "daily" "espn_prediction_runner" python espn_prediction_runner.py
+          run_step "daily" "cbb_results_tracker" python cbb_results_tracker.py
+          run_step "daily" "cbb_grade_predictions" python cbb_grade_predictions.py
+          run_step "daily" "cbb_accuracy_report" python cbb_accuracy_report.py
+          run_step "daily" "cbb_season_summaries" python cbb_season_summaries.py
+
+      - name: Upload pipeline logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-pipeline-daily-logs
+          path: |
+            data/pipeline_errors.log
+            data/pipeline_step_runs.csv
+
+  biweekly_learning:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.tier == 'biweekly' || github.event.schedule == '0 10 1,15 * *'
+    runs-on: ubuntu-latest
+    env:
+      DATA_DIR: ${{ secrets.DATA_DIR }}
+      TZ: America/Los_Angeles
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -185,6 +281,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -247,6 +345,121 @@ jobs:
   end_of_season:
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 10 10 4 *'
     runs-on: ubuntu-latest
+      - name: Run BIWEEKLY LEARNING tier
+        run: |
+          set +e
+          mkdir -p data
+          touch data/pipeline_errors.log
+          if [ ! -f data/pipeline_step_runs.csv ]; then
+            echo "run_timestamp_utc,tier,step,command,status,error_message" > data/pipeline_step_runs.csv
+          fi
+
+          log_step_result() {
+            local tier="$1"
+            local step="$2"
+            local command="$3"
+            local status="$4"
+            local error_message="$5"
+            local ts
+            ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            local escaped_error
+            escaped_error="${error_message//\"/\"\"}"
+            printf '%s,%s,%s,"%s",%s,"%s"\n' "$ts" "$tier" "$step" "$command" "$status" "$escaped_error" >> data/pipeline_step_runs.csv
+          }
+
+          run_step() {
+            local tier="$1"
+            local step="$2"
+            shift 2
+            local cmd=("$@")
+            echo "[INFO] Running ${step}: ${cmd[*]}"
+            if "${cmd[@]}"; then
+              log_step_result "$tier" "$step" "${cmd[*]}" "success" ""
+            else
+              rc=$?
+              msg="${step} failed with exit code ${rc}"
+              echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") | ${tier} | ${msg}" | tee -a data/pipeline_errors.log
+              log_step_result "$tier" "$step" "${cmd[*]}" "failed" "$msg"
+            fi
+          }
+
+          should_run=$(python - <<'PY'
+from __future__ import annotations
+import json
+from pathlib import Path
+import pandas as pd
+
+predictions_path = Path("data/predictions_graded.csv")
+weights_path = Path("data/active_weights.json")
+
+if not predictions_path.exists() or not weights_path.exists():
+    print("SKIP|0|missing predictions_graded.csv or active_weights.json")
+    raise SystemExit(0)
+
+weights = json.loads(weights_path.read_text())
+last_weight_update = (
+    weights.get("last_weight_update")
+    or weights.get("updated_at")
+    or weights.get("deployed_at")
+)
+if not last_weight_update:
+    print("SKIP|0|missing last_weight_update timestamp in active_weights.json")
+    raise SystemExit(0)
+
+frame = pd.read_csv(predictions_path)
+if "graded" not in frame.columns or "game_datetime_utc" not in frame.columns:
+    print("SKIP|0|predictions_graded.csv missing required columns graded/game_datetime_utc")
+    raise SystemExit(0)
+
+frame["graded_bool"] = frame["graded"].astype(str).str.strip().str.lower().isin(["true", "1", "yes", "y"])
+frame["game_datetime_utc"] = pd.to_datetime(frame["game_datetime_utc"], utc=True, errors="coerce")
+last_update_ts = pd.to_datetime(last_weight_update, utc=True, errors="coerce")
+
+if pd.isna(last_update_ts):
+    print("SKIP|0|invalid last_weight_update timestamp in active_weights.json")
+    raise SystemExit(0)
+
+count = int(((frame["graded_bool"]) & (frame["game_datetime_utc"] > last_update_ts)).sum())
+if count >= 200:
+    print(f"RUN|{count}|ok")
+else:
+    print(f"SKIP|{count}|Skipping weight update: only {count} graded games since last update")
+PY
+)
+
+          decision=$(echo "$should_run" | cut -d'|' -f1)
+          graded_count=$(echo "$should_run" | cut -d'|' -f2)
+          decision_msg=$(echo "$should_run" | cut -d'|' -f3-)
+
+          if [ "$decision" != "RUN" ]; then
+            msg="${decision_msg}"
+            echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") | biweekly | ${msg}" | tee -a data/pipeline_errors.log
+            log_step_result "biweekly" "prerequisite_check" "graded since last update >= 200" "skipped" "$msg"
+            exit 0
+          fi
+
+          log_step_result "biweekly" "prerequisite_check" "graded since last update >= 200" "success" "graded_count=${graded_count}"
+
+          run_step "biweekly" "optimize_weights" python optimize_weights.py
+          run_step "biweekly" "walk_forward_validate_candidate" python cbb_walk_forward.py --validate-candidate data/candidate_weights.json
+          run_step "biweekly" "weight_deployer" python weight_deployer.py
+          run_step "biweekly" "cbb_accuracy_report" python cbb_accuracy_report.py
+
+      - name: Upload pipeline logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-pipeline-biweekly-logs
+          path: |
+            data/pipeline_errors.log
+            data/pipeline_step_runs.csv
+
+  end_of_season:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.tier == 'end_of_season' || github.event.schedule == '0 10 10 4 *'
+    runs-on: ubuntu-latest
+    env:
+      DATA_DIR: ${{ secrets.DATA_DIR }}
+      TZ: America/Los_Angeles
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -255,6 +468,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -275,3 +490,65 @@ jobs:
         run: |
           mkdir -p data/archive
           cp data/results_log.csv "data/archive/results_log_$(date +%Y).csv"
+      - name: Run END OF SEASON tier
+        run: |
+          set +e
+          mkdir -p data data/archive
+          touch data/pipeline_errors.log
+          if [ ! -f data/pipeline_step_runs.csv ]; then
+            echo "run_timestamp_utc,tier,step,command,status,error_message" > data/pipeline_step_runs.csv
+          fi
+
+          log_step_result() {
+            local tier="$1"
+            local step="$2"
+            local command="$3"
+            local status="$4"
+            local error_message="$5"
+            local ts
+            ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            local escaped_error
+            escaped_error="${error_message//\"/\"\"}"
+            printf '%s,%s,%s,"%s",%s,"%s"\n' "$ts" "$tier" "$step" "$command" "$status" "$escaped_error" >> data/pipeline_step_runs.csv
+          }
+
+          run_step() {
+            local tier="$1"
+            local step="$2"
+            shift 2
+            local cmd=("$@")
+            echo "[INFO] Running ${step}: ${cmd[*]}"
+            if "${cmd[@]}"; then
+              log_step_result "$tier" "$step" "${cmd[*]}" "success" ""
+            else
+              rc=$?
+              msg="${step} failed with exit code ${rc}"
+              echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") | ${tier} | ${msg}" | tee -a data/pipeline_errors.log
+              log_step_result "$tier" "$step" "${cmd[*]}" "failed" "$msg"
+            fi
+          }
+
+          run_step "end_of_season" "walk_forward_full_season" python cbb_walk_forward.py
+          run_step "end_of_season" "optimize_weights_full_season" python optimize_weights.py --full-season
+          run_step "end_of_season" "walk_forward_validate_candidate" python cbb_walk_forward.py --validate-candidate data/candidate_weights.json
+          run_step "end_of_season" "weight_deployer_force" python weight_deployer.py --force
+
+          archive_year=$(date -u +"%Y")
+          if [ -f data/results_log.csv ]; then
+            cp data/results_log.csv "data/archive/results_log_${archive_year}.csv"
+            log_step_result "end_of_season" "archive_results_log" "cp data/results_log.csv data/archive/results_log_${archive_year}.csv" "success" ""
+          else
+            msg="results_log.csv not found; archive step skipped"
+            echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") | end_of_season | ${msg}" | tee -a data/pipeline_errors.log
+            log_step_result "end_of_season" "archive_results_log" "cp data/results_log.csv data/archive/results_log_${archive_year}.csv" "skipped" "$msg"
+          fi
+
+      - name: Upload pipeline logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-pipeline-end-of-season-logs
+          path: |
+            data/pipeline_errors.log
+            data/pipeline_step_runs.csv
+            data/archive/results_log_*.csv

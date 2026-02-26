@@ -738,17 +738,22 @@ def run_predictions(
             "away_net_eff": round(prediction["away_net_eff"], 2),
             "home_off_eff_vs_exp": round(prediction["home_off_eff_vs_exp"], 2),
             "away_off_eff_vs_exp": round(prediction["away_off_eff_vs_exp"], 2),
-            "eff_edge": round(prediction.get("eff_edge", 0), 2),
-            "composite_edge": round(prediction.get("composite_edge", 0), 2),
-            "hca": round(bd.get("hca", 0), 2),
+            "eff_edge": round(prediction.get("model_eff_edge", 0), 2),
+            "composite_edge": round(prediction.get("model_composite_edge", 0), 2),
+            "hca": round(prediction.get("model_hca_applied", bd.get("hca", 0)), 2),
 
-            "model_efg_delta": round(prediction.get("efg_delta", 0), 2),
-            "model_tov_delta": round(prediction.get("tov_delta", 0), 2),
-            "model_orb_delta": round(prediction.get("orb_delta", 0), 2),
-            "model_drb_delta": round(prediction.get("drb_delta", 0), 2),
-            "model_ftr_delta": round(prediction.get("ftr_delta", 0), 2),
-            "model_eff_edge": round(prediction.get("eff_edge", 0), 2),
-            "model_composite_edge": round(prediction.get("composite_edge", 0), 2),
+            "model_efg_delta": round(prediction.get("model_efg_delta", 0), 2),
+            "model_tov_delta": round(prediction.get("model_tov_delta", 0), 2),
+            "model_orb_delta": round(prediction.get("model_orb_delta", 0), 2),
+            "model_drb_delta": round(prediction.get("model_drb_delta", 0), 2),
+            "model_ftr_delta": round(prediction.get("model_ftr_delta", 0), 2),
+            "model_tpar_delta": prediction.get("model_tpar_delta"),
+            "model_eff_edge": round(prediction.get("model_eff_edge", 0), 2),
+            "model_composite_edge": round(prediction.get("model_composite_edge", 0), 2),
+            "model_raw_edge": round(prediction.get("model_raw_edge", 0), 2),
+            "model_home_pace": round(prediction.get("model_home_pace", 0), 1),
+            "model_away_pace": round(prediction.get("model_away_pace", 0), 1),
+            "model_hca_applied": round(prediction.get("model_hca_applied", 0), 2),
 
             "spread_line": spread_line,
             "total_line": total_line,
@@ -1255,7 +1260,13 @@ def main():
         decay_type=args.decay,
         min_games_for_full_confidence=args.min_games,
     )
-    apply_active_weights(config)
+    active_path = Path("data/active_weights.json")
+    if active_path.exists():
+        weights = json.loads(active_path.read_text())
+        for f in dataclasses.fields(config):
+            if f.name in weights and not f.name.startswith("_"):
+                setattr(config, f.name, type(getattr(config, f.name))(weights[f.name]))
+        log.info("Active weights loaded (deployed %s)", weights.get("deployed_at", "unknown"))
     model = CBBPredictionModel(config)
 
     results_df = run_predictions(
