@@ -124,6 +124,28 @@ def load_snapshot() -> pd.DataFrame:
         if col not in str_cols:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
+    # If the run window is short (e.g., DAYS_BACK=3) and snapshot was built from
+    # only recent logs, we can end up with <300 teams. Backfill missing teams
+    # from the latest rankings snapshot when available.
+    if len(df) < 300 and OUT_RANKINGS.exists() and OUT_RANKINGS.stat().st_size > 100:
+        try:
+            prev = pd.read_csv(OUT_RANKINGS, dtype=str, low_memory=False)
+            if "team_id" in prev.columns and "team_id" in df.columns:
+                cur_ids = set(df["team_id"].astype(str))
+                prev["team_id"] = prev["team_id"].astype(str)
+                missing = prev[~prev["team_id"].isin(cur_ids)].copy()
+                if not missing.empty:
+                    for c in df.columns:
+                        if c not in missing.columns:
+                            missing[c] = np.nan
+                    df = pd.concat([df, missing[df.columns]], ignore_index=True)
+                    log.warning(
+                        f"Snapshot had {len(cur_ids)} teams; backfilled {len(missing)} "
+                        "teams from prior cbb_rankings.csv"
+                    )
+        except Exception as exc:
+            log.warning(f"Could not backfill snapshot teams from cbb_rankings.csv: {exc}")
+
     log.info(f"Snapshot: {len(df)} teams loaded")
     return df
 
@@ -732,12 +754,6 @@ def build_rankings(
 
     season_agg = compute_season_aggregates(game_log)
     overwrite_map = {
-        "wins": "wins",
-        "losses": "losses",
-        "home_wins": "home_wins",
-        "home_losses": "home_losses",
-        "away_wins": "away_wins",
-        "away_losses": "away_losses",
         "opp_avg_net_rtg_season": "sos_computed",
         "opp_avg_efg_season": "opp_efg_pct_computed",
     }
@@ -747,8 +763,31 @@ def build_rankings(
     if not season_agg.empty:
         season_agg.index = season_agg.index.astype(str)
         aligned = season_agg.reindex(df.index)
+        # Preserve full-season records when available in snapshot. If both
+        # snapshot and computed values exist, keep whichever has more total games.
+        for w_col, l_col in [
+            ("wins", "losses"),
+            ("home_wins", "home_losses"),
+            ("away_wins", "away_losses"),
+        ]:
+            cur_w = pd.to_numeric(df.get(w_col), errors="coerce")
+            cur_l = pd.to_numeric(df.get(l_col), errors="coerce")
+            new_w = pd.to_numeric(aligned.get(w_col), errors="coerce")
+            new_l = pd.to_numeric(aligned.get(l_col), errors="coerce")
+
+            cur_games = (cur_w + cur_l).fillna(-1)
+            new_games = (new_w + new_l).fillna(-1)
+            use_new = new_games > cur_games
+
+            df[w_col] = np.where(use_new, new_w, cur_w)
+            df[l_col] = np.where(use_new, new_l, cur_l)
+
         for dst_col, src_col in overwrite_map.items():
-            df[dst_col] = aligned[src_col]
+            cur_raw = df[dst_col] if dst_col in df.columns else pd.Series(np.nan, index=df.index)
+            new_raw = aligned[src_col] if src_col in aligned.columns else pd.Series(np.nan, index=df.index)
+            cur = pd.to_numeric(cur_raw, errors="coerce")
+            new = pd.to_numeric(new_raw, errors="coerce")
+            df[dst_col] = cur.where(cur.notna(), new)
         updated_teams = int(df.index.isin(season_agg.index).sum())
     else:
         for dst_col in overwrite_map:
