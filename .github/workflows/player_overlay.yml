@@ -1,0 +1,78 @@
+name: Player Matchup Overlay
+
+on:
+  workflow_dispatch:
+    inputs:
+      input_csv:
+        description: "Optional input CSV path for standalone overlay run"
+        required: false
+        default: "data/player_overlay_input.csv"
+        type: string
+      output_csv:
+        description: "Output CSV path"
+        required: false
+        default: "data/player_overlay_predictions.csv"
+        type: string
+  push:
+    paths:
+      - "models/player_matchup_overlay.py"
+      - "scripts/run_player_overlay.py"
+      - "tests/test_player_matchup_overlay.py"
+      - ".github/workflows/player_overlay.yml"
+  pull_request:
+    paths:
+      - "models/player_matchup_overlay.py"
+      - "scripts/run_player_overlay.py"
+      - "tests/test_player_matchup_overlay.py"
+      - ".github/workflows/player_overlay.yml"
+
+concurrency:
+  group: cbb-player-overlay
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  overlay-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -c "import pandas, numpy" || { echo "[ERROR] imports failed"; exit 1; }
+
+      - name: Run overlay tests
+        run: pytest -q tests/test_player_matchup_overlay.py
+
+      - name: Optional standalone CLI smoke run
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          INPUT_PATH="${{ github.event.inputs.input_csv || 'data/player_overlay_input.csv' }}"
+          OUTPUT_PATH="${{ github.event.inputs.output_csv || 'data/player_overlay_predictions.csv' }}"
+          if [ -s "$INPUT_PATH" ]; then
+            python scripts/run_player_overlay.py --input "$INPUT_PATH" --output "$OUTPUT_PATH"
+            test -s "$OUTPUT_PATH"
+            echo "[OK] wrote $OUTPUT_PATH"
+          else
+            echo "[WARN] skipping smoke run: missing input file $INPUT_PATH"
+          fi
+
+      - name: Upload overlay prediction artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbb-player-overlay-output
+          path: data/player_overlay_predictions.csv
+          if-no-files-found: ignore
+          retention-days: 14
