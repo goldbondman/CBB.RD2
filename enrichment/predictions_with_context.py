@@ -196,6 +196,10 @@ def _build_market_lines_fallback(pred_df: pd.DataFrame, market_path: Path) -> pd
     # Source 1: predictions rows (guarantees event_id match)
     pred_market = pd.DataFrame({
         "event_id": pred_df.get("event_id", pd.Series(dtype=str)).astype(str).str.strip(),
+        "home_team_name": pred_df.get("home_team", pd.Series(dtype=str)),
+        "away_team_name": pred_df.get("away_team", pd.Series(dtype=str)),
+        "home_team_id": pred_df.get("home_team_id", pd.Series(dtype=str)),
+        "away_team_id": pred_df.get("away_team_id", pd.Series(dtype=str)),
         "home_spread_open": pd.to_numeric(pred_df.get("spread_line"), errors="coerce"),
         "home_spread_current": pd.to_numeric(pred_df.get("spread_line"), errors="coerce"),
         "spread": pd.to_numeric(pred_df.get("spread_line"), errors="coerce"),
@@ -228,6 +232,10 @@ def _build_market_lines_fallback(pred_df: pd.DataFrame, market_path: Path) -> pd
         if not games.empty:
             game_market = pd.DataFrame({
                 "event_id": games.get("game_id", pd.Series(dtype=str)).astype(str).str.strip(),
+                "home_team_name": games.get("home_team", pd.Series(dtype=str)),
+                "away_team_name": games.get("away_team", pd.Series(dtype=str)),
+                "home_team_id": games.get("home_team_id", pd.Series(dtype=str)),
+                "away_team_id": games.get("away_team_id", pd.Series(dtype=str)),
                 "home_spread_open": pd.to_numeric(games.get("spread"), errors="coerce"),
                 "home_spread_current": pd.to_numeric(games.get("spread"), errors="coerce"),
                 "spread": pd.to_numeric(games.get("spread"), errors="coerce"),
