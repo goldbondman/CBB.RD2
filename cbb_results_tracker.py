@@ -325,7 +325,7 @@ def load_predictions(date_filter: Optional[str] = None) -> pd.DataFrame:
 
     date_filter: YYYYMMDD — if provided, try to load predictions_{date}.csv first.
     """
-    candidates = [PREDICTIONS_HISTORY_CSV]
+    candidates = []
     if date_filter:
         candidates += [
             DATA_DIR / f"predictions_combined_{date_filter}.csv",
@@ -333,8 +333,6 @@ def load_predictions(date_filter: Optional[str] = None) -> pd.DataFrame:
             DATA_DIR / f"predictions_{date_filter}.csv",
         ]
     candidates += [
-        PREDICTIONS_GRADED_CSV,
-        PREDICTIONS_CONTEXT_CSV,
         PREDICTIONS_CSV,
         ENSEMBLE_CSV,
         PRIMARY_CSV,
@@ -351,6 +349,21 @@ def load_predictions(date_filter: Optional[str] = None) -> pd.DataFrame:
                                "ens_model_agreement","ens_offensive_archetype",
                                "predicted_at","game_type","_source_date"}:
                     df[col] = pd.to_numeric(df[col], errors="coerce")
+
+            spread_candidates = [
+                "pred_spread", "predicted_spread", "ensemble_spread", "ens_spread"
+            ]
+            spread_col = next((c for c in spread_candidates if c in df.columns), None)
+            if spread_col is not None:
+                valid_spreads = int(df[spread_col].notna().sum())
+                if valid_spreads == 0:
+                    log.warning(
+                        "Skipping prediction file %s: %s has 0 non-null rows",
+                        path.name,
+                        spread_col,
+                    )
+                    continue
+
             log.info(f"  {len(df)} predictions loaded")
             return df
 
@@ -539,7 +552,7 @@ def compute_outcomes(
         for name in MODEL_NAMES
     }
 
-    _raw_date = str(row.get("game_date", "")).strip()
+    _raw_date = str(pred_row.get("game_date", "")).strip()
     if len(_raw_date) == 8 and _raw_date.isdigit():
         _normalized_game_date = f"{_raw_date[:4]}-{_raw_date[4:6]}-{_raw_date[6:]}"
     else:
