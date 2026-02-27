@@ -75,6 +75,7 @@ def main() -> None:
     avail_path = DATA_DIR / "player_availability_features.csv"
     market_path = DATA_DIR / "market_lines.csv"
     pred_path = DATA_DIR / "predictions_history.csv"
+    situational_path = DATA_DIR / "situational_features.csv"
     luck_path = DATA_DIR / "luck_regression_features.csv"
 
     results = pd.read_csv(results_path, low_memory=False)
@@ -253,6 +254,48 @@ def main() -> None:
         merged["pred_spread"] = resolve_col(merged, "pred_spread", "pred_spread_predhist")
         merged["pred_total"] = resolve_col(merged, "pred_total", "pred_total_predhist")
 
+    situational = maybe_read_csv(situational_path)
+    if situational is not None:
+        situational["game_id"] = situational.get("game_id", situational.get("event_id")).map(normalize_game_id)
+        to_numeric(situational, ["team_id", "situational_edge_score", "rest_delta"])
+        keep_cols = [
+            "game_id", "team_id", "lookahead_flag", "letdown_flag", "bounce_back_flag", "revenge_flag",
+            "revenge_margin", "bubble_pressure_flag", "must_win_flag", "fatigue_flag", "extended_rest_flag",
+            "is_rivalry_game", "is_neutral_site", "is_conference_game", "situational_edge_score", "rest_delta",
+        ]
+        for col in keep_cols:
+            if col not in situational.columns:
+                situational[col] = pd.NA
+        situational = situational[keep_cols]
+
+        home_sit = situational.rename(columns={
+            "team_id": "home_team_id",
+            "lookahead_flag": "home_lookahead_flag",
+            "letdown_flag": "home_letdown_flag",
+            "bounce_back_flag": "home_bounce_back_flag",
+            "revenge_flag": "home_revenge_flag",
+            "revenge_margin": "home_revenge_margin",
+            "bubble_pressure_flag": "home_bubble_pressure_flag",
+            "must_win_flag": "home_must_win_flag",
+            "fatigue_flag": "home_fatigue_flag",
+            "extended_rest_flag": "home_extended_rest_flag",
+            "situational_edge_score": "home_situational_edge_score",
+        })
+        away_sit = situational.rename(columns={
+            "team_id": "away_team_id",
+            "lookahead_flag": "away_lookahead_flag",
+            "letdown_flag": "away_letdown_flag",
+            "bounce_back_flag": "away_bounce_back_flag",
+            "revenge_flag": "away_revenge_flag",
+            "bubble_pressure_flag": "away_bubble_pressure_flag",
+            "fatigue_flag": "away_fatigue_flag",
+            "extended_rest_flag": "away_extended_rest_flag",
+            "situational_edge_score": "away_situational_edge_score",
+        })
+        merged = merged.merge(home_sit, on=["game_id", "home_team_id"], how="left")
+        merged = merged.merge(away_sit, on=["game_id", "away_team_id"], how="left", suffixes=("", "_awaydup"))
+        merged["situational_edge_delta"] = merged["home_situational_edge_score"] - merged["away_situational_edge_score"]
+        merged["rest_delta"] = resolve_col(merged, "rest_delta", "rest_delta_awaydup")
     luck = maybe_read_csv(luck_path)
     luck_map = {
         "luck_score": "luck_score_delta",
@@ -319,6 +362,11 @@ def main() -> None:
         "star_availability_delta", "minutes_available_delta", "lineup_continuity_delta",
         "usage_gini_delta", "new_starter_flag_home", "new_starter_flag_away",
         "opening_spread", "closing_spread", "total_line", "clv_delta",
+        "home_lookahead_flag", "home_letdown_flag", "home_bounce_back_flag", "home_revenge_flag", "home_revenge_margin",
+        "away_lookahead_flag", "away_letdown_flag", "away_bounce_back_flag", "away_revenge_flag",
+        "home_bubble_pressure_flag", "away_bubble_pressure_flag", "home_must_win_flag",
+        "home_fatigue_flag", "away_fatigue_flag", "home_extended_rest_flag", "away_extended_rest_flag",
+        "is_rivalry_game", "is_neutral_site", "is_conference_game", "situational_edge_delta",
         "actual_margin", "home_covered_ats", "actual_total", "covered_over", "pred_spread", "pred_total",
         "luck_score_delta", "luck_score_l10_delta", "three_pt_luck_delta", "opp_three_pt_luck_delta",
         "close_game_luck_delta", "net_rtg_trend_delta", "efg_luck_delta", "composite_luck_delta",
