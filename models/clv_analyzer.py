@@ -137,31 +137,6 @@ def build_clv_reports(
     pred = _prepare_join_key(pred, "predictions_with_context.csv")
 
     if acc.empty:
-        LOG.warning("model_accuracy_report.csv has no rows; CLV report will omit outcome metrics.")
-    def _safe_read_csv(path: Path, label: str) -> pd.DataFrame:
-        try:
-            return pd.read_csv(path, low_memory=False)
-        except EmptyDataError:
-            LOG.warning("%s exists but is empty: %s", label, path)
-            return pd.DataFrame()
-
-    acc = _safe_read_csv(accuracy_path, "model_accuracy_report")
-    pred = _safe_read_csv(pred_context_path, "predictions_with_context")
-    if pred.empty and FALLBACK_PRED_CONTEXT_PATH.exists():
-        LOG.warning(
-            "Primary predictions_with_context is empty; falling back to %s",
-            FALLBACK_PRED_CONTEXT_PATH,
-        )
-        pred = _safe_read_csv(FALLBACK_PRED_CONTEXT_PATH, "predictions_combined_latest")
-
-    if pred.empty:
-        LOG.warning("No prediction rows available for CLV analysis. Writing empty outputs.")
-        _write_empty_outputs()
-        return pd.DataFrame(), pd.DataFrame()
-
-    pred = _prepare_join_key(pred, "predictions_with_context.csv")
-
-    if acc.empty:
         LOG.warning("model_accuracy_report has no rows; continuing with predictions-only CLV metrics.")
         merged = pred.copy()
     else:
@@ -175,7 +150,7 @@ def build_clv_reports(
 
     merged["game_id"] = _first_non_null(merged, ["game_id", "event_id", "game_id_acc", "event_id_acc"], fallback_dtype="str")
     merged["pred_spread"] = _first_non_null(merged, ["pred_spread", "predicted_spread", "ens_ens_spread"])
-    merged["home_spread_open"] = _first_non_null(merged, ["home_spread_open", "spread_open", "opening_spread", "spread_line"])
+    merged["home_spread_open"] = _first_non_null(merged, ["home_spread_open", "spread_open", "opening_spread"])
     merged["home_spread_current"] = _first_non_null(
         merged,
         ["home_spread_current", "market_spread", "spread", "spread_line", "closing_spread"],
