@@ -277,6 +277,11 @@ jobs:
         continue-on-error: false
 
       # Step 8: Run analytics/reporting scripts
+
+      - name: Build training data
+        run: python build_training_data.py
+        continue-on-error: true
+
       - name: Run results tracker
         if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 8 * * *' || github.event.inputs.run_mode == 'both' || github.event.inputs.run_mode == 'tracker_only'
         run: |
@@ -307,6 +312,7 @@ jobs:
             data/market_lines_closing.csv
             data/unresolved_games.csv
             data/market_line_backfill_audit.csv
+            data/backtest_training_data.csv
           retention-days: 90
 
       # Step 9: Pattern 9: Standardized commit step with retry logic
@@ -316,6 +322,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
+          git add data/backtest_training_data.csv
           if git diff --staged --quiet; then
             echo "[SKIP] No changes to commit"
             exit 0
