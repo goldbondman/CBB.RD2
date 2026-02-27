@@ -1933,6 +1933,30 @@ def _write_empty_accuracy_outputs(report_path: Path, dimension_path: Path) -> No
     safe_write_csv(pd.DataFrame(columns=dim_cols), dimension_path, index=False, label="model_accuracy_by_dimension", allow_empty=True)
 
 
+def _append_dq_audit_rows(data_dir: Path, rows: List[dict]) -> None:
+    """Append deterministic quality-gate failures to data/dq_audit.csv."""
+    if not rows:
+        return
+
+    audit_path = data_dir / "dq_audit.csv"
+    incoming = pd.DataFrame(rows)
+    incoming["created_at"] = pd.Timestamp.utcnow().isoformat()
+    incoming["pipeline_run_id"] = PIPELINE_RUN_ID
+
+    if audit_path.exists() and audit_path.stat().st_size > 0:
+        existing = pd.read_csv(audit_path)
+        out = pd.concat([existing, incoming], ignore_index=True)
+    else:
+        out = incoming
+
+    dedupe_cols = ["entity_type", "entity_id", "severity", "reason_codes", "details", "pipeline_run_id"]
+    dedupe_cols = [col for col in dedupe_cols if col in out.columns]
+    if dedupe_cols:
+        out = out.drop_duplicates(subset=dedupe_cols, keep="last")
+
+    safe_write_csv(out, audit_path, index=False, label="dq_audit", allow_empty=True)
+
+
 def _normalize_conference_tier(home_conference: object, away_conference: object) -> str:
     confs = []
     for conf in (home_conference, away_conference):
@@ -2030,6 +2054,15 @@ def grade_historical_predictions(data_dir: Path = DATA_DIR) -> Tuple[pd.DataFram
         return pd.DataFrame(), pd.DataFrame()
 
     predictions = pd.concat(pred_frames, ignore_index=True)
+
+    if "game_id" not in predictions.columns or predictions["game_id"].isna().all():
+        for fallback_id_col in ("event_id", "espn_event_id"):
+            if fallback_id_col in predictions.columns:
+                predictions["game_id"] = predictions[fallback_id_col]
+                log.info("Resolved missing game_id from %s in prediction files.", fallback_id_col)
+                break
+
+    gate_total = len(predictions)
     total_predictions = len(predictions)
 
     weighted_path = _resolve_data_path(WEIGHTED_CSV)
@@ -2057,6 +2090,9 @@ def grade_historical_predictions(data_dir: Path = DATA_DIR) -> Tuple[pd.DataFram
     games["home_score"] = pd.to_numeric(games.get("points_for"), errors="coerce")
     games["away_score"] = pd.to_numeric(games.get("points_against"), errors="coerce")
     games = games.rename(columns={"event_id": "game_id"})
+    for optional_col in ("home_conference", "away_conference"):
+        if optional_col not in games.columns:
+            games[optional_col] = pd.NA
 
     predictions["game_id"] = predictions.get("game_id", pd.Series(index=predictions.index, dtype=object)).astype(str)
     predictions["game_datetime_utc"] = pd.to_datetime(predictions.get("game_datetime_utc"), errors="coerce", utc=True)
@@ -2077,6 +2113,17 @@ def grade_historical_predictions(data_dir: Path = DATA_DIR) -> Tuple[pd.DataFram
     merged["actual_margin"] = merged["home_score"] - merged["away_score"]
     merged["actual_total"] = merged["home_score"] + merged["away_score"]
 
+    gate_counts = {
+        "total_predictions": gate_total,
+        "missing_game_id": int(merged["game_id"].isna().sum()),
+        "missing_pred_spread": int(merged["pred_spread"].isna().sum()),
+        "missing_game_datetime": int(merged["game_datetime_utc_final"].isna().sum()),
+        "future_games": int((merged["game_datetime_utc_final"] >= now_utc).fillna(False).sum()),
+        "missing_home_score": int(merged["home_score"].isna().sum()),
+        "missing_away_score": int(merged["away_score"].isna().sum()),
+    }
+    log.info("Accuracy grading integrity gates: %s", gate_counts)
+
     gradeable_mask = (
         merged["pred_spread"].notna()
         & merged["game_datetime_utc_final"].notna()
@@ -2085,6 +2132,34 @@ def grade_historical_predictions(data_dir: Path = DATA_DIR) -> Tuple[pd.DataFram
         & merged["away_score"].notna()
     )
     gradeable = merged[gradeable_mask].copy()
+
+    rejected = merged[~gradeable_mask].copy()
+    if not rejected.empty:
+        rejected["reason_codes"] = ""
+        rejected.loc[rejected["pred_spread"].isna(), "reason_codes"] += "missing_pred_spread;"
+        rejected.loc[rejected["game_datetime_utc_final"].isna(), "reason_codes"] += "missing_game_datetime;"
+        rejected.loc[
+            (rejected["game_datetime_utc_final"] >= now_utc).fillna(False),
+            "reason_codes",
+        ] += "game_not_final;"
+        rejected.loc[rejected["home_score"].isna() | rejected["away_score"].isna(), "reason_codes"] += "missing_final_score;"
+        rejected["reason_codes"] = rejected["reason_codes"].str.strip(";")
+        rejected["reason_codes"] = rejected["reason_codes"].replace("", "unknown")
+        rejected_summary = rejected.groupby("reason_codes", dropna=False).size().to_dict()
+        log.warning("Rejected predictions during grading: %s", rejected_summary)
+        _append_dq_audit_rows(
+            data_dir,
+            [
+                {
+                    "entity_type": "model_accuracy_report",
+                    "entity_id": str(k),
+                    "severity": "warning",
+                    "reason_codes": str(k),
+                    "details": json.dumps({"count": int(v)}),
+                }
+                for k, v in sorted(rejected_summary.items(), key=lambda item: item[0])
+            ],
+        )
 
     if gradeable.empty:
         log.warning("Found 0 gradeable games. Writing empty accuracy outputs.")
@@ -2125,7 +2200,13 @@ def grade_historical_predictions(data_dir: Path = DATA_DIR) -> Tuple[pd.DataFram
         np.where(margin_plus_spread < 0, "L", "P"),
     )
 
-    gradeable["game_tier"] = gradeable.get("game_tier", gradeable.get("game_type", "UNKNOWN")).fillna("UNKNOWN")
+    gradeable["game_tier"] = gradeable.get("game_tier")
+    if gradeable["game_tier"] is None:
+        gradeable["game_tier"] = gradeable.get("game_type")
+    if gradeable["game_tier"] is None:
+        gradeable["game_tier"] = "UNKNOWN"
+    if hasattr(gradeable["game_tier"], "fillna"):
+        gradeable["game_tier"] = gradeable["game_tier"].fillna("UNKNOWN")
     gradeable["conference_tier"] = gradeable.apply(
         lambda r: _normalize_conference_tier(r.get("home_conference"), r.get("away_conference")), axis=1
     )

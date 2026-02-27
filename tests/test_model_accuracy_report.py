@@ -89,6 +89,27 @@ def test_grade_historical_predictions_writes_partial_report_for_small_samples(tm
     assert dim_df.empty
 
 
+def test_grade_historical_predictions_uses_event_id_and_writes_dq_audit(tmp_path, monkeypatch):
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+
+    predictions = pd.DataFrame(
+        [
+            {
+                "event_id": "g1",
+                "game_datetime_utc": "2026-01-01T00:00:00Z",
+                "pred_spread": -3.5,
+                "pred_total": 140.5,
+            },
+            {
+                "event_id": "g_missing_score",
+                "game_datetime_utc": "2026-01-02T00:00:00Z",
+                "pred_spread": 2.0,
+                "pred_total": 138.0,
+            },
+        ]
+    )
+    predictions.to_csv(data_dir / "predictions_20260104.csv", index=False)
 def test_grade_historical_predictions_falls_back_to_predictions_latest(tmp_path, monkeypatch):
     data_dir = tmp_path / "data"
     data_dir.mkdir()
@@ -117,6 +138,16 @@ def test_grade_historical_predictions_falls_back_to_predictions_latest(tmp_path,
                 "points_against": 70,
                 "home_team": "A",
                 "away_team": "B",
+            },
+            {
+                "event_id": "g_missing_score",
+                "game_datetime_utc": "2026-01-02T00:00:00Z",
+                "home_away": "home",
+                "points_for": None,
+                "points_against": None,
+                "home_team": "C",
+                "away_team": "D",
+            },
                 "home_conference": "ACC",
                 "away_conference": "SEC",
             }
@@ -131,3 +162,5 @@ def test_grade_historical_predictions_falls_back_to_predictions_latest(tmp_path,
     report_df, _ = grade_historical_predictions(data_dir)
 
     assert len(report_df) == 1
+    audit = pd.read_csv(data_dir / "dq_audit.csv")
+    assert "missing_final_score" in set(audit["reason_codes"].astype(str))
