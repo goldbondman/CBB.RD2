@@ -318,7 +318,64 @@ def _score_combo_mae(df: pd.DataFrame, combo: dict) -> tuple[float, int]:
     return score, int(scoped.shape[0])
 
 
-def run_search(df: pd.DataFrame, prior: dict, use_fast_clv: bool) -> tuple[dict, int, list[tuple[float, int, dict]]]:
+def _score_combo_walk_forward(
+    df: pd.DataFrame,
+    combo: dict,
+    use_fast_clv: bool,
+    min_train_weeks: int,
+    test_window_weeks: int,
+) -> tuple[float, int, int]:
+    if "game_datetime_utc" not in df.columns:
+        return float("-inf"), 0, 0
+
+    scoped = df.copy()
+    scoped["game_datetime_utc"] = pd.to_datetime(scoped["game_datetime_utc"], errors="coerce", utc=True)
+    scoped = scoped.dropna(subset=["game_datetime_utc"]).sort_values("game_datetime_utc")
+    if scoped.empty:
+        return float("-inf"), 0, 0
+
+    scoped["week"] = scoped["game_datetime_utc"].dt.to_period("W")
+    weeks = sorted(scoped["week"].dropna().unique())
+    if len(weeks) < (min_train_weeks + test_window_weeks):
+        return float("-inf"), 0, 0
+
+    fold_scores: list[float] = []
+    sample_size = 0
+    for i in range(min_train_weeks, len(weeks) - test_window_weeks + 1):
+        test_weeks = weeks[i : i + test_window_weeks]
+        test = scoped[scoped["week"].isin(test_weeks)]
+        if test.empty:
+            continue
+
+        if use_fast_clv:
+            score, n_games = _score_combo_fast(test, combo)
+        else:
+            score, n_games = _score_combo_mae(test, combo)
+
+        if n_games <= 0 or score == float("-inf"):
+            continue
+
+        fold_scores.append(score)
+        sample_size += n_games
+
+    if not fold_scores:
+        return float("-inf"), 0, 0
+
+    mean_score = float(pd.Series(fold_scores).mean())
+    stability_penalty = float(pd.Series(fold_scores).std(ddof=0) or 0.0)
+    robust_score = mean_score - (0.15 * stability_penalty)
+    return robust_score, sample_size, len(fold_scores)
+
+
+def run_search(
+    df: pd.DataFrame,
+    prior: dict,
+    use_fast_clv: bool,
+    robust_cv: bool,
+    min_train_weeks: int,
+    test_window_weeks: int,
+    min_folds: int,
+) -> tuple[dict, int, list[tuple[float, int, dict]]]:
     grid = _build_search_grid(prior)
 
     keys = SEARCH_PARAM_KEYS
@@ -347,17 +404,29 @@ def run_search(df: pd.DataFrame, prior: dict, use_fast_clv: bool) -> tuple[dict,
         combo["raw_weight"] = round(1.0 - combo["vs_exp_weight"], 4)
         search_space_size += 1
 
-        if use_fast_clv:
+        fold_count = 0
+        if robust_cv:
+            score, n_games, fold_count = _score_combo_walk_forward(
+                df,
+                combo,
+                use_fast_clv=use_fast_clv,
+                min_train_weeks=min_train_weeks,
+                test_window_weeks=test_window_weeks,
+            )
+            if fold_count < min_folds:
+                continue
+        elif use_fast_clv:
             score, n_games = _score_combo_fast(df, combo)
         else:
             score, n_games = _score_combo_mae(df, combo)
 
-        entry = (score, n_games, combo.copy())
+        tracked_combo = {**combo, "fold_count": fold_count} if robust_cv else combo.copy()
+        entry = (score, n_games, tracked_combo)
         top_results.append(entry)
         top_results = sorted(top_results, key=lambda x: (x[0], x[1]), reverse=True)[:5]
 
         if score > best_score:
-            best_combo = combo
+            best_combo = tracked_combo
             best_score = score
             best_n = n_games
 
@@ -368,6 +437,7 @@ def run_search(df: pd.DataFrame, prior: dict, use_fast_clv: bool) -> tuple[dict,
         **best_combo,
         "n_games_used": int(best_n),
         "score": float(best_score),
+        "fold_count": int(best_combo.get("fold_count", 0)),
     }, search_space_size, top_results
 
 
@@ -388,6 +458,10 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--min-games", type=int, default=200)
     parser.add_argument("--full-season", action="store_true")
+    parser.add_argument("--disable-robust-cv", action="store_true")
+    parser.add_argument("--min-train-weeks", type=int, default=4)
+    parser.add_argument("--test-window-weeks", type=int, default=1)
+    parser.add_argument("--min-folds", type=int, default=4)
     args = parser.parse_args()
 
     results_log_path = Path(args.results_log)
@@ -413,7 +487,26 @@ def main() -> None:
     prior, prior_source = _load_prior_weights(prior_path)
     prepared_df, use_fast_clv = _prepare_fast_scoring_columns(scored_df)
 
-    best, search_space_size, top_results = run_search(prepared_df, prior, use_fast_clv=use_fast_clv)
+    robust_cv = not args.disable_robust_cv and "game_datetime_utc" in prepared_df.columns
+    if robust_cv:
+        log.info(
+            "Robust CV enabled (min_train_weeks=%s, test_window_weeks=%s, min_folds=%s)",
+            args.min_train_weeks,
+            args.test_window_weeks,
+            args.min_folds,
+        )
+    else:
+        log.info("Robust CV disabled; using single-sample scoring.")
+
+    best, search_space_size, top_results = run_search(
+        prepared_df,
+        prior,
+        use_fast_clv=use_fast_clv,
+        robust_cv=robust_cv,
+        min_train_weeks=args.min_train_weeks,
+        test_window_weeks=args.test_window_weeks,
+        min_folds=args.min_folds,
+    )
 
     score_key = "best_clv_mean" if use_fast_clv else "best_mae_score"
     output_payload = {
@@ -425,6 +518,8 @@ def main() -> None:
         "search_space_size": search_space_size,
         "prior_source": prior_source,
         "score_col": args.score_col,
+        "robust_cv": robust_cv,
+        "fold_count": best.get("fold_count", 0),
     }
 
     _print_top_results(top_results, args.score_col, use_fast_clv)
