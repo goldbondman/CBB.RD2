@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import pandas as pd
+from pipeline_csv_utils import normalize_game_id
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -175,8 +176,7 @@ def main() -> None:
     if "event_id" in df.columns and "game_id" not in df.columns:
         df = df.rename(columns={"event_id": "game_id"})
     if "game_id" in df.columns:
-        df["game_id"] = df["game_id"].astype(str).str.lstrip("0")
-        df.loc[df["game_id"] == "", "game_id"] = "0"
+        df["game_id"] = df["game_id"].map(normalize_game_id)
     if df.empty:
         pd.DataFrame().to_csv(OUTPUT_PATH, index=False)
         log.info("Input %s empty; wrote empty graded output.", _src)

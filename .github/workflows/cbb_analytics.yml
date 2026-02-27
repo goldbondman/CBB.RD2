@@ -165,8 +165,9 @@ jobs:
               ("team_game_logs.csv",      ["event_id", "team_id"]),
               ("games.csv",               ["game_id"]),
               ("player_game_logs.csv",    ["event_id", "team_id", "athlete_id"]),
-              ("market_lines.csv",        ["event_id", "capture_type"]),
+              ("market_lines.csv",        ["game_id", "capture_type"]),
               ("predictions_with_context.csv", ["game_id"]),
+              ("predictions_history.csv", ["game_id"]),
           ]
           for fname, keys in MERGE_SPECS:
               committed = Path(f"data/{fname}")
@@ -180,7 +181,13 @@ jobs:
                   print(f"[SKIP] Staged {fname} has no parseable rows")
                   continue
               combined = pd.concat([existing, new_rows], ignore_index=True)
-              combined = combined.drop_duplicates(subset=keys, keep="last")
+              if "game_id" in keys and "game_id" not in combined.columns and "event_id" in combined.columns:
+                  combined["game_id"] = combined["event_id"]
+              available = [k for k in keys if k in combined.columns]
+              if not available:
+                  print(f"[WARN] {fname}: none of merge keys present {keys}; writing concatenated rows")
+              else:
+                  combined = combined.drop_duplicates(subset=available, keep="last")
               committed.parent.mkdir(parents=True, exist_ok=True)
               combined.to_csv(committed, index=False)
               print(f"[OK] {fname}: {len(existing)} + {len(new_rows)} = {len(combined)} rows")
@@ -231,12 +238,15 @@ jobs:
               print(f"[MARKET-GATE] WARNING: coverage {coverage:.0%} is below 80% threshold")
           PY
 
-      # Step 4: Pattern 5: Install dependencies with import guards
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
           python -c "import pandas, numpy, requests, scipy; import bs4" || \
             { echo "[ERROR] Core dependency import failed"; exit 1; }
+
+      - name: Data infrastructure health check
+        run: python scripts/validate_data_infrastructure.py
+        continue-on-error: true
 
       # Step 5: Run backtester (if requested or weekly)
       - name: Run backtester

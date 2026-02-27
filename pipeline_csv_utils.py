@@ -124,6 +124,16 @@ def normalize_numeric_dtypes(
     return out
 
 
+def normalize_game_id(val) -> str:
+    """Canonical ESPN game ID: string, no .0, no leading zeros."""
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return ''
+    s = str(val).strip()
+    if s.endswith('.0'):
+        s = s[:-2]
+    return s.lstrip('0') or '0'
+
+
 COLUMN_ALIASES: dict[str, list[str]] = {
     'event_id': ['game_id', 'eventId', 'gameId'],
     'pred_spread': ['predicted_spread', 'prediction_spread'],

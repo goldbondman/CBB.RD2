@@ -55,7 +55,7 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pandas as pd
 
-from pipeline_csv_utils import normalize_numeric_dtypes, safe_write_csv
+from pipeline_csv_utils import normalize_game_id, normalize_numeric_dtypes, safe_write_csv
 from config.logging_config import get_logger
 
 warnings.filterwarnings("ignore")
@@ -1115,10 +1115,8 @@ class ResultsTracker:
             preds = preds.rename(columns={"event_id": "game_id"})
         if "event_id" in results.columns and "game_id" not in results.columns:
             results = results.rename(columns={"event_id": "game_id"})
-        preds["game_id"] = preds["game_id"].astype(str).str.lstrip("0")
-        results["game_id"] = results["game_id"].astype(str).str.lstrip("0")
-        preds.loc[preds["game_id"] == "", "game_id"] = "0"
-        results.loc[results["game_id"] == "", "game_id"] = "0"
+        preds["game_id"] = preds["game_id"].map(normalize_game_id)
+        results["game_id"] = results["game_id"].map(normalize_game_id)
 
         # Ensure all required merge columns exist in results (fill missing
         # with NaN so the column selection never raises KeyError).

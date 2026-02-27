@@ -111,6 +111,10 @@ jobs:
       - name: Compute travel fatigue features
         run: python cbb_travel_fatigue.py || echo "Travel fatigue computation failed (non-fatal)"
 
+      - name: Data infrastructure health check
+        run: python scripts/validate_data_infrastructure.py
+        continue-on-error: true
+
       # Execute primary prediction model
       - name: Run primary model predictions (rolling 40h)
         env:
