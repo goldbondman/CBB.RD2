@@ -984,6 +984,25 @@ def format_rankings_csv(df: pd.DataFrame) -> pd.DataFrame:
     available = [c for c in RANKINGS_COLUMNS if c in df.columns]
     out = df[available].copy()
 
+    # Keep W-L style fields as text for spreadsheet tools that auto-convert
+    # values like "3-9" into dates (e.g., "3-Sep").
+    wl_cols = [
+        "record",
+        "home_record",
+        "away_record",
+        "q1_record",
+        "q2_record",
+        "q3_record",
+        "q4_record",
+    ]
+    for col in wl_cols:
+        if col in out.columns:
+            out[col] = out[col].map(
+                lambda v: f'="{v}"'
+                if isinstance(v, str) and v and "-" in v
+                else v
+            )
+
     # Round floats that may have crept to too many decimals
     float_2 = ["cage_em", "cage_o", "cage_d", "cage_t", "sos", "wab",
                 "floor_em", "ceiling_em", "net_rtg_l5", "net_rtg_l10"]
