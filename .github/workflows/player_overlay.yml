@@ -27,7 +27,7 @@ on:
       - ".github/workflows/player_overlay.yml"
 
 concurrency:
-  group: cbb-player-overlay
+  group: cbb-data-pipeline
   cancel-in-progress: false
 
 permissions:
