@@ -712,6 +712,25 @@ def build_mc_calibration_report(
 
     df = pd.read_csv(accuracy_path, low_memory=False)
 
+    # Self-heal stale/empty accuracy reports when source prediction files exist.
+    if df.empty:
+        prediction_files = sorted(DATA_DIR.glob("predictions_*.csv"))
+        if prediction_files:
+            try:
+                from cbb_backtester import grade_historical_predictions
+
+                report_df, _ = grade_historical_predictions(DATA_DIR)
+                if isinstance(report_df, pd.DataFrame) and not report_df.empty:
+                    df = report_df.copy()
+                    log.info(
+                        "Rebuilt %s from %d predictions files; recovered %d gradeable rows for MC calibration",
+                        accuracy_path,
+                        len(prediction_files),
+                        len(df),
+                    )
+            except Exception as exc:
+                log.warning("Failed to rebuild %s for MC calibration: %s", accuracy_path, exc)
+
     # Backtests may not contain MC output; fall back to model probabilities.
     probability_candidates = ["mc_home_win_pct", "home_win_prob", "win_prob_home", "model_confidence"]
     prob_col = next((col for col in probability_candidates if col in df.columns), None)
