@@ -47,6 +47,7 @@ Usage:
 import argparse
 import random
 import json
+import hashlib
 import sys
 import warnings
 from dataclasses import dataclass, field, asdict
@@ -257,6 +258,78 @@ class BacktestConfig:
     optimizer_metric:    str   = "ats"  # "ats", "mae", "brier"
     min_edge_sample:     int   = 20     # Min edge-flag games for ROI calc
     top_n_display:       int   = 25     # Games to show in printed table
+    selected_models:     Optional[List[str]] = None  # Restrict ensemble to a subset of models
+    manual_weights:      Optional[Dict[str, float]] = None  # Override spread/total weights
+
+
+def _normalize_selected_models(selected_models: Optional[List[str]]) -> List[str]:
+    if not selected_models:
+        return MODEL_NAMES.copy()
+
+    canonical = {name.lower(): name for name in MODEL_NAMES}
+    resolved: List[str] = []
+    invalid: List[str] = []
+    for raw_name in selected_models:
+        normalized = str(raw_name).strip().lower()
+        model_name = canonical.get(normalized)
+        if not model_name:
+            invalid.append(str(raw_name))
+            continue
+        if model_name not in resolved:
+            resolved.append(model_name)
+
+    if invalid:
+        raise ValueError(
+            "Unknown model(s) in --models: "
+            f"{', '.join(invalid)}. Available models: {', '.join(MODEL_NAMES)}"
+        )
+
+    if not resolved:
+        raise ValueError(f"No valid models selected. Available models: {', '.join(MODEL_NAMES)}")
+
+    return resolved
+
+
+def _normalize_weight_overrides(
+    weight_overrides: Optional[Dict[str, float]],
+    active_models: List[str],
+) -> Optional[Dict[str, float]]:
+    if not weight_overrides:
+        return None
+
+    normalized: Dict[str, float] = {}
+    canonical = {name.lower(): name for name in MODEL_NAMES}
+    unknown: List[str] = []
+    for raw_name, raw_weight in weight_overrides.items():
+        model_name = canonical.get(str(raw_name).strip().lower())
+        if not model_name or model_name not in active_models:
+            unknown.append(str(raw_name))
+            continue
+
+        weight = float(raw_weight)
+        if not np.isfinite(weight):
+            raise ValueError(f"Weight for {raw_name} must be finite")
+        if weight < 0:
+            raise ValueError(f"Weight for {raw_name} must be >= 0")
+
+        normalized[model_name] = weight
+
+    if unknown:
+        raise ValueError(
+            "Weight overrides include unknown/non-selected model(s): "
+            f"{', '.join(unknown)}"
+        )
+
+    if not normalized:
+        raise ValueError("Provided weight overrides do not match selected models")
+
+    total = sum(normalized.values())
+    if total <= 0:
+        raise ValueError("Weight overrides must sum to a positive value")
+
+    # Fill omitted selected models with 0.0 to keep explicit reproducible vectors.
+    expanded = {name: float(normalized.get(name, 0.0)) for name in active_models}
+    return {name: weight / total for name, weight in expanded.items()}
 
 
 @dataclass
@@ -604,6 +677,7 @@ def predict_game_historical(
     home_state: Dict,
     away_state: Dict,
     neutral: bool,
+    active_models: Optional[List[str]] = None,
     weights: Optional[Dict[str, float]] = None,
 ) -> Dict:
     """
@@ -628,6 +702,8 @@ def predict_game_historical(
     home.games_l7  = 2.0
     away.games_l7  = 2.0
 
+    active_models = active_models or MODEL_NAMES
+
     # Build ensemble config (use custom weights if optimizing)
     if weights:
         config = EnsembleConfig(
@@ -640,21 +716,53 @@ def predict_game_historical(
     predictor = EnsemblePredictor(config)
     result    = predictor.predict(home, away, neutral=neutral)
 
+    filtered_predictions = [
+        mp for mp in result.model_predictions
+        if mp.model_name in active_models
+    ]
+    if not filtered_predictions:
+        raise ValueError(f"No model predictions available for selected models: {active_models}")
+
     out = {
-        "ens_spread":     result.spread,
-        "ens_total":      result.total,
-        "ens_confidence": result.confidence,
-        "ens_agreement":  result.model_agreement,
-        "spread_std":     result.spread_std,
         "cage_edge":      result.cage_edge,
         "barthag_diff":   result.barthag_diff,
     }
 
-    for mp in result.model_predictions:
+    spread_values: List[float] = []
+    total_values: List[float] = []
+    conf_values: List[float] = []
+    normalized_weights = None
+    if weights:
+        selected_total = sum(float(weights.get(name, 0.0)) for name in active_models)
+        if selected_total > 0:
+            normalized_weights = {
+                name: float(weights.get(name, 0.0)) / selected_total
+                for name in active_models
+            }
+
+    for mp in filtered_predictions:
         name = mp.model_name.lower()
         out[f"{name}_spread"] = mp.spread
         out[f"{name}_total"]  = mp.total
         out[f"{name}_conf"]   = mp.confidence
+
+        weight = normalized_weights.get(mp.model_name, 0.0) if normalized_weights else 1.0
+        spread_values.append(float(mp.spread) * weight)
+        total_values.append(float(mp.total) * weight)
+        conf_values.append(float(mp.confidence) * weight)
+
+    if normalized_weights:
+        out["ens_spread"] = float(np.sum(spread_values))
+        out["ens_total"] = float(np.sum(total_values))
+        out["ens_confidence"] = float(np.sum(conf_values))
+    else:
+        out["ens_spread"] = float(np.mean([float(mp.spread) for mp in filtered_predictions]))
+        out["ens_total"] = float(np.mean([float(mp.total) for mp in filtered_predictions]))
+        out["ens_confidence"] = float(np.mean([float(mp.confidence) for mp in filtered_predictions]))
+
+    spreads = [float(mp.spread) for mp in filtered_predictions]
+    out["spread_std"] = float(np.std(spreads)) if len(spreads) > 1 else 0.0
+    out["ens_agreement"] = "high" if out["spread_std"] <= 2 else "low"
 
     return out
 
@@ -851,10 +959,10 @@ MODEL_NAMES = list(ENSEMBLE_MODEL_NAMES)
 DEFAULT_WEIGHTS = np.array([CONFIG_DEFAULT_SPREAD_WEIGHTS[name] for name in MODEL_NAMES], dtype=float)
 
 
-def _ensemble_from_weights(records: pd.DataFrame, weights: np.ndarray) -> np.ndarray:
+def _ensemble_from_weights(records: pd.DataFrame, weights: np.ndarray, model_names: List[str]) -> np.ndarray:
     """Compute ensemble spread from per-model spreads with given weights."""
     w = np.abs(weights) / np.abs(weights).sum()   # Normalize, force positive
-    cols = [f"{n.lower()}_spread" for n in MODEL_NAMES]
+    cols = [f"{n.lower()}_spread" for n in model_names]
 
     available = [c for c in cols if c in records.columns]
     if not available:
@@ -862,8 +970,8 @@ def _ensemble_from_weights(records: pd.DataFrame, weights: np.ndarray) -> np.nda
 
     mat = records[[c for c in cols if c in records.columns]].fillna(0).values
     # Pad with zeros if some models missing
-    if mat.shape[1] < len(MODEL_NAMES):
-        pad = np.zeros((mat.shape[0], len(MODEL_NAMES) - mat.shape[1]))
+    if mat.shape[1] < len(model_names):
+        pad = np.zeros((mat.shape[0], len(model_names) - mat.shape[1]))
         mat = np.hstack([mat, pad])
         w_use = w[:mat.shape[1]]
         w_use = w_use / w_use.sum()
@@ -873,13 +981,13 @@ def _ensemble_from_weights(records: pd.DataFrame, weights: np.ndarray) -> np.nda
     return mat @ w_use
 
 
-def _loss_ats(weights: np.ndarray, records: pd.DataFrame) -> float:
+def _loss_ats(weights: np.ndarray, records: pd.DataFrame, model_names: List[str]) -> float:
     """
     Loss function for optimizer: negative ATS win rate (we minimize, so
     optimizer maximizes ATS accuracy).
     """
     try:
-        ens_pred    = _ensemble_from_weights(records, weights)
+        ens_pred    = _ensemble_from_weights(records, weights, model_names)
         pred_margin = -ens_pred     # Convert spread → margin
         mkt_spread  = records["market_spread"].values
         act_margin  = records["actual_margin"].values
@@ -896,10 +1004,10 @@ def _loss_ats(weights: np.ndarray, records: pd.DataFrame) -> float:
         return 0.0    # Return no-loss on failure
 
 
-def _loss_mae(weights: np.ndarray, records: pd.DataFrame) -> float:
+def _loss_mae(weights: np.ndarray, records: pd.DataFrame, model_names: List[str]) -> float:
     """Loss: mean absolute error on predicted margin."""
     try:
-        ens_pred    = _ensemble_from_weights(records, weights)
+        ens_pred    = _ensemble_from_weights(records, weights, model_names)
         pred_margin = -ens_pred
         act_margin  = records["actual_margin"].values
         return float(np.mean(np.abs(act_margin - pred_margin)))
@@ -907,10 +1015,10 @@ def _loss_mae(weights: np.ndarray, records: pd.DataFrame) -> float:
         return 20.0
 
 
-def _loss_brier(weights: np.ndarray, records: pd.DataFrame) -> float:
+def _loss_brier(weights: np.ndarray, records: pd.DataFrame, model_names: List[str]) -> float:
     """Loss: Brier score (calibration quality)."""
     try:
-        ens_pred    = _ensemble_from_weights(records, weights)
+        ens_pred    = _ensemble_from_weights(records, weights, model_names)
         pred_margin = -ens_pred
         win_probs   = scipy_stats.norm.cdf(pred_margin / 11.0)
         outcomes    = (records["actual_margin"].values > 0).astype(float)
@@ -921,6 +1029,7 @@ def _loss_brier(weights: np.ndarray, records: pd.DataFrame) -> float:
 
 def optimize_weights(
     records: pd.DataFrame,
+    model_names: Optional[List[str]] = None,
     metric: str = "ats",
     method: str = "Nelder-Mead",
     n_restarts: int = 8,
@@ -937,28 +1046,34 @@ def optimize_weights(
     """
     ats_df = records.dropna(subset=["market_spread", "actual_margin"]).copy()
 
+    model_names = model_names or MODEL_NAMES
+    default_weights = np.array([CONFIG_DEFAULT_SPREAD_WEIGHTS[name] for name in model_names], dtype=float)
+
     # Need at least one per-model spread column
-    model_cols = [f"{n.lower()}_spread" for n in MODEL_NAMES if f"{n.lower()}_spread" in ats_df.columns]
-    if len(model_cols) < 3:
-        log.warning("Too few model columns for weight optimization")
-        return {n: w for n, w in zip(MODEL_NAMES, DEFAULT_WEIGHTS)}, 0.0
+    model_cols = [f"{n.lower()}_spread" for n in model_names if f"{n.lower()}_spread" in ats_df.columns]
+    if len(model_cols) < 1:
+        log.warning("No model columns available for weight optimization")
+        return {n: w for n, w in zip(model_names, default_weights)}, 0.0
 
     loss_fn = {"ats": _loss_ats, "mae": _loss_mae, "brier": _loss_brier}.get(metric, _loss_ats)
 
-    best_weights = DEFAULT_WEIGHTS.copy()
+    if len(model_cols) < 3:
+        log.info("Optimizing with a small model subset (%d model columns)", len(model_cols))
+
+    best_weights = default_weights.copy()
     best_loss    = float("inf")
 
     np.random.seed(42)
     for i in range(n_restarts):
         if i == 0:
-            w0 = DEFAULT_WEIGHTS.copy()
+            w0 = default_weights.copy()
         else:
-            w0 = np.random.dirichlet(np.ones(len(MODEL_NAMES)))
+            w0 = np.random.dirichlet(np.ones(len(model_names)))
 
         result = minimize(
             loss_fn,
             w0,
-            args=(ats_df,),
+            args=(ats_df, model_names),
             method=method,
             options={"maxiter": 2000, "xatol": 1e-4, "fatol": 1e-4},
         )
@@ -971,11 +1086,11 @@ def optimize_weights(
     best_weights = np.abs(best_weights)
     best_weights = best_weights / best_weights.sum()
 
-    weight_dict = {n: round(float(w), 4) for n, w in zip(MODEL_NAMES, best_weights)}
+    weight_dict = {n: round(float(w), 4) for n, w in zip(model_names, best_weights)}
     metric_val  = -best_loss if metric == "ats" else best_loss
 
     log.info(f"Optimized weights ({metric}): {weight_dict}")
-    log.info(f"Best {metric}: {metric_val:.4f}  (default: {-loss_fn(DEFAULT_WEIGHTS, ats_df):.4f})")
+    log.info(f"Best {metric}: {metric_val:.4f}  (default: {-loss_fn(default_weights, ats_df, model_names):.4f})")
 
     return weight_dict, round(metric_val, 4)
 
@@ -1064,7 +1179,13 @@ class BacktestEngine:
 
             # ── Run prediction ────────────────────────────────────────────────
             try:
-                pred = predict_game_historical(home_state, away_state, neutral)
+                pred = predict_game_historical(
+                    home_state,
+                    away_state,
+                    neutral,
+                    active_models=cfg.selected_models,
+                    weights=cfg.manual_weights,
+                )
             except Exception as exc:
                 log.debug(f"Model error on {event_id}: {exc}")
                 skipped["model_error"] += 1
@@ -1279,8 +1400,11 @@ def build_full_report(
         "Ensemble":       ("ens_spread",             None,                     "ens_confidence"),
     }
 
+    selected_set = set(_normalize_selected_models(config.selected_models))
     report_rows = []
     for name, (sp_col, tot_col, conf_col) in model_map.items():
+        if name in MODEL_NAMES and name not in selected_set:
+            continue
         if sp_col not in records.columns:
             continue
         m = compute_model_metrics(
@@ -1738,6 +1862,11 @@ def train_platt_calibration(backtest_results: pd.DataFrame, output_dir: Path) ->
 def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str, Path]:
     """Full backtest pipeline. Returns paths to output files."""
     config = config or BacktestConfig()
+    config.selected_models = _normalize_selected_models(config.selected_models)
+    config.manual_weights = _normalize_weight_overrides(config.manual_weights, config.selected_models)
+    log.info("Backtest model subset: %s", ", ".join(config.selected_models))
+    if config.manual_weights:
+        log.info("Manual ensemble weights applied: %s", config.manual_weights)
     output_dir.mkdir(parents=True, exist_ok=True)
     today  = datetime.now().strftime("%Y%m%d")
 
@@ -1778,31 +1907,57 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
     if config.optimize_weights:
         log.info(f"Optimizing ensemble weights (metric={config.optimizer_metric})...")
         opt_weights, opt_metric = optimize_weights(
-            records, metric=config.optimizer_metric, method=config.optimizer_method
+            records,
+            model_names=config.selected_models,
+            metric=config.optimizer_metric,
+            method=config.optimizer_method,
         )
-        optimized_total_weights = {n: round(float(w), 4) for n, w in zip(MODEL_NAMES, DEFAULT_WEIGHTS)}  # TODO: optimize total weights
+        default_weights = np.array([CONFIG_DEFAULT_SPREAD_WEIGHTS[name] for name in config.selected_models], dtype=float)
+        optimized_total_weights = {n: round(float(w), 4) for n, w in zip(config.selected_models, default_weights)}  # TODO: optimize total weights
         optimized_weights = {
             "weights":          opt_weights,
             "total_weights":    optimized_total_weights,
             "metric":           config.optimizer_metric,
             "value":            opt_metric,
             "default_weights":  {n: round(float(w), 4)
-                                  for n, w in zip(MODEL_NAMES, DEFAULT_WEIGHTS)},
+                                  for n, w in zip(config.selected_models, default_weights)},
             "n_games_used":     int(records["market_spread"].notna().sum()),
             "generated_at":     datetime.now().isoformat(),
+            "selected_models":  config.selected_models,
         }
 
         print()
         print("  OPTIMIZED ENSEMBLE WEIGHTS")
         print("  " + "-" * 50)
         print(f"  {'MODEL':<16} {'DEFAULT':>9} {'OPTIMIZED':>10}")
-        default_dict = dict(zip(MODEL_NAMES, DEFAULT_WEIGHTS))
+        default_dict = dict(zip(config.selected_models, default_weights))
         for name, opt_w in opt_weights.items():
             def_w = default_dict.get(name, 0.0)
             delta = opt_w - def_w
             print(f"  {name:<16} {def_w:>9.4f} {opt_w:>10.4f}  ({delta:+.4f})")
         print(f"\n  Optimized {config.optimizer_metric.upper()}: {opt_metric:.4f}")
         print()
+
+    run_payload = _build_local_backtest_run_payload(config, records, optimized_weights)
+    _persist_local_backtest_registry(output_dir, run_payload, report_df)
+
+    if run_payload.get("verification_status") in {"partial", "rejected", "conflict"}:
+        _append_dq_audit_rows(
+            output_dir,
+            [
+                {
+                    "entity_type": "backtest_run",
+                    "entity_id": str(run_payload.get("run_hash")),
+                    "severity": "warning" if run_payload.get("verification_status") == "partial" else "error",
+                    "reason_codes": str(run_payload.get("verification_notes") or "unknown"),
+                    "details": json.dumps({
+                        "selected_models": run_payload.get("selected_models"),
+                        "n_games": run_payload.get("n_games"),
+                        "n_market_games": run_payload.get("n_market_games"),
+                    }),
+                }
+            ],
+        )
 
     # ── Train confidence calibration ─────────────────────────────────────────
     calibration_path = train_platt_calibration(records, output_dir)
@@ -1888,6 +2043,95 @@ def run(config: BacktestConfig = None, output_dir: Path = DATA_DIR) -> Dict[str,
 
     return outputs
 
+
+
+
+def _build_local_backtest_run_payload(
+    config: BacktestConfig,
+    records: pd.DataFrame,
+    optimized_weights: Dict[str, object],
+) -> Dict[str, object]:
+    selected_models = _normalize_selected_models(config.selected_models)
+    manual_weights = _normalize_weight_overrides(config.manual_weights, selected_models)
+
+    status = "verified"
+    notes: List[str] = []
+    if records.empty:
+        status = "rejected"
+        notes.append("no_prediction_records")
+    elif records.get("market_spread") is None or int(records["market_spread"].notna().sum()) == 0:
+        status = "partial"
+        notes.append("missing_market_spreads")
+
+    identity = {
+        "start_date": config.start_date,
+        "end_date": config.end_date,
+        "selected_models": selected_models,
+        "manual_weights": manual_weights,
+        "optimizer_metric": config.optimizer_metric,
+        "pipeline_run_id": PIPELINE_RUN_ID,
+    }
+    run_hash = hashlib.md5(json.dumps(identity, sort_keys=True).encode("utf-8")).hexdigest()
+
+    return {
+        "run_hash": run_hash,
+        "created_at": pd.Timestamp.utcnow().isoformat(),
+        "pipeline_run_id": PIPELINE_RUN_ID,
+        "start_date": config.start_date,
+        "end_date": config.end_date,
+        "selected_models": selected_models,
+        "manual_weights": manual_weights,
+        "optimizer_metric": config.optimizer_metric,
+        "optimized_weights": optimized_weights.get("weights") if optimized_weights else None,
+        "verification_status": status,
+        "verification_notes": ";".join(notes) if notes else None,
+        "n_games": int(len(records)),
+        "n_market_games": int(records["market_spread"].notna().sum()) if "market_spread" in records.columns else 0,
+    }
+
+
+def _persist_local_backtest_registry(
+    output_dir: Path,
+    run_payload: Dict[str, object],
+    report_df: pd.DataFrame,
+) -> None:
+    runs_path = output_dir / "backtest_runs_registry.jsonl"
+    existing: Dict[str, Dict[str, object]] = {}
+    if runs_path.exists() and runs_path.stat().st_size > 0:
+        for line in runs_path.read_text().splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            key = str(row.get("run_hash", "")).strip()
+            if key:
+                existing[key] = row
+
+    existing[run_payload["run_hash"]] = run_payload
+    rows = [json.dumps(existing[k], sort_keys=True) for k in sorted(existing.keys())]
+    runs_path.write_text("\n".join(rows) + ("\n" if rows else ""))
+
+    metrics_path = output_dir / "backtest_run_metrics_registry.csv"
+    metric_rows = report_df.copy()
+    if metric_rows.empty:
+        metric_rows = pd.DataFrame(columns=["model_name"])
+    metric_rows["run_hash"] = run_payload["run_hash"]
+    metric_rows["created_at"] = pd.Timestamp.utcnow().isoformat()
+
+    if metrics_path.exists() and metrics_path.stat().st_size > 0:
+        existing_metrics = pd.read_csv(metrics_path)
+        out = pd.concat([existing_metrics, metric_rows], ignore_index=True)
+    else:
+        out = metric_rows
+
+    dedupe_cols = [c for c in ["run_hash", "model_name"] if c in out.columns]
+    if dedupe_cols:
+        out = out.drop_duplicates(subset=dedupe_cols, keep="last")
+
+    safe_write_csv(out, metrics_path, index=False, label="backtest_run_metrics_registry", allow_empty=True)
 
 def verify_backtest_output(path: Path) -> bool:
     """Read back a freshly written backtest CSV and fail loud on bad writes."""
@@ -2278,7 +2522,33 @@ def main():
     parser.add_argument("--output-dir",   type=Path, default=DATA_DIR)
     parser.add_argument("--no-optimize",  action="store_true",
                         help="Skip weight optimization (faster)")
+    parser.add_argument(
+        "--models",
+        type=str,
+        default=None,
+        help="Comma-separated model names for ensemble/backtest (e.g. FourFactors,Variance)",
+    )
+    parser.add_argument(
+        "--weights",
+        type=str,
+        default=None,
+        help="Optional per-model weights as JSON or key=value CSV (e.g. '{\"FourFactors\":0.7,\"Variance\":0.3}')",
+    )
     args = parser.parse_args()
+
+    selected_models = [m.strip() for m in args.models.split(",")] if args.models else None
+    manual_weights = None
+    if args.weights:
+        try:
+            if args.weights.strip().startswith("{"):
+                manual_weights = json.loads(args.weights)
+            else:
+                manual_weights = {}
+                for pair in args.weights.split(","):
+                    name, value = pair.split("=", 1)
+                    manual_weights[name.strip()] = float(value)
+        except Exception as exc:
+            raise ValueError(f"Invalid --weights format: {exc}") from exc
 
     config = BacktestConfig(
         min_games_required  = args.min_games,
@@ -2287,6 +2557,8 @@ def main():
         edge_threshold      = args.edge_threshold,
         optimize_weights    = not args.no_optimize,
         optimizer_metric    = args.optimizer_metric,
+        selected_models     = selected_models,
+        manual_weights      = manual_weights,
     )
 
     outputs = run(config, args.output_dir)
