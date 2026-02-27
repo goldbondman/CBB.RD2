@@ -203,10 +203,14 @@ def fetch_draftkings_lines() -> list[dict]:
 
 def normalize_team_name(name: str) -> str:
     cleaned = re.sub(r"[^a-z0-9 ]+", " ", str(name or "").lower())
+    
+    # Safely handle 'st' to 'state' so distinct teams don't collapse identically
+    cleaned = re.sub(r"\bst\b", "state", cleaned)
+    
     tokens = [
         token
         for token in cleaned.split()
-        if token not in {"st", "state", "university", "college", "of", "the", "at", "and"}
+        if token not in {"university", "college", "of", "the", "at", "and"}
     ]
     return " ".join(tokens)
 
@@ -347,9 +351,15 @@ def parse_espn_event(event: dict) -> Optional[dict]:
             home_spread_current = 0.0
         elif spread_raw:
             match = re.search(r"([+-]?\d+(?:\.\d+)?)", spread_raw)
+            favored_team = spread_raw.split(" ")[0] if " " in spread_raw else ""
             if match:
                 try:
                     home_spread_current = float(match.group(1))
+                    
+                    # ESPN assigns spread points to the favored team (e.g., DUKE -4.5).
+                    # If DUKE is away, the home team's spread is +4.5.
+                    if favored_team and favored_team == away_team.get("team", {}).get("abbreviation", "").upper():
+                        home_spread_current = -home_spread_current
                 except ValueError:
                     home_spread_current = None
 
@@ -798,6 +808,16 @@ def main() -> None:
             time.sleep(REQUEST_DELAY)
     else:
         run_capture(args.mode, DATA_DIR)
+        
+    market_path = DATA_DIR / "market_lines.csv"
+    latest_path = DATA_DIR / "market_lines_latest.csv"
+    odds_path = DATA_DIR / "odds_snapshot.csv"
+    
+    if market_path.exists():
+        import shutil
+        shutil.copy2(market_path, latest_path)
+        shutil.copy2(market_path, odds_path)
+        log.info("Copied market_lines.csv to market_lines_latest.csv and odds_snapshot.csv")
 
 
 if __name__ == "__main__":
