@@ -654,9 +654,29 @@ def run_predictions(
         spread_line = _safe_float(matchup.get("spread"))
         total_line = _safe_float(matchup.get("over_under"))
 
+        pred_spread = _resolve_predicted_spread(prediction, home_ctx, away_ctx, neutral)
+        if pred_spread is None:
+            log.error(
+                "[DQ] game_id=%s invalid predicted spread; skipping game. available_keys=%s",
+                game_id,
+                sorted(prediction.keys()),
+            )
+            skipped_records.append({
+                "game_id": str(game_id or ""),
+                "home_team": str(home_name or ""),
+                "away_team": str(away_name or ""),
+                "game_datetime_utc": str(matchup.get("game_datetime_utc") or ""),
+                "skip_reason": "invalid_predicted_spread",
+                "skip_detail": "Model spread was non-finite and fallback spread could not be derived",
+                "skipped_at_utc": pd.Timestamp.now("UTC").isoformat(),
+            })
+            skipped += 1
+            continue
+        prediction["predicted_spread"] = pred_spread
+
         # CLV convention: clv_vs_consensus = line - pred (positive => model found value).
         spread_diff = (
-            round(spread_line - prediction["predicted_spread"], 2)
+            round(spread_line - pred_spread, 2)
             if spread_line is not None else None
         )
         total_diff = (
@@ -664,7 +684,6 @@ def run_predictions(
             if total_line is not None else None
         )
 
-        pred_spread = prediction["predicted_spread"]
         if spread_line is not None and spread_diff is not None:
             edge_flag = abs(spread_diff) > 3.0
             spread_pick = f"{home_name} covers" if pred_spread < spread_line else f"{away_name} covers"
@@ -1000,6 +1019,50 @@ def _safe_float(val, default: Optional[float] = None) -> Optional[float]:
         return default if pd.isna(out) else out
     except (TypeError, ValueError):
         return default
+
+
+def _resolve_predicted_spread(
+    prediction: Dict,
+    home_ctx: Dict,
+    away_ctx: Dict,
+    neutral_site: bool,
+) -> Optional[float]:
+    """
+    Return a finite spread value for output rows.
+
+    Priority:
+      1) Model-provided spread aliases in the prediction payload.
+      2) Deterministic fallback from net efficiency differential + HCA.
+
+    Returns None when no safe value can be derived.
+    """
+    spread_candidates = [
+        prediction.get("predicted_spread"),
+        prediction.get("pred_spread"),
+        prediction.get("primary_spread"),
+        prediction.get("model_spread"),
+    ]
+    for candidate in spread_candidates:
+        value = _safe_float(candidate)
+        if value is not None and np.isfinite(value):
+            return round(float(value), 2)
+
+    home_net = _safe_float(
+        prediction.get("home_net_eff"),
+        _safe_float(home_ctx.get("adj_net_rtg"), _safe_float(home_ctx.get("net_eff"), _safe_float(home_ctx.get("net_rtg")))),
+    )
+    away_net = _safe_float(
+        prediction.get("away_net_eff"),
+        _safe_float(away_ctx.get("adj_net_rtg"), _safe_float(away_ctx.get("net_eff"), _safe_float(away_ctx.get("net_rtg")))),
+    )
+    if home_net is None or away_net is None:
+        return None
+
+    hca = 0.0 if neutral_site else 3.5
+    fallback_spread = -(home_net - away_net + hca)
+    if not np.isfinite(fallback_spread):
+        return None
+    return round(float(np.clip(fallback_spread, -40.0, 40.0)), 2)
 
 
 def _latest_team_context(
