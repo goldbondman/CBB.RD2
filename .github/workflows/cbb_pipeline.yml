@@ -278,15 +278,15 @@ jobs:
 
           git commit -m "chore: deploy updated model weights [biweekly] [skip ci]"
 
-          for attempt in 1 2 3; do
+          for i in 1 2 3; do
             if git push; then
-              echo "[OK] Push succeeded on attempt ${attempt}"
+              echo "[OK] Push succeeded on attempt ${i}"
               exit 0
             fi
 
-            echo "[WARN] Push failed on attempt ${attempt}; rebasing and retrying"
+            echo "[WARN] Push failed on attempt ${i}; rebasing and retrying"
             git pull --rebase
-            sleep $((attempt * 2))
+            sleep $((i * 2))
           done
 
           echo "[ERROR] Failed to push after 3 attempts"
@@ -379,15 +379,15 @@ jobs:
 
           git commit -m "chore: deploy end-of-season model weights [skip ci]"
 
-          for attempt in 1 2 3; do
+          for i in 1 2 3; do
             if git push; then
-              echo "[OK] Push succeeded on attempt ${attempt}"
+              echo "[OK] Push succeeded on attempt ${i}"
               exit 0
             fi
 
-            echo "[WARN] Push failed on attempt ${attempt}; rebasing and retrying"
+            echo "[WARN] Push failed on attempt ${i}; rebasing and retrying"
             git pull --rebase
-            sleep $((attempt * 2))
+            sleep $((i * 2))
           done
 
           echo "[ERROR] Failed to push after 3 attempts"
