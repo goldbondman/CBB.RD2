@@ -75,6 +75,7 @@ def main() -> None:
     avail_path = DATA_DIR / "player_availability_features.csv"
     market_path = DATA_DIR / "market_lines.csv"
     pred_path = DATA_DIR / "predictions_history.csv"
+    luck_path = DATA_DIR / "luck_regression_features.csv"
 
     results = pd.read_csv(results_path, low_memory=False)
     results["game_id"] = results.get("game_id", results.get("event_id")).map(normalize_game_id)
@@ -252,6 +253,50 @@ def main() -> None:
         merged["pred_spread"] = resolve_col(merged, "pred_spread", "pred_spread_predhist")
         merged["pred_total"] = resolve_col(merged, "pred_total", "pred_total_predhist")
 
+    luck = maybe_read_csv(luck_path)
+    luck_map = {
+        "luck_score": "luck_score_delta",
+        "luck_score_l10": "luck_score_l10_delta",
+        "three_pt_luck_l5": "three_pt_luck_delta",
+        "opp_three_pt_luck_l5": "opp_three_pt_luck_delta",
+        "close_game_luck_l20": "close_game_luck_delta",
+        "net_rtg_trend": "net_rtg_trend_delta",
+        "efg_luck_l5": "efg_luck_delta",
+        "composite_luck_score": "composite_luck_delta",
+    }
+    if luck is not None:
+        luck["game_id"] = luck.get("game_id", luck.get("event_id")).map(normalize_game_id)
+        to_numeric(luck, ["team_id", *[c for c in luck_map if c in luck.columns], "regression_candidate_flag"])
+
+        home_luck = luck[["game_id", "team_id", *[c for c in luck_map if c in luck.columns], *[c for c in ["regression_candidate_flag"] if c in luck.columns]]].rename(
+            columns={"team_id": "home_team_id", **{c: f"home_{c}" for c in luck_map if c in luck.columns}, "regression_candidate_flag": "home_regression_flag"}
+        )
+        away_luck = luck[["game_id", "team_id", *[c for c in luck_map if c in luck.columns], *[c for c in ["regression_candidate_flag"] if c in luck.columns]]].rename(
+            columns={"team_id": "away_team_id", **{c: f"away_{c}" for c in luck_map if c in luck.columns}, "regression_candidate_flag": "away_regression_flag"}
+        )
+
+        merged = merged.merge(home_luck, on=["game_id", "home_team_id"], how="left")
+        merged = merged.merge(away_luck, on=["game_id", "away_team_id"], how="left")
+        for source_col, out_col in luck_map.items():
+            hcol = f"home_{source_col}"
+            acol = f"away_{source_col}"
+            merged[out_col] = [
+                calc_delta(h, a)
+                for h, a in zip(
+                    merged.get(hcol, pd.Series([pd.NA] * len(merged))),
+                    merged.get(acol, pd.Series([pd.NA] * len(merged))),
+                )
+            ]
+        if "home_regression_flag" not in merged.columns:
+            merged["home_regression_flag"] = pd.NA
+        if "away_regression_flag" not in merged.columns:
+            merged["away_regression_flag"] = pd.NA
+    else:
+        for out_col in luck_map.values():
+            merged[out_col] = pd.NA
+        merged["home_regression_flag"] = pd.NA
+        merged["away_regression_flag"] = pd.NA
+
     to_numeric(merged, ["pred_spread", "pred_total", "closing_spread", "opening_spread", "total_line"])
     merged["clv_delta"] = merged["closing_spread"] - merged["pred_spread"]
 
@@ -275,6 +320,9 @@ def main() -> None:
         "usage_gini_delta", "new_starter_flag_home", "new_starter_flag_away",
         "opening_spread", "closing_spread", "total_line", "clv_delta",
         "actual_margin", "home_covered_ats", "actual_total", "covered_over", "pred_spread", "pred_total",
+        "luck_score_delta", "luck_score_l10_delta", "three_pt_luck_delta", "opp_three_pt_luck_delta",
+        "close_game_luck_delta", "net_rtg_trend_delta", "efg_luck_delta", "composite_luck_delta",
+        "home_regression_flag", "away_regression_flag",
         "data_completeness_tier", "created_at",
     ]
 
