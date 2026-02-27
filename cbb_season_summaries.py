@@ -16,6 +16,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
+
+from pipeline_csv_utils import normalize_game_id
 from config.logging_config import get_logger
 from espn_config import conference_id_to_name
 
@@ -199,13 +201,17 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
     if results.empty:
         results = _safe_read_with_fallback(RESULTS_LOG_CSV, low_memory=False)
 
+    for _id_col in ["game_id", "event_id"]:
+        if _id_col in results.columns:
+            results[_id_col] = results[_id_col].map(normalize_game_id)
+
     # Normalize known alias columns from game-log schemas.
     ALIAS_MAP = {
         "primary_ats_correct": "ats_correct",
         "primary_ou_correct": "ou_correct",
         "market_spread": "spread_line",
         "actual_margin": "actual_spread",
-        "ens_ens_spread": "ens_spread",
+        "ens_ens_spread": "pred_spread",
     }
     for src, dst in ALIAS_MAP.items():
         if src in results.columns and dst not in results.columns:

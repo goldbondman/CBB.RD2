@@ -20,6 +20,7 @@ from models.alpha_evaluator import evaluate_alpha
 from pipeline_csv_utils import (
     add_conference_name,
     normalize_column_names,
+    normalize_game_id,
     normalize_numeric_dtypes,
 )
 
@@ -426,7 +427,7 @@ def build_predictions_with_context(
 
     if "event_id" not in df.columns:
         if "game_id" in df.columns:
-            df["event_id"] = df["game_id"].astype(str).str.strip()
+            df["event_id"] = df["game_id"].map(normalize_game_id)
         else:
             raise ValueError(
                 "predictions file missing required event_id/game_id column"
@@ -493,10 +494,8 @@ def build_predictions_with_context(
                         drop_cols.append(cand)
             df = df.drop(columns=sorted(set(drop_cols)), errors="ignore")
 
-            df["event_id"] = df["event_id"].astype(str).str.strip()
-            market_latest["event_id"] = (
-                market_latest["event_id"].astype(str).str.strip()
-            )
+            df["event_id"] = df["event_id"].map(normalize_game_id)
+            market_latest["event_id"] = market_latest["event_id"].map(normalize_game_id)
 
             before_rows = len(df)
             df = df.merge(

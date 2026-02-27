@@ -40,6 +40,8 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
+from pipeline_csv_utils import normalize_game_id
+
 # ── Paths ──────────────────────────────────────────────────────────────────
 DATA        = pathlib.Path("data")
 CSV_DIR     = DATA / "csv"
@@ -150,6 +152,10 @@ def _load(path: pathlib.Path, label: str = "") -> Optional[pd.DataFrame]:
         if df.empty:
             print(f"[WARN] {label or path.name}: loaded but empty")
             return None
+        if "game_id" in df.columns:
+            df["game_id"] = df["game_id"].map(normalize_game_id)
+        if "event_id" in df.columns:
+            df["event_id"] = df["event_id"].map(normalize_game_id)
         return df
     except Exception as exc:
         print(f"[WARN] {label or path.name}: failed to load — {exc}")
@@ -1052,7 +1058,7 @@ def main():
         "primary_ou_correct": "ou_correct",
         "market_spread": "spread_line",
         "actual_margin": "actual_spread",
-        "ens_ens_spread": "ens_spread",
+        "ens_ens_spread": "pred_spread",
     }
     for src, dst in alias_map.items():
         if src in df.columns and dst not in df.columns:
