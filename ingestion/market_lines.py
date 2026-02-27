@@ -45,6 +45,10 @@ RLM_LINE_MOVE_MIN = 0.5
 
 MARKET_LINES_SCHEMA_COLUMNS = [
     "event_id",
+    "home_team_name",
+    "away_team_name",
+    "home_team_id",
+    "away_team_id",
     "capture_type",
     "captured_at_utc",
     "pulled_at_utc",
@@ -76,10 +80,6 @@ MARKET_LINES_SCHEMA_COLUMNS = [
     "home_ats_losses",
     "away_ats_wins",
     "away_ats_losses",
-    "home_team_id",
-    "away_team_id",
-    "home_team_name",
-    "away_team_name",
     "home_ml",
     "away_ml",
     "spread",

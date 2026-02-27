@@ -110,6 +110,23 @@ def test_grade_historical_predictions_uses_event_id_and_writes_dq_audit(tmp_path
         ]
     )
     predictions.to_csv(data_dir / "predictions_20260104.csv", index=False)
+def test_grade_historical_predictions_falls_back_to_predictions_latest(tmp_path, monkeypatch):
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+
+    predictions_latest = pd.DataFrame(
+        [
+            {
+                "game_id": "g1",
+                "game_datetime_utc": "2026-01-01T00:00:00Z",
+                "pred_spread": -3.5,
+                "pred_total": 140.5,
+                "model_confidence": 0.62,
+                "game_type": "REG",
+            }
+        ]
+    )
+    predictions_latest.to_csv(data_dir / "predictions_latest.csv", index=False)
 
     weighted = pd.DataFrame(
         [
@@ -131,6 +148,9 @@ def test_grade_historical_predictions_uses_event_id_and_writes_dq_audit(tmp_path
                 "home_team": "C",
                 "away_team": "D",
             },
+                "home_conference": "ACC",
+                "away_conference": "SEC",
+            }
         ]
     )
     weighted_path = data_dir / "team_game_weighted.csv"
