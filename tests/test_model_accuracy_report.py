@@ -87,3 +87,47 @@ def test_grade_historical_predictions_writes_partial_report_for_small_samples(tm
     assert len(report_df) == 3
     assert (data_dir / "model_accuracy_report.csv").exists()
     assert dim_df.empty
+
+
+def test_grade_historical_predictions_falls_back_to_predictions_latest(tmp_path, monkeypatch):
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+
+    predictions_latest = pd.DataFrame(
+        [
+            {
+                "game_id": "g1",
+                "game_datetime_utc": "2026-01-01T00:00:00Z",
+                "pred_spread": -3.5,
+                "pred_total": 140.5,
+                "model_confidence": 0.62,
+                "game_type": "REG",
+            }
+        ]
+    )
+    predictions_latest.to_csv(data_dir / "predictions_latest.csv", index=False)
+
+    weighted = pd.DataFrame(
+        [
+            {
+                "event_id": "g1",
+                "game_datetime_utc": "2026-01-01T00:00:00Z",
+                "home_away": "home",
+                "points_for": 75,
+                "points_against": 70,
+                "home_team": "A",
+                "away_team": "B",
+                "home_conference": "ACC",
+                "away_conference": "SEC",
+            }
+        ]
+    )
+    weighted_path = data_dir / "team_game_weighted.csv"
+    weighted.to_csv(weighted_path, index=False)
+
+    monkeypatch.setattr("cbb_backtester.WEIGHTED_CSV", weighted_path)
+    monkeypatch.setattr("cbb_backtester.DATA_CSV_DIR", data_dir / "csv")
+
+    report_df, _ = grade_historical_predictions(data_dir)
+
+    assert len(report_df) == 1

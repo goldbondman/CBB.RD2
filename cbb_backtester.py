@@ -1999,6 +1999,15 @@ def _build_dimension_rows(report_df: pd.DataFrame) -> pd.DataFrame:
 
 def grade_historical_predictions(data_dir: Path = DATA_DIR) -> Tuple[pd.DataFrame, pd.DataFrame]:
     prediction_files = sorted(data_dir.glob("predictions_*.csv"))
+    if not prediction_files:
+        fallback_latest = data_dir / "predictions_latest.csv"
+        if fallback_latest.exists():
+            prediction_files = [fallback_latest]
+            log.warning(
+                "No predictions_*.csv files found in %s; falling back to %s",
+                data_dir,
+                fallback_latest.name,
+            )
     report_path = data_dir / "model_accuracy_report.csv"
     dimension_path = data_dir / "model_accuracy_by_dimension.csv"
 
