@@ -1,1 +1,16 @@
 game_id,game_datetime_utc,home_team,away_team,pred_spread,home_spread_open,home_spread_current,clv_vs_open,clv_vs_close,actual_margin,covered,spread_error,model_confidence,game_tier
+401825538,2026-02-24T23:30Z,Rutgers Scarlet Knights,Washington Huskies,-3.15,,4.5,,7.65,,,,0.43,HIGH
+401808260,2026-02-25T00:00Z,South Carolina Gamecocks,Kentucky Wildcats,-3.15,,5.5,,8.65,,,,0.36,LOW
+401820767,2026-02-25T00:00Z,Notre Dame Fighting Irish,Duke Blue Devils,-3.15,,-17.5,,-14.35,,,,0.43,HIGH
+401827702,2026-02-25T00:00Z,Oklahoma State Cowboys,West Virginia Mountaineers,-3.15,,-2.5,,0.65,,,,0.43,UNKNOWN
+401827704,2026-02-25T00:00Z,Texas Tech Red Raiders,Cincinnati Bearcats,-3.15,,-6.5,,-3.35,,,,0.43,UNKNOWN
+401825537,2026-02-25T01:30Z,Michigan Wolverines,Minnesota Golden Gophers,-3.15,,-21.5,,-18.35,,,,0.43,HIGH
+401808257,2026-02-25T02:00Z,Missouri Tigers,Tennessee Volunteers,-3.15,,-2.5,,0.65,,,,0.43,LOW
+401808262,2026-02-25T02:00Z,Oklahoma Sooners,Auburn Tigers,-3.15,,1.5,,4.65,,,,0.43,LOW
+401820766,2026-02-25T02:00Z,Florida State Seminoles,Miami Hurricanes,-3.15,,2.5,,5.65,,,,0.43,HIGH
+401827700,2026-02-25T02:00Z,Baylor Bears,Arizona Wildcats,-3.15,,-8.5,,-5.35,,,,0.43,UNKNOWN
+401827703,2026-02-25T02:00Z,TCU Horned Frogs,Arizona State Sun Devils,-3.15,,-6.5,,-3.35,,,,0.43,UNKNOWN
+401827705,2026-02-25T02:00Z,Utah Utes,Iowa State Cyclones,-3.15,,-14.5,,-11.35,,,,0.43,UNKNOWN
+401825539,2026-02-25T04:00Z,UCLA Bruins,USC Trojans,-3.15,,-5.5,,-2.35,,,,0.41,HIGH
+401827701,2026-02-25T04:00Z,BYU Cougars,UCF Knights,-3.15,,-12.5,,-9.35,,,,0.43,UNKNOWN
+401829320,2026-02-25T04:00Z,Nevada Wolf Pack,New Mexico Lobos,-3.15,,-1.5,,1.65,,,,0.43,UNKNOWN
