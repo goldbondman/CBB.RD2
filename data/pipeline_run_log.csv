@@ -9,3 +9,4 @@ run_timestamp_utc,trigger,days_back,dates_fetched,games_found,games_parsed,games
 2026-02-27T00:12:49Z,workflow_dispatch,15,99,705,705,0,1410,12442,v1.0.0,False,ok
 2026-02-27T01:15:50Z,workflow_dispatch,3,99,132,132,0,264,2031,v1.0.0,False,ok
 2026-02-27T05:24:28Z,workflow_dispatch,4,99,168,168,0,336,2766,v1.0.0,False,ok
+2026-02-27T10:47:51Z,schedule,3,99,132,132,0,264,2101,v1.0.0,False,ok
