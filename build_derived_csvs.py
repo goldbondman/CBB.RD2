@@ -129,6 +129,52 @@ def _write(df: pd.DataFrame, stem: str, sources: list[str],
         _results.append({"file": stem, "rows": 0, "sources": ", ".join(sources), "status": f"FAIL: {exc}"})
 
 
+def _select_prediction_source() -> tuple[Optional[pd.DataFrame], Optional[str]]:
+    """Load the freshest predictions source available for derived outputs."""
+    candidates: list[tuple[str, pathlib.Path]] = [
+        ("predictions_latest", DATA / "predictions_latest.csv"),
+        ("predictions_mc_latest", DATA / "predictions_mc_latest.csv"),
+    ]
+    best_df: Optional[pd.DataFrame] = None
+    best_label: Optional[str] = None
+    best_ts: pd.Timestamp | None = None
+
+    for label, path in candidates:
+        df = _load(path, label)
+        if df is None:
+            continue
+
+        max_ts: pd.Timestamp | None = None
+        if "game_datetime_utc" in df.columns:
+            ts = pd.to_datetime(df["game_datetime_utc"], errors="coerce", utc=True)
+            if ts.notna().any():
+                max_ts = ts.max()
+        if max_ts is None and "generated_at" in df.columns:
+            ts = pd.to_datetime(df["generated_at"], errors="coerce", utc=True)
+            if ts.notna().any():
+                max_ts = ts.max()
+
+        if best_df is None:
+            best_df, best_label, best_ts = df, label, max_ts
+            continue
+
+        if best_ts is None and max_ts is not None:
+            best_df, best_label, best_ts = df, label, max_ts
+            continue
+
+        if max_ts is not None and best_ts is not None and max_ts > best_ts:
+            best_df, best_label, best_ts = df, label, max_ts
+            continue
+
+        if max_ts == best_ts and len(df) > len(best_df):
+            best_df, best_label, best_ts = df, label, max_ts
+
+    if best_label is not None:
+        freshness = best_ts.isoformat() if best_ts is not None else "unknown"
+        print(f"[INFO] using {best_label} for derived CSVs (freshness={freshness})")
+    return best_df, best_label
+
+
 def _filter_upcoming_window(
     df: pd.DataFrame,
     label: str,
@@ -733,10 +779,8 @@ def main() -> None:
     WINDOW_BEHIND_HOURS = args.window_behind_hours
     WINDOW_TIMEZONE = args.window_timezone
 
-    # 0. Load master prediction source
-    preds = _load(DATA / "predictions_mc_latest.csv", "predictions_mc_latest")
-    if preds is None:
-        preds = _load(DATA / "predictions_latest.csv", "predictions_latest")
+    # 0. Load freshest prediction source
+    preds, _pred_source = _select_prediction_source()
 
     if preds is not None:
         enrich_ensemble_team_names()

@@ -13,7 +13,7 @@ def test_upset_watch_uses_non_degenerate_model_spread(monkeypatch):
         [
             {
                 "game_id": "g1",
-                "game_date": "2026-02-25",
+                "game_date": "2099-02-25",
                 "home_team": "Home A",
                 "away_team": "Away A",
                 "spread_line": -8.5,
@@ -24,7 +24,7 @@ def test_upset_watch_uses_non_degenerate_model_spread(monkeypatch):
             },
             {
                 "game_id": "g2",
-                "game_date": "2026-02-25",
+                "game_date": "2099-02-25",
                 "home_team": "Home B",
                 "away_team": "Away B",
                 "spread_line": 6.5,
@@ -43,6 +43,7 @@ def test_upset_watch_uses_non_degenerate_model_spread(monkeypatch):
         captured["stem"] = stem
 
     monkeypatch.setattr("build_derived_csvs._write", _capture_write)
+    monkeypatch.setattr("build_derived_csvs.WINDOW_AHEAD_HOURS", 1_000_000.0)
 
     build_upset_watch_csv(predictions)
 
@@ -85,3 +86,29 @@ def test_enrich_ensemble_team_names_backfills_missing(monkeypatch, tmp_path):
     assert row["home_team"] == "Duke"
     assert row["away_team"] == "UNC"
     assert row["matchup"] == "UNC @ Duke"
+
+
+def test_select_prediction_source_prefers_fresher_file(monkeypatch, tmp_path):
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+
+    stale = pd.DataFrame(
+        [
+            {"game_id": "old", "game_datetime_utc": "2026-02-24T20:00:00Z"},
+        ]
+    )
+    fresh = pd.DataFrame(
+        [
+            {"game_id": "new", "game_datetime_utc": "2026-02-27T20:00:00Z"},
+        ]
+    )
+
+    stale.to_csv(data_dir / "predictions_mc_latest.csv", index=False)
+    fresh.to_csv(data_dir / "predictions_latest.csv", index=False)
+
+    monkeypatch.setattr(bdc, "DATA", data_dir)
+
+    df, label = bdc._select_prediction_source()
+    assert label == "predictions_latest"
+    assert df is not None
+    assert df.iloc[0]["game_id"] == "new"
