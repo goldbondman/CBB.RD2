@@ -1119,26 +1119,74 @@ class BacktestEngine:
         self,
         records: pd.DataFrame,
         closing_lines_path: Path = DATA_DIR / "market_lines_closing.csv",
+        fallback_lines_path: Path = DATA_DIR / "market_lines.csv",
     ) -> pd.DataFrame:
         """
-        Join market spread / over-under from market_lines_closing.csv onto backtest records.
+        Join market spread / over-under onto backtest records.
+        Prefers market_lines_closing.csv, falls back to market_lines.csv when needed.
         Also computes ATS and Total margins for actual and predicted.
         """
-        if not closing_lines_path.exists():
-            log.warning("%s not found — skipping market line attachment", closing_lines_path)
+        gdf: Optional[pd.DataFrame] = None
+        source_label = ""
+
+        if closing_lines_path.exists():
+            gdf = pd.read_csv(closing_lines_path, dtype={"espn_game_id": str})
+            gdf = gdf.rename(columns={
+                "close_home_spread": "home_market_spread",
+                "close_total": "market_total",
+            })
+            source_label = closing_lines_path.name
+        elif fallback_lines_path.exists():
+            gdf = pd.read_csv(fallback_lines_path, dtype={"event_id": str}, low_memory=False)
+            gdf = gdf.rename(columns={
+                "event_id": "espn_game_id",
+                "home_spread_current": "home_market_spread",
+                "spread": "home_market_spread_alt",
+                "total_current": "market_total",
+                "over_under": "market_total_alt",
+                "total": "market_total_alt2",
+            })
+            if "home_market_spread" not in gdf.columns:
+                gdf["home_market_spread"] = np.nan
+            if "home_market_spread_alt" in gdf.columns:
+                gdf["home_market_spread"] = pd.to_numeric(gdf["home_market_spread"], errors="coerce").fillna(
+                    pd.to_numeric(gdf["home_market_spread_alt"], errors="coerce")
+                )
+            if "market_total" not in gdf.columns:
+                gdf["market_total"] = np.nan
+            for alt_col in ["market_total_alt", "market_total_alt2"]:
+                if alt_col in gdf.columns:
+                    gdf["market_total"] = pd.to_numeric(gdf["market_total"], errors="coerce").fillna(
+                        pd.to_numeric(gdf[alt_col], errors="coerce")
+                    )
+
+            # Deterministic dedupe: keep the latest capture per game_id.
+            ts_col = next((c for c in ["captured_at_utc", "pulled_at_utc"] if c in gdf.columns), None)
+            if ts_col:
+                gdf[ts_col] = pd.to_datetime(gdf[ts_col], errors="coerce", utc=True)
+                gdf = gdf.sort_values(["espn_game_id", ts_col]).drop_duplicates("espn_game_id", keep="last")
+            else:
+                gdf = gdf.drop_duplicates("espn_game_id", keep="last")
+            source_label = fallback_lines_path.name
+        else:
+            log.warning(
+                "%s and %s not found — skipping market line attachment",
+                closing_lines_path,
+                fallback_lines_path,
+            )
             return records
 
-        gdf = pd.read_csv(closing_lines_path, dtype={"espn_game_id": str})
+        if "espn_game_id" not in gdf.columns:
+            log.warning("Market line source %s missing game-id column — skipping attachment", source_label)
+            return records
+
         gdf["espn_game_id"] = gdf["espn_game_id"].apply(canonicalize_espn_game_id)
+
+        merge_cols = ["espn_game_id", "home_market_spread", "market_total"]
+        gdf = gdf[[c for c in merge_cols if c in gdf.columns]].copy()
 
         # Merge on canonical espn_game_id
         records["game_id"] = records["game_id"].apply(canonicalize_espn_game_id)
-
-        # Canonicalize columns for join
-        gdf = gdf.rename(columns={
-            "close_home_spread": "home_market_spread",
-            "close_total": "market_total"
-        })
 
         records = records.merge(
             gdf[["espn_game_id", "home_market_spread", "market_total"]],
@@ -1198,7 +1246,12 @@ class BacktestEngine:
             records = records[final_cols]
 
         lined = records["home_market_spread"].notna().sum()
-        log.info(f"Market lines attached: {lined:,}/{len(records):,} games have a spread from closing table")
+        log.info(
+            "Market lines attached (%s): %d/%d games have a spread",
+            source_label,
+            lined,
+            len(records),
+        )
         return records
 
 
