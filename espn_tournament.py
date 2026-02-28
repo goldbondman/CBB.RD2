@@ -1216,6 +1216,8 @@ def build_pretournament_snapshot(
 
     inj_snap = _compute_injury_snapshot(injury_df)
     if not inj_snap.empty:
+        snapshot["team_id"] = pd.to_numeric(snapshot["team_id"], errors="coerce")
+        inj_snap["team_id"] = pd.to_numeric(inj_snap["team_id"], errors="coerce")
         snapshot = snapshot.merge(inj_snap, on="team_id", how="left")
         snapshot["t_team_injury_burden"].fillna(0.0, inplace=True)
         snapshot["t_n_injured_starters_l3"].fillna(0, inplace=True)
