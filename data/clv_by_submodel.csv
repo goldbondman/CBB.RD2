@@ -1,9 +1,9 @@
 model_name,n_games_with_clv,mean_clv_vs_open,mean_clv_vs_close,pct_positive_clv,mean_abs_error,correlation_clv_to_outcome
-ens_ens_spread,15,,-2.55,0.4667,,
-ens_fourfactors_spread,15,,-2.5,0.4667,,
-ens_adjefficiency_spread,15,,-2.5,0.4667,,
-ens_pythagorean_spread,15,,-2.5,0.4667,,
-ens_momentum_spread,15,,-2.5,0.4667,,
-ens_situational_spread,15,,-3.1,0.4667,,
-ens_cagerankings_spread,15,,-2.5,0.4667,,
-ens_regressedeff_spread,15,,-2.5,0.4667,,
+ens_ens_spread,60,,-2.55,0.4667,12.81,-0.2326
+ens_fourfactors_spread,60,,-2.5,0.4667,12.8133,-0.2326
+ens_adjefficiency_spread,60,,-2.5,0.4667,12.8133,-0.2326
+ens_pythagorean_spread,60,,-2.5,0.4667,12.8133,-0.2326
+ens_momentum_spread,60,,-2.5,0.4667,12.8133,-0.2326
+ens_situational_spread,60,,-3.1,0.4667,12.7733,-0.2326
+ens_cagerankings_spread,60,,-2.5,0.4667,12.8133,-0.2326
+ens_regressedeff_spread,60,,-2.5,0.4667,12.8133,-0.2326

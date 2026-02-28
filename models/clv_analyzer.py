@@ -137,12 +137,6 @@ def build_clv_reports(
     pred = _prepare_join_key(pred, "predictions_with_context.csv")
 
     if acc.empty:
-<<<<<<< codex/troubleshoot-blank-clv_report.csv
-        LOG.warning("model_accuracy_report.csv has no rows; CLV report will omit outcome metrics.")
-
-    if acc.empty:
-=======
->>>>>>> main
         LOG.warning("model_accuracy_report has no rows; continuing with predictions-only CLV metrics.")
         merged = pred.copy()
     else:

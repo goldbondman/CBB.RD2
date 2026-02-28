@@ -1,1 +1,9 @@
 dimension,group,n_games,mean_signed_error,correction,actionable,first_half_error,second_half_error,direction_consistent,last_updated
+conference_tier,UNKNOWN,300,-0.7375,0.0,False,-0.6692,-0.8057,True,2026-02-28T16:34:59+00:00
+favorite_side,UNKNOWN,300,-0.7375,0.0,False,-0.6692,-0.8057,True,2026-02-28T16:34:59+00:00
+game_tier,HIGH,30,-2.6873,0.0,False,-16.8167,6.7322,False,2026-02-28T16:34:59+00:00
+game_tier,LOW,44,-0.1764,0.0,False,-0.9,0.2371,False,2026-02-28T16:34:59+00:00
+game_tier,MID,32,0.92,0.0,False,-9.15,2.3586,False,2026-02-28T16:34:59+00:00
+game_tier,UNKNOWN,194,-0.8366,0.0,False,1.2917,-4.1411,False,2026-02-28T16:34:59+00:00
+momentum_tier,UNKNOWN,300,-0.7375,0.0,False,-0.6692,-0.8057,True,2026-02-28T16:34:59+00:00
+spread_bucket,nan,300,-0.7375,0.0,False,-0.6692,-0.8057,True,2026-02-28T16:34:59+00:00
