@@ -682,7 +682,12 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         # ── Pre-tournament snapshot (one row per team = most recent game) ──
         # Primary input for matchup projections (game totals, UWS, rankings).
         # Rebuilt every run so it always reflects the latest completed game.
-        df_snapshot = build_pretournament_snapshot(df_tournament_out)
+        _injury_df = (
+            pd.read_csv(OUT_TEAM_INJURY)
+            if OUT_TEAM_INJURY.exists() and OUT_TEAM_INJURY.stat().st_size > 0
+            else pd.DataFrame()
+        )
+        df_snapshot = build_pretournament_snapshot(df_tournament_out, injury_df=_injury_df)
         if not DRY_RUN:
             OUT_TOURNAMENT_SNAPSHOT.parent.mkdir(parents=True, exist_ok=True)
             df_snapshot.to_csv(OUT_TOURNAMENT_SNAPSHOT, index=False)

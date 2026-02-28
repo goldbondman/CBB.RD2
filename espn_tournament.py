@@ -491,12 +491,25 @@ def _star_reliance_from_players(
         # Top player usage rate (L5 rolling avg)
         top_usage = grp["usage_rate_l5"].iloc[0] if "usage_rate_l5" in grp.columns else np.nan
 
+        # Top scorer eFG% L5
+        top_efg_l5 = grp["efg_pct_l5"].iloc[0] if "efg_pct_l5" in grp.columns else np.nan
+
+        # Bench pts share L5: bench pts / all pts (starter=False rows)
+        if "pts_l5" in grp.columns and "starter" in grp.columns:
+            total_pts_l5 = grp["pts_l5"].sum()
+            bench_mask = grp["starter"].astype(str).str.lower().isin(["false", "0", "no"])
+            bench_share_l5 = grp.loc[bench_mask, "pts_l5"].sum() / total_pts_l5 if total_pts_l5 > 0 else np.nan
+        else:
+            bench_share_l5 = np.nan
+
         team_player_stats.append({
             "team_id":           team_id,
             "_top_scorer_share": top_share,
             "_2nd_3rd_share":    top2_3,
             "_scoring_entropy":  norm_entropy,
             "_top_usage":        top_usage,
+            "_top_efg_l5":       top_efg_l5,
+            "_bench_share_l5":   bench_share_l5,
         })
 
     if not team_player_stats:
@@ -536,8 +549,12 @@ def _star_reliance_from_players(
     # Danger zone flag: top player usage >32% is historically the cutoff
     df["t_star_danger_flag"] = (top_usage > 32).astype(int)
 
+    df["t_top_scorer_efg_l5"]  = _col(df, "_top_efg_l5").round(3)
+    df["t_bench_pts_share_l5"] = _col(df, "_bench_share_l5").round(3)
+
     df = df.drop(columns=["_top_scorer_share", "_2nd_3rd_share",
-                           "_scoring_entropy", "_top_usage"], errors="ignore")
+                           "_scoring_entropy", "_top_usage",
+                           "_top_efg_l5", "_bench_share_l5"], errors="ignore")
     return df
 
 
@@ -1144,7 +1161,35 @@ def compute_matchup_projections(
 # SECTION 4 — CONVENIENCE: BUILD PRE-TOURNAMENT SNAPSHOT
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def build_pretournament_snapshot(df: pd.DataFrame) -> pd.DataFrame:
+def _compute_injury_snapshot(injury_df: pd.DataFrame) -> pd.DataFrame:
+    """Aggregate team_injury_impact per team for pretournament snapshot."""
+    if injury_df is None or injury_df.empty:
+        return pd.DataFrame(columns=["team_id", "t_team_injury_burden", "t_n_injured_starters_l3"])
+
+    df = injury_df.copy()
+    for c in ["team_injury_load", "starters_flagged"]:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+
+    df["_sort_dt"] = pd.to_datetime(df.get("game_datetime_utc", ""), utc=True, errors="coerce")
+    df = df.sort_values("_sort_dt")
+
+    rows = []
+    for team_id, grp in df.groupby("team_id"):
+        latest_burden = float(grp["team_injury_load"].iloc[-1] or 0.0) if "team_injury_load" in grp.columns else 0.0
+        starters_l3 = int(grp["starters_flagged"].iloc[-3:].max() or 0) if "starters_flagged" in grp.columns else 0
+        rows.append({
+            "team_id":                 team_id,
+            "t_team_injury_burden":    round(latest_burden, 3),
+            "t_n_injured_starters_l3": starters_l3,
+        })
+    return pd.DataFrame(rows)
+
+
+def build_pretournament_snapshot(
+    df: pd.DataFrame,
+    injury_df: Optional[pd.DataFrame] = None,
+) -> pd.DataFrame:
     """
     From the full season team_game_sos (or tournament metrics) DataFrame,
     extract the most recent row per team as their pre-tournament profile.
@@ -1168,6 +1213,15 @@ def build_pretournament_snapshot(df: pd.DataFrame) -> pd.DataFrame:
         .reset_index()
         .drop(columns=["_sort_dt"], errors="ignore")
     )
+
+    inj_snap = _compute_injury_snapshot(injury_df)
+    if not inj_snap.empty:
+        snapshot = snapshot.merge(inj_snap, on="team_id", how="left")
+        snapshot["t_team_injury_burden"].fillna(0.0, inplace=True)
+        snapshot["t_n_injured_starters_l3"].fillna(0, inplace=True)
+    else:
+        snapshot["t_team_injury_burden"]    = 0.0
+        snapshot["t_n_injured_starters_l3"] = 0
 
     log.info(f"Built pre-tournament snapshot: {len(snapshot)} teams")
     return snapshot

@@ -84,21 +84,20 @@ jobs:
           path: data/
         continue-on-error: true
 
-      # Pattern 1: Verify artifact or bootstrap from git history to prevent silent failures with empty data
-      - name: Verify artifact or bootstrap from git
+      # Verify required input files exist with real data rows
+      - name: Verify required input files
         run: |
+          fail=0
           for f in data/games.csv data/team_game_weighted.csv; do
-            _git_lines=$(git show HEAD:"$f" 2>/dev/null | wc -l || echo 0)
-            _local_lines=$(wc -l < "$f" 2>/dev/null || echo 0)
-            if [ ! -s "$f" ] || [ "$_local_lines" -lt "$_git_lines" ]; then
-              echo "[BOOTSTRAP] $f: local=${_local_lines} git=${_git_lines} — restoring from git"
-              git show HEAD:"$f" > "$f" 2>/dev/null || echo "[WARN] $f not in git history"
+            rows=$(( $(wc -l < "$f" 2>/dev/null || echo 0) - 1 ))
+            if [ "$rows" -lt 1 ]; then
+              echo "[ERROR] $f has $rows data rows — aborting"
+              fail=1
+            else
+              echo "[OK] $f: $rows rows"
             fi
           done
-          if [ ! -s data/team_game_weighted.csv ]; then
-            echo "[ERROR] Critical data file team_game_weighted.csv missing"
-            exit 1
-          fi
+          [ "$fail" -eq 0 ] || exit 1
 
       # Pattern 5: Install dependencies with import guards to catch environment issues early
       - name: Install dependencies
