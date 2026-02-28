@@ -80,16 +80,7 @@ def build_player_season_summary(output_path: Path = PLAYER_SUMMARY_CSV) -> pd.Da
     metrics = _safe_read(PLAYER_METRICS_CSV)
 
     if logs.empty and metrics.empty:
-        log.info("No player data available — writing empty player_season_summary.csv")
-        empty = pd.DataFrame(columns=[
-            "athlete_id", "player", "team_id", "team",
-            "games_played", "avg_min", "avg_pts", "avg_reb", "avg_ast",
-            "avg_stl", "avg_blk", "avg_tov", "ts_pct", "usage_pct",
-            "season_pts_share", "updated_at",
-        ])
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        empty.to_csv(output_path, index=False)
-        return empty
+        raise RuntimeError("Required upstream data missing: player_game_logs.csv and player_game_metrics.csv both empty")
 
     # Prefer metrics file when available; fall back to logs
     base = metrics if not metrics.empty else logs
@@ -112,10 +103,7 @@ def build_player_season_summary(output_path: Path = PLAYER_SUMMARY_CSV) -> pd.Da
 
     group_keys = [c for c in [id_col, name_col, tid_col, team_col] if c]
     if not group_keys:
-        log.warning("player_game_logs/metrics missing identity columns — skipping player summary")
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        pd.DataFrame().to_csv(output_path, index=False)
-        return pd.DataFrame()
+        raise RuntimeError("Required upstream data missing: player_game_logs/metrics missing identity columns (athlete_id, player, team_id, team)")
 
     # Convert stat columns to numeric
     for col in stat_cols:
@@ -239,11 +227,7 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
     ]
 
     if weighted.empty:
-        log.info("No team_game_weighted data — writing empty team_season_summary.csv")
-        empty = pd.DataFrame(columns=empty_cols)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        empty.to_csv(output_path, index=False)
-        return empty
+        raise RuntimeError("Required upstream data missing: team_game_weighted.csv is empty")
 
     # ── Build records/averages from weighted CSV ───────────────────────────────
     tid_col = "team_id" if "team_id" in weighted.columns else None
@@ -252,10 +236,7 @@ def build_team_season_summary(output_path: Path = TEAM_SUMMARY_CSV) -> pd.DataFr
     ha_col = "home_away" if "home_away" in weighted.columns else None
 
     if tid_col is None and team_col is None:
-        log.warning("team_game_weighted missing team_id/team columns — skipping team summary")
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        pd.DataFrame().to_csv(output_path, index=False)
-        return pd.DataFrame()
+        raise RuntimeError("Required upstream data missing: team_game_weighted.csv missing team_id/team columns")
 
     group_keys = [c for c in [tid_col, team_col] if c]
     df = weighted.copy()

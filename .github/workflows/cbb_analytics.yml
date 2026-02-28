@@ -128,17 +128,20 @@ jobs:
           run-id: ${{ steps.get_espn_run.outputs.run_id }}
 
 
-      # Pattern 1: Verify artifacts or bootstrap from git history to prevent silent failures
-      - name: Verify artifacts or bootstrap from git
+      # Verify required input files exist with real data rows
+      - name: Verify required input files
         run: |
-          for f in data/market_lines.csv data/predictions_with_context.csv data/team_game_weighted.csv; do
-            _git_lines=$(git show HEAD:"$f" 2>/dev/null | wc -l || echo 0)
-            _local_lines=$(wc -l < "$f" 2>/dev/null || echo 0)
-            if [ ! -s "$f" ] || [ "$_local_lines" -lt "$_git_lines" ]; then
-              echo "[BOOTSTRAP] $f: local=${_local_lines} git=${_git_lines} — restoring from git"
-              git show HEAD:"$f" > "$f" 2>/dev/null || echo "[WARN] $f not in git history"
+          fail=0
+          for f in data/market_lines.csv data/team_game_weighted.csv; do
+            rows=$(( $(wc -l < "$f" 2>/dev/null || echo 0) - 1 ))
+            if [ "$rows" -lt 1 ]; then
+              echo "[ERROR] $f has $rows data rows — aborting"
+              fail=1
+            else
+              echo "[OK] $f: $rows rows"
             fi
           done
+          [ "$fail" -eq 0 ] || exit 1
 
       - name: Install pandas for artifact merge
         run: |

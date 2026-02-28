@@ -48,17 +48,20 @@ jobs:
         if: github.event_name != 'workflow_run'
         run: echo "[INFO] No upstream run context available; using repo fallback files"
 
-      # Pattern 1: Verify artifact or bootstrap from git history
-      - name: Verify predictions artifact or bootstrap from git
+      # Verify predictions files exist with real data rows
+      - name: Verify predictions files
         run: |
+          fail=0
           for f in data/predictions_latest.csv data/predictions_combined_latest.csv; do
-            _git_lines=$(git show HEAD:"$f" 2>/dev/null | wc -l || echo 0)
-            _local_lines=$(wc -l < "$f" 2>/dev/null || echo 0)
-            if [ ! -s "$f" ] || [ "$_local_lines" -lt "$_git_lines" ]; then
-              echo "[BOOTSTRAP] $f: local=${_local_lines} git=${_git_lines} — restoring from git"
-              git show HEAD:"$f" > "$f" 2>/dev/null || echo "[WARN] $f not in git history"
+            rows=$(( $(wc -l < "$f" 2>/dev/null || echo 0) - 1 ))
+            if [ "$rows" -lt 1 ]; then
+              echo "[ERROR] $f has $rows data rows — aborting"
+              fail=1
+            else
+              echo "[OK] $f: $rows rows"
             fi
           done
+          [ "$fail" -eq 0 ] || exit 1
 
       # Pattern 5: Install dependencies with import guards
       - name: Install dependencies
