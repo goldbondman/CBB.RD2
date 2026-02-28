@@ -1,0 +1,8 @@
+edge_tier,edge_range,ats_graded,ats_wins,ats_losses,ats_pushes,ats_pct,ats_roi_units,ou_pct,ml_pct,avg_actual_spread_error,avg_kelly_units,generated_at
+NO_LINE,N/A,0,0,0,0,,0.0,,,,,2026-02-28T08:36:28Z
+SMALL,0.00-1.99,0,0,0,0,,0.0,,,,,2026-02-28T08:36:28Z
+MEDIUM,2.00-3.74,0,0,0,0,,0.0,,,,,2026-02-28T08:36:28Z
+VALUE,3.75-4.99,0,0,0,0,,0.0,,,,,2026-02-28T08:36:28Z
+STRONG,5.00-6.99,0,0,0,0,,0.0,,,,,2026-02-28T08:36:28Z
+LOCK,7.00-8.99,0,0,0,0,,0.0,,,,,2026-02-28T08:36:28Z
+SCREAMER,9.0+,0,0,0,0,,0.0,,,,,2026-02-28T08:36:28Z

@@ -1,0 +1,6 @@
+period,total_games,ml_graded,ml_correct,ml_pct,ats_graded,ats_wins,ats_losses,ats_pushes,ats_pct,ats_roi_units,ou_graded,ou_wins,ou_losses,ou_pushes,ou_pct,ou_roi_units,edge_graded,edge_ats_wins,edge_ats_pct,edge_roi_units,avg_spread_error,avg_total_error,median_spread_error,mean_clv_vs_open,mean_clv_vs_close,beat_close_pct,sharpe_ratio,avg_confidence,high_conf_ats_pct,generated_at
+season,8,8,4,0.5,8,5,3,0,0.625,1.55,0,0,0,0,,0.0,0,0,,,,11.65,,,,0.0,,,,2026-02-28T08:36:28Z
+l60,0,0,0,,0,0,0,0,,0.0,0,0,0,0,,0.0,0,0,,,,,,,,,,,,2026-02-28T08:36:28Z
+l30,0,0,0,,0,0,0,0,,0.0,0,0,0,0,,0.0,0,0,,,,,,,,,,,,2026-02-28T08:36:28Z
+l14,0,0,0,,0,0,0,0,,0.0,0,0,0,0,,0.0,0,0,,,,,,,,,,,,2026-02-28T08:36:28Z
+l7,0,0,0,,0,0,0,0,,0.0,0,0,0,0,,0.0,0,0,,,,,,,,,,,,2026-02-28T08:36:28Z
