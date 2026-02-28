@@ -1,0 +1,11 @@
+stat,description,individual_train_hit_rate,individual_test_hit_rate,individual_roi,train_test_gap,sample_size_train,sample_size_test,ensemble_weight,ensemble_train_hit_rate,ensemble_test_hit_rate,ensemble_train_roi,ensemble_test_roi,equal_weight_test_hit_rate,equal_weight_test_roi,overfit_flag,n_ats_games_total
+rest_days_diff,Rest days differential,62.07,65.52,25.08,-3.45,87,58,0.023896,71.26,58.62,36.05,11.91,46.55,-11.13,True,145
+adj_efg_diff,L5 eFG% differential,63.22,63.79,21.79,-0.57,87,58,0.257358,71.26,58.62,36.05,11.91,46.55,-11.13,True,145
+ftr_diff,L5 Free-throw rate differential,56.32,56.9,8.62,-0.57,87,58,0.158095,71.26,58.62,36.05,11.91,46.55,-11.13,True,145
+adj_pace_diff,L5 pace differential,49.43,56.9,8.62,-7.47,87,58,0.110054,71.26,58.62,36.05,11.91,46.55,-11.13,True,145
+momentum_score_diff,Momentum score differential,59.77,51.72,-1.25,8.05,87,58,0.126747,71.26,58.62,36.05,11.91,46.55,-11.13,True,145
+adj_tov_diff,L5 TOV% differential,54.02,46.55,-11.13,7.47,87,58,0.13165,71.26,58.62,36.05,11.91,46.55,-11.13,True,145
+true_orb_pct_diff,L10 offensive rebound % differential,50.57,43.1,-17.71,7.47,87,58,0.190218,71.26,58.62,36.05,11.91,46.55,-11.13,True,145
+weighted_drtg_diff,Opponent-quality-adj defensive rating diff,13.79,6.9,-86.83,6.9,87,58,0.001982,71.26,58.62,36.05,11.91,46.55,-11.13,True,145
+cover_rate_l10_diff,L10 ATS cover rate differential,,,,,0,0,0.0,71.26,58.62,36.05,11.91,46.55,-11.13,True,145
+close_game_win_pct_diff,Luck-adjusted close-game proxy (home_luck_score - away_luck_score),,,,,0,0,0.0,71.26,58.62,36.05,11.91,46.55,-11.13,True,145
