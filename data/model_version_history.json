@@ -38,5 +38,30 @@
     },
     "created_at_utc": "2026-02-27T01:18:04.873279+00:00",
     "pipeline_run_id": "22468549516"
+  },
+  {
+    "model_version_hash": "32cb7621",
+    "model_version_full": "32cb762128152ed65b2ddc28a836bab5f5d9365903c41d2d4ac9e14b600eb552",
+    "component_hashes": {
+      "model_weights": "0e94b9bda513",
+      "confidence_calibration": "missing",
+      "model_bias_table": "39846747f993"
+    },
+    "config_snapshot": {
+      "weights": {
+        "fourfactors": 0.3654,
+        "adjefficiency": 0.0765,
+        "pythagorean": 0.0216,
+        "momentum": 0.2428,
+        "situational": 0.1222,
+        "cagerankings": 0.0274,
+        "regressedeff": 0.144
+      },
+      "weights_by_tier": [],
+      "active_bias_corrections": 0,
+      "bias_dimensions": []
+    },
+    "created_at_utc": "2026-03-01T10:39:43.483768+00:00",
+    "pipeline_run_id": "22541663772"
   }
 ]
