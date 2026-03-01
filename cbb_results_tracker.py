@@ -225,6 +225,9 @@ class GameOutcome:
 
     def to_dict(self) -> Dict:
         row = asdict(self)
+        # event_id is the primary key used by pipeline_csv_utils deduplication and
+        # results_log schema — must be present and non-null.
+        row["event_id"] = row["game_id"]
         # Backward-compatible alias required by results_log schema validators.
         if "predicted_spread" not in row:
             row["predicted_spread"] = row.get("pred_spread")
@@ -353,16 +356,15 @@ def load_predictions(date_filter: Optional[str] = None) -> pd.DataFrame:
             spread_candidates = [
                 "pred_spread", "predicted_spread", "ensemble_spread", "ens_spread"
             ]
-            spread_col = next((c for c in spread_candidates if c in df.columns), None)
-            if spread_col is not None:
-                valid_spreads = int(df[spread_col].notna().sum())
-                if valid_spreads == 0:
+            existing_spread_cols = [c for c in spread_candidates if c in df.columns]
+            if existing_spread_cols:
+                any_spread_data = df[existing_spread_cols].notna().any(axis=None)
+                if not any_spread_data:
                     log.warning(
-                        "Skipping prediction file %s: %s has 0 non-null rows",
+                        "No spread predictions in %s: all spread columns are null; "
+                        "loading anyway for game result tracking",
                         path.name,
-                        spread_col,
                     )
-                    continue
 
             log.info(f"  {len(df)} predictions loaded")
             return df
@@ -533,10 +535,18 @@ def compute_outcomes(
     prim_conf     = _safe_float(pred_row.get("model_confidence"))
     edge_flag     = _safe_int(pred_row.get("edge_flag"), 0)
 
-    # Ensemble fields (ens_ prefix from combined CSV)
-    ens_spread    = _safe_float(pred_row.get("ens_ensemble_spread"))
-    ens_total     = _safe_float(pred_row.get("ens_ensemble_total"))
-    ens_conf      = _safe_float(pred_row.get("ens_confidence"))
+    # Ensemble fields — check multiple column naming conventions
+    ens_spread    = _safe_float(
+        pred_row.get("ens_spread") or pred_row.get("ensemble_spread")
+        or pred_row.get("ens_ens_spread") or pred_row.get("ens_ensemble_spread")
+    )
+    ens_total     = _safe_float(
+        pred_row.get("ens_total") or pred_row.get("ensemble_total")
+        or pred_row.get("ens_ens_total") or pred_row.get("ens_ensemble_total")
+    )
+    ens_conf      = _safe_float(
+        pred_row.get("ens_confidence") or pred_row.get("ens_ens_confidence")
+    )
     ens_agree     = str(pred_row.get("ens_model_agreement", ""))
     ens_std       = _safe_float(pred_row.get("ens_spread_std"))
 
@@ -1231,18 +1241,45 @@ class ResultsTracker:
         all_outcomes = []
         for d in range(days_back, 0, -1):
             date_str = (datetime.now(TZ) - timedelta(days=d)).strftime("%Y%m%d")
-            preds = load_predictions(date_filter=date_str)
-            if preds.empty:
+            # Only process dates that have a date-specific prediction file.
+            # Avoid falling back to *_latest.csv during reprocess — that would
+            # produce duplicate entries for every day without a specific file.
+            date_specific_files = [
+                DATA_DIR / f"predictions_combined_{date_str}.csv",
+                DATA_DIR / f"ensemble_predictions_{date_str}.csv",
+                DATA_DIR / f"predictions_{date_str}.csv",
+            ]
+            if not any(f.exists() and f.stat().st_size > 50 for f in date_specific_files):
                 continue
             outcomes, _ = self.process_date(target_date=date_str, dry_run=True)
             all_outcomes.extend(outcomes)
 
         if all_outcomes:
-            new_rows    = pd.DataFrame([o.to_dict() for o in all_outcomes])
-            safe_write_csv(new_rows, self.output_dir / "results_log.csv", index=False, label="results_log", allow_empty=True)
-            by_team_df = _expand_to_team_rows(new_rows)
+            new_rows = pd.DataFrame([o.to_dict() for o in all_outcomes])
+            new_rows["game_id"] = new_rows["game_id"].astype(str)
+
+            # Merge with entries outside the reprocess window rather than overwriting
+            existing_log = load_results_log()
+            if not existing_log.empty and "game_id" in existing_log.columns:
+                existing_log["game_id"] = existing_log["game_id"].astype(str)
+                outside_window = existing_log[
+                    ~existing_log["game_id"].isin(new_rows["game_id"])
+                ]
+                merged = pd.concat([outside_window, new_rows], ignore_index=True)
+            else:
+                merged = new_rows
+
+            if "game_datetime_utc" in merged.columns:
+                merged["game_datetime_utc"] = pd.to_datetime(
+                    merged["game_datetime_utc"], utc=True, errors="coerce"
+                )
+                # Sort with NaT values placed at the end
+                merged = merged.sort_values("game_datetime_utc", na_position="last")
+
+            safe_write_csv(merged, self.output_dir / "results_log.csv", index=False, label="results_log", allow_empty=True)
+            by_team_df = _expand_to_team_rows(merged)
             safe_write_csv(by_team_df, self.output_dir / "results_log_by_team.csv", index=False, label="results_log_by_team", allow_empty=True)
-            log.info(f"Reprocessed {len(all_outcomes)} outcomes")
+            log.info(f"Reprocessed {len(all_outcomes)} outcomes → {len(merged)} total records")
 
             updated_log = load_results_log()
             alerts      = detect_alerts(updated_log)
