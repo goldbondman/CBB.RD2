@@ -219,6 +219,44 @@ class TestLoadPredictions:
         assert not preds.empty
         assert len(preds) == 2
 
+    def test_loads_file_with_null_pred_spread(self, tmp_path, monkeypatch):
+        """Files where pred_spread is all null should still be loaded (not skipped).
+        This was the root cause of results_log.csv having only 8 entries — predictions
+        for 20260223/24/25 had null pred_spread and were being silently discarded."""
+        data_dir = tmp_path / "data"
+        data_dir.mkdir()
+
+        rows = [
+            {
+                "game_id": "401700050",
+                "home_team": "TeamA",
+                "away_team": "TeamB",
+                "home_team_id": "1",
+                "away_team_id": "2",
+                "game_datetime_utc": "2026-02-23T19:00:00+00:00",
+                "neutral_site": 0,
+                "pred_spread": float("nan"),   # null — no spread prediction
+                "pred_total": 145.0,
+                "model_confidence": 0.43,
+                "edge_flag": 0,
+            }
+        ]
+        pd.DataFrame(rows).to_csv(data_dir / "predictions_20260223.csv", index=False)
+
+        monkeypatch.setattr("cbb_results_tracker.DATA_DIR", data_dir)
+        monkeypatch.setattr("cbb_results_tracker.PREDICTIONS_CSV",
+                            data_dir / "predictions_combined_latest.csv")
+        monkeypatch.setattr("cbb_results_tracker.ENSEMBLE_CSV",
+                            data_dir / "ensemble_predictions_latest.csv")
+        monkeypatch.setattr("cbb_results_tracker.PRIMARY_CSV",
+                            data_dir / "predictions_latest.csv")
+
+        preds = load_predictions(date_filter="20260223")
+        assert not preds.empty, (
+            "Predictions with null pred_spread should still be loaded for game result tracking"
+        )
+        assert len(preds) == 1
+
     def test_returns_empty_when_no_files_exist(self, tmp_path, monkeypatch):
         """When no prediction files exist at all, should return empty DataFrame."""
         data_dir = tmp_path / "data"

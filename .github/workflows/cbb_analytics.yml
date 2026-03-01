@@ -298,12 +298,13 @@ jobs:
       - name: Run results tracker
         if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 8 * * *' || github.event.inputs.run_mode == 'both' || github.event.inputs.run_mode == 'tracker_only'
         run: |
-          TRACKER_ARGS=""
           if [ -n "${{ github.event.inputs.start_date }}" ]; then
-            TRACKER_ARGS="--date ${{ github.event.inputs.start_date }}"
+            echo "Running results tracker for specific date: ${{ github.event.inputs.start_date }}"
+            python cbb_results_tracker.py --date ${{ github.event.inputs.start_date }}
+          else
+            echo "Running results tracker with reprocess-days 10 to catch up on missed dates"
+            python cbb_results_tracker.py --reprocess-days 10
           fi
-          echo "Running results tracker with args: ${TRACKER_ARGS:-<default>}"
-          python cbb_results_tracker.py $TRACKER_ARGS
 
       - name: Run season summaries
         run: python cbb_season_summaries.py || echo "Summaries failed (non-fatal)"
