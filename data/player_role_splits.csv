@@ -1,4 +1,10 @@
 athlete_id,player,event_id,team_id,team,game_datetime_utc,starter,pts_starter_l5,pts_bench_l5,min_starter_l5,min_bench_l5,efg_pct_starter_l5,efg_pct_bench_l5,usage_rate_starter_l5,usage_rate_bench_l5,pipeline_run_id
+9001,Player One,evt_0,100,Home Team,2025-01-01T01:00:00Z,True,,,,,,,,,22536564067
+9001,Player One,evt_1,100,Home Team,2025-01-02T01:00:00Z,True,,,,,,,,,22536564067
+9001,Player One,evt_2,100,Home Team,2025-01-03T01:00:00Z,True,20.5,,30.0,,61.5,,94.9,,22536564067
+9001,Player One,evt_3,100,Home Team,2025-01-04T01:00:00Z,True,21.0,,30.0,,61.5,,94.9,,22536564067
+9001,Player One,evt_4,100,Home Team,2025-01-05T01:00:00Z,True,21.5,,30.0,,61.5,,94.9,,22536564067
+9001,Player One,evt_5,100,Home Team,2025-01-06T01:00:00Z,True,22.0,,30.0,,61.5,,94.9,,22536564067
 9001,Player One,evt_0,100,Home Team,2025-01-01T01:00:00Z,True,,,,,,,,,22536134370
 9001,Player One,evt_1,100,Home Team,2025-01-02T01:00:00Z,True,,,,,,,,,22536134370
 9001,Player One,evt_2,100,Home Team,2025-01-03T01:00:00Z,True,20.5,,30.0,,61.5,,94.9,,22536134370
