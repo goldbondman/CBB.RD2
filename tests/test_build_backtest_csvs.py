@@ -24,6 +24,7 @@ from build_backtest_csvs import (
     compute_streak,
     compute_longest_streaks,
     validate_results_log,
+    enrich_spread_lines_from_closing,
 )
 
 
@@ -444,3 +445,164 @@ class TestBootstrapMissingResultsLog:
 
         assert exc_info.value.code == 0
         assert (data_dir / "results_log_graded.csv").exists()
+
+
+# ── Tests: Historical Market Spread Lines ───────────────────────────────────
+
+
+class TestEnrichSpreadLinesFromClosing:
+    """Tests that enrich_spread_lines_from_closing() fills missing spread/total lines."""
+
+    def _make_closing_csv(self, tmp_path: Path, rows: list) -> Path:
+        closing_path = tmp_path / "market_lines_closing.csv"
+        pd.DataFrame(rows).to_csv(closing_path, index=False)
+        return closing_path
+
+    def test_fills_missing_spread_line_from_closing(self, tmp_path):
+        """When spread_line is NaN, closing file should fill it."""
+        closing_path = self._make_closing_csv(tmp_path, [
+            {"espn_game_id": "401000001", "close_home_spread": -6.5, "close_total": 148.0},
+            {"espn_game_id": "401000002", "close_home_spread": 3.0,  "close_total": 152.0},
+        ])
+
+        df = pd.DataFrame([
+            {"game_id": "401000001", "pred_spread": -5.0, "actual_spread": -7.0,
+             "spread_line": None, "total_line": None},
+            {"game_id": "401000002", "pred_spread": 4.0, "actual_spread": 2.0,
+             "spread_line": None, "total_line": None},
+        ])
+
+        result = enrich_spread_lines_from_closing(df, closing_path=closing_path)
+
+        assert result.iloc[0]["spread_line"] == pytest.approx(-6.5)
+        assert result.iloc[1]["spread_line"] == pytest.approx(3.0)
+        assert result.iloc[0]["total_line"] == pytest.approx(148.0)
+        assert result.iloc[1]["total_line"] == pytest.approx(152.0)
+
+    def test_does_not_overwrite_existing_spread_line(self, tmp_path):
+        """Rows that already have spread_line should be left unchanged."""
+        closing_path = self._make_closing_csv(tmp_path, [
+            {"espn_game_id": "401000001", "close_home_spread": -9.0, "close_total": 155.0},
+        ])
+
+        df = pd.DataFrame([
+            {"game_id": "401000001", "pred_spread": -5.0, "actual_spread": -7.0,
+             "spread_line": -4.0, "total_line": 145.0},
+        ])
+
+        result = enrich_spread_lines_from_closing(df, closing_path=closing_path)
+
+        # Original values must be preserved
+        assert result.iloc[0]["spread_line"] == pytest.approx(-4.0)
+        assert result.iloc[0]["total_line"] == pytest.approx(145.0)
+
+    def test_partial_fill_leaves_matched_rows_untouched(self, tmp_path):
+        """Only rows with missing spread_line should be filled."""
+        closing_path = self._make_closing_csv(tmp_path, [
+            {"espn_game_id": "401000002", "close_home_spread": 3.0, "close_total": 152.0},
+        ])
+
+        df = pd.DataFrame([
+            {"game_id": "401000001", "pred_spread": -5.0, "actual_spread": -7.0,
+             "spread_line": -4.0, "total_line": 145.0},   # already populated
+            {"game_id": "401000002", "pred_spread": 4.0, "actual_spread": 2.0,
+             "spread_line": None, "total_line": None},     # needs filling
+        ])
+
+        result = enrich_spread_lines_from_closing(df, closing_path=closing_path)
+
+        assert result.iloc[0]["spread_line"] == pytest.approx(-4.0)  # unchanged
+        assert result.iloc[1]["spread_line"] == pytest.approx(3.0)   # filled
+
+    def test_gracefully_handles_missing_closing_file(self, tmp_path):
+        """When market_lines_closing.csv is absent, df is returned unchanged."""
+        df = pd.DataFrame([
+            {"game_id": "401000001", "pred_spread": -5.0, "actual_spread": -7.0,
+             "spread_line": None},
+        ])
+
+        result = enrich_spread_lines_from_closing(df, closing_path=tmp_path / "nonexistent.csv")
+
+        assert result.iloc[0]["spread_line"] is None
+
+    def test_gracefully_handles_empty_closing_file(self, tmp_path):
+        """When market_lines_closing.csv is empty, df is returned unchanged."""
+        closing_path = tmp_path / "market_lines_closing.csv"
+        pd.DataFrame(columns=["espn_game_id", "close_home_spread", "close_total"]).to_csv(
+            closing_path, index=False
+        )
+
+        df = pd.DataFrame([
+            {"game_id": "401000001", "pred_spread": -5.0, "actual_spread": -7.0,
+             "spread_line": None},
+        ])
+
+        result = enrich_spread_lines_from_closing(df, closing_path=closing_path)
+
+        assert result.iloc[0]["spread_line"] is None
+
+    def test_enriched_rows_enable_ats_grading(self, tmp_path):
+        """After enrichment, rows with filled spread_line should produce ATS grades."""
+        closing_path = self._make_closing_csv(tmp_path, [
+            {"espn_game_id": "401000001", "close_home_spread": -6.0, "close_total": 148.0},
+        ])
+
+        df = pd.DataFrame([
+            {"game_id": "401000001", "pred_spread": -8.5, "actual_spread": -7.0,
+             "spread_line": None, "total_line": None,
+             "pred_total": 150.0, "actual_total": 150.0},
+        ])
+
+        enriched = enrich_spread_lines_from_closing(df, closing_path=closing_path)
+        graded = grade_all(enriched)
+
+        # With spread_line=-6.0, pred=-8.5 favors home, actual=-7.0 → diff=-1.0 → covers
+        assert graded.iloc[0]["ats_result"] == "WIN"
+        assert bool(graded.iloc[0]["ats_correct"]) is True
+
+    def test_graded_log_contains_spread_lines_after_main(self, tmp_path, monkeypatch):
+        """main() should enrich spread_line and persist it in results_log_graded.csv."""
+        import build_backtest_csvs as mod
+
+        data_dir = tmp_path / "data"
+        data_dir.mkdir()
+        csv_dir = data_dir / "csv"
+
+        # results_log with missing spread_line for one game
+        results_log = pd.DataFrame([
+            {
+                "game_id": "401000001",
+                "game_date": "2026-01-15",
+                "home_team": "Duke",
+                "away_team": "UNC",
+                "pred_spread": -8.5,
+                "actual_spread": -7.0,
+                "spread_line": None,
+                "total_line": None,
+                "pred_total": 150.0,
+                "actual_total": 148.0,
+                "model_confidence": 0.70,
+                "edge_flag": 1,
+                "sub_model": "M1",
+                "conference": "ACC",
+                "week_label": "W3",
+            }
+        ])
+        results_log.to_csv(data_dir / "results_log.csv", index=False)
+
+        # closing lines for that game
+        pd.DataFrame([
+            {"espn_game_id": "401000001", "close_home_spread": -6.0, "close_total": 145.0},
+        ]).to_csv(data_dir / "market_lines_closing.csv", index=False)
+
+        monkeypatch.setattr(mod, "RESULTS_LOG", data_dir / "results_log.csv")
+        monkeypatch.setattr(mod, "GRADED_LOG", data_dir / "results_log_graded.csv")
+        monkeypatch.setattr(mod, "CSV_DIR", csv_dir)
+        monkeypatch.setattr(mod, "CLOSING_LINES", data_dir / "market_lines_closing.csv")
+        monkeypatch.setattr("sys.argv", ["build_backtest_csvs.py", "--section", "grade-only"])
+
+        mod.main()
+
+        graded = pd.read_csv(data_dir / "results_log_graded.csv")
+        assert graded.iloc[0]["spread_line"] == pytest.approx(-6.0)
+        assert graded.iloc[0]["ats_result"] == "WIN"
