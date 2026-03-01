@@ -49,6 +49,7 @@ RESULTS_LOG = DATA / "results_log.csv"
 GRADED_LOG  = DATA / "results_log_graded.csv"
 WEIGHTS_JSON = DATA / "backtest_optimized_weights.json"
 RANKINGS_CSV = DATA / "cbb_rankings.csv"
+CLOSING_LINES = DATA / "market_lines_closing.csv"
 
 NOW_UTC = datetime.now(timezone.utc)
 NOW_ISO = NOW_UTC.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -347,7 +348,7 @@ def compute_period_stats(df: pd.DataFrame, label: str) -> dict:
     graded_ml  = df[df["winner_correct"].notna()]
 
     edge_series = df["edge_flag"] if "edge_flag" in df.columns else pd.Series(False, index=df.index)
-    edge_games = graded_ats[edge_series.reindex(graded_ats.index).fillna(False)]
+    edge_games = graded_ats[edge_series.reindex(graded_ats.index).fillna(False).astype(bool)]
 
     high_conf = graded_ats[graded_ats["model_confidence"] >= 0.75] if "model_confidence" in graded_ats.columns else pd.DataFrame()
 
@@ -662,7 +663,7 @@ def build_weekly(df: pd.DataFrame) -> pd.DataFrame:
             continue
 
         edge_series = wdf["edge_flag"] if "edge_flag" in wdf.columns else pd.Series(False, index=wdf.index)
-        edge_g = ats_g[edge_series.reindex(ats_g.index).fillna(False)]
+        edge_g = ats_g[edge_series.reindex(ats_g.index).fillna(False).astype(bool)]
 
         row = {
             "week_label":       wl,
@@ -728,7 +729,7 @@ def build_by_conference(df: pd.DataFrame) -> pd.DataFrame:
             continue
 
         edge_series = cdf["edge_flag"] if "edge_flag" in cdf.columns else pd.Series(False, index=cdf.index)
-        edge_g = ats_g[edge_series.reindex(ats_g.index).fillna(False)]
+        edge_g = ats_g[edge_series.reindex(ats_g.index).fillna(False).astype(bool)]
 
         # Best/worst model in this conference
         best_model = worst_model = None
@@ -989,6 +990,105 @@ def build_model_matrix(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# HISTORICAL MARKET LINE ENRICHMENT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def enrich_spread_lines_from_closing(
+    df: pd.DataFrame,
+    closing_path: Optional[pathlib.Path] = None,
+) -> pd.DataFrame:
+    """Back-fill missing spread_line / total_line from market_lines_closing.csv.
+
+    Rows that already have a non-null ``spread_line`` are left unchanged.
+    When ``market_lines_closing.csv`` is absent or empty the DataFrame is
+    returned unmodified.
+    """
+    if closing_path is None:
+        closing_path = CLOSING_LINES
+    if not closing_path.exists() or closing_path.stat().st_size < 10:
+        return df
+
+    try:
+        closing = pd.read_csv(closing_path, dtype={"espn_game_id": str}, low_memory=False)
+    except Exception as exc:
+        print(f"[WARN] enrich_spread_lines_from_closing: could not load {closing_path} — {exc}")
+        return df
+
+    if closing.empty:
+        return df
+
+    # Normalise the game-id column name
+    if "espn_game_id" in closing.columns:
+        closing = closing.rename(columns={"espn_game_id": "_closing_id"})
+    else:
+        print("[WARN] enrich_spread_lines_from_closing: no espn_game_id column — skipping")
+        return df
+
+    closing["_closing_id"] = closing["_closing_id"].map(normalize_game_id)
+
+    # Identify the canonical game-id column in the results DataFrame
+    id_col = None
+    for candidate in ("game_id", "event_id"):
+        if candidate in df.columns:
+            id_col = candidate
+            break
+    if id_col is None:
+        print("[WARN] enrich_spread_lines_from_closing: no game_id/event_id column — skipping")
+        return df
+
+    df = df.copy()
+    df["_norm_id"] = df[id_col].map(normalize_game_id)
+
+    # Determine which rows are missing spread_line
+    needs_spread = "spread_line" not in df.columns or df["spread_line"].isna().any()
+    needs_total  = "total_line"  not in df.columns or df["total_line"].isna().any()
+
+    if not needs_spread and not needs_total:
+        df = df.drop(columns=["_norm_id"])
+        return df
+
+    # Build a lookup from the closing file
+    lookup_cols = {"_closing_id": "_closing_id"}
+    if "close_home_spread" in closing.columns and needs_spread:
+        lookup_cols["close_home_spread"] = "_close_spread"
+    if "close_total" in closing.columns and needs_total:
+        lookup_cols["close_total"] = "_close_total"
+
+    if len(lookup_cols) == 1:  # only id col
+        df = df.drop(columns=["_norm_id"])
+        return df
+
+    closing_lookup = closing[list(lookup_cols.keys())].rename(columns=lookup_cols).drop_duplicates("_closing_id")
+
+    df = df.merge(closing_lookup, left_on="_norm_id", right_on="_closing_id", how="left")
+
+    if "_close_spread" in df.columns:
+        if "spread_line" not in df.columns:
+            df["spread_line"] = pd.to_numeric(df["_close_spread"], errors="coerce")
+        else:
+            df["spread_line"] = pd.to_numeric(df["spread_line"], errors="coerce").fillna(
+                pd.to_numeric(df["_close_spread"], errors="coerce")
+            )
+        df = df.drop(columns=["_close_spread"])
+
+    if "_close_total" in df.columns:
+        if "total_line" not in df.columns:
+            df["total_line"] = pd.to_numeric(df["_close_total"], errors="coerce")
+        else:
+            df["total_line"] = pd.to_numeric(df["total_line"], errors="coerce").fillna(
+                pd.to_numeric(df["_close_total"], errors="coerce")
+            )
+        df = df.drop(columns=["_close_total"])
+
+    df = df.drop(columns=[c for c in ["_norm_id", "_closing_id"] if c in df.columns])
+
+    filled = int(df["spread_line"].notna().sum()) if "spread_line" in df.columns else 0
+    print(f"[BACKTEST] enrich_spread_lines_from_closing: {filled} rows now have spread_line "
+          f"(source: {closing_path.name})")
+    return df
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # VALIDATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1043,6 +1143,11 @@ def main():
     # Load results log
     df = _load(RESULTS_LOG, "results_log.csv")
     if df is None:
+        if args.section == "grade-only":
+            print("[WARN] results_log.csv missing — writing empty graded log placeholder.")
+            GRADED_LOG.parent.mkdir(parents=True, exist_ok=True)
+            pd.DataFrame().to_csv(GRADED_LOG, index=False)
+            sys.exit(0)
         print("[ERROR] results_log.csv missing or empty — cannot build backtest CSVs.")
         sys.exit(1)
 
@@ -1065,6 +1170,9 @@ def main():
             if col in df.columns and df[col].notna().any():
                 df["pred_spread"] = df[col]
                 break
+
+    # Enrich missing spread_line / total_line from historical closing lines
+    df = enrich_spread_lines_from_closing(df)
 
     # Validate only mode
     if args.validate:
