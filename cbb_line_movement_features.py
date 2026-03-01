@@ -131,8 +131,24 @@ def build_features(market: pd.DataFrame, games: pd.DataFrame) -> pd.DataFrame:
 
     market = market.copy()
     market["captured_at_utc"] = _parse_ts(market["captured_at_utc"])
-    market["home_spread"] = _to_float(market["home_spread"])
-    market["total_line"] = _to_float(market["total_line"])
+
+    # Resolve canonical spread column with ordered fallbacks so that even games
+    # where ESPN scoreboard omits odds still get a line via home_spread_current.
+    market["home_spread"] = _to_float(market.get("home_spread"))
+    for _fb in ("home_spread_current",):
+        if _fb in market.columns:
+            market["home_spread"] = market["home_spread"].where(
+                market["home_spread"].notna(), _to_float(market[_fb])
+            )
+
+    # Same pattern for total line.
+    market["total_line"] = _to_float(market.get("total_line"))
+    for _fb in ("total_current", "total_open"):
+        if _fb in market.columns:
+            market["total_line"] = market["total_line"].where(
+                market["total_line"].notna(), _to_float(market[_fb])
+            )
+
     market = market.dropna(subset=["captured_at_utc"])
 
     game_meta = games[["game_id", "game_datetime_utc", "home_team_id", "away_team_id"]].drop_duplicates("game_id")

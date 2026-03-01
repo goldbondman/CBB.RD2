@@ -106,6 +106,25 @@ def _load(path: str | pathlib.Path, label: str = "") -> Optional[pd.DataFrame]:
         print(f"[WARN] {label or p.name}: failed to load — {exc}")
         return None
 
+def _expected_roi_pct(model_prob, juice: float = -110) -> float:
+    """Expected ROI % for a single bet at the given juice, given model win probability.
+
+    Formula: ROI = (p * net_odds - (1 - p)) * 100
+    where net_odds = 100 / abs(juice)  (e.g. 0.909 for -110).
+    Returns 0.0 if model_prob is None or unparseable.
+    """
+    if model_prob is None:
+        return 0.0
+    try:
+        p = float(model_prob)
+    except (TypeError, ValueError):
+        return 0.0
+    if not (0.0 <= p <= 1.0):
+        return 0.0
+    net_odds = 100.0 / abs(juice)
+    return round((p * net_odds - (1.0 - p)) * 100, 2)
+
+
 def _write(df: pd.DataFrame, stem: str, sources: list[str],
            dated_copy: bool = False) -> None:
     """Write df to data/csv/<stem> and data/<stem>; print status."""
@@ -427,7 +446,7 @@ def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
                 "edge": round(edge, 2),
                 "model_prob": row.get("mc_cover_probability", row.get("model_confidence")),
                 "market_prob": 0.5,
-                "expected_roi": row.get("kelly_units", 0),
+                "expected_roi": _expected_roi_pct(row.get("mc_cover_probability", row.get("model_confidence"))),
                 "confidence": row.get("mc_confidence_tier", "MEDIUM")
             })
 
@@ -449,7 +468,7 @@ def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
                 "edge": round(edge, 1),
                 "model_prob": row.get("mc_over_pct" if pick == "OVER" else "mc_under_pct"),
                 "market_prob": 0.5,
-                "expected_roi": 0,
+                "expected_roi": _expected_roi_pct(row.get("mc_over_pct" if pick == "OVER" else "mc_under_pct")),
                 "confidence": "MEDIUM"
             })
 

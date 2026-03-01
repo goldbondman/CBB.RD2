@@ -556,6 +556,13 @@ def build_market_row(
         "away_ats_losses": market_data.get("away_ats_losses"),
         "home_team_name": market_data.get("home_team_name"),
         "away_team_name": market_data.get("away_team_name"),
+        # Canonical aliases expected by cbb_line_movement_features and downstream.
+        # home_spread = home_spread_current; total_line = total_current.
+        # Also mirror into the legacy schema cols spread/total for compatibility.
+        "home_spread": home_spread,
+        "total_line": market_data.get("total_current"),
+        "spread": home_spread,
+        "total": market_data.get("total_current"),
     }
 
 

@@ -229,6 +229,14 @@ def _fix_game_logs_style(
                 df, tid_col, [conf_col], team_to_conf, conf_id_to_name
             )
 
+    # Patch opp_conference using opponent_id -> team_id -> conf lookup.
+    # This is the primary cause of conf_wins/conf_losses always being 0:
+    # espn_metrics.py requires opp_conference == conference for conf_game=True.
+    if team_to_conf and "opponent_id" in df.columns and "opp_conference" in df.columns:
+        changed |= _patch_by_team_id(
+            df, "opponent_id", ["opp_conference"], team_to_conf, conf_id_to_name
+        )
+
     if changed:
         df.to_csv(path, index=False)
     return changed

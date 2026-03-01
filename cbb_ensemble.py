@@ -1453,6 +1453,7 @@ def load_team_profiles(
         if col not in str_cols:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
+
     # Count actual games per team from full history
     _team_game_count: dict[str, int] = {}
     df_all = df.copy()
@@ -1512,6 +1513,22 @@ def load_team_profiles(
             [c for c in df_all.columns if any(x in c.lower() for x in ["net", "eff", "rtg", "em"])][:15],
         )
 
+    # Derive per-team barthag from season-average ortg/drtg.
+    # Barttorvik formula: P(beat avg D1) = ortg^11.5 / (ortg^11.5 + drtg^11.5)
+    # Uses aggregated ortg/drtg means so it's consistent with how cage_o/cage_d are built.
+    _PYTH_EXP = 11.5
+    _team_barthag: dict[str, float] = {}
+    if _team_o_agg and _team_d_agg:
+        for _tid_b in set(_team_o_agg.keys()) | set(_team_d_agg.keys()):
+            _o_avg = _team_o_agg.get(_tid_b, LEAGUE_AVG_ORTG)
+            _d_avg = _team_d_agg.get(_tid_b, LEAGUE_AVG_DRTG)
+            _o_c = max(_o_avg, 60.0)
+            _d_c = max(_d_avg, 60.0)
+            _op_ = _o_c ** _PYTH_EXP
+            _dp_ = _d_c ** _PYTH_EXP
+            _team_barthag[_tid_b] = round(_op_ / (_op_ + _dp_), 4)
+        log.info("Derived barthag for %d teams from season-avg ortg/drtg", len(_team_barthag))
+
     profiles: Dict[str, TeamProfile] = {}
 
     def col(row, *names, default=0.0):
@@ -1555,7 +1572,7 @@ def load_team_profiles(
             cage_o=(_team_o_agg[tid] if tid in _team_o_agg else col(row, "adj_ortg", "ortg", "off_rtg", "off_eff", "cage_o", default=LEAGUE_AVG_ORTG)),
             cage_d=(_team_d_agg[tid] if tid in _team_d_agg else col(row, "adj_drtg", "drtg", "def_rtg", "def_eff", "cage_d", default=LEAGUE_AVG_DRTG)),
             cage_t=(_team_t_agg[tid] if tid in _team_t_agg else col(row, "adj_pace", "pace", "poss", "possessions", "cage_t", default=LEAGUE_AVG_PACE)),
-            barthag=col(row, "barthag", "barthag_score", default=0.5),
+            barthag=(_team_barthag[tid] if tid in _team_barthag else col(row, "barthag", "barthag_score", default=0.5)),
 
             # Four factors — try both naming conventions
             efg_pct=col(row, "efg_pct", "eff_fg_pct", default=LEAGUE_AVG_EFG),

@@ -47,18 +47,22 @@ RAW_DRB_MIN_NON_NULL = float(os.getenv("PLAYER_RAW_DRB_MIN_NON_NULL", "0.80"))
 RAW_PLUS_MINUS_MIN_NON_NULL = float(os.getenv("PLAYER_RAW_PLUS_MINUS_MIN_NON_NULL", "0.50"))
 
 # All counting stats to roll
+# Note: plus_minus is intentionally excluded — ESPN NCAAB API does not return
+# +/- per player.  If filled with 0 it produces a falsely-constant column.
+# It is kept in DERIVED_METRICS so that when a source does supply it the
+# rolling will propagate it; when absent the column will remain null (honest).
 COUNTING_STATS = [
     "min", "pts",
     "fgm", "fga", "tpm", "tpa", "ftm", "fta",
     "orb", "drb", "reb",
     "ast", "stl", "blk", "tov", "pf",
-    "plus_minus",
 ]
 
-# Derived per-game metrics to roll
+# Derived per-game metrics to roll (NaN-filled, not 0-filled)
 DERIVED_METRICS = [
     "efg_pct", "ts_pct", "fg_pct", "three_pct", "ft_pct",
     "usage_rate", "ast_tov_ratio", "pts_per_fga", "floor_pct",
+    "plus_minus",
 ]
 
 RAW_GUARDRAIL_THRESHOLDS = {
@@ -248,8 +252,9 @@ def add_player_per_game_metrics(df: pd.DataFrame,
     # ESPN returns empty string (not "0") for players with 0 attempts.
     # Fill these in the dataframe so the raw columns show 0 in the output CSV
     # and so rolling windows in add_player_rolling() get clean numeric data.
-    for _col_name in ["fgm", "fga", "tpm", "tpa", "ftm", "fta",
-                      "orb", "drb", "plus_minus"]:
+    # plus_minus is intentionally excluded: ESPN NCAAB API does not return +/-,
+    # so filling with 0 would produce a falsely constant column.  Keep as null.
+    for _col_name in ["fgm", "fga", "tpm", "tpa", "ftm", "fta", "orb", "drb"]:
         if _col_name in df.columns:
             df[_col_name] = pd.to_numeric(df[_col_name], errors="coerce").fillna(0)
 

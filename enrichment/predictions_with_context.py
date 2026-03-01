@@ -797,9 +797,13 @@ def build_predictions_with_context(
             _score_col = f"{_side}_momentum_score"
             if _score_col in df.columns:
                 _score = pd.to_numeric(df[_score_col], errors="coerce")
+                # Bins aligned with cbb_ensemble.py and bias_detector.py.
+                # momentum_score is a net-rating / margin metric (scale ±10–20),
+                # NOT a 0-100 percentile.  Old bins [40,50,60,70] put every
+                # game in "COLD"; corrected to the ±10 breakpoints used elsewhere.
                 df[_tier_col] = pd.cut(
                     _score,
-                    bins=[-999, 40, 50, 60, 70, 999],
+                    bins=[-999, -10, -2, 4, 10, 999],
                     labels=["COLD", "NEUTRAL", "WARM", "HOT", "ELITE"],
                     right=True,
                 ).astype(str).replace("nan", pd.NA)

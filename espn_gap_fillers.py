@@ -141,7 +141,10 @@ def fill_market_row_gaps(row: dict[str, Any], year: int = 2026, season_type: int
     if not event_id:
         return out
 
-    need_odds = any(out.get(k) in (None, "", "nan") for k in ["draftkings_spread", "home_ml", "away_ml"])
+    need_odds = any(
+        out.get(k) in (None, "", "nan")
+        for k in ["draftkings_spread", "home_ml", "away_ml", "home_spread_current"]
+    )
     if need_odds:
         odds = fetch_game_odds_espn(event_id)
         if not odds:
@@ -155,6 +158,12 @@ def fill_market_row_gaps(row: dict[str, Any], year: int = 2026, season_type: int
             out["away_ml"] = dk.get("away_ml")
         if out.get("over_under") in (None, "", "nan"):
             out["over_under"] = dk.get("over_under")
+        # Fill home_spread_current from ESPN Core API DK when ESPN scoreboard
+        # omits odds.  ESPN Core API uses home-team perspective so sign matches.
+        if out.get("home_spread_current") in (None, "", "nan") and dk.get("spread") is not None:
+            out["home_spread_current"] = dk.get("spread")
+        if out.get("total_current") in (None, "", "nan") and dk.get("over_under") is not None:
+            out["total_current"] = dk.get("over_under")
 
     if out.get("home_win_prob") in (None, "", "nan") or out.get("away_win_prob") in (None, "", "nan"):
         out.update({k: v for k, v in fetch_win_probability(event_id).items() if v is not None})
