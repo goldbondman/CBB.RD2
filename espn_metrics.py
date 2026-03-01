@@ -355,17 +355,25 @@ def add_rolling_metrics(df: pd.DataFrame,
             )
 
     # ── ATS rolling rates ──
+    # cover_l10 / cover_margin_l10 are already produced by the ROLLING_METRICS
+    # loop above (with min_periods=1).  Aliasing them here keeps cover_rate_l10
+    # and ats_margin_l10 populated for any team that has ≥1 graded spread game
+    # in its rolling window.  Using min_periods=3 (old code) caused permanent
+    # nulls because ESPN only provides spread data for ~6% of games.
     if "cover" in df.columns:
+        # cover_l10 = rolling-10 mean of cover (0/1); alias as cover_rate_l10
         new_cols["cover_rate_l10"] = df.groupby("team_id")["cover"].transform(
-            lambda s: s.shift(1).rolling(10, min_periods=3).mean().round(3)
+            lambda s: s.shift(1).rolling(10, min_periods=1).mean().round(3)
         )
+        # season-long expanding mean — min_periods=1 so any graded game counts
         new_cols["cover_rate_season"] = df.groupby("team_id")["cover"].transform(
-            lambda s: s.shift(1).expanding(min_periods=3).mean().round(3)
+            lambda s: s.shift(1).expanding(min_periods=1).mean().round(3)
         )
 
     if "cover_margin" in df.columns:
+        # ats_margin_l10 = rolling-10 mean of cover_margin; alias cover_margin_l10
         new_cols["ats_margin_l10"] = df.groupby("team_id")["cover_margin"].transform(
-            lambda s: s.shift(1).rolling(10, min_periods=3).mean().round(2)
+            lambda s: s.shift(1).rolling(10, min_periods=1).mean().round(2)
         )
 
     # ── Close game win % ──

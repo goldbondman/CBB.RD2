@@ -192,13 +192,34 @@ def _safe_round(val, decimals=2):
 
 
 def _parse_date_col(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalise game date into a 'game_date' column as datetime."""
-    if "game_date" in df.columns:
-        df["_date"] = pd.to_datetime(df["game_date"], errors="coerce", utc=True)
+    """Normalise game date into '_date' column as UTC datetime.
+
+    Handles three common formats stored in game_date:
+      - ISO string  "2026-02-26" / "2026-02-26T..." → parse directly
+      - YYYYMMDD integer 20260226 → convert to "2026-02-26" first;
+        pd.to_datetime(20260226) wrongly treats it as nanoseconds → 1969-12-29
+      - null / empty → fall through to game_datetime_utc
+    """
+    if "game_date" in df.columns and df["game_date"].notna().any():
+        raw = df["game_date"].astype(str).str.strip()
+        # Detect 8-digit YYYYMMDD integers stored as strings or floats
+        yyyymmdd_mask = raw.str.match(r"^\d{8}$")
+        if yyyymmdd_mask.any():
+            raw = raw.where(
+                ~yyyymmdd_mask,
+                raw.str[:4] + "-" + raw.str[4:6] + "-" + raw.str[6:],
+            )
+        df["_date"] = pd.to_datetime(raw.replace({"nan": None, "": None}),
+                                     errors="coerce", utc=True)
     elif "game_datetime_utc" in df.columns:
         df["_date"] = pd.to_datetime(df["game_datetime_utc"], errors="coerce", utc=True)
     else:
         df["_date"] = pd.NaT
+
+    # If game_date was present but entirely null, fall back to game_datetime_utc
+    if df.get("_date", pd.Series(dtype="object")).isna().all() and "game_datetime_utc" in df.columns:
+        df["_date"] = pd.to_datetime(df["game_datetime_utc"], errors="coerce", utc=True)
+
     return df
 
 

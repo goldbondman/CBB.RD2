@@ -565,6 +565,10 @@ def compute_outcomes(
     _raw_date = str(pred_row.get("game_date", "")).strip()
     if len(_raw_date) == 8 and _raw_date.isdigit():
         _normalized_game_date = f"{_raw_date[:4]}-{_raw_date[4:6]}-{_raw_date[6:]}"
+    elif not _raw_date or _raw_date in ("nan", "None", ""):
+        # game_date missing from predictions — derive from game_datetime_utc
+        _dt_parsed = pd.to_datetime(game_dt, utc=True, errors="coerce") if game_dt else pd.NaT
+        _normalized_game_date = _dt_parsed.strftime("%Y-%m-%d") if _dt_parsed is not pd.NaT and not pd.isna(_dt_parsed) else ""
     else:
         _normalized_game_date = _raw_date
 
