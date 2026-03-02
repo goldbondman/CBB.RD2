@@ -8,6 +8,8 @@ data/*
 !data/*.md
 !data/archive/
 !data/archive/**
+!data/handicapper/
+!data/handicapper/**
 *.egg-info/
 .pytest_cache/
 
