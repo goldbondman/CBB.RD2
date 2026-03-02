@@ -734,13 +734,115 @@ def append_market_rows(new_rows: list[dict], output_path: Path) -> int:
     return inserted
 
 
-def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None) -> None:
+def _atomic_write_csv(df: pd.DataFrame, output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = output_path.with_suffix(f".tmp.{uuid.uuid4().hex}")
+    df.to_csv(tmp_path, index=False)
+    tmp_path.replace(output_path)
+
+
+def _str_to_bool(value: str | bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    normalized = str(value).strip().lower()
+    if normalized in {"1", "true", "t", "yes", "y"}:
+        return True
+    if normalized in {"0", "false", "f", "no", "n"}:
+        return False
+    raise argparse.ArgumentTypeError("append must be true/false")
+
+
+def resolve_date_range(start_date: Optional[str], end_date: Optional[str], days_back: Optional[int]) -> tuple[date, date]:
+    today_utc = datetime.now(timezone.utc).date()
+    if days_back is not None:
+        if days_back < 1:
+            raise ValueError("--days-back must be >= 1")
+        return today_utc - timedelta(days=days_back - 1), today_utc
+
+    start = date.fromisoformat(start_date) if start_date else None
+    end = date.fromisoformat(end_date) if end_date else None
+    if start and end and start > end:
+        raise ValueError("--start-date cannot be after --end-date")
+    if start and not end:
+        return start, start
+    if end and not start:
+        return end, end
+    if start and end:
+        return start, end
+    return today_utc, today_utc
+
+
+def write_master_market_file(master_file: Path, new_rows: list[dict], append: bool) -> tuple[int, int, int, int]:
+    bootstrap_market_lines_schema(master_file)
+    df_new = pd.DataFrame(new_rows)
+    if df_new.empty:
+        df_new = pd.DataFrame(columns=MARKET_LINES_SCHEMA_COLUMNS)
+
+    for col in MARKET_LINES_SCHEMA_COLUMNS:
+        if col not in df_new.columns:
+            df_new[col] = pd.NA
+
+    prior_master = pd.read_csv(master_file, dtype={"event_id": str}, low_memory=False) if master_file.exists() else pd.DataFrame()
+    prior_master_rows = len(prior_master)
+    if not prior_master.empty:
+        for col in MARKET_LINES_SCHEMA_COLUMNS:
+            if col not in prior_master.columns:
+                prior_master[col] = pd.NA
+
+    if append:
+        df_out = pd.concat([prior_master, df_new], ignore_index=True, sort=False)
+        base_key = ["event_id", "capture_type", "captured_at_utc"]
+        extended_key = base_key + ["pinnacle_spread", "draftkings_spread", "home_spread_current", "total_current"]
+        dedupe_key = extended_key if all(c in df_out.columns for c in extended_key) else base_key
+        before_dedupe = len(df_out)
+        df_out = df_out.drop_duplicates(subset=dedupe_key, keep="last")
+        after_dedupe = len(df_out)
+    else:
+        before_dedupe = len(df_new)
+        after_dedupe = len(df_new)
+        df_out = df_new.copy()
+
+    if "captured_at_utc" in df_out.columns:
+        df_out = df_out.sort_values("captured_at_utc", kind="mergesort")
+
+    _atomic_write_csv(df_out, master_file)
+    return len(df_new), prior_master_rows, after_dedupe, len(df_out)
+
+
+def write_latest_from_master(master_file: Path, latest_file: Path) -> int:
+    if not master_file.exists() or master_file.stat().st_size == 0:
+        _atomic_write_csv(pd.DataFrame(columns=MARKET_LINES_SCHEMA_COLUMNS), latest_file)
+        return 0
+
+    df = pd.read_csv(master_file, dtype={"event_id": str}, low_memory=False)
+    if df.empty:
+        _atomic_write_csv(pd.DataFrame(columns=MARKET_LINES_SCHEMA_COLUMNS), latest_file)
+        return 0
+
+    for col in MARKET_LINES_SCHEMA_COLUMNS:
+        if col not in df.columns:
+            df[col] = pd.NA
+
+    df["captured_at_utc"] = pd.to_datetime(df["captured_at_utc"], utc=True, errors="coerce")
+    df = df.dropna(subset=["captured_at_utc"]).copy()
+    if df.empty:
+        _atomic_write_csv(pd.DataFrame(columns=MARKET_LINES_SCHEMA_COLUMNS), latest_file)
+        return 0
+
+    latest = (
+        df.sort_values("captured_at_utc")
+        .groupby("event_id", as_index=False)
+        .tail(1)
+        .sort_values("captured_at_utc")
+    )
+    latest["captured_at_utc"] = latest["captured_at_utc"].dt.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+    _atomic_write_csv(latest, latest_file)
+    return len(latest)
+
+
+def run_capture(mode: str, data_dir: Path, existing: pd.DataFrame, override_date: Optional[date] = None) -> list[dict]:
     today = override_date or date.today()
     log.info("Market capture mode=%s date=%s", mode, today)
-
-    market_path = bootstrap_market_lines_schema(data_dir / "market_lines_snapshots.csv")
-    existing = pd.read_csv(market_path, dtype={"event_id": str}) if market_path.exists() else pd.DataFrame()
-    existing = normalize_numeric_dtypes(existing)
 
     log.info("Fetching ESPN scoreboard...")
     espn_events = fetch_espn_scoreboard(today)
@@ -857,18 +959,11 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
         row = fill_market_row_gaps(row)
         new_rows.append(row)
 
-    inserted = append_market_rows(new_rows, market_path) if new_rows else 0
+    inserted = len(new_rows)
     rejected = max(len(espn_events) - matched, 0)
 
-    if not market_path.exists():
-        raise RuntimeError(f"Market lines write failed: file missing at {market_path}")
-    written_df = pd.read_csv(market_path, dtype={"event_id": str}, low_memory=False)
-    required_cols = ["event_id", "pulled_at_utc", "verification_status", "verification_notes"]
-    missing_cols = [c for c in required_cols if c not in written_df.columns]
-    if missing_cols:
-        raise RuntimeError(f"Market lines write failed: missing columns {missing_cols} in {market_path}")
     log.info(
-        "Market post-write assertion passed: pulled=%s inserted=%s rejected=%s",
+        "Market capture assertion passed: pulled=%s fetched=%s rejected=%s",
         len(espn_events),
         inserted,
         rejected,
@@ -908,6 +1003,8 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
     for row in rlm_games:
         log.warning("↔️ REVERSE LINE MOVEMENT: event %s — %s", row["event_id"], row.get("rlm_note"))
 
+    return new_rows
+
 
 def main() -> None:
     try:
@@ -923,15 +1020,27 @@ def main() -> None:
     parser.add_argument("--days-back", type=int, default=0)
     parser.add_argument("--append", type=str, default="true")
     parser.add_argument("--master-file", type=str, default="data/market_lines_master.csv")
+    parser.add_argument("--start-date", type=str, default=None)
+    parser.add_argument("--end-date", type=str, default=None)
+    parser.add_argument("--days-back", type=int, default=None)
+    parser.add_argument("--master-file", type=Path, default=DATA_DIR / "market_lines_master.csv")
+    parser.add_argument("--append", type=_str_to_bool, default=True)
     parser.add_argument("--build-views-only", action="store_true")
     args = parser.parse_args()
 
     snapshots_path = DATA_DIR / "market_lines_snapshots.csv"
     legacy_path = DATA_DIR / "market_lines.csv"
+    odds_path = DATA_DIR / "odds_snapshot.csv"
+    master_path = args.master_file if args.master_file.is_absolute() else Path(args.master_file)
 
-    bootstrap_market_lines_schema(snapshots_path)
+    bootstrap_market_lines_schema(master_path)
     if args.build_views_only:
+        latest_rows = write_latest_from_master(master_path, DATA_DIR / "market_lines_latest.csv")
+        _atomic_write_csv(pd.read_csv(master_path, dtype={"event_id": str}, low_memory=False), snapshots_path)
+        _atomic_write_csv(pd.read_csv(master_path, dtype={"event_id": str}, low_memory=False), legacy_path)
+        _atomic_write_csv(pd.read_csv(master_path, dtype={"event_id": str}, low_memory=False), odds_path)
         regenerate_market_views(DATA_DIR)
+        log.info("Rebuilt views from master: latest_rows=%s", latest_rows)
         return
 
     explicit_start = pd.to_datetime(args.start_date, errors="coerce").date() if args.start_date else None
@@ -993,6 +1102,48 @@ def main() -> None:
             shutil.copy2(market_path, master_path)
         regenerate_market_views(DATA_DIR)
         log.info("Copied snapshots to legacy market_lines.csv, odds_snapshot.csv, and %s", master_path)
+    if args.backfill_days > 0 and args.days_back is None and not args.start_date and not args.end_date:
+        args.days_back = args.backfill_days + 1
+
+    start_date, end_date = resolve_date_range(args.start_date, args.end_date, args.days_back)
+    log.info("Date range used: start=%s end=%s", start_date, end_date)
+
+    existing_master = pd.read_csv(master_path, dtype={"event_id": str}, low_memory=False) if master_path.exists() else pd.DataFrame()
+    existing_master = normalize_numeric_dtypes(existing_master)
+
+    all_rows: list[dict] = []
+    span = (end_date - start_date).days
+    for offset in range(span + 1):
+        target = start_date + timedelta(days=offset)
+        log.info("Capture date: %s", target)
+        if args.mode == "all":
+            for mode in ["morning", "pregame", "postgame"]:
+                all_rows.extend(run_capture(mode, DATA_DIR, existing_master, override_date=target))
+                time.sleep(REQUEST_DELAY)
+        else:
+            all_rows.extend(run_capture(args.mode, DATA_DIR, existing_master, override_date=target))
+
+    new_rows, prior_rows, rows_after_dedupe, rows_written = write_master_market_file(master_path, all_rows, args.append)
+    if not master_path.exists():
+        raise RuntimeError(f"Market lines write failed: file missing at {master_path}")
+
+    master_df = pd.read_csv(master_path, dtype={"event_id": str}, low_memory=False)
+    required_cols = ["event_id", "captured_at_utc", "verification_status", "verification_notes"]
+    missing_cols = [c for c in required_cols if c not in master_df.columns]
+    if missing_cols:
+        raise RuntimeError(f"Market lines write failed: missing columns {missing_cols} in {master_path}")
+
+    latest_rows = write_latest_from_master(master_path, DATA_DIR / "market_lines_latest.csv")
+    _atomic_write_csv(master_df, snapshots_path)
+    _atomic_write_csv(master_df, legacy_path)
+    _atomic_write_csv(master_df, odds_path)
+    regenerate_market_views(DATA_DIR)
+
+    log.info("Master merge: new rows fetched=%s", new_rows)
+    log.info("Master merge: prior master rows=%s", prior_rows)
+    log.info("Master merge: rows after dedupe=%s", rows_after_dedupe)
+    log.info("Master merge: rows written=%s", rows_written)
+    log.info("Derived latest rows written=%s", latest_rows)
 
 
 if __name__ == "__main__":

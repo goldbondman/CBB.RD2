@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Audit CSV quality outputs and generate markdown reports."""
 """Generate CSV data quality report for CI gating."""
 """Audit CSV row counts and render a markdown quality report.
 
@@ -180,8 +181,6 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
 """Audit CSV quality under data/ and emit markdown + CSV reports."""
 
 import os
@@ -228,6 +227,121 @@ def _iter_csv_files(root: Path) -> list[Path]:
             continue
         files.append(path)
     return sorted(files)
+
+
+def _likely_date_column(df: pd.DataFrame) -> str | None:
+    preferred = [
+        "data_date",
+        "game_date",
+        "date",
+        "game_datetime_utc",
+        "datetime",
+        "created_at",
+        "updated_at",
+    ]
+    lowered = {c.lower(): c for c in df.columns}
+    for name in preferred:
+        if name in lowered:
+            return lowered[name]
+    for col in df.columns:
+        lower = col.lower()
+        if "date" in lower or "time" in lower:
+            return col
+    return None
+
+
+def _format_guess(confidence: str, message: str) -> str:
+    return f"- **{confidence}**: {message}"
+
+
+def _root_cause_guesses(file_path: str, df: pd.DataFrame, file_cols: pd.DataFrame) -> list[str]:
+    guesses: list[str] = []
+    row_count = len(df)
+    col_count = len(df.columns)
+
+    date_col = _likely_date_column(df)
+    if row_count < 20 and date_col and date_col in df.columns:
+        parsed = pd.to_datetime(df[date_col], errors="coerce", utc=True)
+        distinct_days = parsed.dt.date.nunique(dropna=True)
+        if distinct_days in (1, 2):
+            guesses.append(
+                _format_guess(
+                    "High",
+                    "Pipeline likely only ran for a couple of days or historical rows were overwritten (very low row count with 1-2 distinct dates).",
+                )
+            )
+
+    core_id_cols = [
+        c for c in df.columns if c.lower() in {"id", "game_id", "team_id", "home_team_id", "away_team_id", "event_id"}
+    ]
+    core_ids_exist = any(df[c].notna().any() for c in core_id_cols)
+    if col_count > 0:
+        all_null_cols = int(file_cols["all_null_flag"].sum()) if not file_cols.empty else 0
+        all_null_ratio = all_null_cols / col_count
+        if core_ids_exist and all_null_ratio >= 0.3:
+            guesses.append(
+                _format_guess(
+                    "High" if all_null_ratio >= 0.5 else "Med",
+                    "Join likely failed or an upstream feature build step was skipped (many columns are 100% null while core IDs are present).",
+                )
+            )
+
+    numeric_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
+    if numeric_cols:
+        zero_all = [c for c in numeric_cols if pd.to_numeric(df[c], errors="coerce").fillna(0).eq(0).all()]
+        if zero_all and date_col and date_col in df.columns:
+            parsed = pd.to_datetime(df[date_col], errors="coerce", utc=True)
+            valid = parsed.notna()
+            if valid.any() and parsed.dt.date.nunique(dropna=True) > 1:
+                latest_day = parsed[valid].dt.date.max()
+                latest_mask = parsed.dt.date == latest_day
+                older_mask = valid & (~latest_mask)
+                regressions = 0
+                for col in zero_all:
+                    latest_zero = pd.to_numeric(df.loc[latest_mask, col], errors="coerce").fillna(0).eq(0).all()
+                    older_non_zero = pd.to_numeric(df.loc[older_mask, col], errors="coerce").fillna(0).ne(0).any()
+                    if latest_zero and older_non_zero:
+                        regressions += 1
+                if regressions:
+                    guesses.append(
+                        _format_guess(
+                            "Med",
+                            "`fillna(0)` may be masking missing source fields (latest rows are all-zero in numeric columns that were non-zero historically).",
+                        )
+                    )
+
+    lower_name = Path(file_path).name.lower()
+    if "pred" in lower_name:
+        data_date_col = next((c for c in df.columns if c.lower() in {"data_date", "game_date", "date"}), None)
+        pred_time_col = next(
+            (c for c in df.columns if c.lower() in {"created_at", "predicted_at", "generated_at", "run_at"}),
+            None,
+        )
+        schedule_time_col = next(
+            (c for c in df.columns if c.lower() in {"schedule_updated_at", "schedule_pulled_at", "pulled_at_utc", "updated_at"}),
+            None,
+        )
+        if data_date_col and pred_time_col and schedule_time_col:
+            data_max = pd.to_datetime(df[data_date_col], errors="coerce", utc=True).max()
+            pred_max = pd.to_datetime(df[pred_time_col], errors="coerce", utc=True).max()
+            sched_max = pd.to_datetime(df[schedule_time_col], errors="coerce", utc=True).max()
+            if pd.notna(data_max) and pd.notna(pred_max) and pd.notna(sched_max):
+                stale = (data_max - pred_max).days >= 1
+                schedule_fresh = abs((data_max - sched_max).days) <= 1
+                if stale and schedule_fresh:
+                    guesses.append(
+                        _format_guess(
+                            "High",
+                            "Prediction action is likely not scheduled or is failing (predictions stale by data date while schedule data appears fresh).",
+                        )
+                    )
+
+    if not guesses:
+        guesses.append(_format_guess("Low", "No strong automated root-cause signal; inspect upstream job logs and recent pipeline changes."))
+
+    return guesses[:3]
+
+
 
 
 def _df_to_markdown_table(df: pd.DataFrame) -> str:
@@ -779,6 +893,12 @@ def build_report() -> int:
             report_lines.append(f"## Column Detail: `{file_path}`")
             report_lines.append("")
             file_cols = col_df[col_df["file_path"] == file_path]
+            file_df = pd.read_csv(file_path, low_memory=False)
+
+            report_lines.append("### Explain likely root cause")
+            report_lines.append("")
+            report_lines.extend(_root_cause_guesses(file_path, file_df, file_cols))
+            report_lines.append("")
 
             null_top = file_cols.sort_values("null_pct", ascending=False).head(25)
             report_lines.append("### Top 25 columns by null_pct")
