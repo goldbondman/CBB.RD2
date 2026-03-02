@@ -106,3 +106,24 @@ The script prints:
 - snapshots fetched
 - new rows added
 - duplicates skipped
+
+
+## Market Lines CLI hardening (date inputs)
+
+- `python -m ingestion.market_lines --mode pregame` now succeeds with omitted date inputs (defaults to UTC today).
+- `start_date`, `end_date`, and `days_back` treat blank values as unset (`None`).
+- `--days-back` is validated as `>= 1` only when it is explicitly provided.
+- `data/market_lines_master.csv` is the durable append-only in-repo store and is created automatically when missing.
+
+### Safe backfill examples
+
+```bash
+# Omitted date inputs (scheduled/manual defaults)
+python -m ingestion.market_lines --mode pregame
+
+# Rolling window backfill
+python -m ingestion.market_lines --mode pregame --days-back 100
+
+# Explicit date range backfill
+python -m ingestion.market_lines --mode pregame --start-date 2026-01-01 --end-date 2026-01-31
+```

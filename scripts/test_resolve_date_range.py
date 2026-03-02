@@ -29,6 +29,18 @@ def run() -> None:
     start, end = resolve_date_range(None, None, "", today=fixed_today)
     assert start == fixed_today and end == fixed_today
 
+    start, end = resolve_date_range("2026-01-10", None, None, today=fixed_today)
+    assert start == date(2026, 1, 10) and end == date(2026, 1, 10)
+
+    start, end = resolve_date_range(None, "2026-01-12", None, today=fixed_today)
+    assert start == date(2026, 1, 12) and end == date(2026, 1, 12)
+
+    try:
+        resolve_date_range("2026-01-16", "2026-01-15", None, today=fixed_today)
+        raise AssertionError("Expected ValueError when start_date > end_date")
+    except ValueError as exc:
+        assert "cannot be after" in str(exc)
+
     print("resolve_date_range regression checks passed")
 
 

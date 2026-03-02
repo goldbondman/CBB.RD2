@@ -753,15 +753,46 @@ def _str_to_bool(value: str | bool) -> bool:
     raise argparse.ArgumentTypeError("append must be true/false")
 
 
-def _normalize_days_back(days_back: Optional[int | str]) -> Optional[int]:
-    if days_back in (None, ""):
+def _norm_str(value: object) -> Optional[str]:
+    if value is None:
         return None
-    if isinstance(days_back, str):
-        value = days_back.strip()
-        if not value:
+    normalized = str(value).strip()
+    if not normalized:
+        return None
+    return normalized
+
+
+def _norm_int(value: object) -> Optional[int]:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise ValueError(f"Invalid integer value: {value!r}")
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        raw = value.strip()
+        if raw == "":
             return None
-        return int(value)
-    return int(days_back)
+        if raw.startswith("+"):
+            raw = raw[1:]
+        if raw.isdigit():
+            return int(raw)
+    raise ValueError(f"Invalid integer value: {value!r}")
+
+
+def _norm_bool(value: object, default: bool = True) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    normalized = str(value).strip().lower()
+    if normalized == "":
+        return default
+    if normalized in {"1", "true", "t", "yes", "y"}:
+        return True
+    if normalized in {"0", "false", "f", "no", "n"}:
+        return False
+    raise ValueError(f"Invalid boolean value: {value!r}")
 
 
 def resolve_date_range(
@@ -770,11 +801,16 @@ def resolve_date_range(
     days_back: Optional[int | str],
     today: Optional[date] = None,
 ) -> tuple[date, date]:
+    start_date = _norm_str(start_date)
+    end_date = _norm_str(end_date)
+    normalized_days_back = _norm_int(days_back)
     today_utc = today or datetime.now(timezone.utc).date()
-    normalized_days_back = _normalize_days_back(days_back)
+
     if normalized_days_back is not None:
         if normalized_days_back < 1:
             raise ValueError("--days-back must be >= 1")
+        if start_date or end_date:
+            log.info("Ignoring --start-date/--end-date because --days-back was provided")
         return today_utc - timedelta(days=normalized_days_back - 1), today_utc
 
     start = date.fromisoformat(start_date) if start_date else None
@@ -1074,9 +1110,25 @@ def main() -> None:
 
     parser = build_parser(DATA_DIR)
     args = parser.parse_args()
-    if args.days_back is None:
-        env_days_back = os.getenv("DAYS_BACK")
-        args.days_back = _normalize_days_back(env_days_back)
+
+    args.start_date = _norm_str(args.start_date)
+    args.end_date = _norm_str(args.end_date)
+    env_days_back = _norm_int(os.getenv("DAYS_BACK"))
+    args.days_back = _norm_int(args.days_back) if args.days_back is not None else env_days_back
+    args.append = _norm_bool(args.append, default=True)
+
+    log.info(
+        "Date arg debug before resolve_date_range: start_date=%r (%s), end_date=%r (%s), days_back=%r (%s)",
+        args.start_date,
+        type(args.start_date).__name__,
+        args.end_date,
+        type(args.end_date).__name__,
+        args.days_back,
+        type(args.days_back).__name__,
+    )
+
+    start_date, end_date = resolve_date_range(args.start_date, args.end_date, args.days_back)
+    log.info("Resolved date range: start=%s end=%s", start_date, end_date)
 
     snapshots_path = DATA_DIR / "market_lines_snapshots.csv"
     legacy_path = DATA_DIR / "market_lines.csv"
@@ -1093,71 +1145,10 @@ def main() -> None:
         log.info("Rebuilt views from master: latest_rows=%s", latest_rows)
         return
 
-    explicit_start = pd.to_datetime(args.start_date, errors="coerce").date() if args.start_date else None
-    explicit_end = pd.to_datetime(args.end_date, errors="coerce").date() if args.end_date else None
-    if (args.start_date and explicit_start is None) or (args.end_date and explicit_end is None):
-        raise ValueError("Invalid --start-date/--end-date. Use YYYY-MM-DD format.")
-
-    args.days_back = _normalize_days_back(args.days_back)
-    days_back = max(args.days_back or 0, args.backfill_days or 0)
-
-    if explicit_start and explicit_end:
-        if explicit_start > explicit_end:
-            raise ValueError("--start-date must be less than or equal to --end-date")
-        day_count = (explicit_end - explicit_start).days
-        for d in range(day_count + 1):
-            target = explicit_start + timedelta(days=d)
-            log.info("Backfill date: %s", target)
-            if args.mode == "all":
-                for mode in ["morning", "pregame", "postgame"]:
-                    run_capture(mode, DATA_DIR, override_date=target)
-                    time.sleep(REQUEST_DELAY)
-            else:
-                run_capture(args.mode, DATA_DIR, override_date=target)
-    elif days_back > 0:
-        for d in range(days_back, -1, -1):
-            target = date.today() - timedelta(days=d)
-            log.info("Backfill date: %s", target)
-            if args.mode == "all":
-                for mode in ["morning", "pregame", "postgame"]:
-                    run_capture(mode, DATA_DIR, override_date=target)
-                    time.sleep(REQUEST_DELAY)
-            else:
-                run_capture(args.mode, DATA_DIR, override_date=target)
-    elif args.mode == "all":
-        for mode in ["morning", "pregame", "postgame"]:
-            run_capture(mode, DATA_DIR)
-            time.sleep(REQUEST_DELAY)
-    else:
-        run_capture(args.mode, DATA_DIR)
-        
-    market_path = DATA_DIR / "market_lines_snapshots.csv"
-    odds_path = DATA_DIR / "odds_snapshot.csv"
-
-    if market_path.exists():
-        import shutil
-        shutil.copy2(market_path, legacy_path)
-        shutil.copy2(market_path, odds_path)
-        master_path = Path(args.master_file)
-        master_path.parent.mkdir(parents=True, exist_ok=True)
-        append_mode = str(args.append).lower() in {"1", "true", "yes", "y"}
-        if append_mode and master_path.exists() and master_path.stat().st_size > 0:
-            existing = pd.read_csv(master_path, dtype=str, low_memory=False)
-            latest = pd.read_csv(market_path, dtype=str, low_memory=False)
-            combined = pd.concat([existing, latest], ignore_index=True)
-            dedupe_cols = [c for c in ["event_id", "capture_type", "captured_at_utc", "book", "market_type"] if c in combined.columns]
-            if dedupe_cols:
-                combined = combined.drop_duplicates(subset=dedupe_cols, keep="last")
-            combined.to_csv(master_path, index=False)
-        else:
-            shutil.copy2(market_path, master_path)
-        regenerate_market_views(DATA_DIR)
-        log.info("Copied snapshots to legacy market_lines.csv, odds_snapshot.csv, and %s", master_path)
     if args.backfill_days > 0 and args.days_back is None and not args.start_date and not args.end_date:
-        args.days_back = args.backfill_days + 1
-
-    start_date, end_date = resolve_date_range(args.start_date, args.end_date, args.days_back)
-    log.info("Date range used: start=%s end=%s", start_date, end_date)
+        start_date = datetime.now(timezone.utc).date() - timedelta(days=args.backfill_days)
+        end_date = datetime.now(timezone.utc).date()
+        log.info("Using --backfill-days fallback range: start=%s end=%s", start_date, end_date)
 
     existing_master = pd.read_csv(master_path, dtype={"event_id": str}, low_memory=False) if master_path.exists() else pd.DataFrame()
     existing_master = normalize_numeric_dtypes(existing_master)
