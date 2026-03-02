@@ -17,3 +17,9 @@ data/*
 .vercel/
 vercel.json
 data/staging/
+
+# Environment secrets
+.env
+
+# Scraper logs (keep directory, not log files)
+logs/*.log
