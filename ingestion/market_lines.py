@@ -6,6 +6,7 @@ import argparse
 import logging
 import re
 import time
+import uuid
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
@@ -670,7 +671,28 @@ def append_market_rows(new_rows: list[dict], output_path: Path) -> int:
         df_new["verification_status"] = "verified"
     if "verification_notes" not in df_new.columns:
         df_new["verification_notes"] = "matched_espn_event"
-    df_new["capture_hour"] = pd.to_datetime(df_new["captured_at_utc"], utc=True).dt.floor("h")
+    def _pick_dedupe_key(df: pd.DataFrame) -> list[str]:
+        # Preferred order from ingestion hardening guidance.
+        key_priority = [
+            ["game_id", "book", "captured_at_utc"],
+            ["game_id", "book", "market_type", "line_type", "snapshot_ts"],
+            ["game_id", "book", "home_spread_current", "total_current", "home_ml", "away_ml", "run_id"],
+        ]
+        for key_cols in key_priority:
+            if all(col in df.columns for col in key_cols):
+                return key_cols
+
+        fallback_key = ["game_id", "capture_type", "captured_at_utc"]
+        available = [col for col in fallback_key if col in df.columns]
+        if available:
+            return available
+        return ["event_id", "capture_type", "captured_at_utc"]
+
+    # Keep a stable game_id alias for dedupe logic.
+    if "game_id" not in df_new.columns and "event_id" in df_new.columns:
+        df_new["game_id"] = df_new["event_id"]
+    if "run_id" not in df_new.columns:
+        df_new["run_id"] = df_new.get("pulled_at_utc", df_new.get("captured_at_utc"))
 
     if output_path.exists():
         df_existing = pd.read_csv(output_path, dtype={"event_id": str})
@@ -678,14 +700,17 @@ def append_market_rows(new_rows: list[dict], output_path: Path) -> int:
         for col in MARKET_LINES_SCHEMA_COLUMNS:
             if col not in df_existing.columns:
                 df_existing[col] = pd.NA
-        if "capture_hour" not in df_existing.columns:
-            df_existing["capture_hour"] = pd.to_datetime(df_existing["captured_at_utc"], utc=True).dt.floor("h").astype(str)
-        df_existing["capture_hour"] = df_existing["capture_hour"].astype(str)
-        df_new["capture_hour"] = df_new["capture_hour"].astype(str)
+        if "game_id" not in df_existing.columns and "event_id" in df_existing.columns:
+            df_existing["game_id"] = df_existing["event_id"]
+        if "run_id" not in df_existing.columns:
+            df_existing["run_id"] = df_existing.get("pulled_at_utc", df_existing.get("captured_at_utc"))
 
-        dedup_key = df_existing[["event_id", "capture_type", "capture_hour"]].apply(tuple, axis=1)
-        new_key = df_new[["event_id", "capture_type", "capture_hour"]].apply(tuple, axis=1)
-        df_new = df_new[~new_key.isin(dedup_key)]
+        dedupe_key_cols = _pick_dedupe_key(pd.concat([df_existing, df_new], ignore_index=True, sort=False))
+        dedup_key_existing = df_existing[dedupe_key_cols].astype(str).apply(tuple, axis=1)
+        dedup_key_new = df_new[dedupe_key_cols].astype(str).apply(tuple, axis=1)
+        df_new = df_new[~dedup_key_new.isin(set(dedup_key_existing))]
+        if not df_new.empty:
+            df_new = df_new.loc[~df_new[dedupe_key_cols].astype(str).apply(tuple, axis=1).duplicated(keep="first")]
 
         if df_new.empty:
             log.info("No new market rows to append")
@@ -693,12 +718,18 @@ def append_market_rows(new_rows: list[dict], output_path: Path) -> int:
 
         df_out = pd.concat([df_existing, df_new], ignore_index=True)
     else:
+        dedupe_key_cols = _pick_dedupe_key(df_new)
+        df_new = df_new.loc[~df_new[dedupe_key_cols].astype(str).apply(tuple, axis=1).duplicated(keep="first")]
         df_out = df_new
 
+    if "captured_at_utc" in df_out.columns:
+        df_out = df_out.sort_values("captured_at_utc", kind="mergesort")
+
     inserted = len(df_new)
-    df_out.drop(columns=["capture_hour"], errors="ignore", inplace=True)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    df_out.to_csv(output_path, index=False)
+    tmp_path = output_path.with_suffix(f".tmp.{uuid.uuid4().hex}")
+    df_out.to_csv(tmp_path, index=False)
+    tmp_path.replace(output_path)
     log.info("Appended %s market rows (%s total in market_lines.csv)", inserted, len(df_out))
     return inserted
 
