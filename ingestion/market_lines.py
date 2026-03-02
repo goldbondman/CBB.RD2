@@ -859,8 +859,31 @@ def write_latest_from_master(master_file: Path, latest_file: Path) -> int:
     return len(latest)
 
 
-def run_capture(mode: str, data_dir: Path, existing: pd.DataFrame, override_date: Optional[date] = None) -> list[dict]:
+def _load_existing_market_rows(data_dir: Path, existing: Optional[pd.DataFrame]) -> pd.DataFrame:
+    if existing is not None:
+        loaded = existing.copy()
+    else:
+        master_path = data_dir / "market_lines_master.csv"
+        if master_path.exists() and master_path.stat().st_size > 0:
+            loaded = pd.read_csv(master_path, dtype={"event_id": str}, low_memory=False)
+        else:
+            loaded = pd.DataFrame(columns=MARKET_LINES_SCHEMA_COLUMNS)
+
+    loaded = normalize_numeric_dtypes(loaded)
+    for col in MARKET_LINES_SCHEMA_COLUMNS:
+        if col not in loaded.columns:
+            loaded[col] = pd.NA
+    return loaded
+
+
+def run_capture(
+    mode: str,
+    data_dir: Path,
+    existing: Optional[pd.DataFrame] = None,
+    override_date: Optional[date] = None,
+) -> list[dict]:
     today = override_date or date.today()
+    existing_rows = _load_existing_market_rows(data_dir, existing)
     log.info("Market capture mode=%s date=%s", mode, today)
 
     log.info("Fetching ESPN scoreboard...")
@@ -968,7 +991,7 @@ def run_capture(mode: str, data_dir: Path, existing: pd.DataFrame, override_date
                 log.debug("Using DraftKings fallback for %s: %s", event_id, an_enrichment["dk_spread"])
                 dk_match = {"spread": an_enrichment["dk_spread"], "total": an_enrichment.get("dk_total")}
 
-        row = build_market_row(event_id, capture_type, parsed, pinn_match, dk_match, existing)
+        row = build_market_row(event_id, capture_type, parsed, pinn_match, dk_match, existing_rows)
         row["home_team_id"] = parsed.get("home_team_id")
         row["away_team_id"] = parsed.get("away_team_id")
         row["home_team_name"] = parsed.get("home_team_name")
@@ -1054,7 +1077,7 @@ def main() -> None:
     if (args.start_date and explicit_start is None) or (args.end_date and explicit_end is None):
         raise ValueError("Invalid --start-date/--end-date. Use YYYY-MM-DD format.")
 
-    days_back = max(args.days_back, args.backfill_days)
+    days_back = max(args.days_back or 0, args.backfill_days or 0)
 
     if explicit_start and explicit_end:
         if explicit_start > explicit_end:
