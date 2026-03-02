@@ -17,3 +17,7 @@ data/*
 .vercel/
 vercel.json
 data/staging/
+
+# Environment / secrets
+.env
+scrape.log

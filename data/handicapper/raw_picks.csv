@@ -5,3 +5,6 @@ raw_pick_id,tweet_id,handicapper_id,market,team_raw,line,units,odds,parse_status
 4,1845701234567890123,1,spread,Gonzaga,+2.5,1.0,,success,2026-02-28 18:22:15
 5,1845712345678901234,5,spread,Houston,-5.5,2.0,,success,2026-02-28 19:07:30
 6,1845678901234567890,1,spread,Wisconsin,,1.0,,implicit_opponent,2026-02-28 14:25:30
+rp_9000000000000000001,9000000000000000001,1,Duke -5.5 tonight. Sharp action confirmed. #CBB,,,,spread,parsed,2026-03-01T18:00:00Z
+rp_9000000000000000002,9000000000000000002,2,Kansas -7 at home vs Baylor. Back this one (2u),,,2.0,spread,parsed,2026-03-01T19:00:00Z
+rp_9000000000000000003,9000000000000000003,5,Houston/Memphis OVER 142.5 (1u),Over,142.5,1.0,total,parsed,2026-03-01T20:00:00Z
