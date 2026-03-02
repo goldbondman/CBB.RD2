@@ -83,6 +83,20 @@ python scripts/backfill_market_lines.py --days 14 --books draftkings
 python scripts/backfill_market_lines.py --days 7 --dry_run
 ```
 
+### Manual workflow convenience example
+
+If you are running a manual backfill workflow (for example via `workflow_dispatch`), use:
+
+- `days_back = 100`
+- `append = true`
+- `target_file = data/market_lines_master.csv`
+- `mode = pregame` (or `morning`)
+
+### Safety notes
+
+- Backfill is idempotent because master append applies dedupe keys before writing.
+- Do **not** run two backfills concurrently (they can race on the same append target).
+
 ### Output summary
 
 The script prints:
