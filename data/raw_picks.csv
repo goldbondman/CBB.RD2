@@ -1,8 +1,36 @@
-raw_pick_id,handicapper_id,handle,game_id,pick_team,pick_type,pick_spread,pick_total,pick_datetime_utc,source
-1,1,@CBB_Edge,401900101,Duke,spread,-5.5,,2026-02-28T18:30:00Z,twitter
-2,2,@HoopsLock,401900102,Kansas,spread,-7.0,,2026-02-28T19:00:00Z,twitter
-3,3,@CollegeLinesGuru,401900103,Gonzaga,moneyline,,,2026-02-28T20:00:00Z,twitter
-4,4,@BracketBuster,401900104,UConn,spread,+3.5,,2026-02-28T20:30:00Z,twitter
-5,5,@MidMajorMike,401900105,Murray State,spread,-4.0,,2026-02-28T21:00:00Z,twitter
-6,1,@CBB_Edge,401900101,Duke,moneyline,,,2026-02-28T18:35:00Z,twitter
-raw_pick_id,handicapper_id,tweet_id,raw_text,line,units,parse_status
+raw_pick_id,tweet_id,handicapper_id,market,team_raw,line,units,odds,parse_status
+1,1848995970241,8,spread,Random Junk,142.5,1.0,+120,failed
+2,1848110054933,2,fade,Gonzaga Bulldogs,142.5,2.5,,partial
+3,1844131575764,7,spread,Duke Blue Devils,2.5,2.0,-110,success
+4,1844026113008,4,total,St Johns Red Storm,2.5,1.0,,success
+5,1845728765136,1,spread,Duke Blue Devils,,2.5,,success
+6,1845996775663,7,total,Kansas Jayhawks,,2.5,,success
+7,1845996775663,6,fade,Gonzaga Bulldogs,-3.5,2.0,-110,success
+8,1846488854841,1,fade,Kansas Jayhawks,,1.0,-110,success
+9,1843783290795,1,total,Illinois Fighting Illini,142.5,2.0,,success
+10,1844332894265,1,moneyline,Duke Blue Devils,2.5,1.0,,failed
+11,1844026113008,3,total,Random Junk,,3.0,+120,success
+12,1843392080953,6,moneyline,Gonzaga Bulldogs,,1.5,,failed
+13,1846649827836,1,spread,Florida Atlantic Owls,-3.5,1.5,+120,success
+14,1847665963761,4,spread,St Johns Red Storm,135.0,1.5,,success
+15,1848995970241,5,spread,UConn Huskies,-3.5,2.0,+120,success
+16,1848110054933,1,fade,Random Junk,142.5,3.0,-110,success
+17,1844026113008,3,spread,Random Junk,2.5,1.0,,success
+18,1843783290795,7,moneyline,Kansas Jayhawks,-3.5,2.5,,success
+19,1845996775663,6,spread,Duke Blue Devils,,1.0,,success
+20,1842566942273,8,total,Gonzaga Bulldogs,2.5,2.5,,success
+21,1847665963761,3,total,Gonzaga Bulldogs,2.5,1.0,+120,success
+22,1843783290795,1,fade,Illinois Fighting Illini,,3.0,,success
+23,1844026113008,6,total,Illinois Fighting Illini,-3.5,2.5,-110,success
+24,1844332894265,5,moneyline,St Johns Red Storm,,2.0,-110,success
+25,1842351531223,1,spread,Kansas Jayhawks,135.0,1.0,,partial
+26,1843303082117,3,fade,Random Junk,2.5,1.0,-110,success
+27,1846488854841,2,spread,Gonzaga Bulldogs,-5.5,2.5,,success
+28,1843783290795,4,spread,Florida Atlantic Owls,-5.5,2.0,,success
+29,1842137651678,8,moneyline,Kansas Jayhawks,142.5,2.0,-110,success
+30,1842149938334,7,total,St Johns Red Storm,,3.0,,success
+31,1843479708607,3,total,St Johns Red Storm,,2.0,-110,success
+32,1846884882440,6,spread,Kansas Jayhawks,142.5,2.0,+120,fade_detected
+33,1846884882440,8,fade,St Johns Red Storm,142.5,2.0,,failed
+34,1846649827836,8,total,Kansas Jayhawks,142.5,1.5,+120,partial
+35,1842566942273,8,fade,UConn Huskies,2.5,3.0,-110,success

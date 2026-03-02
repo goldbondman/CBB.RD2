@@ -1,7 +1,26 @@
-tweet_id,handicapper_id,handle,tweet_text,tweet_datetime_utc,game_id,pick_side,pick_spread
-1001,1,@CBB_Edge,"Duke -5.5 tonight. Sharp action coming in on Blue Devils. #CBB",2026-02-28T18:30:00Z,401900101,Duke,-5.5
-1002,2,@HoopsLock,"Kansas covering at home vs Baylor. Line feels off. Play Kansas -7",2026-02-28T19:00:00Z,401900102,Kansas,-7.0
-1003,3,@CollegeLinesGuru,"Gonzaga ML vs Saint Mary's. Road game but talent gap is real.",2026-02-28T20:00:00Z,401900103,Gonzaga,
-1004,4,@BracketBuster,"UConn +3.5 getting 65% of tickets. Value on the dog here #CBB",2026-02-28T20:30:00Z,401900104,UConn,+3.5
-1005,5,@MidMajorMike,"Murray State -4 at home. Mid-major sleeper play this week.",2026-02-28T21:00:00Z,401900105,Murray State,-4.0
-tweet_id,handicapper_id,text,created_at,ingested_at
+tweet_id,handicapper_id,created_at,text,tweet_url,ingested_at
+1848429141456,5,2026-02-27 00:00:00,Arizona ML vs UCLA (2u) - Wildcats rolling General century ok entire design use.,https://twitter.com/test/status/0,2026-02-27 00:02:00
+1843303082117,1,2026-02-27 01:30:00,Illinois -3.5 (2u) vs Wisconsin. Bulls heating up Weight unit part.,https://twitter.com/test/status/1,2026-02-27 01:32:00
+1842625792787,1,2026-02-27 03:00:00,Iowa St +7 vs Kansas (3u) - live dog Film operation mind.,https://twitter.com/test/status/2,2026-02-27 03:02:00
+1847665963761,7,2026-02-27 04:30:00,Gonzaga +2.5 (1u) - Zags get no respect Else tell exactly seem top.,https://twitter.com/test/status/3,2026-02-27 04:32:00
+1848995970241,1,2026-02-27 06:00:00,UConn/Kentucky OVER 142.5 (3u) - fireworks incoming Southern deep wide.,https://twitter.com/test/status/4,2026-02-27 06:02:00
+1843479708607,8,2026-02-27 07:30:00,Illinois -3.5 (2u) vs Wisconsin. Bulls heating up Language at vote.,https://twitter.com/test/status/5,2026-02-27 07:32:00
+1844026113008,1,2026-02-27 09:00:00,Iowa St +7 vs Kansas (3u) - live dog Appear picture leave kid.,https://twitter.com/test/status/6,2026-02-27 09:02:00
+1849786748825,4,2026-02-27 10:30:00,Arizona ML vs UCLA (2u) - Wildcats rolling Walk be federal.,https://twitter.com/test/status/7,2026-02-27 10:32:00
+1845728765136,8,2026-02-27 12:00:00,Arizona ML vs UCLA (2u) - Wildcats rolling Close machine notice.,https://twitter.com/test/status/8,2026-02-27 12:02:00
+1846488854841,8,2026-02-27 13:30:00,Purdue/Kentucky UNDER 135 (1.5u) Yes whether maintain thousand.,https://twitter.com/test/status/9,2026-02-27 13:32:00
+1842566942273,7,2026-02-27 15:00:00,Iowa St +7 vs Kansas (3u) - live dog One particularly garden black arrive kid.,https://twitter.com/test/status/10,2026-02-27 15:02:00
+1846884882440,3,2026-02-27 16:30:00,Houston -5.5 (2u) - Cougars defense elite Eat scientist sit right.,https://twitter.com/test/status/11,2026-02-27 16:32:00
+1843783290795,3,2026-02-27 18:00:00,FADE Duke ML +120 vs UNC - overrated Produce white only player.,https://twitter.com/test/status/12,2026-02-27 18:02:00
+1844131575764,1,2026-02-27 19:30:00,Gonzaga +2.5 (1u) - Zags get no respect Property civil trial school some century.,https://twitter.com/test/status/13,2026-02-27 19:32:00
+1845996775663,8,2026-02-27 21:00:00,Iowa St +7 vs Kansas (3u) - live dog Organization mean score detail easy office.,https://twitter.com/test/status/14,2026-02-27 21:02:00
+1846924716023,3,2026-02-27 22:30:00,Purdue/Kentucky UNDER 135 (1.5u) Dog a woman control.,https://twitter.com/test/status/15,2026-02-27 22:32:00
+1843392080953,3,2026-02-28 00:00:00,FADE Duke ML +120 vs UNC - overrated Future picture tough political.,https://twitter.com/test/status/16,2026-02-28 00:02:00
+1848235363119,1,2026-02-28 01:30:00,FADE Duke ML +120 vs UNC - overrated Leave him spend discover fall.,https://twitter.com/test/status/17,2026-02-28 01:32:00
+1844332894265,3,2026-02-28 03:00:00,Illinois -3.5 (2u) vs Wisconsin. Bulls heating up This else state interesting.,https://twitter.com/test/status/18,2026-02-28 03:02:00
+1846649827836,5,2026-02-28 04:30:00,FADE Duke ML +120 vs UNC - overrated Present rest letter situation.,https://twitter.com/test/status/19,2026-02-28 04:32:00
+1842149938334,2,2026-02-28 06:00:00,Houston -5.5 (2u) - Cougars defense elite Almost information ahead.,https://twitter.com/test/status/20,2026-02-28 06:02:00
+1842351531223,7,2026-02-28 07:30:00,Arizona ML vs UCLA (2u) - Wildcats rolling Fight imagine serious political foreign.,https://twitter.com/test/status/21,2026-02-28 07:32:00
+1848110054933,2,2026-02-28 09:00:00,Purdue/Kentucky UNDER 135 (1.5u) Tend history everybody than feel class.,https://twitter.com/test/status/22,2026-02-28 09:02:00
+1842970753705,1,2026-02-28 10:30:00,FADE Duke ML +120 vs UNC - overrated Like others guy accept.,https://twitter.com/test/status/23,2026-02-28 10:32:00
+1842137651678,4,2026-02-28 12:00:00,Illinois -3.5 (2u) vs Wisconsin. Bulls heating up Yet politics picture character central hour.,https://twitter.com/test/status/24,2026-02-28 12:02:00
