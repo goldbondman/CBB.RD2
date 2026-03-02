@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import re
 import time
 import uuid
@@ -752,12 +753,29 @@ def _str_to_bool(value: str | bool) -> bool:
     raise argparse.ArgumentTypeError("append must be true/false")
 
 
-def resolve_date_range(start_date: Optional[str], end_date: Optional[str], days_back: Optional[int]) -> tuple[date, date]:
-    today_utc = datetime.now(timezone.utc).date()
-    if days_back is not None:
-        if days_back < 1:
+def _normalize_days_back(days_back: Optional[int | str]) -> Optional[int]:
+    if days_back in (None, ""):
+        return None
+    if isinstance(days_back, str):
+        value = days_back.strip()
+        if not value:
+            return None
+        return int(value)
+    return int(days_back)
+
+
+def resolve_date_range(
+    start_date: Optional[str],
+    end_date: Optional[str],
+    days_back: Optional[int | str],
+    today: Optional[date] = None,
+) -> tuple[date, date]:
+    today_utc = today or datetime.now(timezone.utc).date()
+    normalized_days_back = _normalize_days_back(days_back)
+    if normalized_days_back is not None:
+        if normalized_days_back < 1:
             raise ValueError("--days-back must be >= 1")
-        return today_utc - timedelta(days=days_back - 1), today_utc
+        return today_utc - timedelta(days=normalized_days_back - 1), today_utc
 
     start = date.fromisoformat(start_date) if start_date else None
     end = date.fromisoformat(end_date) if end_date else None
@@ -1056,6 +1074,9 @@ def main() -> None:
 
     parser = build_parser(DATA_DIR)
     args = parser.parse_args()
+    if args.days_back is None:
+        env_days_back = os.getenv("DAYS_BACK")
+        args.days_back = _normalize_days_back(env_days_back)
 
     snapshots_path = DATA_DIR / "market_lines_snapshots.csv"
     legacy_path = DATA_DIR / "market_lines.csv"
@@ -1077,6 +1098,7 @@ def main() -> None:
     if (args.start_date and explicit_start is None) or (args.end_date and explicit_end is None):
         raise ValueError("Invalid --start-date/--end-date. Use YYYY-MM-DD format.")
 
+    args.days_back = _normalize_days_back(args.days_back)
     days_back = max(args.days_back or 0, args.backfill_days or 0)
 
     if explicit_start and explicit_end:
