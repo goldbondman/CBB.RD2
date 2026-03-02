@@ -12,6 +12,26 @@ on:
       mode:
         description: 'Capture mode'
         default: 'pregame'
+      start_date:
+        description: 'Optional backfill start date (YYYY-MM-DD)'
+        required: false
+        default: ''
+      end_date:
+        description: 'Optional backfill end date (YYYY-MM-DD)'
+        required: false
+        default: ''
+      days_back:
+        description: 'Fallback rolling window (days) when no explicit date range provided'
+        required: false
+        default: '0'
+      append:
+        description: 'Append to existing target file instead of rewriting'
+        required: false
+        default: 'true'
+      target_file:
+        description: 'Durable market lines target file'
+        required: false
+        default: 'data/market_lines_master.csv'
 
 # Standardized concurrency group to prevent race conditions across all pipeline workflows
 concurrency:
@@ -74,15 +94,24 @@ jobs:
       - name: Initialize data directory
         run: |
           mkdir -p data
+          MASTER_FILE="${{ github.event.inputs.target_file || 'data/market_lines_master.csv' }}"
+          if [ ! -f "$MASTER_FILE" ]; then
+            echo "game_id,event_id,home_team_name,away_team_name,home_team_id,away_team_id,capture_type,captured_at_utc,pulled_at_utc,verification_status,verification_notes,home_spread_open,home_spread_current,line_movement,total_open,total_current,pinnacle_spread,draftkings_spread,home_tickets_pct,away_tickets_pct,home_money_pct,away_money_pct,steam_flag,rlm_flag,rlm_sharp_side,rlm_note,book_disagreement_flag,book_spread_diff,book_sharp_side,book_note,line_freeze_flag,home_win_prob,away_win_prob,home_ats_wins,home_ats_losses,away_ats_wins,away_ats_losses,home_ml,away_ml,spread,dk_spread,total,over_under,book,market_type,source" > "$MASTER_FILE"
+            echo "[INIT] Created empty $MASTER_FILE with headers"
+          fi
           if [ ! -f data/market_lines.csv ]; then
-            echo "event_id,capture_type,captured_at_utc,home_spread_open,home_spread_current,line_movement,total_open,total_current,pinnacle_spread,draftkings_spread,home_tickets_pct,away_tickets_pct,home_money_pct,away_money_pct,steam_flag,rlm_flag,rlm_sharp_side,rlm_note,book_disagreement_flag,book_spread_diff,book_sharp_side,line_freeze_flag" > data/market_lines.csv
-            echo "[INIT] Created empty market_lines.csv with headers"
+            echo "[INFO] data/market_lines.csv not present (optional legacy file)"
           fi
 
       # Execute market lines capture
       - name: Run ingestion/market_lines.py
         run: |
           MODE="${{ github.event.inputs.mode }}"
+          START_DATE="${{ github.event.inputs.start_date }}"
+          END_DATE="${{ github.event.inputs.end_date }}"
+          DAYS_BACK="${{ github.event.inputs.days_back || '0' }}"
+          APPEND="${{ github.event.inputs.append || 'true' }}"
+          MASTER_FILE="${{ github.event.inputs.target_file || 'data/market_lines_master.csv' }}"
           if [ -z "$MODE" ]; then
             HOUR=$(date -u +%H)
             if [ "$HOUR" = "05" ]; then MODE="postgame"
@@ -91,7 +120,13 @@ jobs:
             # If triggered by workflow_run, use 'morning' mode
             if [ "${{ github.event_name }}" = "workflow_run" ]; then MODE="morning"; fi
           fi
-          python -m ingestion.market_lines --mode "$MODE"
+          python -m ingestion.market_lines \
+            --mode "$MODE" \
+            --start-date "$START_DATE" \
+            --end-date "$END_DATE" \
+            --days-back "$DAYS_BACK" \
+            --append "$APPEND" \
+            --master-file "$MASTER_FILE"
 
       # Pattern 2: Validate market_lines.csv is non-empty
       - name: Validate market lines output
@@ -107,7 +142,8 @@ jobs:
             fi
             echo "[OK] $f: $rows rows"
           }
-          check_csv data/market_lines.csv 1
+          MASTER_FILE="${{ github.event.inputs.target_file || 'data/market_lines_master.csv' }}"
+          check_csv "$MASTER_FILE" 1
 
       # Run enrichment
       - name: Run enrichment/predictions_with_context.py
@@ -150,7 +186,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
+          git add \
+            data/market_lines_master.csv \
+            data/market_lines_latest.csv \
+            data/odds_snapshot.csv \
+            data/predictions_with_context.csv
           if git diff --staged --quiet; then
             echo "[SKIP] No changes to commit"
             exit 0

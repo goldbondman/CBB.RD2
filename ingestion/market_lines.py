@@ -918,6 +918,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["morning", "pregame", "postgame", "all"], default="pregame")
     parser.add_argument("--backfill-days", type=int, default=0)
+    parser.add_argument("--start-date", type=str, default="")
+    parser.add_argument("--end-date", type=str, default="")
+    parser.add_argument("--days-back", type=int, default=0)
+    parser.add_argument("--append", type=str, default="true")
+    parser.add_argument("--master-file", type=str, default="data/market_lines_master.csv")
     parser.add_argument("--build-views-only", action="store_true")
     args = parser.parse_args()
 
@@ -929,8 +934,28 @@ def main() -> None:
         regenerate_market_views(DATA_DIR)
         return
 
-    if args.backfill_days > 0:
-        for d in range(args.backfill_days, -1, -1):
+    explicit_start = pd.to_datetime(args.start_date, errors="coerce").date() if args.start_date else None
+    explicit_end = pd.to_datetime(args.end_date, errors="coerce").date() if args.end_date else None
+    if (args.start_date and explicit_start is None) or (args.end_date and explicit_end is None):
+        raise ValueError("Invalid --start-date/--end-date. Use YYYY-MM-DD format.")
+
+    days_back = max(args.days_back, args.backfill_days)
+
+    if explicit_start and explicit_end:
+        if explicit_start > explicit_end:
+            raise ValueError("--start-date must be less than or equal to --end-date")
+        day_count = (explicit_end - explicit_start).days
+        for d in range(day_count + 1):
+            target = explicit_start + timedelta(days=d)
+            log.info("Backfill date: %s", target)
+            if args.mode == "all":
+                for mode in ["morning", "pregame", "postgame"]:
+                    run_capture(mode, DATA_DIR, override_date=target)
+                    time.sleep(REQUEST_DELAY)
+            else:
+                run_capture(args.mode, DATA_DIR, override_date=target)
+    elif days_back > 0:
+        for d in range(days_back, -1, -1):
             target = date.today() - timedelta(days=d)
             log.info("Backfill date: %s", target)
             if args.mode == "all":
@@ -953,8 +978,21 @@ def main() -> None:
         import shutil
         shutil.copy2(market_path, legacy_path)
         shutil.copy2(market_path, odds_path)
+        master_path = Path(args.master_file)
+        master_path.parent.mkdir(parents=True, exist_ok=True)
+        append_mode = str(args.append).lower() in {"1", "true", "yes", "y"}
+        if append_mode and master_path.exists() and master_path.stat().st_size > 0:
+            existing = pd.read_csv(master_path, dtype=str, low_memory=False)
+            latest = pd.read_csv(market_path, dtype=str, low_memory=False)
+            combined = pd.concat([existing, latest], ignore_index=True)
+            dedupe_cols = [c for c in ["event_id", "capture_type", "captured_at_utc", "book", "market_type"] if c in combined.columns]
+            if dedupe_cols:
+                combined = combined.drop_duplicates(subset=dedupe_cols, keep="last")
+            combined.to_csv(master_path, index=False)
+        else:
+            shutil.copy2(market_path, master_path)
         regenerate_market_views(DATA_DIR)
-        log.info("Copied snapshots to legacy market_lines.csv and odds_snapshot.csv")
+        log.info("Copied snapshots to legacy market_lines.csv, odds_snapshot.csv, and %s", master_path)
 
 
 if __name__ == "__main__":
