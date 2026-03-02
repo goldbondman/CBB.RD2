@@ -1,0 +1,24 @@
+defaults:
+  small_row_threshold: 50
+
+files:
+  - pattern: "data/market_lines.csv"
+    expected:
+      min_rows: 1
+      note: "Market capture starts small; should grow daily."
+  - pattern: "data/line_movement_features.csv"
+    expected:
+      min_rows: 1
+      note: "Derived from market_lines; matches its coverage."
+  - pattern: "data/results_alerts.csv"
+    expected:
+      min_rows: 0
+      note: "Schema-only; may be empty unless alerts triggered."
+  - pattern: "data/team_game_logs.csv"
+    expected:
+      min_rows: 8000
+      note: "Roughly teams x games; should be large mid-season."
+  - pattern: "data/player_game_logs.csv"
+    expected:
+      min_rows: 50000
+      note: "Should be large if player boxscores are flowing."

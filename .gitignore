@@ -6,6 +6,7 @@ data/*
 !data/*.csv
 !data/*.json
 !data/*.md
+!data/dq_expectations.yml
 !data/archive/
 !data/archive/**
 !data/handicapper/
