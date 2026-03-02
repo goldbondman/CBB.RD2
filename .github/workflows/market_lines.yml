@@ -186,11 +186,26 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add \
-            data/market_lines_master.csv \
-            data/market_lines_latest.csv \
-            data/odds_snapshot.csv \
+          candidate_files=(
+            data/market_lines_master.csv
+            data/market_lines_latest.csv
+            data/odds_snapshot.csv
             data/predictions_with_context.csv
+          )
+          files_to_stage=()
+          for file in "${candidate_files[@]}"; do
+            if [ -f "$file" ]; then
+              echo "[OK] Will stage: $file"
+              files_to_stage+=("$file")
+            else
+              echo "[WARN] Missing, skipping: $file"
+            fi
+          done
+          if [ ${#files_to_stage[@]} -eq 0 ]; then
+            echo "[SKIP] No files to stage"
+            exit 0
+          fi
+          git add "${files_to_stage[@]}"
           if git diff --staged --quiet; then
             echo "[SKIP] No changes to commit"
             exit 0
