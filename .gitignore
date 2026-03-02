@@ -18,3 +18,5 @@ data/*
 .vercel/
 vercel.json
 data/staging/
+
+!data/.market_master_rowcount
