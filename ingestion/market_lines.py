@@ -44,6 +44,7 @@ PUBLIC_BET_THRESHOLD = 65
 RLM_LINE_MOVE_MIN = 0.5
 
 MARKET_LINES_SCHEMA_COLUMNS = [
+    "game_id",
     "event_id",
     "home_team_name",
     "away_team_name",
@@ -86,7 +87,12 @@ MARKET_LINES_SCHEMA_COLUMNS = [
     "dk_spread",
     "total",
     "over_under",
+    "book",
+    "market_type",
+    "source",
 ]
+
+SNAPSHOT_GROUP_KEYS = ["game_id", "book", "market_type"]
 
 
 def bootstrap_market_lines_schema(path: str | Path) -> Path:
@@ -112,6 +118,95 @@ def bootstrap_market_lines_schema(path: str | Path) -> Path:
     df.to_csv(market_path, index=False)
     log.info("Bootstrapped market lines schema at %s", market_path)
     return market_path
+
+
+def _find_snapshot_ts_column(df: pd.DataFrame) -> str:
+    for candidate in ["captured_at_utc", "pulled_at_utc"]:
+        if candidate in df.columns:
+            return candidate
+    raise RuntimeError("Market snapshots missing timestamp columns: expected captured_at_utc or pulled_at_utc")
+
+
+def regenerate_market_views(data_dir: Path) -> tuple[int, int]:
+    """Build latest/closing line views from append-only snapshots."""
+    snapshots_path = data_dir / "market_lines_snapshots.csv"
+    latest_path = data_dir / "market_lines_latest.csv"
+    closing_path = data_dir / "market_lines_closing.csv"
+    games_path = data_dir / "games.csv"
+
+    if not snapshots_path.exists() and (data_dir / "market_lines.csv").exists():
+        snapshots_path.write_text((data_dir / "market_lines.csv").read_text())
+
+    bootstrap_market_lines_schema(snapshots_path)
+    snapshots = pd.read_csv(snapshots_path, dtype=str, low_memory=False)
+    if snapshots.empty and (data_dir / "market_lines.csv").exists():
+        snapshots = pd.read_csv(data_dir / "market_lines.csv", dtype=str, low_memory=False)
+        if not snapshots.empty:
+            snapshots.to_csv(snapshots_path, index=False)
+
+    if snapshots.empty:
+        pd.DataFrame(columns=MARKET_LINES_SCHEMA_COLUMNS).to_csv(latest_path, index=False)
+        pd.DataFrame(columns=MARKET_LINES_SCHEMA_COLUMNS).to_csv(closing_path, index=False)
+        log.info("Market view build skipped: no snapshots present")
+        return 0, 0
+
+    for col in MARKET_LINES_SCHEMA_COLUMNS:
+        if col not in snapshots.columns:
+            snapshots[col] = pd.NA
+
+    ts_col = _find_snapshot_ts_column(snapshots)
+    snapshots["captured_at_utc"] = pd.to_datetime(snapshots[ts_col], utc=True, errors="coerce")
+    snapshots = snapshots.dropna(subset=["captured_at_utc"]).copy()
+    snapshots["book"] = snapshots.get("book", pd.Series(dtype=str)).fillna("consensus")
+    snapshots["market_type"] = snapshots.get("market_type", pd.Series(dtype=str)).fillna("spread")
+    snapshots["source"] = snapshots.get("source", pd.Series(dtype=str)).fillna("ESPN")
+    if "game_id" not in snapshots.columns:
+        snapshots["game_id"] = snapshots.get("event_id")
+    snapshots["game_id"] = snapshots["game_id"].fillna(snapshots.get("event_id")).astype(str)
+
+    latest = (
+        snapshots.sort_values("captured_at_utc")
+        .groupby(SNAPSHOT_GROUP_KEYS, as_index=False)
+        .tail(1)
+        .sort_values(SNAPSHOT_GROUP_KEYS)
+    )
+
+    games = pd.read_csv(games_path, dtype=str, low_memory=False) if games_path.exists() else pd.DataFrame()
+    if not games.empty:
+        games["game_id"] = games.get("game_id", pd.Series(dtype=str)).astype(str)
+        games["game_datetime_utc"] = pd.to_datetime(games.get("game_datetime_utc"), utc=True, errors="coerce")
+        games["final_score_ts"] = pd.to_datetime(games.get("final_score_timestamp_utc"), utc=True, errors="coerce")
+        games["completed_flag"] = games.get("completed", pd.Series(dtype=str)).astype(str).str.lower().isin({"1", "true", "t", "yes", "final"})
+        games_min = games[["game_id", "game_datetime_utc", "final_score_ts", "completed_flag"]].drop_duplicates("game_id")
+    else:
+        games_min = pd.DataFrame(columns=["game_id", "game_datetime_utc", "final_score_ts", "completed_flag"])
+
+    merged = snapshots.merge(games_min, on="game_id", how="left")
+
+    def _pick_closing(group: pd.DataFrame) -> pd.Series:
+        g = group.sort_values("captured_at_utc")
+        start_ts = g["game_datetime_utc"].iloc[0] if "game_datetime_utc" in g.columns else pd.NaT
+        if pd.notna(start_ts):
+            before_start = g[g["captured_at_utc"] < start_ts]
+            if not before_start.empty:
+                return before_start.iloc[-1]
+
+        completed = bool(g["completed_flag"].iloc[0]) if "completed_flag" in g.columns else False
+        if completed:
+            final_ts = g["final_score_ts"].iloc[0] if "final_score_ts" in g.columns else pd.NaT
+            if pd.notna(final_ts):
+                before_final = g[g["captured_at_utc"] < final_ts]
+                if not before_final.empty:
+                    return before_final.iloc[-1]
+        return g.iloc[-1]
+
+    closing = merged.groupby(SNAPSHOT_GROUP_KEYS, group_keys=False).apply(_pick_closing).reset_index(drop=True)
+    latest["captured_at_utc"] = latest["captured_at_utc"].dt.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+    closing["captured_at_utc"] = closing["captured_at_utc"].dt.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+    latest.to_csv(latest_path, index=False)
+    closing.to_csv(closing_path, index=False)
+    log.info("Regenerated market views from snapshots: latest=%s closing=%s", len(latest), len(closing))
+    return len(latest), len(closing)
 
 
 def fetch_action_network(game_date: date) -> list[dict]:
@@ -519,6 +614,7 @@ def build_market_row(
         line_movement = round(float(home_spread) - float(spread_open), 2)
 
     return {
+        "game_id": event_id,
         "event_id": event_id,
         "capture_type": capture_type,
         "captured_at_utc": now,
@@ -556,6 +652,9 @@ def build_market_row(
         "away_ats_losses": market_data.get("away_ats_losses"),
         "home_team_name": market_data.get("home_team_name"),
         "away_team_name": market_data.get("away_team_name"),
+        "book": "consensus",
+        "market_type": "spread",
+        "source": "ESPN",
     }
 
 
@@ -608,8 +707,7 @@ def run_capture(mode: str, data_dir: Path, override_date: Optional[date] = None)
     today = override_date or date.today()
     log.info("Market capture mode=%s date=%s", mode, today)
 
-    market_path = bootstrap_market_lines_schema(data_dir)
-    market_path = bootstrap_market_lines_schema(data_dir / "market_lines.csv")
+    market_path = bootstrap_market_lines_schema(data_dir / "market_lines_snapshots.csv")
     existing = pd.read_csv(market_path, dtype={"event_id": str}) if market_path.exists() else pd.DataFrame()
     existing = normalize_numeric_dtypes(existing)
 
@@ -789,9 +887,17 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["morning", "pregame", "postgame", "all"], default="pregame")
     parser.add_argument("--backfill-days", type=int, default=0)
+    parser.add_argument("--build-views-only", action="store_true")
     args = parser.parse_args()
 
-    bootstrap_market_lines_schema(DATA_DIR / "market_lines.csv")
+    snapshots_path = DATA_DIR / "market_lines_snapshots.csv"
+    legacy_path = DATA_DIR / "market_lines.csv"
+
+    bootstrap_market_lines_schema(snapshots_path)
+    if args.build_views_only:
+        regenerate_market_views(DATA_DIR)
+        return
+
     if args.backfill_days > 0:
         for d in range(args.backfill_days, -1, -1):
             target = date.today() - timedelta(days=d)
@@ -809,15 +915,15 @@ def main() -> None:
     else:
         run_capture(args.mode, DATA_DIR)
         
-    market_path = DATA_DIR / "market_lines.csv"
-    latest_path = DATA_DIR / "market_lines_latest.csv"
+    market_path = DATA_DIR / "market_lines_snapshots.csv"
     odds_path = DATA_DIR / "odds_snapshot.csv"
-    
+
     if market_path.exists():
         import shutil
-        shutil.copy2(market_path, latest_path)
+        shutil.copy2(market_path, legacy_path)
         shutil.copy2(market_path, odds_path)
-        log.info("Copied market_lines.csv to market_lines_latest.csv and odds_snapshot.csv")
+        regenerate_market_views(DATA_DIR)
+        log.info("Copied snapshots to legacy market_lines.csv and odds_snapshot.csv")
 
 
 if __name__ == "__main__":
