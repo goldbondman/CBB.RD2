@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Generate CSV data quality report for CI gating."""
 """Audit CSV row counts and render a markdown quality report.
 
 Pattern matching for expectation rules uses shell-style globs (fnmatch),
@@ -8,279 +9,39 @@ The first matching rule wins.
 
 from __future__ import annotations
 
-import argparse
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, Iterable, List
-
-import pandas as pd
-
-TARGET_STAT_COLUMNS = [
-    "ortg",
-    "drtg",
-    "net_rtg",
-    "pace",
-    "efg_pct",
-    "ts_pct",
-    "barthag",
-    "luck_score",
-]
-
-DEFAULT_VALUE_THRESHOLDS: Dict[str, float] = {
-    "barthag": 0.5,
-    "ens_total": 144.2,
-}
-DEFAULT_MATCH_RATIO = 0.95
-
-
-@dataclass
-class AdvancedStatResult:
-    file_name: str
-    column: str
-    non_null_count: int
-    mean: float | None
-    std: float | None
-    min_value: float | None
-    max_value: float | None
-    unique_count: int
-    dead_constant_or_default: bool
-    reasons: List[str]
-
-
-def _to_optional_float(value: float) -> float | None:
-    if pd.isna(value):
-        return None
-    return float(value)
-
-
-def _calc_advanced_stats(df: pd.DataFrame, file_name: str) -> List[AdvancedStatResult]:
-    results: List[AdvancedStatResult] = []
-    candidate_columns = list(dict.fromkeys([*TARGET_STAT_COLUMNS, *DEFAULT_VALUE_THRESHOLDS.keys()]))
-    columns_to_check = [c for c in candidate_columns if c in df.columns]
-
-    for col in columns_to_check:
-        numeric = pd.to_numeric(df[col], errors="coerce")
-        non_null = numeric.dropna()
-
-        non_null_count = int(non_null.shape[0])
-        mean = _to_optional_float(non_null.mean()) if non_null_count else None
-        std = _to_optional_float(non_null.std()) if non_null_count else None
-        min_value = _to_optional_float(non_null.min()) if non_null_count else None
-        max_value = _to_optional_float(non_null.max()) if non_null_count else None
-        unique_count = int(non_null.nunique(dropna=True)) if non_null_count else 0
-
-        reasons: List[str] = []
-        if non_null_count > 0 and unique_count <= 1:
-            reasons.append("unique_count<=1")
-        if non_null_count > 0 and std == 0:
-            reasons.append("std==0")
-
-        default_value = DEFAULT_VALUE_THRESHOLDS.get(col)
-        if non_null_count > 0 and default_value is not None:
-            default_ratio = float((non_null == default_value).mean())
-            if default_ratio >= DEFAULT_MATCH_RATIO:
-                reasons.append(
-                    f"default_value_ratio>={DEFAULT_MATCH_RATIO:.0%}"
-                    f" (value={default_value}, ratio={default_ratio:.1%})"
-                )
-
-        results.append(
-            AdvancedStatResult(
-                file_name=file_name,
-                column=col,
-                non_null_count=non_null_count,
-                mean=mean,
-                std=std,
-                min_value=min_value,
-                max_value=max_value,
-                unique_count=unique_count,
-                dead_constant_or_default=bool(reasons),
-                reasons=reasons,
-            )
-        )
-
-    return results
-
-
-def _fmt_float(v: float | None) -> str:
-    if v is None:
-        return "n/a"
-    return f"{v:.4f}"
-
-
-def _iter_csv_files(data_dir: Path) -> Iterable[Path]:
-    return sorted(data_dir.glob("*.csv"))
-
-
-def build_report(data_dir: Path) -> str:
-    lines: List[str] = ["# CSV Quality Audit", ""]
-    all_results: List[AdvancedStatResult] = []
-    errors: List[str] = []
-
-    for csv_path in _iter_csv_files(data_dir):
-        try:
-            df = pd.read_csv(csv_path, low_memory=False)
-        except Exception as exc:
-            errors.append(f"- `{csv_path.name}`: failed to read ({exc})")
-            continue
-        all_results.extend(_calc_advanced_stats(df, csv_path.name))
-
-    lines.append("## Advanced Stats Health")
-    lines.append("")
-
-    flagged = [r for r in all_results if r.dead_constant_or_default]
-    if not flagged:
-        lines.append("No advanced stat columns were flagged as dead_constant_or_default.")
-    else:
-        lines.append("Flagged `(file, column)` pairs:")
-        lines.append("")
-        lines.append("| File | Column | non_null_count | unique_count | min | max | mean | std | Reasons |")
-        lines.append("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
-        for row in flagged:
-            lines.append(
-                "| {file} | {col} | {nn} | {uc} | {minv} | {maxv} | {mean} | {std} | {reasons} |".format(
-                    file=row.file_name,
-                    col=row.column,
-                    nn=row.non_null_count,
-                    uc=row.unique_count,
-                    minv=_fmt_float(row.min_value),
-                    maxv=_fmt_float(row.max_value),
-                    mean=_fmt_float(row.mean),
-                    std=_fmt_float(row.std),
-                    reasons=", ".join(row.reasons),
-                )
-            )
-
-    if errors:
-        lines.extend(["", "## Read Errors", "", *errors])
-import re
-from dataclasses import dataclass
 from fnmatch import fnmatch
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
-try:
-    import yaml
-except Exception:  # pragma: no cover - fallback when yaml isn't installed
-    yaml = None
+
+CONFIG_PATH = Path("config/data_quality_gate.yml")
+OUTPUT_CSV = Path("data/dq_report_v2.csv")
+OUTPUT_MD = Path("data/dq_report_v2.md")
 
 
-DEFAULT_SMALL_ROW_THRESHOLD = 50
-DEFAULT_EXPECTATIONS_PATH = Path("data/dq_expectations.yml")
-
-
-def _strip_quotes(value: str) -> str:
-    value = value.strip()
-    if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
-        return value[1:-1]
-    return value
-
-
-def parse_expectations_fallback(path: Path) -> dict:
-    """Parse a minimal subset of YAML used by dq_expectations.yml."""
-    raw = path.read_text(encoding="utf-8")
-    out: dict = {"defaults": {}, "files": []}
-
-    threshold_match = re.search(r"^\s*small_row_threshold:\s*(\d+)\s*$", raw, flags=re.MULTILINE)
-    if threshold_match:
-        out["defaults"]["small_row_threshold"] = int(threshold_match.group(1))
-
-    file_chunks = re.split(r"^\s*-\s+pattern:\s*", raw, flags=re.MULTILINE)[1:]
-    for chunk in file_chunks:
-        lines = chunk.splitlines()
-        if not lines:
-            continue
-        pattern = _strip_quotes(lines[0])
-        min_rows_match = re.search(r"^\s*min_rows:\s*(-?\d+)\s*$", chunk, flags=re.MULTILINE)
-        note_match = re.search(r"^\s*note:\s*(.+?)\s*$", chunk, flags=re.MULTILINE)
-
-        expected: dict = {}
-        if min_rows_match:
-            expected["min_rows"] = int(min_rows_match.group(1))
-        if note_match:
-            expected["note"] = _strip_quotes(note_match.group(1))
-
-        out["files"].append({"pattern": pattern, "expected": expected})
-
-    return out
-
-
-@dataclass
-class ExpectationRule:
-    pattern: str
-    min_rows: int | None
-    note: str | None
-
-
-@dataclass
-class FileAudit:
-    path: str
-    row_count: int
-    suspicious_small_rows: bool
-    expected_min_rows: int | None
-    below_expected_min_rows: bool
-    expectation_note: str | None
-    small_rows_status: str
-
-
-def load_expectations(path: Path) -> tuple[int, list[ExpectationRule]]:
-    """Return (small_row_threshold, ordered_expectation_rules)."""
-    if not path.exists() or path.stat().st_size == 0:
-        return DEFAULT_SMALL_ROW_THRESHOLD, []
-
-    if yaml is not None:
-        with path.open("r", encoding="utf-8") as f:
-            raw = yaml.safe_load(f) or {}
-    else:
-        raw = parse_expectations_fallback(path)
-
-    defaults = raw.get("defaults") if isinstance(raw, dict) else {}
-    small_row_threshold = DEFAULT_SMALL_ROW_THRESHOLD
-    if isinstance(defaults, dict):
-        value = defaults.get("small_row_threshold")
-        if isinstance(value, int):
-            small_row_threshold = value
-
-    rules: list[ExpectationRule] = []
-    files = raw.get("files") if isinstance(raw, dict) else []
-    if not isinstance(files, list):
-        return small_row_threshold, rules
-
-    for entry in files:
-        if not isinstance(entry, dict):
-            continue
-        pattern = entry.get("pattern")
-        expected = entry.get("expected")
-        if not isinstance(pattern, str):
-            continue
-        min_rows = None
-        note = None
-        if isinstance(expected, dict):
-            min_value = expected.get("min_rows")
-            if isinstance(min_value, int):
-                min_rows = min_value
-            note_value = expected.get("note")
-            if isinstance(note_value, str):
-                note = note_value
-        rules.append(ExpectationRule(pattern=pattern, min_rows=min_rows, note=note))
-
-    return small_row_threshold, rules
-
-
-def first_matching_rule(path: str, rules: list[ExpectationRule]) -> ExpectationRule | None:
-    for rule in rules:
-        if fnmatch(path, rule.pattern):
-            return rule
-    return None
-
-
-def count_rows(path: Path) -> int:
-    if not path.exists() or path.stat().st_size == 0:
-        return 0
+def load_config(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        raise SystemExit(f"Missing config file: {path}")
     try:
-        return len(pd.read_csv(path, low_memory=False))
+        import yaml  # type: ignore
+        with path.open("r", encoding="utf-8") as fh:
+            raw = yaml.safe_load(fh) or {}
+        return raw if isinstance(raw, dict) else {}
     except Exception:
+        pass
+
+    config: dict[str, Any] = {"defaults": {}, "schedule": {}, "canonical_files": [], "market_lines": {"paths": []}}
+    section = None
+    current_item: dict[str, Any] | None = None
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.split("#", 1)[0].rstrip()
+        if not line.strip():
+            continue
+        if not line.startswith(" ") and line.endswith(":"):
+            section = line[:-1].strip()
+            current_item = None
         return 0
 
 
@@ -608,6 +369,46 @@ def audit_csvs() -> None:
         except Exception as exc:  # noqa: BLE001
             failed_files.append((str(file_path), str(exc)))
             continue
+        if section in {"defaults", "schedule"} and ":" in line:
+            k, v = [x.strip() for x in line.split(":", 1)]
+            config[section][k] = _coerce_scalar(v)
+        elif section == "canonical_files":
+            s = line.strip()
+            if s.startswith("- "):
+                current_item = {}
+                config["canonical_files"].append(current_item)
+                s = s[2:]
+                if ":" in s:
+                    k, v = [x.strip() for x in s.split(":", 1)]
+                    current_item[k] = _coerce_scalar(v)
+            elif current_item is not None and ":" in s:
+                k, v = [x.strip() for x in s.split(":", 1)]
+                current_item[k] = _coerce_scalar(v)
+        elif section == "market_lines" and line.strip().startswith("- "):
+            config["market_lines"]["paths"].append(_coerce_scalar(line.strip()[2:]))
+    return config
+
+
+def _coerce_scalar(raw: str) -> Any:
+    raw = raw.strip().strip("\'\"")
+    if raw.lower() in {"true", "false"}:
+        return raw.lower() == "true"
+    try:
+        if "." in raw:
+            return float(raw)
+        return int(raw)
+    except ValueError:
+        return raw
+
+
+def expected_min_for(file_path: str, canonical_files: list[dict[str, Any]]) -> int | None:
+    for item in canonical_files:
+        pattern = item.get("path")
+        if isinstance(pattern, str) and fnmatch(file_path, pattern):
+            value = item.get("expected_min_rows")
+            if isinstance(value, int):
+                return value
+    return None
 
         row_count = len(df)
         col_count = len(df.columns)
@@ -635,52 +436,108 @@ def audit_csvs() -> None:
                 if not non_null_values.empty:
                     constant_value = _stringify_constant(non_null_values.iloc[0])
 
-            all_null_flag = bool(row_count > 0 and null_count == row_count)
+def detect_date_column(df: pd.DataFrame) -> str | None:
+    for col in ("game_datetime_utc", "commence_time", "game_date", "date", "start_time"):
+        if col in df.columns:
+            return col
+    return None
 
-            zero_count = 0
-            zero_pct = 0.0
-            all_zero_flag = False
-            if _is_numeric_series(series):
-                numeric_series = pd.to_numeric(series, errors="coerce")
-                zero_count = int(numeric_series.eq(0).sum())
-                zero_pct = _safe_pct(zero_count, row_count)
-                all_zero_flag = bool(row_count > 0 and zero_count == row_count)
 
-            if null_count > 0:
-                cols_with_nulls += 1
-            if all_null_flag:
-                all_null_cols += 1
-            if all_zero_flag:
-                all_zero_cols += 1
-            if constant_flag:
-                constant_cols += 1
+def build_report() -> int:
+    config = load_config(CONFIG_PATH)
+    canonical = config.get("canonical_files", []) if isinstance(config.get("canonical_files"), list) else []
 
-            column_rows.append(
+    rows: list[dict[str, Any]] = []
+    for csv_path in sorted(Path("data").glob("*.csv")):
+        rel = csv_path.as_posix()
+        try:
+            df = pd.read_csv(csv_path, low_memory=False)
+        except Exception as exc:  # noqa: BLE001
+            rows.append(
                 {
-                    "file_path": str(file_path),
-                    "row_count": row_count,
-                    "col_count": col_count,
-                    "column": col,
-                    "dtype": dtype,
-                    "null_count": null_count,
-                    "null_pct": null_pct,
-                    "zero_count": zero_count,
-                    "zero_pct": zero_pct,
-                    "unique_count": unique_count,
-                    "constant_flag": constant_flag,
-                    "constant_value": constant_value,
-                    "all_null_flag": all_null_flag,
-                    "all_zero_flag": all_zero_flag,
+                    "file_path": rel,
+                    "read_ok": False,
+                    "read_error": str(exc),
+                    "row_count": 0,
+                    "col_count": 0,
+                    "all_null_cols": 0,
+                    "all_null_col_pct": 0.0,
+                    "rolling_col_count": 0,
+                    "rolling_all_null_col_count": 0,
+                    "rolling_broken_flag": True,
+                    "expected_min_rows": expected_min_for(rel, canonical),
+                    "below_expected_min_rows": False,
+                    "market_games_last_7d": 0,
                 }
             )
+            continue
 
+        row_count = int(len(df))
+        col_count = int(len(df.columns))
+        null_counts = df.isna().sum() if col_count else pd.Series(dtype=int)
+        all_null_cols = int((null_counts == row_count).sum()) if row_count > 0 else int(col_count)
+        all_null_col_pct = round((all_null_cols / col_count) * 100.0, 2) if col_count else 0.0
+
+        rolling_cols = [c for c in df.columns if ("rolling" in c.lower()) or fnmatch(c.lower(), "*_l[0-9]*")]
+        rolling_col_count = len(rolling_cols)
+        rolling_all_null_col_count = 0
+        if rolling_col_count:
+            rolling_all_null_col_count = int((df[rolling_cols].isna().sum() == row_count).sum()) if row_count > 0 else rolling_col_count
+        rolling_broken_flag = bool(rolling_col_count > 0 and rolling_all_null_col_count == rolling_col_count)
+
+        market_games_last_7d = 0
+        if "market_lines" in csv_path.stem.lower() and row_count > 0:
+            date_col = detect_date_column(df)
+            if date_col is not None:
+                dts = pd.to_datetime(df[date_col], errors="coerce", utc=True)
+                cutoff = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=7)
+                recent = df.loc[dts >= cutoff].copy()
+                if not recent.empty:
+                    if "game_id" in recent.columns:
+                        market_games_last_7d = int(recent["game_id"].astype(str).nunique())
+                    else:
+                        keys = [c for c in ("external_game_id", "home_team", "away_team") if c in recent.columns]
+                        if keys:
+                            market_games_last_7d = int(recent[keys].astype(str).agg("|".join, axis=1).nunique())
+
+        expected_min_rows = expected_min_for(rel, canonical)
+        below_expected = bool(expected_min_rows is not None and row_count < expected_min_rows)
+        rows.append(
         summary_rows.append(
             {
-                "file_path": str(file_path),
+                "file_path": rel,
+                "read_ok": True,
+                "read_error": "",
                 "row_count": row_count,
                 "col_count": col_count,
-                "cols_with_nulls": cols_with_nulls,
                 "all_null_cols": all_null_cols,
+                "all_null_col_pct": all_null_col_pct,
+                "rolling_col_count": rolling_col_count,
+                "rolling_all_null_col_count": rolling_all_null_col_count,
+                "rolling_broken_flag": rolling_broken_flag,
+                "expected_min_rows": expected_min_rows,
+                "below_expected_min_rows": below_expected,
+                "market_games_last_7d": market_games_last_7d,
+            }
+        )
+
+    report_df = pd.DataFrame(rows).sort_values(["file_path"]).reset_index(drop=True)
+    OUTPUT_CSV.parent.mkdir(parents=True, exist_ok=True)
+    report_df.to_csv(OUTPUT_CSV, index=False)
+
+    violations = report_df[
+        (~report_df["read_ok"]) |
+        (report_df["below_expected_min_rows"]) |
+        (report_df["rolling_broken_flag"]) |
+        (report_df["all_null_col_pct"] > 10.0)
+    ]
+    OUTPUT_MD.write_text(
+        "# CSV Quality Audit v2\n\n"
+        f"- Files audited: {len(report_df)}\n"
+        f"- Violations: {len(violations)}\n\n"
+        "## Top Violations\n\n"
+        + (violations.head(20).to_csv(index=False) if not violations.empty else "None\n"),
+        encoding="utf-8",
                 "all_zero_cols": all_zero_cols,
                 "constant_cols": constant_cols,
                 "small_rows_flag": suspicious_small_rows,
@@ -972,9 +829,10 @@ def audit_csvs() -> None:
         f"discovered={len(csv_files)}, processed={processed_count}, "
         f"skipped_large={len(skipped_large)}, failed={len(failed_files)}"
     )
-    print(f"Wrote markdown report: {OUTPUT_MD}")
-    print(f"Wrote CSV report: {OUTPUT_CSV}")
+    print(f"[OK] wrote {OUTPUT_CSV}")
+    print(f"[OK] wrote {OUTPUT_MD}")
+    return 0
 
 
 if __name__ == "__main__":
-    audit_csvs()
+    raise SystemExit(build_report())

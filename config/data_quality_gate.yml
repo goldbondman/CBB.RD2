@@ -1,0 +1,22 @@
+defaults:
+  max_all_null_column_pct: 10.0
+  min_market_games_last_7d: 30
+
+schedule:
+  path: data/games.csv
+  date_column: game_datetime_utc
+  active_window_days: 45
+  min_games_in_window: 1
+
+canonical_files:
+  - path: data/games.csv
+    expected_min_rows: 1
+  - path: data/team_game_weighted.csv
+    expected_min_rows: 100
+  - path: data/predictions_latest.csv
+    expected_min_rows: 1
+
+market_lines:
+  paths:
+    - data/market_lines_latest.csv
+    - data/market_lines_*.csv
