@@ -155,6 +155,8 @@ jobs:
             echo "[SKIP] No changes to commit"
             exit 0
           fi
+          python scripts/assert_market_master_monotonic.py
+          git add data/.market_master_rowcount
           git commit -m "market: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
           for i in 1 2 3 4 5; do
             git fetch origin main
