@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Build one-row-per-game line movement features from capture-level market lines."""
+"""Build one-row-per-game line movement features from capture-level market lines snapshots."""
 
-# Input discovery findings from data/market_lines.csv (read before implementation):
+# Input discovery findings from data/market_lines_snapshots.csv (read before implementation):
 # 1) capture_type unique values: opening, pregame
 # 2) Home-team spread column: home_spread
 # 3) Total line column: total_line
@@ -19,7 +19,8 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-MARKET_LINES_PATH = Path("data/market_lines.csv")
+MARKET_LINES_PATH = Path("data/market_lines_snapshots.csv")
+LEGACY_MARKET_LINES_PATH = Path("data/market_lines.csv")
 GAMES_PATH = Path("data/games.csv")
 OUTPUT_PATH = Path("data/line_movement_features.csv")
 
@@ -103,7 +104,8 @@ def _resolve_public_side(group: pd.DataFrame) -> tuple[Optional[int], Optional[s
 
 
 def load_inputs(filters: Filters) -> tuple[pd.DataFrame, pd.DataFrame]:
-    market = pd.read_csv(MARKET_LINES_PATH, dtype=str)
+    source_path = MARKET_LINES_PATH if MARKET_LINES_PATH.exists() else LEGACY_MARKET_LINES_PATH
+    market = pd.read_csv(source_path, dtype=str)
     games = pd.read_csv(GAMES_PATH, dtype=str)
 
     games["game_datetime_utc"] = _parse_ts(games.get("game_datetime_utc", pd.Series(dtype=str)))

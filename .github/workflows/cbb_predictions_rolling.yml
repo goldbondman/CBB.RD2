@@ -103,8 +103,13 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          python -c "import pandas, numpy, requests, scipy" || \
+          python -c "import pandas, numpy, requests, scipy, yaml" || \
             { echo "[ERROR] Core dependency import failed"; exit 1; }
+
+      - name: Data quality CI gate
+        run: |
+          python scripts/audit_csv_quality.py
+          python scripts/ci_data_quality_gate.py
 
       # Compute travel fatigue before running the model
       - name: Compute travel fatigue features
