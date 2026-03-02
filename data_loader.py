@@ -10,96 +10,66 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict
 
+import numpy as np
 import pandas as pd
 
-# Root of the repository (this file lives at the repo root).
-_REPO_ROOT = Path(__file__).parent
 
-# Mapping of logical name → path relative to the repo root.
-_APP_DATA_FILES: Dict[str, Path] = {
-    "handicappers": _REPO_ROOT / "data" / "handicappers.csv",
-    "raw_tweets":   _REPO_ROOT / "data" / "raw_tweets.csv",
-    "raw_picks":    _REPO_ROOT / "data" / "raw_picks.csv",
-    "picks":        _REPO_ROOT / "data" / "picks.csv",
-    "games":        _REPO_ROOT / "data" / "app_games.csv",
-}
+def load_app_data(data_dir="./data") -> Dict[str, pd.DataFrame]:
+    """Load all 5 CSV files into properly typed DataFrames.
 
-
-def load_app_data() -> Dict[str, pd.DataFrame]:
-    """Load all application data files and return them as DataFrames.
+    Parameters
+    ----------
+    data_dir:
+        Directory containing the CSV files. Defaults to ``./data``.
 
     Returns
     -------
     dict[str, pd.DataFrame]
-        Keys are logical file names (``handicappers``, ``raw_tweets``,
-        ``raw_picks``, ``picks``, ``games``); values are the corresponding
-        DataFrames.
-
-    Raises
-    ------
-    FileNotFoundError
-        If any expected data file is missing.
+        Keys are ``handicappers``, ``raw_tweets``, ``raw_picks``,
+        ``picks``, ``games``; values are the corresponding DataFrames.
     """
-    data: Dict[str, pd.DataFrame] = {}
-    for name, path in _APP_DATA_FILES.items():
-        if not path.exists():
-            raise FileNotFoundError(
-                f"Required app data file not found: {path}"
-            )
-        data[name] = pd.read_csv(path)
-    return data
-from __future__ import annotations
-
-import pandas as pd
-from pathlib import Path
-import numpy as np
-
-
-def load_app_data(data_dir="./data"):
-    """Load all 5 CSV files into properly typed DataFrames"""
-
     files = {
         'handicappers': 'handicappers.csv',
         'raw_tweets': 'raw_tweets.csv',
         'raw_picks': 'raw_picks.csv',
         'picks': 'picks.csv',
-        'games': 'games.csv'
+        'games': 'games.csv',
     }
 
-    data = {}
+    data: Dict[str, pd.DataFrame] = {}
 
     # Handicappers
     data['handicappers'] = pd.read_csv(
-        Path(data_dir)/files['handicappers'],
+        Path(data_dir) / files['handicappers'],
         dtype={
             'handicapper_id': 'int32',
             'tier': 'category',
-            'status': 'category'
-        }
+            'status': 'category',
+        },
     )
 
     # Raw tweets with timestamp
     data['raw_tweets'] = pd.read_csv(
-        Path(data_dir)/files['raw_tweets'],
+        Path(data_dir) / files['raw_tweets'],
         parse_dates=['created_at', 'ingested_at'],
-        dtype={'handicapper_id': 'int32'}
+        dtype={'handicapper_id': 'int32'},
     )
 
     # Raw picks
     data['raw_picks'] = pd.read_csv(
-        Path(data_dir)/files['raw_picks'],
+        Path(data_dir) / files['raw_picks'],
         dtype={
             'raw_pick_id': 'int32',
             'handicapper_id': 'int32',
             'line': 'float64',
             'units': 'float64',
-            'parse_status': 'category'
-        }
+            'parse_status': 'category',
+        },
     )
 
     # Picks
     data['picks'] = pd.read_csv(
-        Path(data_dir)/files['picks'],
+        Path(data_dir) / files['picks'],
         dtype={
             'pick_id': 'int32',
             'raw_pick_id': 'int32',
@@ -107,19 +77,19 @@ def load_app_data(data_dir="./data"):
             'game_id': 'int32',
             'line': 'float64',
             'units': 'float64',
-            'mapping_status': 'category'
-        }
+            'mapping_status': 'category',
+        },
     )
 
     # Games
     data['games'] = pd.read_csv(
-        Path(data_dir)/files['games'],
+        Path(data_dir) / files['games'],
         parse_dates=['date'],
         dtype={
             'game_id': 'int32',
             'closing_spread': 'float64',
-            'total_line': 'float64'
-        }
+            'total_line': 'float64',
+        },
     )
 
     # Validate primary keys (no duplicates)
@@ -131,9 +101,9 @@ def load_app_data(data_dir="./data"):
     return data
 
 
-def save_app_data(data, data_dir="./data"):
-    """Save all DataFrames back to CSVs preserving dtypes"""
+def save_app_data(data: Dict[str, pd.DataFrame], data_dir="./data") -> None:
+    """Save all DataFrames back to CSVs preserving dtypes."""
     Path(data_dir).mkdir(exist_ok=True)
 
     for name, df in data.items():
-        df.to_csv(Path(data_dir)/f"{name}.csv", index=False)
+        df.to_csv(Path(data_dir) / f"{name}.csv", index=False)

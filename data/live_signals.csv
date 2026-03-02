@@ -1,0 +1,6 @@
+home_team,away_team,model_edge,capper_consensus,signal
+Duke Blue Devils,Syracuse Orange,7.292157037902992,0.4375872112626925,🟡 MODEL SUPPORT
+Kansas Jayhawks,Baylor Bears,3.20047162510167,0.8917730007820798,🟢 MODEL+CROWD
+Gonzaga Bulldogs,Saint Mary's Gaels,4.9362139523172175,0.9636627605010293,🟢 MODEL+CROWD
+Marquette Golden Eagles,UConn Huskies,8.722679597604373,0.3834415188257777,⚪ NEUTRAL
+Murray State Racers,Belmont Bruins,7.602673970449903,0.7917250380826646,🟢 MODEL+CROWD
