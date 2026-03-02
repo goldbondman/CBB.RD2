@@ -24,6 +24,7 @@ from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import pandas as pd
 
 # ── Section A — Load and merge maps ──────────────────────────────────────────
 
@@ -429,6 +430,8 @@ def write_drift_report(
     """
     assert "overrides" not in output_path, "Cannot write to overrides file"
 
+    rolling_health = collect_rolling_window_health()
+
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "total_drifts": len(drifts),
@@ -436,6 +439,7 @@ def write_drift_report(
         "warnings": sum(1 for d in drifts if d.severity == "WARNING"),
         "info": sum(1 for d in drifts if d.severity == "INFO"),
         "drifts": [asdict(d) for d in drifts],
+        "rolling_window_health": rolling_health,
     }
 
     out = Path(output_path)
@@ -468,8 +472,128 @@ def write_drift_report(
     else:
         lines.append("✅ No drift detected — all fields mapped correctly.\n")
 
+    lines.append("\n## Rolling Window Health\n")
+    flagged = [
+        item for item in rolling_health.get("files", [])
+        if item.get("rolling_broken_flag")
+    ]
+    if flagged:
+        lines.append("Files flagged with `rolling_broken_flag=true`:\n")
+        for item in flagged:
+            lines.append(
+                f"- `{item['path']}`: {item['rolling_all_null_col_count']}/"
+                f"{item['rolling_col_count']} rolling columns are 100% null "
+                f"(overall null mean={item['rolling_null_pct_overall']:.2%})"
+            )
+            for col in item.get("top_rolling_columns_by_null_pct", [])[:20]:
+                lines.append(f"  - `{col['column']}` null_pct={col['null_pct']:.2%}")
+    else:
+        lines.append("✅ No files tripped the rolling broken heuristic.\n")
+
+    targeted = rolling_health.get("targeted_checks", {})
+    if targeted:
+        lines.append("\n### Targeted Rolling Files\n")
+        for file_name, payload in targeted.items():
+            if not payload.get("exists"):
+                lines.append(f"- `{file_name}`: not found (not treated as failure).")
+                continue
+            missing = payload.get("missing_core_metrics", [])
+            if missing:
+                lines.append(f"- `{file_name}`: missing core metrics {missing}.")
+            else:
+                lines.append(f"- `{file_name}`: core metric coverage looks good.")
+
     md_path.write_text("\n".join(lines) + "\n")
     print(f"[OK]        {md_path} written")
+
+
+def _rolling_columns(df: pd.DataFrame) -> List[str]:
+    return [c for c in df.columns if c.endswith("_l5") or c.endswith("_l10")]
+
+
+def _rolling_file_summary(path: Path) -> Optional[Dict[str, Any]]:
+    try:
+        df = pd.read_csv(path, low_memory=False)
+    except Exception as exc:
+        return {
+            "path": str(path.as_posix()),
+            "read_error": str(exc),
+        }
+
+    rolling_cols = _rolling_columns(df)
+    if not rolling_cols:
+        return None
+
+    null_map = df[rolling_cols].isna().mean().sort_values(ascending=False)
+    rolling_col_count = len(rolling_cols)
+    rolling_all_null_col_count = int((null_map >= 1.0).sum())
+    rolling_null_pct_overall = float(null_map.mean()) if rolling_col_count else 0.0
+    all_null_ratio = (
+        rolling_all_null_col_count / rolling_col_count if rolling_col_count else 0.0
+    )
+    broken_flag = bool(rolling_col_count >= 20 and all_null_ratio >= 0.80)
+
+    top = [
+        {"column": col, "null_pct": float(pct)}
+        for col, pct in null_map.head(20).items()
+    ]
+    return {
+        "path": str(path.as_posix()),
+        "rolling_col_count": rolling_col_count,
+        "rolling_null_pct_overall": rolling_null_pct_overall,
+        "rolling_all_null_col_count": rolling_all_null_col_count,
+        "rolling_broken_flag": broken_flag,
+        "top_rolling_columns_by_null_pct": top,
+    }
+
+
+def _targeted_rolling_check(path: Path, expected: List[str]) -> Dict[str, Any]:
+    result: Dict[str, Any] = {"exists": path.exists(), "missing_core_metrics": []}
+    if not path.exists():
+        result["note"] = "file not found"
+        return result
+    try:
+        df = pd.read_csv(path, low_memory=False, nrows=5)
+    except Exception as exc:
+        result["note"] = f"read error: {exc}"
+        return result
+
+    schema_cols = set(df.columns)
+    result["missing_core_metrics"] = sorted([c for c in expected if c not in schema_cols])
+    return result
+
+
+def collect_rolling_window_health() -> Dict[str, Any]:
+    paths: List[Path] = []
+    for base in (Path("data"), Path("data/csv")):
+        if base.exists():
+            paths.extend(sorted(base.glob("*.csv")))
+
+    summaries: List[Dict[str, Any]] = []
+    for path in paths:
+        summary = _rolling_file_summary(path)
+        if summary:
+            summaries.append(summary)
+
+    targeted = {
+        "data/team_rolling_l5.csv": _targeted_rolling_check(
+            Path("data/team_rolling_l5.csv"),
+            ["pts_l5", "ortg_l5", "drtg_l5", "pace_l5", "efg_pct_l5"],
+        ),
+        "data/team_rolling_l10.csv": _targeted_rolling_check(
+            Path("data/team_rolling_l10.csv"),
+            ["pts_l10", "ortg_l10", "drtg_l10", "pace_l10", "efg_pct_l10"],
+        ),
+        "data/player_rolling_l5.csv": _targeted_rolling_check(
+            Path("data/player_rolling_l5.csv"),
+            ["pts_l5", "ast_l5", "reb_l5"],
+        ),
+    }
+
+    return {
+        "files": summaries,
+        "targeted_checks": targeted,
+    }
 
 
 # ── Section D — Pipeline integration check ───────────────────────────────────
