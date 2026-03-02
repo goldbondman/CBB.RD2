@@ -1,6 +1,6 @@
 pick_id,raw_pick_id,handicapper_id,game_id,market,side,line,units,mapping_status,created_at
 1,1,1,123,spread,home,-3.5,2.0,ok,2026-02-28 14:25:30
 2,2,2,124,total,over,142.5,3.0,ok,2026-02-28 15:12:45
-3,4,1,125,spread,away,+2.5,1.0,ok,2026-02-28 18:22:15
-4,5,5,126,spread,home,-5.5,2.0,ok,2026-02-28 19:07:30
-5,6,1,123,spread,away,,1.0,implicit_opponent,2026-02-28 14:25:30
+3,4,1,125,spread,away,2.5,1.0,ok,2026-02-28 18:22:15
+4,5,1,125,moneyline,away,,1.0,ok,2026-03-02T06:29:48.201473
+5,6,2,124,total,home,142.5,3.0,ok,2026-03-02T06:29:48.201473

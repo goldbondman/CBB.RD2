@@ -1,58 +1,14 @@
 """
 Data loader for the CBB picks-tracking application.
 
-Provides :func:`load_app_data`, which reads the canonical CSV files used by
-the app and returns them as a dict of ``{name: pd.DataFrame}``.
+Provides :func:`load_app_data` and :func:`save_app_data` for reading/writing
+the canonical CSV files, plus :class:`CSVDataManager` for object-oriented access.
 """
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Dict
-
-import pandas as pd
-
-# Root of the repository (this file lives at the repo root).
-_REPO_ROOT = Path(__file__).parent
-
-# Mapping of logical name → path relative to the repo root.
-_APP_DATA_FILES: Dict[str, Path] = {
-    "handicappers": _REPO_ROOT / "data" / "handicappers.csv",
-    "raw_tweets":   _REPO_ROOT / "data" / "raw_tweets.csv",
-    "raw_picks":    _REPO_ROOT / "data" / "raw_picks.csv",
-    "picks":        _REPO_ROOT / "data" / "picks.csv",
-    "games":        _REPO_ROOT / "data" / "app_games.csv",
-}
-
-
-def load_app_data() -> Dict[str, pd.DataFrame]:
-    """Load all application data files and return them as DataFrames.
-
-    Returns
-    -------
-    dict[str, pd.DataFrame]
-        Keys are logical file names (``handicappers``, ``raw_tweets``,
-        ``raw_picks``, ``picks``, ``games``); values are the corresponding
-        DataFrames.
-
-    Raises
-    ------
-    FileNotFoundError
-        If any expected data file is missing.
-    """
-    data: Dict[str, pd.DataFrame] = {}
-    for name, path in _APP_DATA_FILES.items():
-        if not path.exists():
-            raise FileNotFoundError(
-                f"Required app data file not found: {path}"
-            )
-        data[name] = pd.read_csv(path)
-    return data
-from __future__ import annotations
-
 import pandas as pd
 from pathlib import Path
-import numpy as np
 
 
 def load_app_data(data_dir="./data"):
@@ -137,3 +93,30 @@ def save_app_data(data, data_dir="./data"):
 
     for name, df in data.items():
         df.to_csv(Path(data_dir)/f"{name}.csv", index=False)
+
+
+class CSVDataManager:
+    """Object-oriented wrapper around load_app_data / save_app_data."""
+
+    def __init__(self, data_dir="./data"):
+        self.data_dir = Path(data_dir)
+
+    def load_app_data(self):
+        """Load all 5 CSV files and return as a dict of DataFrames."""
+        return load_app_data(self.data_dir)
+
+    def save_app_data(self, data):
+        """Persist all DataFrames back to their CSV files."""
+        save_app_data(data, self.data_dir)
+
+    def get_next_id(self, table_name: str) -> int:
+        """Return the next available integer ID for the given table."""
+        id_col = f"{table_name.rstrip('s')}_id"
+        try:
+            data = self.load_app_data()
+            df = data.get(table_name)
+            if df is None or df.empty or id_col not in df.columns:
+                return 1
+            return int(df[id_col].max()) + 1
+        except Exception:
+            return 1

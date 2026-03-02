@@ -1,6 +1,7 @@
-tweet_id,handicapper_id,created_at,text,tweet_url,ingested_at
-1845678901234567890,1,2026-02-28 14:23:00,"Illinois -3.5 (2u) vs Wisconsin. Bulls are rolling.",https://twitter.com/CBB_Edge/status/1845678901234567890,2026-02-28 14:25:00
-1845689012345678901,2,2026-02-28 15:10:00,"UConn/Kentucky OVER 142.5 (3u) - both shooting lights out",https://twitter.com/HoopsLock/status/1845689012345678901,2026-02-28 15:12:00
-1845690123456789012,3,2026-02-28 16:45:00,"FADE Duke ML +120 vs UNC. Blue devils overrated.",https://twitter.com/MidMajorGuru/status/1845690123456789012,2026-02-28 16:47:00
-1845701234567890123,1,2026-02-28 18:20:00,"Gonzaga +2.5 (1u) - Zags undervalued on road",https://twitter.com/CBB_Edge/status/1845701234567890123,2026-02-28 18:22:00
-1845712345678901234,5,2026-02-28 19:05:00,"Sweet 16 LFG: Houston -5.5 (2u)",https://twitter.com/BracketBuster/status/1845712345678901234,2026-02-28 19:07:00
+tweet_id,handicapper_id,created_at,text,tweet_url,ingested_at,raw_tweet_id
+1845678901234567890,1,2026-02-28 14:23:00,Illinois -3.5 (2u) vs Wisconsin. Bulls are rolling.,https://twitter.com/CBB_Edge/status/1845678901234567890,2026-02-28 14:25:00,
+1845689012345678901,2,2026-02-28 15:10:00,UConn/Kentucky OVER 142.5 (3u) - both shooting lights out,https://twitter.com/HoopsLock/status/1845689012345678901,2026-02-28 15:12:00,
+1845690123456789012,3,2026-02-28 16:45:00,FADE Duke ML +120 vs UNC. Blue devils overrated.,https://twitter.com/MidMajorGuru/status/1845690123456789012,2026-02-28 16:47:00,
+1845701234567890123,1,2026-02-28 18:20:00,Gonzaga +2.5 (1u) - Zags undervalued on road,https://twitter.com/CBB_Edge/status/1845701234567890123,2026-02-28 18:22:00,
+1849999999999999999,1,2026-03-01T14:23:00,Illinois -3.5 (2u) vs Wisconsin | Gonzaga ML,https://twitter.com/CBB_Edge/status/184999,2026-03-02T06:29:48.168970,1.0
+1850000000000000000,2,2026-03-01T15:10:00,UConn/Kentucky OVER 142.5 (3u) - both teams shoot 40% from 3,https://twitter.com/HoopsLock/status/185000,2026-03-02T06:29:48.169063,2.0
