@@ -772,6 +772,25 @@ def resolve_date_range(start_date: Optional[str], end_date: Optional[str], days_
     return today_utc, today_utc
 
 
+def _add_date_range_args(parser: argparse.ArgumentParser, data_dir: Path) -> None:
+    """Register date-range and master-file related CLI arguments exactly once."""
+    parser.add_argument("--start-date", type=str, default=None)
+    parser.add_argument("--end-date", type=str, default=None)
+    parser.add_argument("--days-back", type=int, default=None)
+    parser.add_argument("--append", type=_str_to_bool, default=True)
+    parser.add_argument("--master-file", type=Path, default=data_dir / "market_lines_master.csv")
+
+
+def build_parser(data_dir: Path) -> argparse.ArgumentParser:
+    """Build the CLI parser for market line ingestion."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", choices=["morning", "pregame", "postgame", "all"], default="pregame")
+    parser.add_argument("--backfill-days", type=int, default=0)
+    _add_date_range_args(parser, data_dir)
+    parser.add_argument("--build-views-only", action="store_true")
+    return parser
+
+
 def write_master_market_file(master_file: Path, new_rows: list[dict], append: bool) -> tuple[int, int, int, int]:
     bootstrap_market_lines_schema(master_file)
     df_new = pd.DataFrame(new_rows)
@@ -1012,20 +1031,7 @@ def main() -> None:
     except ImportError:
         DATA_DIR = Path("data")
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=["morning", "pregame", "postgame", "all"], default="pregame")
-    parser.add_argument("--backfill-days", type=int, default=0)
-    parser.add_argument("--start-date", type=str, default="")
-    parser.add_argument("--end-date", type=str, default="")
-    parser.add_argument("--days-back", type=int, default=0)
-    parser.add_argument("--append", type=str, default="true")
-    parser.add_argument("--master-file", type=str, default="data/market_lines_master.csv")
-    parser.add_argument("--start-date", type=str, default=None)
-    parser.add_argument("--end-date", type=str, default=None)
-    parser.add_argument("--days-back", type=int, default=None)
-    parser.add_argument("--master-file", type=Path, default=DATA_DIR / "market_lines_master.csv")
-    parser.add_argument("--append", type=_str_to_bool, default=True)
-    parser.add_argument("--build-views-only", action="store_true")
+    parser = build_parser(DATA_DIR)
     args = parser.parse_args()
 
     snapshots_path = DATA_DIR / "market_lines_snapshots.csv"
