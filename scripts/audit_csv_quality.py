@@ -440,6 +440,7 @@ PROGRESS_EVERY = 25
 DEFAULT_STALE_HOURS = 36
 DEFAULT_STALE_DATA_DAYS = 2
 DATE_COLUMNS = ("game_date", "captured_at_utc")
+PLAYER_MIN_ROWS_PER_TEAM_GAME = int(os.getenv("PLAYER_MIN_ROWS_PER_TEAM_GAME", "8"))
 
 
 def _safe_pct(numerator: int, denominator: int) -> float:
@@ -468,8 +469,6 @@ def _iter_csv_files(root: Path) -> list[Path]:
     return sorted(files)
 
 
-
-
 def _df_to_markdown_table(df: pd.DataFrame) -> str:
     if df.empty:
         return "None"
@@ -479,7 +478,7 @@ def _df_to_markdown_table(df: pd.DataFrame) -> str:
         vals = []
         for value in row:
             text = "" if pd.isna(value) else str(value)
-            vals.append(text.replace("|", "\|"))
+            vals.append(text.replace("|", "\\|"))
         lines.append("| " + " | ".join(vals) + " |")
     return "\n".join(lines)
 
@@ -501,6 +500,79 @@ def _get_max_data_date(df: pd.DataFrame) -> tuple[str | None, datetime | None]:
             return column, None
         return column, max_ts.floor("us").to_pydatetime()
     return None, None
+def _resolve_canonical_coverage_files(root: Path) -> dict[str, Path]:
+    market_latest = root / "market_lines_latest.csv"
+    return {
+        "team_game_logs": root / "team_game_logs.csv",
+        "team_game_metrics": root / "team_game_metrics.csv",
+        "player_game_logs": root / "player_game_logs.csv",
+        "market_lines": market_latest if market_latest.exists() else root / "market_lines.csv",
+        "predictions_mc_latest": root / "predictions_mc_latest.csv",
+    }
+
+
+def _coverage_from_frame(df: pd.DataFrame) -> dict[str, float | int]:
+    key_cols: list[str] | None = None
+    if "game_id" in df.columns:
+        key_cols = ["game_id"]
+    elif {"home_team_id", "away_team_id", "game_date"}.issubset(df.columns):
+        key_cols = ["home_team_id", "away_team_id", "game_date"]
+
+    unique_game_count = int(df.drop_duplicates(subset=key_cols).shape[0]) if key_cols else 0
+
+    team_cols = [c for c in ("team_id", "home_team_id", "away_team_id") if c in df.columns]
+    unique_team_count = 0
+    if team_cols:
+        teams = pd.concat([df[c] for c in team_cols], ignore_index=True).dropna()
+        unique_team_count = int(teams.nunique())
+
+    rows_by_game = pd.Series(dtype="int64")
+    if key_cols:
+        rows_by_game = df.groupby(key_cols, dropna=False).size()
+
+    return {
+        "row_count": int(len(df)),
+        "unique_game_count": unique_game_count,
+        "unique_team_count": unique_team_count,
+        "rows_per_game_min": int(rows_by_game.min()) if not rows_by_game.empty else 0,
+        "rows_per_game_median": float(rows_by_game.median()) if not rows_by_game.empty else 0.0,
+        "rows_per_game_p95": float(rows_by_game.quantile(0.95)) if not rows_by_game.empty else 0.0,
+    }
+
+
+def _coverage_heuristic_result(file_key: str, metrics: dict[str, float | int]) -> tuple[str, list[str]]:
+    row_count = int(metrics["row_count"])
+    game_count = int(metrics["unique_game_count"])
+    median_rows_per_game = float(metrics["rows_per_game_median"])
+
+    if row_count == 0 or game_count == 0:
+        return "low", ["schedule ingestion missing"]
+
+    status = "ok"
+    causes: list[str] = []
+
+    if file_key == "team_game_logs":
+        if median_rows_per_game < 1.0:
+            status = "low"
+            causes.append("schedule ingestion missing")
+        elif median_rows_per_game < 1.8:
+            status = "warning"
+
+    if file_key == "player_game_logs":
+        team_games = game_count * 2
+        rows_per_team_game = row_count / team_games if team_games else 0.0
+        if rows_per_team_game < PLAYER_MIN_ROWS_PER_TEAM_GAME:
+            status = "low"
+            causes.append("boxscore ingestion missing")
+
+    if file_key == "market_lines":
+        rows_per_game = row_count / game_count if game_count else 0.0
+        if rows_per_game < 1.0:
+            status = "low"
+            causes.append("market capture not running or overwriting")
+
+    return status, causes
+
 
 def audit_csvs() -> None:
     small_row_threshold = int(os.getenv("SMALL_ROW_THRESHOLD", str(DEFAULT_SMALL_ROW_THRESHOLD)))
@@ -533,7 +605,7 @@ def audit_csvs() -> None:
 
         try:
             df = pd.read_csv(file_path, low_memory=False)
-        except Exception as exc:  # noqa: BLE001 - intentional broad capture for report continuity
+        except Exception as exc:  # noqa: BLE001
             failed_files.append((str(file_path), str(exc)))
             continue
 
@@ -602,9 +674,6 @@ def audit_csvs() -> None:
                 }
             )
 
-        suspicious_small_rows = row_count < small_row_threshold
-        suspicious_constant_columns = bool(row_count > 0 and col_count > 0 and (constant_cols / col_count) >= 0.30)
-
         summary_rows.append(
             {
                 "file_path": str(file_path),
@@ -621,6 +690,10 @@ def audit_csvs() -> None:
                 "max_data_date_utc": max_data_date_utc.isoformat() if max_data_date_utc else "",
                 "stale_by_mtime": stale_by_mtime,
                 "stale_by_data_date": stale_by_data_date,
+                "small_rows_flag": row_count < small_row_threshold,
+                "suspicious_constant_columns": bool(
+                    row_count > 0 and col_count > 0 and (constant_cols / col_count) >= 0.30
+                ),
             }
         )
 
@@ -695,6 +768,98 @@ def audit_csvs() -> None:
         report_lines.append(_df_to_markdown_table(summary_md))
     else:
         report_lines.append("No CSV files were processed.")
+    report_lines.append("")
+
+    coverage_rows: list[dict[str, str]] = []
+    for file_key, file_path in _resolve_canonical_coverage_files(DATA_DIR).items():
+        if not file_path.exists():
+            coverage_rows.append(
+                {
+                    "canonical_file": file_key,
+                    "file_path": str(file_path),
+                    "status": "low",
+                    "unique_game_count": "0",
+                    "unique_team_count": "0",
+                    "rows_per_game_min": "0",
+                    "rows_per_game_median": "0.00",
+                    "rows_per_game_p95": "0.00",
+                    "likely_root_causes": "schedule ingestion missing",
+                }
+            )
+            continue
+
+        try:
+            frame = pd.read_csv(file_path, low_memory=False)
+        except Exception as exc:  # noqa: BLE001
+            coverage_rows.append(
+                {
+                    "canonical_file": file_key,
+                    "file_path": str(file_path),
+                    "status": "low",
+                    "unique_game_count": "0",
+                    "unique_team_count": "0",
+                    "rows_per_game_min": "0",
+                    "rows_per_game_median": "0.00",
+                    "rows_per_game_p95": "0.00",
+                    "likely_root_causes": f"schedule ingestion missing (read_failed: {exc})",
+                }
+            )
+            continue
+
+        metrics = _coverage_from_frame(frame)
+        status, root_causes = _coverage_heuristic_result(file_key, metrics)
+        coverage_rows.append(
+            {
+                "canonical_file": file_key,
+                "file_path": str(file_path),
+                "status": status,
+                "unique_game_count": str(metrics["unique_game_count"]),
+                "unique_team_count": str(metrics["unique_team_count"]),
+                "rows_per_game_min": str(metrics["rows_per_game_min"]),
+                "rows_per_game_median": f"{metrics['rows_per_game_median']:.2f}",
+                "rows_per_game_p95": f"{metrics['rows_per_game_p95']:.2f}",
+                "likely_root_causes": ", ".join(root_causes) if root_causes else "",
+            }
+        )
+
+    report_lines.append("## Coverage Health")
+    report_lines.append("")
+    report_lines.append(
+        "Heuristics: team_game_logs should usually be ~2 rows/game (or at least 1 based on schema), "
+        f"player_game_logs should be >= {PLAYER_MIN_ROWS_PER_TEAM_GAME} rows/team-game once boxscores exist, "
+        "and market lines should be >= 1 row/game when capture is running."
+    )
+    report_lines.append("")
+    report_lines.append(
+        _df_to_markdown_table(
+            pd.DataFrame(coverage_rows)[
+                [
+                    "canonical_file",
+                    "file_path",
+                    "status",
+                    "unique_game_count",
+                    "unique_team_count",
+                    "rows_per_game_min",
+                    "rows_per_game_median",
+                    "rows_per_game_p95",
+                    "likely_root_causes",
+                ]
+            ]
+        )
+    )
+    report_lines.append("")
+
+    low_coverage = [row for row in coverage_rows if row["status"] == "low"]
+    report_lines.append("### Coverage flags")
+    report_lines.append("")
+    if low_coverage:
+        for row in low_coverage:
+            report_lines.append(
+                f"- `{row['canonical_file']}` flagged low coverage. "
+                f"Likely root causes: {row['likely_root_causes'] or 'unknown'}"
+            )
+    else:
+        report_lines.append("- None")
     report_lines.append("")
 
     report_lines.append("## Top Issues")
