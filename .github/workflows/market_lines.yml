@@ -23,7 +23,7 @@ on:
       days_back:
         description: 'Fallback rolling window (days) when no explicit date range provided'
         required: false
-        default: '0'
+        default: ''
       append:
         description: 'Append to existing target file instead of rewriting'
         required: false
@@ -106,11 +106,18 @@ jobs:
       # Execute market lines capture
       - name: Run ingestion/market_lines.py
         run: |
+          trim() {
+            local value="$1"
+            value="${value#${value%%[![:space:]]*}}"
+            value="${value%${value##*[![:space:]]}}"
+            printf '%s' "$value"
+          }
+
           MODE="${{ github.event.inputs.mode }}"
-          START_DATE="${{ github.event.inputs.start_date }}"
-          END_DATE="${{ github.event.inputs.end_date }}"
-          DAYS_BACK="${{ github.event.inputs.days_back || '0' }}"
-          APPEND="${{ github.event.inputs.append || 'true' }}"
+          START_DATE="$(trim "${{ github.event.inputs.start_date }}")"
+          END_DATE="$(trim "${{ github.event.inputs.end_date }}")"
+          DAYS_BACK="$(trim "${{ github.event.inputs.days_back }}")"
+          APPEND="$(trim "${{ github.event.inputs.append || 'true' }}")"
           MASTER_FILE="${{ github.event.inputs.target_file || 'data/market_lines_master.csv' }}"
           if [ -z "$MODE" ]; then
             HOUR=$(date -u +%H)
@@ -120,13 +127,17 @@ jobs:
             # If triggered by workflow_run, use 'morning' mode
             if [ "${{ github.event_name }}" = "workflow_run" ]; then MODE="morning"; fi
           fi
-          python -m ingestion.market_lines \
+          CMD=(python -m ingestion.market_lines \
             --mode "$MODE" \
-            --start-date "$START_DATE" \
-            --end-date "$END_DATE" \
-            --days-back "$DAYS_BACK" \
             --append "$APPEND" \
-            --master-file "$MASTER_FILE"
+            --master-file "$MASTER_FILE")
+
+          if [ -n "$START_DATE" ]; then CMD+=(--start-date "$START_DATE"); fi
+          if [ -n "$END_DATE" ]; then CMD+=(--end-date "$END_DATE"); fi
+          if [ -n "$DAYS_BACK" ]; then CMD+=(--days-back "$DAYS_BACK"); fi
+
+          echo "[INFO] Inputs: start_date='$START_DATE' end_date='$END_DATE' days_back='$DAYS_BACK' append='$APPEND'"
+          "${CMD[@]}"
 
       # Pattern 2: Validate market_lines.csv is non-empty
       - name: Validate market lines output
@@ -205,7 +216,9 @@ jobs:
             echo "[SKIP] No files to stage"
             exit 0
           fi
-          git add "${files_to_stage[@]}"
+          for file in "${files_to_stage[@]}"; do
+            git add "$file"
+          done
           if git diff --staged --quiet; then
             echo "[SKIP] No changes to commit"
             exit 0
