@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Fast CSV quality audit with advanced stat sanity checks."""
 """Audit CSV row counts and render a markdown quality report.
 
 Pattern matching for expectation rules uses shell-style globs (fnmatch),
@@ -379,6 +378,7 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path("docs/reports/csv_quality_audit.md"),
         help="Markdown report output path",
+    )
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--data-dir",
@@ -423,9 +423,8 @@ if __name__ == "__main__":
     raise SystemExit(main())
 """Audit CSV quality under data/ and emit markdown + CSV reports."""
 
-from __future__ import annotations
-
 import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -438,6 +437,9 @@ SKIP_PATH_TOKENS = ("archive", "backups", "old", "tmp")
 MAX_FILE_SIZE_BYTES = 250 * 1024 * 1024
 DEFAULT_SMALL_ROW_THRESHOLD = 50
 PROGRESS_EVERY = 25
+DEFAULT_STALE_HOURS = 36
+DEFAULT_STALE_DATA_DAYS = 2
+DATE_COLUMNS = ("game_date", "captured_at_utc")
 
 
 def _safe_pct(numerator: int, denominator: int) -> float:
@@ -481,8 +483,32 @@ def _df_to_markdown_table(df: pd.DataFrame) -> str:
         lines.append("| " + " | ".join(vals) + " |")
     return "\n".join(lines)
 
+
+def _get_mtime_utc(file_path: Path) -> datetime | None:
+    try:
+        return datetime.fromtimestamp(file_path.stat().st_mtime, tz=timezone.utc)
+    except OSError:
+        return None
+
+
+def _get_max_data_date(df: pd.DataFrame) -> tuple[str | None, datetime | None]:
+    for column in DATE_COLUMNS:
+        if column not in df.columns:
+            continue
+        parsed = pd.to_datetime(df[column], errors="coerce", utc=True)
+        max_ts = parsed.max()
+        if pd.isna(max_ts):
+            return column, None
+        return column, max_ts.floor("us").to_pydatetime()
+    return None, None
+
 def audit_csvs() -> None:
     small_row_threshold = int(os.getenv("SMALL_ROW_THRESHOLD", str(DEFAULT_SMALL_ROW_THRESHOLD)))
+    stale_hours = int(os.getenv("STALE_HOURS", str(DEFAULT_STALE_HOURS)))
+    stale_data_days = int(os.getenv("STALE_DATA_DAYS", str(DEFAULT_STALE_DATA_DAYS)))
+    now_utc = datetime.now(tz=timezone.utc)
+    mtime_cutoff = now_utc - timedelta(hours=stale_hours)
+    data_date_cutoff = (now_utc - timedelta(days=stale_data_days)).date()
 
     csv_files = _iter_csv_files(DATA_DIR)
 
@@ -513,6 +539,10 @@ def audit_csvs() -> None:
 
         row_count = len(df)
         col_count = len(df.columns)
+        last_modified_time_utc = _get_mtime_utc(file_path)
+        date_column_used, max_data_date_utc = _get_max_data_date(df)
+        stale_by_mtime = bool(last_modified_time_utc and last_modified_time_utc < mtime_cutoff)
+        stale_by_data_date = bool(max_data_date_utc and max_data_date_utc.date() < data_date_cutoff)
 
         cols_with_nulls = 0
         all_null_cols = 0
@@ -586,6 +616,11 @@ def audit_csvs() -> None:
                 "constant_cols": constant_cols,
                 "small_rows_flag": suspicious_small_rows,
                 "suspicious_constant_columns": suspicious_constant_columns,
+                "last_modified_time_utc": last_modified_time_utc.isoformat() if last_modified_time_utc else "",
+                "date_column_used": date_column_used or "",
+                "max_data_date_utc": max_data_date_utc.isoformat() if max_data_date_utc else "",
+                "stale_by_mtime": stale_by_mtime,
+                "stale_by_data_date": stale_by_data_date,
             }
         )
 
@@ -615,6 +650,11 @@ def audit_csvs() -> None:
                 "constant_value",
                 "all_null_flag",
                 "all_zero_flag",
+                "last_modified_time_utc",
+                "date_column_used",
+                "max_data_date_utc",
+                "stale_by_mtime",
+                "stale_by_data_date",
             ]
         ).to_csv(OUTPUT_CSV, index=False)
 
@@ -627,6 +667,8 @@ def audit_csvs() -> None:
     report_lines.append(f"- Processed CSV files: `{processed_count}`")
     report_lines.append(f"- Skipped large files (>250MB): `{len(skipped_large)}`")
     report_lines.append(f"- Failed CSV reads: `{len(failed_files)}`")
+    report_lines.append(f"- stale_by_mtime threshold: mtime older than `{stale_hours}` hours")
+    report_lines.append(f"- stale_by_data_date threshold: max date older than `today-{stale_data_days}d`")
     report_lines.append("")
 
     report_lines.append("## Summary Table")
@@ -643,6 +685,11 @@ def audit_csvs() -> None:
                 "all_zero_cols",
                 "constant_cols",
                 "small_rows_flag",
+                "stale_by_mtime",
+                "last_modified_time_utc",
+                "date_column_used",
+                "max_data_date_utc",
+                "stale_by_data_date",
             ]
         ].sort_values("file_path")
         report_lines.append(_df_to_markdown_table(summary_md))
@@ -677,6 +724,26 @@ def audit_csvs() -> None:
         report_lines.append("### Files with many all-zero columns")
         report_lines.append("")
         report_lines.append(_df_to_markdown_table(many_all_zero[["file_path", "all_zero_cols", "col_count"]]))
+        report_lines.append("")
+
+        stale_mtime_files = summary_df[summary_df["stale_by_mtime"]].sort_values("last_modified_time_utc")
+        report_lines.append("### Stale files (mtime)")
+        report_lines.append("")
+        report_lines.append(
+            _df_to_markdown_table(
+                stale_mtime_files[["file_path", "last_modified_time_utc", "max_data_date_utc", "date_column_used"]]
+            )
+        )
+        report_lines.append("")
+
+        stale_data_files = summary_df[summary_df["stale_by_data_date"]].sort_values("max_data_date_utc")
+        report_lines.append("### Stale files (data date)")
+        report_lines.append("")
+        report_lines.append(
+            _df_to_markdown_table(
+                stale_data_files[["file_path", "date_column_used", "max_data_date_utc", "last_modified_time_utc"]]
+            )
+        )
         report_lines.append("")
 
         flagged_files = summary_df[
