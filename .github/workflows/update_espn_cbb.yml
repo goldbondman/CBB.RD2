@@ -108,12 +108,12 @@ jobs:
           check_csv data/team_game_weighted.csv 1
 
       # Pattern 10: Upload artifacts even on failure
-      # Standardized name: cbb-espn-data (matches contract table)
+      # Standardized name: INFRA-espn-data (matches contract table)
       - name: Upload ESPN CSVs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-espn-data
+          name: INFRA-espn-data
           path: data/
           retention-days: 90
 
@@ -165,11 +165,11 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
-      # Download data from previous job. Standardized name: cbb-espn-data.
+      # Download data from previous job. Standardized name: INFRA-espn-data.
       - name: Download ESPN CSVs
         uses: actions/download-artifact@v4
         with:
-          name: cbb-espn-data
+          name: INFRA-espn-data
           path: data/
         continue-on-error: true
 
@@ -223,7 +223,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-rankings
+          name: INFRA-rankings
           path: data/cbb_rankings.csv
           retention-days: 30
 

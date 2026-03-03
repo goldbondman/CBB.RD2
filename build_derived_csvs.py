@@ -416,6 +416,25 @@ def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
             model_line = next((row.get(c) for c in ["ens_spread", "pred_spread"] if c in row), 0)
             market_line = row.get("spread_line", row.get("market_spread", 0))
             pick = row.get("spread_pick", "HOME" if model_line < market_line else "AWAY")
+            # Identify model triggers (which models agree with this pick)
+            triggers = []
+            sub_models = [
+                ("M1_FF", "fourfactors_spread"),
+                ("M2_Eff", "adjefficiency_spread"),
+                ("M3_Pyth", "pythagorean_spread"),
+                ("M4_Mom", "momentum_spread"),
+                ("M5_ATS", "atsintelligence_spread"),
+                ("M6_Sit", "situational_spread"),
+                ("M7_CAGE", "cagerankings_spread"),
+                ("M8_HA", "regressedeff_spread"),
+            ]
+            for label, col in sub_models:
+                if col in row and pd.notna(row[col]):
+                    sub_val = float(row[col])
+                    # If model and consensus pick the same side
+                    if (pick == "HOME" and sub_val < 0) or (pick == "AWAY" and sub_val > 0):
+                        triggers.append(label)
+
             recs.append({
                 "game_id": row.get("game_id"),
                 "date": row.get("game_date", row.get("game_datetime_utc")),
@@ -429,7 +448,8 @@ def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
                 "model_prob": row.get("mc_cover_probability", row.get("model_confidence")),
                 "market_prob": 0.5,
                 "expected_roi": row.get("kelly_units", 0),
-                "confidence": row.get("mc_confidence_tier", "MEDIUM")
+                "confidence": row.get("mc_confidence_tier", "MEDIUM"),
+                "triggers": "|".join(triggers) if triggers else "CONSENSUS"
             })
 
         # Total rec

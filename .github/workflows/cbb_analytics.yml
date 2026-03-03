@@ -62,7 +62,7 @@ jobs:
             --jq='.[].databaseId' | while read rid; do
               count=$(gh api \
                 /repos/${{ github.repository }}/actions/runs/${rid}/artifacts \
-                --jq '.artifacts[] | select(.name=="cbb-market-lines") | .size_in_bytes' \
+                --jq '.artifacts[] | select(.name=="INFRA-market-lines") | .size_in_bytes' \
                 2>/dev/null || echo 0)
               echo "$count $rid"
             done | sort -rn | head -1 | awk '{print $2}')
@@ -81,7 +81,7 @@ jobs:
             --jq='.[].databaseId' | while read rid; do
               count=$(gh api \
                 /repos/${{ github.repository }}/actions/runs/${rid}/artifacts \
-                --jq '.artifacts[] | select(.name=="cbb-espn-data") | .size_in_bytes' \
+                --jq '.artifacts[] | select(.name=="INFRA-espn-data") | .size_in_bytes' \
                 2>/dev/null || echo 0)
               echo "$count $rid"
             done | sort -rn | head -1 | awk '{print $2}')
@@ -90,10 +90,10 @@ jobs:
       - name: Validate artifact run IDs
         run: |
           if [ -z "${{ steps.get_ml_run.outputs.run_id }}" ]; then
-            echo "[WARN] No successful market_lines run with cbb-market-lines artifact found; skipping market artifact downloads"
+            echo "[WARN] No successful market_lines run with INFRA-market-lines artifact found; skipping market artifact downloads"
           fi
           if [ -z "${{ steps.get_espn_run.outputs.run_id }}" ]; then
-            echo "[WARN] No successful update_espn_cbb run with cbb-espn-data artifact found; skipping ESPN artifact download"
+            echo "[WARN] No successful update_espn_cbb run with INFRA-espn-data artifact found; skipping ESPN artifact download"
           fi
 
       # Handoff from market_lines.yml
@@ -101,7 +101,7 @@ jobs:
         if: ${{ steps.get_ml_run.outputs.run_id != '' }}
         uses: actions/download-artifact@v4
         with:
-          name: cbb-market-lines
+          name: INFRA-market-lines
           path: data/staging/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
@@ -111,7 +111,7 @@ jobs:
         if: ${{ steps.get_ml_run.outputs.run_id != '' }}
         uses: actions/download-artifact@v4
         with:
-          name: cbb-predictions-with-context
+          name: INFRA-predictions-with-context
           path: data/staging/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
@@ -122,7 +122,7 @@ jobs:
         if: ${{ steps.get_espn_run.outputs.run_id != '' }}
         uses: actions/download-artifact@v4
         with:
-          name: cbb-espn-data
+          name: INFRA-espn-data
           path: data/staging/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_espn_run.outputs.run_id }}
@@ -317,7 +317,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-results-log
+          name: INFRA-analytics-results
           path: |
             data/results_log.csv
             data/results_summary.csv

@@ -117,7 +117,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-daily-logs-${{ github.run_id }}
+          name: INFRA-daily-logs-${{ github.run_id }}
           retention-days: 30
           path: |
             data/pipeline_errors.log
@@ -243,7 +243,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-biweekly-weights
+          name: INFRA-biweekly-weights
           path: |
             data/active_weights.json
             data/candidate_weights.json
@@ -347,7 +347,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-end-of-season-${{ github.run_id }}
+          name: INFRA-end-of-season-${{ github.run_id }}
           retention-days: 365
           path: |
             data/pipeline_errors.log

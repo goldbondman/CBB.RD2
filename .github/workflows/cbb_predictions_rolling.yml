@@ -76,11 +76,11 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
-      # Download primary data from the ESPN pipeline. Using standardized name cbb-espn-data.
+      # Download primary data from the ESPN pipeline. Using standardized name INFRA-espn-data.
       - name: Download ESPN CSVs
         uses: actions/download-artifact@v4
         with:
-          name: cbb-espn-data
+          name: INFRA-espn-data
           path: data/
         continue-on-error: true
 
@@ -290,7 +290,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-predictions-rolling-latest
+          name: INFRA-predictions-rolling
           path: |
             data/predictions_*.csv
             data/ensemble_predictions_latest.csv

@@ -58,7 +58,7 @@ jobs:
         if: github.event_name == 'workflow_run'
         uses: actions/download-artifact@v4
         with:
-          name: cbb-predictions-rolling-latest
+          name: INFRA-predictions-rolling
           path: data/
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -175,7 +175,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-market-lines
+          name: INFRA-market-lines
           path: |
             data/market_lines.csv
             data/market_lines_latest.csv
@@ -187,7 +187,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-predictions-with-context
+          name: INFRA-predictions-with-context
           path: data/predictions_with_context.csv
           retention-days: 30
 

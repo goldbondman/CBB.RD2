@@ -57,7 +57,7 @@ jobs:
             --jq='.[].databaseId' | while read rid; do
               count=$(gh api \
                 /repos/${{ github.repository }}/actions/runs/${rid}/artifacts \
-                --jq '.artifacts[] | select(.name=="cbb-espn-data") | .size_in_bytes' \
+                --jq '.artifacts[] | select(.name=="INFRA-espn-data") | .size_in_bytes' \
                 2>/dev/null || echo 0)
               echo "$count $rid"
             done | sort -rn | head -1 | awk '{print $2}')
@@ -89,7 +89,7 @@ jobs:
             --jq='.[].databaseId' | while read rid; do
               count=$(gh api \
                 /repos/${{ github.repository }}/actions/runs/${rid}/artifacts \
-                --jq '.artifacts[] | select(.name=="cbb-market-lines") | .size_in_bytes' \
+                --jq '.artifacts[] | select(.name=="INFRA-market-lines") | .size_in_bytes' \
                 2>/dev/null || echo 0)
               echo "$count $rid"
             done | sort -rn | head -1 | awk '{print $2}')
@@ -112,7 +112,7 @@ jobs:
         if: steps.get_espn_run.outputs.run_id != ''
         uses: actions/download-artifact@v4
         with:
-          name: cbb-espn-data
+          name: INFRA-espn-data
           path: data/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_espn_run.outputs.run_id }}
@@ -122,7 +122,7 @@ jobs:
         if: steps.get_pred_run.outputs.run_id != ''
         uses: actions/download-artifact@v4
         with:
-          name: cbb-predictions-rolling-latest
+          name: INFRA-predictions-rolling
           path: data/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_pred_run.outputs.run_id }}
@@ -132,7 +132,7 @@ jobs:
         if: steps.get_market_run.outputs.run_id != ''
         uses: actions/download-artifact@v4
         with:
-          name: cbb-market-lines
+          name: INFRA-market-lines
           path: data/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_market_run.outputs.run_id }}
@@ -142,7 +142,7 @@ jobs:
         if: steps.get_analytics_run.outputs.run_id != ''
         uses: actions/download-artifact@v4
         with:
-          name: cbb-results-log
+          name: INFRA-analytics-results
           path: data/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_analytics_run.outputs.run_id }}
@@ -213,7 +213,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-backtest-latest
+          name: INFRA-backtest-latest
           retention-days: 7
           path: artifacts/${{ env.RUN_ID }}/**
 

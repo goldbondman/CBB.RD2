@@ -11,7 +11,7 @@
 # - Schema-managed outputs include predictions_latest.csv, predictions_combined_latest.csv, results_log*.csv, games.csv.
 #
 # ARTIFACT CHAIN FINDINGS:
-# - Current named artifacts in audit are linked: espn-cbb-csvs, cbb-results-log, cbb-predictions-rolling-latest.
+# - Current named artifacts in audit are linked: INFRA-espn-data, INFRA-analytics-results, INFRA-predictions-rolling.
 # - Workflows still have brittle cross-run artifact assumptions; enforce same-run guarantees + fallback generation.
 #
 # COLUMN CONTRACT FINDINGS:
@@ -86,16 +86,16 @@ python /tmp/dependency_audit.py > data/dependency_audit_baseline.txt
 
 ## Fix 1: [Class A] Artifact uploads
 Add/normalize artifact upload steps in each producer workflow so every consumed artifact has a deterministic producer in the same run chain.
-- File: `.github/workflows/update_espn_cbb.yml` (job `update`) ensure `espn-cbb-csvs` upload includes all required downstream CSVs.
-- File: `.github/workflows/cbb_predictions_rolling.yml` (job `predict`) ensure `cbb-predictions-rolling-latest` upload includes `predictions_latest.csv`, `predictions_combined_latest.csv`, and `ensemble_predictions_latest.csv`.
-- File: `.github/workflows/cbb_analytics.yml` ensure `cbb-results-log` upload is unconditional with `if: always()` and explicit path checks.
+- File: `.github/workflows/update_espn_cbb.yml` (job `update`) ensure `INFRA-espn-data` upload includes all required downstream CSVs.
+- File: `.github/workflows/cbb_predictions_rolling.yml` (job `predict`) ensure `INFRA-predictions-rolling` upload includes `predictions_latest.csv`, `predictions_combined_latest.csv`, and `ensemble_predictions_latest.csv`.
+- File: `.github/workflows/cbb_analytics.yml` ensure `INFRA-analytics-results` upload is unconditional with `if: always()` and explicit path checks.
 Verify:
 ```bash
 python - <<'PY'
 import pathlib, re, sys
 wfs = list(pathlib.Path('.github/workflows').glob('*.yml'))
 t = '\n'.join([p.read_text() for p in wfs])
-required = ['name: espn-cbb-csvs','name: cbb-predictions-rolling-latest','name: cbb-results-log']
+required = ['name: INFRA-espn-data','name: INFRA-predictions-rolling','name: INFRA-analytics-results']
 missing=[r for r in required if r not in t]
 if missing:
     print('Missing uploads:', missing)

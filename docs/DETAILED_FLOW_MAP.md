@@ -280,7 +280,7 @@ team_game_weighted.csv (existing) ───────────────�
 - Odds columns are preserved across state transitions (pre→live→final) via group-fill
 
 ### Artifact Handoff (GitHub Actions)
-- Pipeline writes CSVs → uploads as `espn-cbb-csvs` artifact
-- Predictions workflow downloads artifact → runs models → uploads `cbb-predictions-rolling-latest`
-- Market lines workflow downloads predictions artifact → captures odds → uploads `cbb-market-lines`
+- Pipeline writes CSVs → uploads as `INFRA-espn-data` artifact
+- Predictions workflow downloads artifact → runs models → uploads `INFRA-predictions-rolling`
+- Market lines workflow downloads predictions artifact → captures odds → uploads `INFRA-market-lines`
 - Fallback: `git show HEAD:<file>` for any artifact that failed to download

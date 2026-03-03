@@ -25,7 +25,7 @@ with urllib.request.urlopen(a_req, context=ctx) as a_resp:
     a_data = json.loads(a_resp.read().decode())
 
 for a in a_data.get("artifacts", []):
-    if a["name"] == "cbb-predictions-rolling-latest":
+    if a["name"] == "INFRA-predictions-rolling":
         print(f"Artifact {a['name']} matches.")
         # We can't easily download the zip without a token because artifact download endpoint requires authentication
         print("Note: We can't download without token. But we can deduce path nesting.")

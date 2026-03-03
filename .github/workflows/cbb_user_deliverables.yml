@@ -1,0 +1,80 @@
+name: CBB User Deliverables
+
+on:
+  workflow_run:
+    workflows: ["CBB Predictions Rolling", "CBB Pipeline"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: cbb-user-deliverables
+  cancel-in-progress: true
+
+jobs:
+  deliver:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Download outputs from the triggering run if applicable
+      - name: Download Predictions Artifact
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ github.event.workflow_run.id }}
+          path: data/
+        continue-on-error: true
+
+      # Fallback: using whatever is in the repo if dispatch or download failed
+      - name: Ensure data directory exists
+        run: mkdir -p data/
+
+      - name: Collect Deliverables
+        run: |
+          mkdir -p USER/deliverables/
+          
+          # Copy core betting files if they exist
+          files=(
+            "data/bet_recs.csv"
+            "data/matchup_preview.csv"
+            "data/upset_watch.csv"
+            "data/predictions_combined_latest.csv"
+            "data/predictions_latest.csv"
+            "data/cbb_accuracy_report.csv"
+          )
+          
+          for f in "${files[@]}"; do
+            if [ -f "$f" ]; then
+              cp "$f" USER/deliverables/
+              echo "[OK] CoPIED $f -> USER/deliverables/"
+            else
+              echo "[WARN] MISSING $f"
+            fi
+          done
+          
+          # Rename combined for clarity if it exists
+          if [ -f "USER/deliverables/predictions_combined_latest.csv" ]; then
+            mv USER/deliverables/predictions_combined_latest.csv USER/deliverables/daily_predictions.csv
+          fi
+
+      - name: Upload USER Deliverables
+        uses: actions/upload-artifact@v4
+        with:
+          name: USER-deliverables
+          path: USER/deliverables/
+          retention-days: 14
+
+      - name: Summary
+        run: |
+          echo "## User Deliverables Ready" >> $GITHUB_STEP_SUMMARY
+          echo "The following artifacts have been collected and uploaded:" >> $GITHUB_STEP_SUMMARY
+          ls USER/deliverables | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY

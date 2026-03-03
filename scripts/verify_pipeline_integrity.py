@@ -24,10 +24,10 @@ REQUIRED_CSVS = [
 ]
 
 REQUIRED_ARTIFACT_UPLOADS = {
-    "espn-cbb-csvs",
-    "cbb-predictions-rolling-latest",
-    "cbb-results-log",
-    "cbb-market-lines",
+    "INFRA-espn-data",
+    "INFRA-predictions-rolling",
+    "INFRA-analytics-results",
+    "INFRA-market-lines",
 }
 
 WORKFLOW_FILES = [
