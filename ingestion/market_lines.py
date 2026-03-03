@@ -166,22 +166,77 @@ def regenerate_market_views(data_dir: Path) -> tuple[int, int]:
         snapshots["game_id"] = snapshots.get("event_id")
     snapshots["game_id"] = snapshots["game_id"].fillna(snapshots.get("event_id")).astype(str)
 
-    latest = (
-        snapshots.sort_values("captured_at_utc")
-        .groupby(SNAPSHOT_GROUP_KEYS, as_index=False)
-        .tail(1)
-        .sort_values(SNAPSHOT_GROUP_KEYS)
-    )
-
     games = pd.read_csv(games_path, dtype=str, low_memory=False) if games_path.exists() else pd.DataFrame()
     if not games.empty:
         games["game_id"] = games.get("game_id", pd.Series(dtype=str)).astype(str)
+        # Backfill missing team names from games.csv
+        needs_home = snapshots["home_team_name"].isna() | (snapshots["home_team_name"].astype(str).str.strip() == "")
+        needs_away = snapshots["away_team_name"].isna() | (snapshots["away_team_name"].astype(str).str.strip() == "")
+        if needs_home.any() or needs_away.any():
+            games_names = (
+                games[["game_id", "home_team", "away_team"]]
+                .drop_duplicates("game_id")
+                .rename(columns={"home_team": "_g_home_team", "away_team": "_g_away_team"})
+            )
+            snapshots = snapshots.merge(games_names, on="game_id", how="left")
+            home_fill_mask = needs_home & snapshots["_g_home_team"].notna()
+            away_fill_mask = needs_away & snapshots["_g_away_team"].notna()
+            snapshots.loc[home_fill_mask, "home_team_name"] = snapshots.loc[home_fill_mask, "_g_home_team"]
+            snapshots.loc[away_fill_mask, "away_team_name"] = snapshots.loc[away_fill_mask, "_g_away_team"]
+            snapshots = snapshots.drop(columns=["_g_home_team", "_g_away_team"], errors="ignore")
+
         games["game_datetime_utc"] = pd.to_datetime(games.get("game_datetime_utc"), utc=True, errors="coerce")
         games["final_score_ts"] = pd.to_datetime(games.get("final_score_timestamp_utc"), utc=True, errors="coerce")
         games["completed_flag"] = games.get("completed", pd.Series(dtype=str)).astype(str).str.lower().isin({"1", "true", "t", "yes", "final"})
         games_min = games[["game_id", "game_datetime_utc", "final_score_ts", "completed_flag"]].drop_duplicates("game_id")
     else:
         games_min = pd.DataFrame(columns=["game_id", "game_datetime_utc", "final_score_ts", "completed_flag"])
+
+    # Populate alias columns from primary columns for rows where they are missing
+    _alias_map = [
+        ("spread", "home_spread_current"),
+        ("dk_spread", "draftkings_spread"),
+        ("total", "total_current"),
+        ("over_under", "total_current"),
+    ]
+    for alias_col, src_col in _alias_map:
+        if alias_col in snapshots.columns and src_col in snapshots.columns:
+            mask = snapshots[alias_col].isna() | (snapshots[alias_col].astype(str).str.strip().isin({"", "nan"}))
+            snapshots.loc[mask, alias_col] = snapshots.loc[mask, src_col]
+
+    # Backfill ATS records from team_ats_profile.csv when not already populated
+    ats_path = data_dir / "team_ats_profile.csv"
+    if ats_path.exists():
+        ats_df = pd.read_csv(ats_path, dtype=str, low_memory=False)
+        ats_df = ats_df[["team_id", "ats_wins", "ats_losses"]].dropna(subset=["team_id"])
+        ats_df["team_id"] = ats_df["team_id"].astype(str)
+        ats_home = ats_df.rename(columns={"team_id": "home_team_id", "ats_wins": "_h_ats_wins", "ats_losses": "_h_ats_losses"})
+        ats_away = ats_df.rename(columns={"team_id": "away_team_id", "ats_wins": "_a_ats_wins", "ats_losses": "_a_ats_losses"})
+        if "home_team_id" in snapshots.columns:
+            snapshots["home_team_id"] = snapshots["home_team_id"].astype(str)
+            snapshots = snapshots.merge(ats_home, on="home_team_id", how="left")
+            needs_h_ats = snapshots["home_ats_wins"].isna() | (snapshots["home_ats_wins"].astype(str).str.strip().isin({"", "nan"}))
+            h_wins_mask = needs_h_ats & snapshots["_h_ats_wins"].notna()
+            h_losses_mask = needs_h_ats & snapshots["_h_ats_losses"].notna()
+            snapshots.loc[h_wins_mask, "home_ats_wins"] = snapshots.loc[h_wins_mask, "_h_ats_wins"]
+            snapshots.loc[h_losses_mask, "home_ats_losses"] = snapshots.loc[h_losses_mask, "_h_ats_losses"]
+            snapshots = snapshots.drop(columns=["_h_ats_wins", "_h_ats_losses"], errors="ignore")
+        if "away_team_id" in snapshots.columns:
+            snapshots["away_team_id"] = snapshots["away_team_id"].astype(str)
+            snapshots = snapshots.merge(ats_away, on="away_team_id", how="left")
+            needs_a_ats = snapshots["away_ats_wins"].isna() | (snapshots["away_ats_wins"].astype(str).str.strip().isin({"", "nan"}))
+            a_wins_mask = needs_a_ats & snapshots["_a_ats_wins"].notna()
+            a_losses_mask = needs_a_ats & snapshots["_a_ats_losses"].notna()
+            snapshots.loc[a_wins_mask, "away_ats_wins"] = snapshots.loc[a_wins_mask, "_a_ats_wins"]
+            snapshots.loc[a_losses_mask, "away_ats_losses"] = snapshots.loc[a_losses_mask, "_a_ats_losses"]
+            snapshots = snapshots.drop(columns=["_a_ats_wins", "_a_ats_losses"], errors="ignore")
+
+    latest = (
+        snapshots.sort_values("captured_at_utc")
+        .groupby(SNAPSHOT_GROUP_KEYS, as_index=False)
+        .tail(1)
+        .sort_values(SNAPSHOT_GROUP_KEYS)
+    )
 
     merged = snapshots.merge(games_min, on="game_id", how="left")
 
@@ -202,7 +257,15 @@ def regenerate_market_views(data_dir: Path) -> tuple[int, int]:
                     return before_final.iloc[-1]
         return g.iloc[-1]
 
-    closing = merged.groupby(SNAPSHOT_GROUP_KEYS, group_keys=False).apply(_pick_closing).reset_index(drop=True)
+    # pandas ≥3.0 excludes groupby key columns from apply() results; use the
+    # original row index to select each closing row and preserve all columns.
+    closing_idx = (
+        merged.groupby(SNAPSHOT_GROUP_KEYS, group_keys=False)
+        .apply(lambda g: pd.Series({"_idx": _pick_closing(g).name}))
+        .reset_index(drop=True)["_idx"]
+    )
+    closing = merged.loc[closing_idx].reset_index(drop=True)
+    closing = closing.drop(columns=["game_datetime_utc", "final_score_ts", "completed_flag"], errors="ignore")
     latest["captured_at_utc"] = latest["captured_at_utc"].dt.strftime("%Y-%m-%dT%H:%M:%S+00:00")
     closing["captured_at_utc"] = closing["captured_at_utc"].dt.strftime("%Y-%m-%dT%H:%M:%S+00:00")
     latest.to_csv(latest_path, index=False)
@@ -635,6 +698,11 @@ def build_market_row(
         "total_current": market_data.get("total_current"),
         "pinnacle_spread": pinn_spread,
         "draftkings_spread": dk_spread,
+        # Alias columns — mirror primary values so downstream consumers
+        # that reference these legacy field names always find data.
+        "spread": home_spread,
+        "dk_spread": dk_spread,
+        "total": market_data.get("total_current"),
         "home_tickets_pct": home_tickets,
         "away_tickets_pct": market_data.get("away_tickets_pct"),
         "home_money_pct": market_data.get("home_money_pct"),
@@ -994,6 +1062,24 @@ def run_capture(
             normalize_team_name(parsed.get("away_team_name", "")),
         )
         an_enrichment = action_by_team.get(espn_key) or action_by_team.get((espn_key[1], espn_key[0]))
+        if not an_enrichment:
+            # Fuzzy fallback: match when one team name is a prefix of the other
+            # (handles cases where AN uses short names like "Missouri" vs ESPN "Missouri Tigers")
+            # Require at least 5 chars to avoid spurious short-name matches (e.g. "Miami" → both FL and OH).
+            espn_h, espn_a = espn_key
+            _MIN_MATCH_LEN = 5
+            for (an_h, an_a), an_data in action_by_team.items():
+                h_match = (len(an_h) >= _MIN_MATCH_LEN and (espn_h.startswith(an_h) or an_h.startswith(espn_h)))
+                a_match = (len(an_a) >= _MIN_MATCH_LEN and (espn_a.startswith(an_a) or an_a.startswith(espn_a)))
+                if h_match and a_match:
+                    an_enrichment = an_data
+                    break
+                # also try flipped (ESPN home = AN away and vice versa)
+                h_match_f = (len(an_a) >= _MIN_MATCH_LEN and (espn_h.startswith(an_a) or an_a.startswith(espn_h)))
+                a_match_f = (len(an_h) >= _MIN_MATCH_LEN and (espn_a.startswith(an_h) or an_h.startswith(espn_a)))
+                if h_match_f and a_match_f:
+                    an_enrichment = an_data
+                    break
         if an_enrichment:
             an_matched += 1
             parsed["home_tickets_pct"] = an_enrichment.get("home_tickets_pct")

@@ -148,7 +148,12 @@ def fill_market_row_gaps(row: dict[str, Any], year: int = 2026, season_type: int
             odds = fetch_pickcenter_odds(event_id)
         dk = odds.get("draftkings", {}) if isinstance(odds, dict) else {}
         if out.get("draftkings_spread") in (None, "", "nan"):
-            out["draftkings_spread"] = dk.get("spread")
+            raw_spread = dk.get("spread")
+            if raw_spread is not None:
+                try:
+                    out["draftkings_spread"] = float(raw_spread)
+                except (ValueError, TypeError):
+                    pass
         if out.get("home_ml") in (None, "", "nan"):
             out["home_ml"] = dk.get("home_ml")
         if out.get("away_ml") in (None, "", "nan"):
@@ -163,11 +168,19 @@ def fill_market_row_gaps(row: dict[str, Any], year: int = 2026, season_type: int
     away_team_id = str(out.get("away_team_id") or "").strip()
     if home_team_id and out.get("home_ats_wins") in (None, "", "nan"):
         ats_h = fetch_team_ats_espn(home_team_id, year=year, season_type=season_type)
-        out.setdefault("home_ats_wins", ats_h.get("ats_wins"))
-        out.setdefault("home_ats_losses", ats_h.get("ats_losses"))
+        if ats_h.get("ats_wins") is not None:
+            out["home_ats_wins"] = ats_h.get("ats_wins")
+        if ats_h.get("ats_losses") is not None:
+            out["home_ats_losses"] = ats_h.get("ats_losses")
     if away_team_id and out.get("away_ats_wins") in (None, "", "nan"):
         ats_a = fetch_team_ats_espn(away_team_id, year=year, season_type=season_type)
-        out.setdefault("away_ats_wins", ats_a.get("ats_wins"))
-        out.setdefault("away_ats_losses", ats_a.get("ats_losses"))
+        if ats_a.get("ats_wins") is not None:
+            out["away_ats_wins"] = ats_a.get("ats_wins")
+        if ats_a.get("ats_losses") is not None:
+            out["away_ats_losses"] = ats_a.get("ats_losses")
+
+    # Fallback: populate over_under from total_current when ESPN API didn't return it
+    if out.get("over_under") in (None, "", "nan"):
+        out["over_under"] = out.get("total_current")
 
     return out
