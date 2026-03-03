@@ -165,6 +165,9 @@ jobs:
         run: |
           if [ -f data/predictions_with_context.csv ]; then
             rows=$(( $(wc -l < data/predictions_with_context.csv) - 1 ))
+            if [ "$rows" -lt 1 ]; then
+              echo "[ERROR] data/predictions_with_context.csv has $rows data rows (minimum: 1)"; exit 1
+            fi
             echo "[OK] predictions_with_context.csv: $rows rows"
           else
             echo "[ERROR] data/predictions_with_context.csv was not created"; exit 1
