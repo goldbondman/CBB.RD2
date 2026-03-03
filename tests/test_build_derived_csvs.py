@@ -4,6 +4,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pandas as pd
+import pytest
 
 from build_derived_csvs import build_upset_watch_csv
 
@@ -153,3 +154,59 @@ def test_filter_upcoming_window_excludes_past_games(monkeypatch):
     assert "yesterday" not in ids, "Yesterday's game should be excluded"
     assert "tomorrow" in ids, "Tomorrow's game should be included"
     assert "tonight" in ids, "Game later tonight should be included"
+
+
+def test_filter_bet_recs_window_uses_half_open_40h_window(monkeypatch):
+    from datetime import datetime, timezone
+
+    monkeypatch.setattr(bdc, "NOW_UTC", datetime(2026, 3, 3, 22, 54, tzinfo=timezone.utc))
+
+    df = pd.DataFrame([
+        {"game_id": "prior_day", "home_team": "A", "away_team": "B", "game_datetime_utc": "2026-03-03T22:53:00Z"},
+        {"game_id": "window_start", "home_team": "C", "away_team": "D", "game_datetime_utc": "2026-03-03T22:54:00Z"},
+        {"game_id": "inside_window", "home_team": "E", "away_team": "F", "game_datetime_utc": "2026-03-05T14:53:00Z"},
+        {"game_id": "window_end", "home_team": "G", "away_team": "H", "game_datetime_utc": "2026-03-05T14:54:00Z"},
+    ])
+
+    out = bdc._filter_bet_recs_window(df)
+    ids = out["game_id"].tolist()
+
+    assert "prior_day" not in ids
+    assert "window_start" in ids
+    assert "inside_window" in ids
+    assert "window_end" not in ids
+
+
+def test_filter_bet_recs_window_rejects_naive_and_logs_warning(monkeypatch, capsys):
+    from datetime import datetime, timezone
+
+    monkeypatch.setattr(bdc, "NOW_UTC", datetime(2026, 3, 3, 22, 54, tzinfo=timezone.utc))
+
+    df = pd.DataFrame([
+        {"game_id": "aware", "home_team": "A", "away_team": "B", "game_datetime_utc": "2026-03-04T01:00:00Z"},
+        {"game_id": "aware2", "home_team": "AA", "away_team": "BB", "game_datetime_utc": "2026-03-04T03:00:00Z"},
+        {"game_id": "aware3", "home_team": "X", "away_team": "Y", "game_datetime_utc": "2026-03-04T05:00:00Z"},
+        {"game_id": "naive", "home_team": "C", "away_team": "D", "game_datetime_utc": "2026-03-04 01:00:00"},
+    ])
+
+    out = bdc._filter_bet_recs_window(df)
+    captured = capsys.readouterr().out
+
+    assert out["game_id"].tolist() == ["aware", "aware2", "aware3"]
+    assert "game_id=naive" in captured
+    assert "naive_timestamp_rejected" in captured
+
+
+def test_filter_bet_recs_window_fails_when_parse_failures_exceed_30pct(monkeypatch):
+    from datetime import datetime, timezone
+
+    monkeypatch.setattr(bdc, "NOW_UTC", datetime(2026, 3, 3, 22, 54, tzinfo=timezone.utc))
+
+    df = pd.DataFrame([
+        {"game_id": "g1", "game_datetime_utc": "2026-03-04T01:00:00Z"},
+        {"game_id": "g2", "game_datetime_utc": "2026-03-04 02:00:00"},
+        {"game_id": "g3", "game_datetime_utc": "bad"},
+    ])
+
+    with pytest.raises(RuntimeError, match="parse failure ratio exceeds 30%"):
+        bdc._filter_bet_recs_window(df)

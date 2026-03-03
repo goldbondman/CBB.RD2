@@ -182,6 +182,8 @@ jobs:
                   _dt = pd.to_datetime(merged[dt_col], errors="coerce", utc=True)
                   merged = merged[_dt.isna() | (_dt >= now_utc)]
                   print(f"[INFO] Filtered to {len(merged)} future games (cutoff {now_utc.isoformat()})")
+              generated_at_utc = pd.Timestamp.now(tz="UTC").isoformat()
+              merged["generated_at_utc"] = generated_at_utc
               merged.to_csv(data_dir / "predictions_primary.csv", index=False)
               merged.to_csv(data_dir / "predictions_latest.csv", index=False)
           PY
@@ -247,6 +249,7 @@ jobs:
               _dt = pd.to_datetime(combined[dt_col], errors="coerce", utc=True)
               combined = combined[_dt.isna() | (_dt >= now_utc)]
               print(f"[INFO] Filtered combined to {len(combined)} future games (cutoff {now_utc.isoformat()})")
+          combined["generated_at_utc"] = pd.Timestamp.now(tz="UTC").isoformat()
           combined.to_csv(out, index=False)
           PY
 
@@ -295,10 +298,6 @@ jobs:
         continue-on-error: true
         run: python cbb_player_matchup.py --games data/predictions_combined_latest.csv
 
-      - name: Build derived CSVs (bet_recs, matchup preview, upset watch)
-        continue-on-error: true
-        run: python build_derived_csvs.py
-
       # Pattern 10: Upload artifacts even on failure to aid debugging
       - name: Upload artifacts
         if: always()
@@ -311,8 +310,6 @@ jobs:
             data/predictions_combined_latest.csv
             data/predictions_history.csv
             data/dq_skipped_games.csv
-            data/bet_recs.csv
-            data/csv/bet_recs.csv
           retention-days: 90
 
       # Pattern 9: Standardized commit step with retry logic and "nothing to commit" handling
