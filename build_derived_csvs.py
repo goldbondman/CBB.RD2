@@ -55,6 +55,7 @@ WINDOW_START_HOURS = 0.0
 WINDOW_BEHIND_HOURS = 0.0
 WINDOW_AHEAD_HOURS = 30.0
 WINDOW_TIMEZONE = "America/Los_Angeles"
+BET_RECS_WINDOW_HOURS = 40.0
 
 
 EXPECTED_OUTPUT_SCHEMAS = {
@@ -223,6 +224,109 @@ def _filter_upcoming_window(
     )
     return filtered
 
+
+def _parse_game_time_to_utc(raw_value: object) -> tuple[pd.Timestamp, str | None]:
+    """Parse a single game timestamp into an aware UTC pandas Timestamp.
+
+    Policy: timezone-naive timestamps are rejected (not assumed UTC).
+    """
+    if pd.isna(raw_value):
+        return pd.NaT, "empty"
+
+    if isinstance(raw_value, pd.Timestamp):
+        ts = raw_value
+        if ts.tzinfo is None:
+            return pd.NaT, "naive_timestamp_rejected"
+        return ts.tz_convert("UTC"), None
+
+    if isinstance(raw_value, datetime):
+        if raw_value.tzinfo is None:
+            return pd.NaT, "naive_timestamp_rejected"
+        return pd.Timestamp(raw_value.astimezone(timezone.utc)), None
+
+    text = str(raw_value).strip()
+    if not text:
+        return pd.NaT, "empty"
+
+    try:
+        normalized = text[:-1] + "+00:00" if text.endswith("Z") else text
+        dt_value = datetime.fromisoformat(normalized)
+    except ValueError:
+        return pd.NaT, "unparseable"
+
+    if dt_value.tzinfo is None:
+        return pd.NaT, "naive_timestamp_rejected"
+
+    return pd.Timestamp(dt_value.astimezone(timezone.utc)), None
+
+
+def _filter_bet_recs_window(df: pd.DataFrame) -> pd.DataFrame:
+    """Strict bet recs window filter: [now_local, now_local+40h) in UTC."""
+    dt_candidates = ["game_datetime_utc", "game_datetime", "start_time", "commence_time", "game_time", "date", "game_date"]
+    dt_col = next((col for col in dt_candidates if col in df.columns), None)
+    if dt_col is None:
+        raise RuntimeError(f"bet_recs: missing datetime column; expected one of {dt_candidates}")
+
+    tz_local = ZoneInfo("America/Los_Angeles")
+    run_time_local = NOW_UTC.astimezone(tz_local)
+    window_start_utc = run_time_local.astimezone(timezone.utc)
+    window_end_utc = (run_time_local + timedelta(hours=BET_RECS_WINDOW_HOURS)).astimezone(timezone.utc)
+
+    parsed_values: list[pd.Timestamp] = []
+    parse_failures = 0
+    before_count = len(df)
+
+    for _, row in df.iterrows():
+        parsed, reason = _parse_game_time_to_utc(row.get(dt_col))
+        parsed_values.append(parsed)
+        if reason is not None:
+            parse_failures += 1
+            print(
+                f"[WARN] bet_recs: dropping row due to invalid game time "
+                f"game_id={row.get('game_id', row.get('event_id', '<unknown>'))} "
+                f"raw={row.get(dt_col)!r} reason={reason}"
+            )
+
+    out = df.copy()
+    out["_game_time_utc"] = pd.to_datetime(parsed_values, utc=True, errors="coerce")
+
+    if before_count > 0 and (parse_failures / before_count) > 0.30:
+        raise RuntimeError(
+            "bet_recs: parse failure ratio exceeds 30% "
+            f"({parse_failures}/{before_count}); likely upstream schema/timestamp format change"
+        )
+
+    if out["_game_time_utc"].notna().any() and out["_game_time_utc"].max() < pd.Timestamp(window_start_utc):
+        raise RuntimeError(
+            "bet_recs: source data appears stale; latest game time is before current run window start "
+            f"(latest={out['_game_time_utc'].max().isoformat()}, window_start_utc={window_start_utc.isoformat()})"
+        )
+
+    mask = (
+        out["_game_time_utc"].notna()
+        & (out["_game_time_utc"] >= pd.Timestamp(window_start_utc))
+        & (out["_game_time_utc"] < pd.Timestamp(window_end_utc))
+    )
+    filtered = out.loc[mask].copy()
+
+    min_time = filtered["_game_time_utc"].min()
+    max_time = filtered["_game_time_utc"].max()
+    print("[DEBUG] bet_recs time window")
+    print(f"  run_time_local={run_time_local.isoformat()}")
+    print(f"  window_start_utc={window_start_utc.isoformat()}")
+    print(f"  window_end_utc={window_end_utc.isoformat()}")
+    print(f"  min_game_time_utc={min_time.isoformat() if pd.notna(min_time) else 'None'}")
+    print(f"  max_game_time_utc={max_time.isoformat() if pd.notna(max_time) else 'None'}")
+    print(f"  count_before_filter={before_count}")
+    print(f"  count_after_filter={len(filtered)}")
+
+    if not filtered.empty:
+        preview = filtered[[c for c in ["home_team", "away_team", "_game_time_utc"] if c in filtered.columns]].head(10)
+        print("[DEBUG] bet_recs first 10 filtered rows")
+        print(preview.to_string(index=False))
+
+    return filtered
+
 # ── Matchup enrichment ─────────────────────────────────────────────────────
 
 def enrich_with_matchup_summary(df: pd.DataFrame) -> pd.DataFrame:
@@ -388,14 +492,7 @@ def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
     elif "game_status" in df.columns:
         df = df[df["game_status"].astype(str).str.lower() == "scheduled"]
 
-    df = _filter_upcoming_window(
-        df,
-        label="bet_recs",
-        start_hours=WINDOW_START_HOURS,
-        behind_hours=WINDOW_BEHIND_HOURS,
-        ahead_hours=WINDOW_AHEAD_HOURS,
-        timezone_name=WINDOW_TIMEZONE,
-    )
+    df = _filter_bet_recs_window(df)
 
     recs = []
 
@@ -436,7 +533,7 @@ def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
 
             recs.append({
                 "game_id": row.get("game_id"),
-                "date": row.get("game_date", row.get("game_datetime_utc")),
+                "date": row.get("_game_time_utc", row.get("game_datetime_utc")),
                 "home_team": row.get("home_team"),
                 "away_team": row.get("away_team"),
                 "bet_type": "SPREAD",
@@ -459,7 +556,7 @@ def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
             pick = "OVER" if model_total > market_total else "UNDER"
             recs.append({
                 "game_id": row.get("game_id"),
-                "date": row.get("game_date", row.get("game_datetime_utc")),
+                "date": row.get("_game_time_utc", row.get("game_datetime_utc")),
                 "home_team": row.get("home_team"),
                 "away_team": row.get("away_team"),
                 "bet_type": "TOTAL",

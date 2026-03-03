@@ -2,7 +2,7 @@ name: CBB User Deliverables
 
 on:
   workflow_run:
-    workflows: ["CBB Predictions Rolling", "CBB Pipeline"]
+    workflows: ["CBB Predictions Rolling"]
     types: [completed]
   workflow_dispatch:
 
@@ -19,33 +19,51 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    env:
+      PREDICTIONS_FRESHNESS_MAX_HOURS: "6"
+
     steps:
-      - name: Checkout
+      - name: Checkout (workflow_run SHA)
+        if: github.event_name == 'workflow_run'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Checkout (default branch for manual run)
+        if: github.event_name != 'workflow_run'
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: "pip"
 
-      # Download outputs from the triggering run if applicable
-      - name: Download Predictions Artifact
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Ensure data directories exist
+        run: |
+          mkdir -p data/csv
+          mkdir -p USER/deliverables
+
+      - name: Download Predictions Artifact (triggering run)
         if: github.event_name == 'workflow_run'
         uses: actions/download-artifact@v4
         with:
           run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          name: INFRA-predictions-rolling
           path: data/
-        continue-on-error: true
 
-      # Fallback: using whatever is in the repo if dispatch or download failed
-      - name: Ensure data directory exists
-        run: mkdir -p data/
+      - name: Validate predictions freshness and schedule recency
+        run: python infra/ci/validate_predictions_freshness.py --data-dir data --max-age-hours "$PREDICTIONS_FRESHNESS_MAX_HOURS"
+
+      - name: Build derived user-facing CSVs
+        run: python build_derived_csvs.py
 
       - name: Collect Deliverables
         run: |
-          mkdir -p USER/deliverables/
-          
-          # Copy core betting files if they exist
           files=(
             "data/bet_recs.csv"
             "data/matchup_preview.csv"
@@ -54,17 +72,16 @@ jobs:
             "data/predictions_latest.csv"
             "data/cbb_accuracy_report.csv"
           )
-          
+
           for f in "${files[@]}"; do
             if [ -f "$f" ]; then
               cp "$f" USER/deliverables/
-              echo "[OK] CoPIED $f -> USER/deliverables/"
+              echo "[OK] copied $f -> USER/deliverables/"
             else
-              echo "[WARN] MISSING $f"
+              echo "[WARN] missing $f"
             fi
           done
-          
-          # Rename combined for clarity if it exists
+
           if [ -f "USER/deliverables/predictions_combined_latest.csv" ]; then
             mv USER/deliverables/predictions_combined_latest.csv USER/deliverables/daily_predictions.csv
           fi
@@ -78,15 +95,23 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## User Deliverables Ready" >> $GITHUB_STEP_SUMMARY
-          echo "The following artifacts have been collected and uploaded:" >> $GITHUB_STEP_SUMMARY
-          ls USER/deliverables | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## User Deliverables Workflow"
+            echo "- Trigger: workflow_run of CBB Predictions Rolling (or manual workflow_dispatch)"
+            echo "- Freshness policy: predictions artifact age <= ${PREDICTIONS_FRESHNESS_MAX_HOURS} hours"
+            echo "- Guardrail: max game time in predictions must be >= now_utc"
+            echo ""
+            echo "### Deliverables"
+            ls USER/deliverables | sed 's/^/- /'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Commit to repo
         if: success()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/bet_recs.csv data/matchup_preview.csv data/upset_watch.csv
+          git add data/csv/bet_recs.csv data/csv/matchup_preview.csv data/csv/upset_watch.csv
           git add USER/deliverables/
           if git diff --staged --quiet; then
             echo "[SKIP] No changes to commit"
