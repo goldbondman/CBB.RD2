@@ -153,7 +153,7 @@ jobs:
               run_for_date(input_date)
           else:
               start_pst = datetime.now(tz=tz)
-              end_pst   = start_pst + timedelta(hours=40)
+              end_pst   = start_pst + timedelta(hours=30)
               dates = []
               d = start_pst.date()
               while d <= end_pst.date():
@@ -175,6 +175,13 @@ jobs:
               pd.DataFrame().to_csv(data_dir / "predictions_latest.csv", index=False)
           else:
               merged = pd.concat(dfs, ignore_index=True).drop_duplicates(subset=["game_id"], keep="last")
+              # Filter out games that have already started (keep only future games)
+              now_utc = pd.Timestamp.now(tz="UTC")
+              dt_col = next((c for c in ["game_datetime_utc", "game_datetime"] if c in merged.columns), None)
+              if dt_col:
+                  _dt = pd.to_datetime(merged[dt_col], errors="coerce", utc=True)
+                  merged = merged[_dt.isna() | (_dt >= now_utc)]
+                  print(f"[INFO] Filtered to {len(merged)} future games (cutoff {now_utc.isoformat()})")
               merged.to_csv(data_dir / "predictions_primary.csv", index=False)
               merged.to_csv(data_dir / "predictions_latest.csv", index=False)
           PY
@@ -233,6 +240,13 @@ jobs:
               combined = p_df.merge(e_df, on="game_id", how="left", suffixes=("", "_ens"))
           else:
               combined = p_df
+          # Filter out games that have already started (keep only future games)
+          now_utc = pd.Timestamp.now(tz="UTC")
+          dt_col = next((c for c in ["game_datetime_utc", "game_datetime"] if c in combined.columns), None)
+          if dt_col:
+              _dt = pd.to_datetime(combined[dt_col], errors="coerce", utc=True)
+              combined = combined[_dt.isna() | (_dt >= now_utc)]
+              print(f"[INFO] Filtered combined to {len(combined)} future games (cutoff {now_utc.isoformat()})")
           combined.to_csv(out, index=False)
           PY
 

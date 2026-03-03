@@ -53,7 +53,7 @@ ML_EDGE_MIN = 0.05
 # Runtime overrideable window config (defaults preserve current behavior intent)
 WINDOW_START_HOURS = 0.0
 WINDOW_BEHIND_HOURS = 0.0
-WINDOW_AHEAD_HOURS = 48.0
+WINDOW_AHEAD_HOURS = 30.0
 WINDOW_TIMEZONE = "America/Los_Angeles"
 
 
@@ -201,8 +201,7 @@ def _filter_upcoming_window(
 
     tz = ZoneInfo(timezone_name)
     run_local = NOW_UTC.astimezone(tz)
-    today_local = run_local.replace(hour=0, minute=0, second=0, microsecond=0)
-    window_start = today_local - timedelta(hours=float(behind_hours)) + timedelta(hours=float(start_hours))
+    window_start = run_local - timedelta(hours=float(behind_hours)) + timedelta(hours=float(start_hours))
     window_end = run_local + timedelta(hours=float(ahead_hours))
 
     dt_local = pd.to_datetime(df[dt_col], errors="coerce", utc=True).dt.tz_convert(tz)
@@ -767,8 +766,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--window-ahead-hours",
         type=float,
-        default=48.0,
-        help="How many hours ahead from the window start to keep games (default: 48).",
+        default=30.0,
+        help="How many hours ahead from run time to keep games (default: 30).",
     )
     parser.add_argument(
         "--window-start-hours",
