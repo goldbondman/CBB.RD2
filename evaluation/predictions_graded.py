@@ -4,8 +4,11 @@
 from __future__ import annotations
 
 import logging
+import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pandas as pd
 from pipeline_csv_utils import normalize_game_id
