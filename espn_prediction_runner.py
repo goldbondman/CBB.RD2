@@ -1342,8 +1342,8 @@ def main():
     parser.add_argument(
         "--hours-ahead",
         type=int,
-        default=40,
-        help="Rolling window horizon in hours (default: 40). Only used if --date is omitted.",
+        default=30,
+        help="Rolling window horizon in hours (default: 30). Only used if --date is omitted.",
     )
     parser.add_argument(
         "--game-type",

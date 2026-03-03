@@ -114,8 +114,8 @@ def test_select_prediction_source_prefers_fresher_file(monkeypatch, tmp_path):
     assert df.iloc[0]["game_id"] == "new"
 
 
-def test_filter_upcoming_window_includes_todays_earlier_games(monkeypatch):
-    """Games scheduled for today (PST) but earlier in the day must be included."""
+def test_filter_upcoming_window_excludes_past_games(monkeypatch):
+    """Games scheduled before run time (even earlier today) must be excluded."""
     from datetime import datetime, timezone
 
     # Use a January date to ensure PST (UTC-8) is in effect, not PDT
@@ -123,17 +123,20 @@ def test_filter_upcoming_window_includes_todays_earlier_games(monkeypatch):
     now_utc = datetime(2099, 1, 16, 4, 0, 0, tzinfo=timezone.utc)
     monkeypatch.setattr(bdc, "NOW_UTC", now_utc)
 
-    # Game scheduled at 1 PM PST today (7 hours before run time)
+    # Game scheduled at 1 PM PST today (7 hours before run time) — should be excluded
     today_morning_utc = "2099-01-15T21:00:00Z"   # 1 PM PST on 2099-01-15
     # Game from yesterday — should be excluded
     yesterday_utc = "2099-01-14T21:00:00Z"        # 1 PM PST on 2099-01-14
     # Game tomorrow — should be included
     tomorrow_utc = "2099-01-16T21:00:00Z"          # 1 PM PST on 2099-01-16
+    # Game later tonight (9 PM PST) — should be included
+    tonight_utc = "2099-01-16T05:00:00Z"           # 9 PM PST on 2099-01-15
 
     df = pd.DataFrame([
         {"game_id": "today_morning", "game_datetime_utc": today_morning_utc},
         {"game_id": "yesterday",     "game_datetime_utc": yesterday_utc},
         {"game_id": "tomorrow",      "game_datetime_utc": tomorrow_utc},
+        {"game_id": "tonight",       "game_datetime_utc": tonight_utc},
     ])
 
     result = bdc._filter_upcoming_window(
@@ -141,11 +144,12 @@ def test_filter_upcoming_window_includes_todays_earlier_games(monkeypatch):
         label="test",
         start_hours=0.0,
         behind_hours=0.0,
-        ahead_hours=48.0,
+        ahead_hours=30.0,
         timezone_name="America/Los_Angeles",
     )
 
     ids = result["game_id"].tolist()
-    assert "today_morning" in ids, "Game earlier today (PST) should be included"
+    assert "today_morning" not in ids, "Game before run time should be excluded"
     assert "yesterday" not in ids, "Yesterday's game should be excluded"
     assert "tomorrow" in ids, "Tomorrow's game should be included"
+    assert "tonight" in ids, "Game later tonight should be included"
