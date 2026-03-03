@@ -201,8 +201,9 @@ def _filter_upcoming_window(
 
     tz = ZoneInfo(timezone_name)
     run_local = NOW_UTC.astimezone(tz)
-    window_start = run_local - timedelta(hours=float(behind_hours)) + timedelta(hours=float(start_hours))
-    window_end = window_start + timedelta(hours=float(ahead_hours))
+    today_local = run_local.replace(hour=0, minute=0, second=0, microsecond=0)
+    window_start = today_local - timedelta(hours=float(behind_hours)) + timedelta(hours=float(start_hours))
+    window_end = run_local + timedelta(hours=float(ahead_hours))
 
     dt_local = pd.to_datetime(df[dt_col], errors="coerce", utc=True).dt.tz_convert(tz)
     before_count = len(df)
