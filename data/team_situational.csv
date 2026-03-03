@@ -395,7 +395,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401825521,127,Michigan State Spartans,26,UCLA Bruins,2026-02-18T01:30:00Z,home,4.0,1,3,1.5,-1,0,0.5,0.5,10.67,1.0,0.0,23.0,15.0
 401825534,127,Michigan State Spartans,194,Ohio State Buckeyes,2026-02-22T18:00:00Z,home,4.7,1,2,1.2,1,0,0.5,0.5,14.91,0.0,0.0,6.0,6.0
 401825543,127,Michigan State Spartans,2509,Purdue Boilermakers,2026-02-27T01:00:00Z,away,4.3,1,3,1.5,2,0,0.5,0.5,14.22,0.0,1.0,2.0,2.0
-401825550,127,Michigan State Spartans,84,Indiana Hoosiers,2026-03-01T20:45:00Z,away,2.8,1,3,1.6,3,-1,0.6,0.667,14.04,0.0,0.0,9.0,9.0
+401825550,127,Michigan State Spartans,84,Indiana Hoosiers,2026-03-01T20:45:00Z,away,2.8,1,3,1.6,3,-1,0.6,0.667,14.04,0.0,0.0,13.0,13.0
 401811103,127162,Ozark Christian Ambassadors,233,South Dakota Coyotes,2025-11-09T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-56.0,-15.0
 401829443,128256,College Of Biblical Studies Ambassadors,2377,McNeese Cowboys,2025-11-11T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-82.0,-15.0
 401828332,128256,College Of Biblical Studies Ambassadors,2277,Houston Christian Huskies,2025-11-21T01:00:00Z,away,10.0,0,1,0.3,-1,0,,,,1.0,0.0,-18.0,-15.0
@@ -1907,7 +1907,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401830214,2057,Belmont Bruins,93,Murray State Racers,2026-02-15T23:00:00Z,away,2.9,2,4,2.45,1,0,0.778,1.0,9.59,1.0,0.0,17.0,15.0
 401830215,2057,Belmont Bruins,282,Indiana State Sycamores,2026-02-22T01:00:00Z,home,6.1,1,3,1.5,2,0,0.778,1.0,9.59,1.0,0.0,17.0,15.0
 401830216,2057,Belmont Bruins,339,Evansville Purple Aces,2026-02-26T00:30:00Z,home,4.0,1,3,1.5,3,0,0.778,1.0,10.28,1.0,0.0,34.0,15.0
-401830217,2057,Belmont Bruins,2287,Illinois State Redbirds,2026-03-01T22:00:00Z,away,3.9,1,3,1.5,4,1,0.778,1.0,14.91,0.0,1.0,0.0,0.0
+401830217,2057,Belmont Bruins,2287,Illinois State Redbirds,2026-03-01T22:00:00Z,away,3.9,1,3,1.5,4,1,0.778,1.0,14.91,0.0,0.0,-7.0,-7.0
 401826830,2061,Berea Mountaineers,2635,Tennessee Tech Golden Eagles,2025-11-14T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-22.0,-15.0
 401820214,2062,Bethany (WV) Bison,2385,Mercyhurst Lakers,2025-12-07T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-29.0,-15.0
 401823361,2064,Bethel (TN) Wildcats,98,Western Kentucky Hilltoppers,2025-11-19T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-30.0,-15.0
@@ -3457,7 +3457,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401830306,2287,Illinois State Redbirds,93,Murray State Racers,2026-02-19T02:00:00Z,home,3.2,2,4,2.4,-1,0,0.429,0.5,16.63,1.0,0.0,17.0,15.0
 401830223,2287,Illinois State Redbirds,71,Bradley Braves,2026-02-22T01:00:00Z,away,3.0,2,4,2.4,1,0,0.429,0.667,18.04,0.0,0.0,-14.0,-14.0
 401830312,2287,Illinois State Redbirds,2460,Northern Iowa Panthers,2026-02-26T00:00:00Z,away,4.0,2,4,2.4,-1,0,0.429,0.667,18.67,0.0,1.0,2.0,2.0
-401830217,2287,Illinois State Redbirds,2057,Belmont Bruins,2026-03-01T22:00:00Z,home,3.9,1,3,1.5,1,-1,0.5,0.667,18.45,0.0,1.0,0.0,0.0
+401830217,2287,Illinois State Redbirds,2057,Belmont Bruins,2026-03-01T22:00:00Z,home,3.9,1,3,1.5,1,-1,0.5,0.667,18.45,0.0,0.0,7.0,7.0
 401823560,2294,Iowa Hawkeyes,2752,Xavier Musketeers,2025-11-15T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,19.0,15.0
 401823648,2294,Iowa Hawkeyes,2546,Southeast Missouri State Redhawks,2025-11-19T01:30:00Z,home,4.0,1,1,0.9,1,0,,,,1.0,0.0,29.0,15.0
 401822342,2294,Iowa Hawkeyes,2130,Chicago State Cougars,2025-11-21T00:00:00Z,home,1.9,2,2,2.35,2,0,,,,1.0,0.0,39.0,15.0
@@ -3684,7 +3684,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401812071,232,Charleston Cougars,2448,North Carolina A&T Aggies,2026-02-20T00:00:00Z,away,4.1,2,4,2.4,1,0,0.889,0.8,9.44,0.0,0.0,13.0,13.0
 401812080,232,Charleston Cougars,2405,Monmouth Hawks,2026-02-21T21:00:00Z,home,1.9,2,4,2.95,2,0,0.889,0.8,10.44,0.0,0.0,11.0,11.0
 401812087,232,Charleston Cougars,2261,Hampton Pirates,2026-02-26T16:00:00Z,away,4.8,2,4,2.4,3,0,0.889,0.8,9.39,0.0,0.0,14.0,14.0
-401812088,232,Charleston Cougars,350,UNC Wilmington Seahawks,2026-03-02T00:00:00Z,away,3.3,1,3,1.5,4,-1,0.889,0.75,6.68,,,,
+401812088,232,Charleston Cougars,350,UNC Wilmington Seahawks,2026-03-02T00:00:00Z,away,3.3,1,3,1.5,4,-1,0.889,0.75,6.68,0.0,1.0,3.0,3.0
 401812251,2320,Lamar Cardinals,2628,TCU Horned Frogs,2025-11-11T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-13.0,-13.0
 401828512,2320,Lamar Cardinals,2433,UL Monroe Warhawks,2025-11-18T00:30:00Z,away,7.0,1,1,0.9,-1,0,,,,0.0,0.0,13.0,13.0
 401828291,2320,Lamar Cardinals,149,Montana Grizzlies,2025-11-23T21:00:00Z,away,5.9,1,2,1.2,1,0,,,,0.0,1.0,5.0,5.0
@@ -7006,7 +7006,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401828235,2636,UTSA Roadrunners,2226,Florida Atlantic Owls,2026-02-19T01:00:00Z,home,3.3,1,3,1.5,1,0,,,11.51,0.0,0.0,-8.0,-8.0
 401828243,2636,UTSA Roadrunners,202,Tulsa Golden Hurricane,2026-02-22T21:00:00Z,away,3.8,1,3,1.5,-1,0,,,11.62,1.0,0.0,-26.0,-15.0
 401828245,2636,UTSA Roadrunners,151,East Carolina Pirates,2026-02-26T01:00:00Z,home,3.2,2,3,2.1,-2,0,,,12.54,0.0,1.0,-1.0,-1.0
-401828255,2636,UTSA Roadrunners,2724,Wichita State Shockers,2026-03-02T01:00:00Z,home,4.0,1,3,1.5,-3,-1,0.333,,12.04,,,,
+401828255,2636,UTSA Roadrunners,2724,Wichita State Shockers,2026-03-02T01:00:00Z,home,4.0,1,3,1.5,-3,-1,0.333,,12.04,1.0,0.0,-17.0,-15.0
 401824039,2638,UTEP Miners,2351,Loyola Marymount Lions,2025-11-12T02:00:00Z,home,7.0,0,0,0.0,0,0,,,,0.0,0.0,-13.0,-13.0
 401827911,2638,UTEP Miners,328,Utah State Aggies,2025-11-15T21:00:00Z,away,3.8,1,1,0.9,-1,0,,,,1.0,0.0,-24.0,-15.0
 401828474,2638,UTEP Miners,3170,St. Thomas (TX) Celts,2025-11-20T02:00:00Z,home,4.2,1,2,1.2,-2,0,,,,0.0,1.0,1.0,1.0
@@ -7411,7 +7411,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401822945,269,Marquette Golden Eagles,2752,Xavier Musketeers,2026-02-14T20:00:00Z,away,3.8,1,2,1.2,-1,0,0.375,0.333,13.24,0.0,0.0,-8.0,-8.0
 401822949,269,Marquette Golden Eagles,2599,St. John's Red Storm,2026-02-19T02:00:00Z,home,4.2,1,3,1.5,-2,0,0.375,0.2,12.6,0.0,0.0,-6.0,-6.0
 401822957,269,Marquette Golden Eagles,46,Georgetown Hoyas,2026-02-25T00:00:00Z,away,5.9,1,3,1.5,-3,0,0.375,0.25,8.36,1.0,0.0,16.0,15.0
-401822966,269,Marquette Golden Eagles,305,DePaul Blue Demons,2026-03-01T21:00:00Z,home,4.9,1,2,1.2,1,-1,0.375,0.25,10.5,1.0,0.0,-18.0,-15.0
+401822966,269,Marquette Golden Eagles,305,DePaul Blue Demons,2026-03-01T21:00:00Z,home,4.9,1,2,1.2,1,-1,0.375,0.25,10.5,0.0,0.0,-11.0,-11.0
 401826931,2692,Weber State Wildcats,328,Utah State Aggies,2025-11-13T02:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-10.0,-10.0
 401826932,2692,Weber State Wildcats,300,UC Irvine Anteaters,2025-11-16T03:00:00Z,away,3.0,1,1,0.9,-1,0,,,,0.0,0.0,-9.0,-9.0
 401826933,2692,Weber State Wildcats,2097,Campbell Fighting Camels,2025-11-20T03:00:00Z,home,4.0,1,2,1.2,-2,0,,,,0.0,0.0,6.0,6.0
@@ -7641,7 +7641,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401828234,2724,Wichita State Shockers,151,East Carolina Pirates,2026-02-19T00:00:00Z,away,4.0,2,4,2.4,1,0,0.4,1.0,9.55,0.0,1.0,3.0,3.0
 401828239,2724,Wichita State Shockers,218,Temple Owls,2026-02-21T23:00:00Z,home,3.0,2,4,2.4,2,0,0.455,1.0,7.47,0.0,0.0,12.0,12.0
 401828249,2724,Wichita State Shockers,235,Memphis Tigers,2026-02-27T02:00:00Z,away,5.1,1,3,1.5,3,0,0.455,1.0,7.8,0.0,0.0,6.0,6.0
-401828255,2724,Wichita State Shockers,2636,UTSA Roadrunners,2026-03-02T01:00:00Z,away,3.0,1,3,1.5,4,-1,0.455,1.0,6.5,,,,
+401828255,2724,Wichita State Shockers,2636,UTSA Roadrunners,2026-03-02T01:00:00Z,away,3.0,1,3,1.5,4,-1,0.455,1.0,6.5,1.0,0.0,17.0,15.0
 401817174,2729,William & Mary Tribe,257,Richmond Spiders,2025-11-12T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,1.0,-4.0,-4.0
 401826915,2729,William & Mary Tribe,2599,St. John's Red Storm,2025-11-15T23:00:00Z,away,4.0,1,1,0.9,-1,0,,,,1.0,0.0,-33.0,-15.0
 401823419,2729,William & Mary Tribe,189,Bowling Green Falcons,2025-11-20T00:00:00Z,away,4.0,1,2,1.2,-2,0,,,,0.0,0.0,8.0,8.0
@@ -8837,7 +8837,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401822951,305,DePaul Blue Demons,2550,Seton Hall Pirates,2026-02-19T01:00:00Z,away,7.0,1,2,1.2,1,0,0.571,0.667,6.84,0.0,0.0,12.0,12.0
 401822955,305,DePaul Blue Demons,2507,Providence Friars,2026-02-22T01:15:00Z,home,3.0,1,2,1.2,2,0,0.571,0.667,10.44,0.0,1.0,-3.0,-3.0
 401822960,305,DePaul Blue Demons,156,Creighton Bluejays,2026-02-26T02:00:00Z,away,4.0,1,3,1.5,-1,0,0.5,0.5,10.41,0.0,1.0,1.0,1.0
-401822966,305,DePaul Blue Demons,269,Marquette Golden Eagles,2026-03-01T21:00:00Z,away,3.8,1,3,1.5,1,-1,0.556,0.5,9.69,1.0,0.0,18.0,15.0
+401822966,305,DePaul Blue Demons,269,Marquette Golden Eagles,2026-03-01T21:00:00Z,away,3.8,1,3,1.5,1,-1,0.556,0.5,9.69,0.0,0.0,11.0,11.0
 401832162,3071,North Central College Cardinals,71,Bradley Braves,2025-12-14T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-33.0,-15.0
 401829390,3077,Kentucky Christian Knights,2630,UT Martin Skyhawks,2025-11-10T00:30:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-55.0,-15.0
 401828577,3077,Kentucky Christian Knights,2413,Morehead State Eagles,2025-11-16T17:30:00Z,away,6.7,1,1,0.9,-1,0,,,,1.0,0.0,-70.0,-15.0
@@ -9333,7 +9333,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401830309,339,Evansville Purple Aces,93,Murray State Racers,2026-02-21T21:00:00Z,away,2.8,1,3,1.6,-2,0,0.222,0.0,15.89,0.0,0.0,-13.0,-13.0
 401830216,339,Evansville Purple Aces,2057,Belmont Bruins,2026-02-26T00:30:00Z,away,4.1,2,3,2.1,-3,0,0.222,0.0,15.79,1.0,0.0,-34.0,-15.0
 401830315,339,Evansville Purple Aces,2674,Valparaiso Beacons,2026-02-28T21:00:00Z,home,2.9,2,3,2.15,-4,1,0.222,0.0,16.66,0.0,1.0,1.0,1.0
-401858741,339,Evansville Purple Aces,79,Southern Illinois Salukis,2026-03-01T21:00:00Z,home,1.0,2,4,3.4,1,-1,0.3,0.5,14.32,0.0,0.0,-10.0,-10.0
+401858741,339,Evansville Purple Aces,79,Southern Illinois Salukis,2026-03-01T21:00:00Z,home,1.0,2,4,3.4,1,-1,0.3,0.5,14.32,0.0,0.0,-14.0,-14.0
 401819872,344,Mississippi State Bulldogs,66,Iowa State Cyclones,2025-11-11T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-16.0,-15.0
 401808951,344,Mississippi State Bulldogs,2545,SE Louisiana Lions,2025-11-15T20:00:00Z,home,4.8,1,1,0.9,-1,0,,,,0.0,0.0,7.0,7.0
 401819891,344,Mississippi State Bulldogs,2306,Kansas State Wildcats,2025-11-21T02:30:00Z,away,5.3,1,2,1.2,1,0,,,,1.0,0.0,-21.0,-15.0
@@ -9422,8 +9422,8 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401812075,350,UNC Wilmington Seahawks,2405,Monmouth Hawks,2026-02-20T00:00:00Z,home,5.1,2,4,2.4,3,0,0.857,1.0,6.97,0.0,0.0,10.0,10.0
 401812076,350,UNC Wilmington Seahawks,2097,Campbell Fighting Camels,2026-02-21T21:00:00Z,away,1.9,2,4,2.95,4,0,0.857,1.0,7.07,0.0,1.0,5.0,5.0
 401812084,350,UNC Wilmington Seahawks,2448,North Carolina A&T Aggies,2026-02-27T00:00:00Z,home,5.1,2,4,2.4,5,0,0.875,1.0,3.26,1.0,0.0,23.0,15.0
-401812088,350,UNC Wilmington Seahawks,232,Charleston Cougars,2026-03-02T00:00:00Z,home,3.0,1,3,1.5,6,1,0.875,1.0,6.77,,,,
-401812099,350,UNC Wilmington Seahawks,2210,Elon Phoenix,2026-03-04T00:00:00Z,away,2.0,2,4,2.9,7,1,0.875,1.0,7.57,,,,
+401812088,350,UNC Wilmington Seahawks,232,Charleston Cougars,2026-03-02T00:00:00Z,home,3.0,1,3,1.5,6,1,0.875,1.0,6.77,0.0,1.0,-3.0,-3.0
+401812099,350,UNC Wilmington Seahawks,2210,Elon Phoenix,2026-03-04T00:00:00Z,away,2.0,2,4,2.9,-1,2,0.778,0.667,8.66,,,,
 401812648,353,Johnson & Wales (RI) Griffins,2115,Central Connecticut Blue Devils,2025-11-30T18:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-65.0,-15.0
 401818558,353,Johnson & Wales (RI) Griffins,225,Brown Bears,2025-12-31T17:00:00Z,away,14.0,0,0,0.0,-1,0,,,,1.0,0.0,-58.0,-15.0
 401823458,354,Olivet Comets,2117,Central Michigan Chippewas,2025-12-18T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-20.0,-15.0
@@ -10315,7 +10315,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401830308,79,Southern Illinois Salukis,2181,Drake Bulldogs,2026-02-19T00:30:00Z,away,3.2,2,4,2.4,-1,0,0.364,0.25,14.09,0.0,1.0,5.0,5.0
 401830310,79,Southern Illinois Salukis,2460,Northern Iowa Panthers,2026-02-21T23:00:00Z,away,2.9,2,4,2.45,1,0,0.417,0.5,14.08,0.0,1.0,2.0,2.0
 401830313,79,Southern Illinois Salukis,282,Indiana State Sycamores,2026-02-26T01:00:00Z,home,4.1,1,4,1.8,2,0,0.462,0.6,12.18,0.0,0.0,11.0,11.0
-401858741,79,Southern Illinois Salukis,339,Evansville Purple Aces,2026-03-01T21:00:00Z,away,3.8,1,3,1.5,3,1,0.462,0.75,11.79,0.0,0.0,10.0,10.0
+401858741,79,Southern Illinois Salukis,339,Evansville Purple Aces,2026-03-01T21:00:00Z,away,3.8,1,3,1.5,3,1,0.462,0.75,11.79,0.0,0.0,14.0,14.0
 401824935,8,Arkansas Razorbacks,2110,Central Arkansas Bears,2025-11-12T01:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,37.0,15.0
 401826786,8,Arkansas Razorbacks,2535,Samford Bulldogs,2025-11-15T01:00:00Z,home,3.0,1,1,0.9,1,0,,,,0.0,1.0,4.0,4.0
 401826787,8,Arkansas Razorbacks,2737,Winthrop Eagles,2025-11-19T01:00:00Z,home,4.0,2,2,1.8,2,0,,,,0.0,1.0,1.0,1.0
@@ -10399,7 +10399,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401825518,84,Indiana Hoosiers,356,Illinois Fighting Illini,2026-02-15T18:00:00Z,away,5.7,1,3,1.5,2,0,1.0,1.0,7.93,1.0,0.0,-20.0,-15.0
 401825528,84,Indiana Hoosiers,2509,Purdue Boilermakers,2026-02-21T01:00:00Z,away,5.3,1,3,1.5,-1,0,1.0,1.0,12.29,1.0,0.0,-29.0,-15.0
 401825536,84,Indiana Hoosiers,77,Northwestern Wildcats,2026-02-25T00:00:00Z,home,4.0,1,2,1.2,-2,0,1.0,1.0,16.39,0.0,1.0,-4.0,-4.0
-401825550,84,Indiana Hoosiers,127,Michigan State Spartans,2026-03-01T20:45:00Z,home,4.9,1,2,1.2,-3,1,0.75,0.75,16.44,0.0,0.0,-9.0,-9.0
+401825550,84,Indiana Hoosiers,127,Michigan State Spartans,2026-03-01T20:45:00Z,home,4.9,1,2,1.2,-3,1,0.75,0.75,16.44,0.0,0.0,-13.0,-13.0
 401823375,85,IU Indianapolis Jaguars,130262,IU Columbus Crimson Pride,2025-11-11T16:00:00Z,home,7.0,0,0,0.0,0,0,,,,1.0,0.0,44.0,15.0
 401823376,85,IU Indianapolis Jaguars,2199,Eastern Michigan Eagles,2025-11-14T23:30:00Z,away,3.3,1,1,0.9,1,0,,,,0.0,0.0,7.0,7.0
 401820841,85,IU Indianapolis Jaguars,2127,Charleston Southern Buccaneers,2025-11-19T00:00:00Z,away,4.0,1,2,1.2,2,0,,,,0.0,0.0,-12.0,-12.0
