@@ -551,15 +551,9 @@ def build_predictions_with_context(
             log.info(
                 "Market lines merged: %d/%d games matched | steam=%d, RLM=%d, book_dis=%d",
                 matched, before_rows,
-                int(df.get("steam_flag", pd.Series(dtype=float))
-                    .fillna(False).astype(bool).sum())
-                if "steam_flag" in df.columns else 0,
-                int(df.get("rlm_flag", pd.Series(dtype=float))
-                    .fillna(False).astype(bool).sum())
-                if "rlm_flag" in df.columns else 0,
-                int(df.get("book_disagreement_flag", pd.Series(dtype=float))
-                    .fillna(False).astype(bool).sum())
-                if "book_disagreement_flag" in df.columns else 0,
+                int(df.get("steam_flag", pd.Series(dtype=bool)).dropna().astype(bool).sum()),
+                int(df.get("rlm_flag", pd.Series(dtype=bool)).dropna().astype(bool).sum()),
+                int(df.get("book_disagreement_flag", pd.Series(dtype=bool)).dropna().astype(bool).sum()),
             )
             if matched == 0:
                 log.warning(
@@ -1158,7 +1152,8 @@ def build_predictions_with_context(
     null_pct = (null_spread / len(df)) * 100 if len(df) > 0 else 0
     n_mom = df["home_momentum_score"].notna().sum() if "home_momentum_score" in df.columns else 0
     unique_totals = df["projected_total"].nunique() if "projected_total" in df.columns else 0
-    median_gu = int(df["home_games_used"].median()) if "home_games_used" in df.columns else 0
+    _gu_med = df["home_games_used"].median() if "home_games_used" in df.columns else float("nan")
+    median_gu = int(_gu_med) if not pd.isna(_gu_med) else 0
 
     log.info(
         "[DIAG] build_predictions_with_context | pred_spread: %d/%d non-null (%.1f%% null) | home_momentum_score: %d/%d non-null | projected_total unique: %d | home_games_used median: %d",
