@@ -102,6 +102,7 @@ jobs:
 
           if [ "$SEASON_ACTIVE" = "true" ]; then
             run_step "daily" "prediction_runner"   python espn_prediction_runner.py
+            run_step "daily" "derived_csvs"        python build_derived_csvs.py
           else
             echo "[SKIP] espn_prediction_runner.py — SEASON_ACTIVE is False"
             log_step "daily" "prediction_runner" "python espn_prediction_runner.py" "skipped" "SEASON_ACTIVE=False"

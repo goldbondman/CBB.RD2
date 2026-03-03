@@ -281,6 +281,10 @@ jobs:
         continue-on-error: true
         run: python cbb_player_matchup.py --games data/predictions_combined_latest.csv
 
+      - name: Build derived CSVs (bet_recs, matchup preview, upset watch)
+        continue-on-error: true
+        run: python build_derived_csvs.py
+
       # Pattern 10: Upload artifacts even on failure to aid debugging
       - name: Upload artifacts
         if: always()
@@ -293,6 +297,8 @@ jobs:
             data/predictions_combined_latest.csv
             data/predictions_history.csv
             data/dq_skipped_games.csv
+            data/bet_recs.csv
+            data/csv/bet_recs.csv
           retention-days: 90
 
       # Pattern 9: Standardized commit step with retry logic and "nothing to commit" handling
