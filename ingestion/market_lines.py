@@ -388,8 +388,13 @@ def parse_action_network_game(game: dict) -> Optional[dict]:
 
         if not home_team or not away_team:
             # Fallback if meta.home is not present
-            away_team = teams[0]
-            home_team = teams[1]
+            away_team = teams[0] if len(teams) > 0 else {}
+            home_team = teams[1] if len(teams) > 1 else {}
+        
+        if not isinstance(home_team, dict):
+            home_team = {}
+        if not isinstance(away_team, dict):
+            away_team = {}
 
         all_odds = game.get("odds", [])
         book_ids = [o.get("book_id") for o in all_odds]

@@ -407,13 +407,20 @@ def _parse_utc_dt(val) -> Optional[pd.Timestamp]:
 
 def _build_matchup_from_scoreboard_event(event: Dict) -> Optional[Dict]:
     comps = event.get("competitions", [{}])
-    comp = comps[0] if comps else {}
+    comp = comps[0] if isinstance(comps, list) and comps else {}
+    if not isinstance(comp, dict):
+        comp = {}
+    
     completed = comp.get("status", {}).get("type", {}).get("completed", False)
     if completed:
         return None
 
-    home = next((c for c in comp.get("competitors", []) if c.get("homeAway") == "home"), {})
-    away = next((c for c in comp.get("competitors", []) if c.get("homeAway") == "away"), {})
+    competitors = comp.get("competitors", [])
+    if not isinstance(competitors, list):
+        competitors = []
+
+    home = next((c for c in competitors if isinstance(c, dict) and str(c.get("homeAway")).lower() == "home"), {})
+    away = next((c for c in competitors if isinstance(c, dict) and str(c.get("homeAway")).lower() == "away"), {})
     if not home or not away:
         return None
 

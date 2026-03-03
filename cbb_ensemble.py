@@ -1207,6 +1207,7 @@ class EnsemblePredictor:
         self.models = [cls() for cls in self.MODELS]
         self.model_weights = load_model_weights()
         self.stacking_params = load_stacking_params()
+        self._current_spread_line: Optional[float] = None
 
     def predict(
         self,

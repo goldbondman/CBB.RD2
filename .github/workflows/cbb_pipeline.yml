@@ -243,8 +243,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cbb-biweekly-logs-${{ github.run_id }}
-          retention-days: 90
           name: cbb-biweekly-weights
           path: |
             data/active_weights.json
