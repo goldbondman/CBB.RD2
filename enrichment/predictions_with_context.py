@@ -394,6 +394,7 @@ def _fill_first_numeric(df: pd.DataFrame, target_col: str, source_cols: list[str
 def build_predictions_with_context(
     predictions_path: Path = OUT_PREDICTIONS_COMBINED,
     out_path: Path = OUT_PREDICTIONS_CONTEXT,
+    reference_date: "pd.Timestamp | None" = None,
 ) -> pd.DataFrame:
 
     if not predictions_path.exists():
@@ -1135,17 +1136,22 @@ def build_predictions_with_context(
             pass
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    # Merge new rows into existing output, preserving historical enriched rows
-    _out_path = out_path
-    if _out_path.exists() and _out_path.stat().st_size > 0:
-        _existing = pd.read_csv(_out_path, dtype=str)
-        _combined = pd.concat([_existing, df.astype(str)], ignore_index=True)
-        _combined = _combined.drop_duplicates(subset=["game_id"], keep="last")
-    else:
-        _combined = df.astype(str)
-    _combined.to_csv(_out_path, index=False)
-    log.info("[ENRICH] Wrote %d rows to %s (was %d)", len(_combined), _out_path,
-             len(_existing) if '_existing' in dir() else 0)
+    # Only write predictions for today (PST) and future dates — do not carry
+    # forward stale rows from previous pipeline runs that have different game_ids.
+    _ref = reference_date if reference_date is not None else pd.Timestamp.now(tz="America/Los_Angeles")
+    _today_pst = _ref.tz_convert("America/Los_Angeles").normalize().tz_localize(None)
+    if "game_datetime_utc" in df.columns:
+        _dt = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
+        _dt_pst = _dt.dt.tz_convert("America/Los_Angeles").dt.normalize().dt.tz_localize(None)
+        _keep = _dt_pst.isna() | (_dt_pst >= _today_pst)
+        df = df[_keep]
+        if df.empty:
+            log.warning(
+                "[ENRICH] No games for today (%s PST) found in predictions — writing empty output",
+                _today_pst.date(),
+            )
+    df.astype(str).to_csv(out_path, index=False)
+    log.info("[ENRICH] Wrote %d rows to %s", len(df), out_path)
 
     # [DIAG] Final results logging
     null_spread = df["pred_spread"].isna().sum() if "pred_spread" in df.columns else len(df)
