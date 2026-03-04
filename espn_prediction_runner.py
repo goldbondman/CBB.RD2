@@ -761,6 +761,8 @@ def run_predictions(
         line_advisory = line_shopping_advisory(pred_spread, spread_line)
 
         _poss = totals_proj.get("projected_poss")
+        home_dead_spread = _safe_float(home_ctx.get("dead_spread_flag"), 0.0) or 0.0
+        away_dead_spread = _safe_float(away_ctx.get("dead_spread_flag"), 0.0) or 0.0
 
         all_home_games = all_data[
             (all_data["team_id"].astype(str) == str(home_id)) &
@@ -898,7 +900,7 @@ def run_predictions(
             "away_TO": away_ctx.get("tov"),
             "away_AST": away_ctx.get("ast"),
 
-            "dead_spread_flag": int((home_ctx.get("dead_spread_flag") or 0) > 0 or (away_ctx.get("dead_spread_flag") or 0) > 0),
+            "dead_spread_flag": int(home_dead_spread > 0 or away_dead_spread > 0),
             "trap_game_flag": int(bool(trap_home.get("trap_game_flag") or trap_away.get("trap_game_flag"))),
             "trap_game_reason": trap_home.get("trap_game_reason") or trap_away.get("trap_game_reason") or "",
             "revenge_flag": int(bool(revenge.get("revenge_flag"))),
