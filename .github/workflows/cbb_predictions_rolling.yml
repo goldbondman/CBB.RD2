@@ -252,44 +252,46 @@ jobs:
       # Pattern 2: Validate that the primary model produced non-empty output
       - name: Validate predictions output
         run: |
-          check_csv() {
-            local f="$1" min_rows="${2:-1}"
-            if [ ! -f "$f" ]; then
-              echo "[ERROR] $f was not created"; exit 1
-            fi
-            local rows=$(( $(wc -l < "$f") - 1 ))
-            if [ "$rows" -lt "$min_rows" ]; then
-              python - <<'PY'
-              from pathlib import Path
-              import pandas as pd
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+          from pandas.errors import EmptyDataError
 
-              games = Path("data/games.csv")
-              if not games.exists():
-                  print("[WARN] games.csv missing; allowing empty predictions output.")
-                  raise SystemExit(0)
+          pred_path = Path("data/predictions_latest.csv")
+          if not pred_path.exists():
+              raise SystemExit("[ERROR] data/predictions_latest.csv was not created")
 
-              df = pd.read_csv(games, low_memory=False)
-              dt_col = next((c for c in ["game_datetime_utc", "game_datetime", "date"] if c in df.columns), None)
-              if not dt_col:
-                  print("[WARN] games.csv missing datetime column; allowing empty predictions output.")
-                  raise SystemExit(0)
+          try:
+              pred_df = pd.read_csv(pred_path, low_memory=False)
+          except EmptyDataError:
+              pred_df = pd.DataFrame()
+          rows = len(pred_df.index)
 
-              dt = pd.to_datetime(df[dt_col], errors="coerce", utc=True)
-              now = pd.Timestamp.now(tz="UTC")
-              window_end = now + pd.Timedelta(hours=48)
-              upcoming = int(((dt >= now) & (dt <= window_end)).sum())
-              print(f"[INFO] Upcoming games in next 48h from games.csv: {upcoming}")
-              if upcoming > 0:
-                  print("[ERROR] predictions_latest.csv is empty despite upcoming games in schedule.")
-                  raise SystemExit(1)
+          if rows >= 1:
+              print(f"[OK] {pred_path}: {rows} rows")
+              raise SystemExit(0)
 
-              print("[WARN] No upcoming games in next 48h; allowing empty predictions output.")
-              PY
-              return 0
-            fi
-            echo "[OK] $f: $rows rows"
-          }
-          check_csv data/predictions_latest.csv 1
+          games = Path("data/games.csv")
+          if not games.exists():
+              print("[WARN] games.csv missing; allowing empty predictions output.")
+              raise SystemExit(0)
+
+          df = pd.read_csv(games, low_memory=False)
+          dt_col = next((c for c in ["game_datetime_utc", "game_datetime", "date"] if c in df.columns), None)
+          if not dt_col:
+              print("[WARN] games.csv missing datetime column; allowing empty predictions output.")
+              raise SystemExit(0)
+
+          dt = pd.to_datetime(df[dt_col], errors="coerce", utc=True)
+          now = pd.Timestamp.now(tz="UTC")
+          window_end = now + pd.Timedelta(hours=48)
+          upcoming = int(((dt >= now) & (dt <= window_end)).sum())
+          print(f"[INFO] Upcoming games in next 48h from games.csv: {upcoming}")
+          if upcoming > 0:
+              raise SystemExit("[ERROR] predictions_latest.csv is empty despite upcoming games in schedule.")
+
+          print("[WARN] No upcoming games in next 48h; allowing empty predictions output.")
+          PY
 
       # Run ensemble model if enabled
       - name: Run ensemble model predictions
@@ -344,39 +346,46 @@ jobs:
       - name: Validate merged output
         if: always()
         run: |
-          if [ -f data/predictions_combined_latest.csv ]; then
-            rows=$(( $(wc -l < data/predictions_combined_latest.csv) - 1 ))
-            if [ "$rows" -lt 1 ]; then
-              python - <<'PY'
-              from pathlib import Path
-              import pandas as pd
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+          from pandas.errors import EmptyDataError
 
-              games = Path("data/games.csv")
-              if not games.exists():
-                  print("[WARN] games.csv missing; allowing empty combined output.")
-                  raise SystemExit(0)
+          combined_path = Path("data/predictions_combined_latest.csv")
+          if not combined_path.exists():
+              raise SystemExit("[ERROR] data/predictions_combined_latest.csv was not created")
 
-              df = pd.read_csv(games, low_memory=False)
-              dt_col = next((c for c in ["game_datetime_utc", "game_datetime", "date"] if c in df.columns), None)
-              if not dt_col:
-                  print("[WARN] games.csv missing datetime column; allowing empty combined output.")
-                  raise SystemExit(0)
+          try:
+              combined_df = pd.read_csv(combined_path, low_memory=False)
+          except EmptyDataError:
+              combined_df = pd.DataFrame()
+          rows = len(combined_df.index)
 
-              dt = pd.to_datetime(df[dt_col], errors="coerce", utc=True)
-              now = pd.Timestamp.now(tz="UTC")
-              window_end = now + pd.Timedelta(hours=48)
-              upcoming = int(((dt >= now) & (dt <= window_end)).sum())
-              print(f"[INFO] Upcoming games in next 48h from games.csv: {upcoming}")
-              if upcoming > 0:
-                  print("[ERROR] predictions_combined_latest.csv is empty despite upcoming games in schedule.")
-                  raise SystemExit(1)
+          if rows >= 1:
+              print(f"[OK] {combined_path}: {rows} rows")
+              raise SystemExit(0)
 
-              print("[WARN] No upcoming games in next 48h; allowing empty combined output.")
-              PY
-              exit 0
-            fi
-            echo "[OK] predictions_combined_latest.csv: $rows rows"
-          fi
+          games = Path("data/games.csv")
+          if not games.exists():
+              print("[WARN] games.csv missing; allowing empty combined output.")
+              raise SystemExit(0)
+
+          df = pd.read_csv(games, low_memory=False)
+          dt_col = next((c for c in ["game_datetime_utc", "game_datetime", "date"] if c in df.columns), None)
+          if not dt_col:
+              print("[WARN] games.csv missing datetime column; allowing empty combined output.")
+              raise SystemExit(0)
+
+          dt = pd.to_datetime(df[dt_col], errors="coerce", utc=True)
+          now = pd.Timestamp.now(tz="UTC")
+          window_end = now + pd.Timedelta(hours=48)
+          upcoming = int(((dt >= now) & (dt <= window_end)).sum())
+          print(f"[INFO] Upcoming games in next 48h from games.csv: {upcoming}")
+          if upcoming > 0:
+              raise SystemExit("[ERROR] predictions_combined_latest.csv is empty despite upcoming games in schedule.")
+
+          print("[WARN] No upcoming games in next 48h; allowing empty combined output.")
+          PY
 
 
       - name: Append to predictions history

@@ -570,6 +570,14 @@ def run_predictions(
     """
     all_data = normalize_numeric_dtypes(all_data)
     context_df = normalize_numeric_dtypes(context_df)
+    if "game_datetime_utc" in all_data.columns:
+        all_data["game_datetime_utc"] = pd.to_datetime(
+            all_data["game_datetime_utc"], utc=True, errors="coerce"
+        )
+    if "game_datetime_utc" in context_df.columns:
+        context_df["game_datetime_utc"] = pd.to_datetime(
+            context_df["game_datetime_utc"], utc=True, errors="coerce"
+        )
 
     results: List[Dict] = []
     _first_call = True

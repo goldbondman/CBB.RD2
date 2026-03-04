@@ -45,7 +45,9 @@ def _load_team_splits(csv_path: str = "team_splits.csv") -> pd.DataFrame:
         return pd.DataFrame()
 
     df = df.copy()
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    # Normalize to timezone-aware UTC so comparisons are consistent with
+    # game_datetime_utc values coming from schedule feeds.
+    df["date"] = pd.to_datetime(df["date"], errors="coerce", utc=True)
     df = df[df["date"].notna() & df["team_id"].notna()].copy()
     df["team_id"] = df["team_id"].astype(str)
     return df.sort_values(["team_id", "season", "date"]).reset_index(drop=True)
@@ -77,9 +79,9 @@ def get_team_splits(
     if df.empty:
         return None
 
-    as_of = pd.to_datetime(date, errors="coerce") if date is not None else pd.NaT
+    as_of = pd.to_datetime(date, errors="coerce", utc=True) if date is not None else pd.NaT
     if pd.isna(as_of):
-        as_of = pd.Timestamp.utcnow().tz_localize(None)
+        as_of = pd.Timestamp.now(tz="UTC")
     season = _season_from_date(as_of)
 
     home = _latest_team_row(df, str(home_id), as_of, season)
