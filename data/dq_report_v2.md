@@ -1,6 +1,6 @@
 # CSV Quality Audit v2
 
-- Files audited: 112
+- Files audited: 114
 - Violations: 23
 
 ## Top Violations
@@ -19,7 +19,7 @@ data/matchup_preview.csv,True,,143,16,2,12.5,0,0,False,,False,0
 data/predictions_20260223.csv,True,,9,106,26,24.53,4,4,True,,False,0
 data/predictions_20260224.csv,True,,28,106,25,23.58,4,4,True,,False,0
 data/predictions_20260225.csv,True,,8,106,29,27.36,4,4,True,,False,0
-data/predictions_combined_latest.csv,True,,0,164,164,100.0,4,4,True,,False,0
+data/predictions_combined_latest.csv,True,,221,163,50,30.67,4,0,False,,False,0
 data/predictions_graded.csv,True,,36,275,80,29.09,10,0,False,,False,0
 data/predictions_mc_latest.csv,True,,221,186,50,26.88,4,0,False,,False,0
 data/predictions_with_context.csv,True,,36,255,73,28.63,10,0,False,,False,0
