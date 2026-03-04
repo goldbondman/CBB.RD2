@@ -305,9 +305,12 @@ jobs:
         with:
           name: INFRA-predictions-rolling
           path: |
+            data/predictions_latest.csv
+            data/predictions_mc_latest.csv
+            data/predictions_combined_latest.csv
+            data/predictions_primary.csv
             data/predictions_*.csv
             data/ensemble_predictions_latest.csv
-            data/predictions_combined_latest.csv
             data/predictions_history.csv
             data/dq_skipped_games.csv
           retention-days: 90

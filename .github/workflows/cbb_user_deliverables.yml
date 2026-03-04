@@ -47,6 +47,10 @@ jobs:
           mkdir -p data/csv
           mkdir -p USER/deliverables
 
+      - name: Remove repo prediction snapshots before artifact download
+        if: github.event_name == 'workflow_run'
+        run: rm -f data/predictions_latest.csv data/predictions_mc_latest.csv data/predictions_combined_latest.csv
+
       - name: Download Predictions Artifact (triggering run)
         if: github.event_name == 'workflow_run'
         uses: actions/download-artifact@v4
@@ -55,6 +59,64 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           name: INFRA-predictions-rolling
           path: data/
+
+      - name: Assert predictions artifact contents
+        if: github.event_name == 'workflow_run'
+        run: |
+          if [ ! -f data/predictions_latest.csv ] && [ ! -f data/predictions_mc_latest.csv ]; then
+            echo "[ERROR] Artifact download completed but no predictions file found in data/"
+            exit 1
+          fi
+
+      - name: Mark artifact-fed data directory
+        if: github.event_name == 'workflow_run'
+        run: echo "artifact_downloaded_at_utc=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" > data/.artifact_marker.txt
+
+      - name: Debug predictions artifact contents
+        run: |
+          ls -lah data/
+          for f in data/predictions_latest.csv data/predictions_mc_latest.csv data/predictions_combined_latest.csv; do
+            if [ -f "$f" ]; then
+              echo "[INFO] sha256 $f"
+              sha256sum "$f"
+              echo "[INFO] head -n 3 $f"
+              head -n 3 "$f"
+            fi
+          done
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+
+          data_dir = Path("data")
+          candidates = [
+              data_dir / "predictions_latest.csv",
+              data_dir / "predictions_mc_latest.csv",
+              data_dir / "predictions_combined_latest.csv",
+          ]
+          timestamp_candidates = [
+              "generated_at_utc",
+              "run_time_utc",
+              "model_run_utc",
+              "created_at_utc",
+              "pipeline_run_utc",
+              "predicted_at_utc",
+          ]
+
+          for path in candidates:
+              if not path.exists():
+                  continue
+              df = pd.read_csv(path, low_memory=False)
+              print(f"[INFO] file={path} rowcount={len(df)}")
+              print(f"[INFO] file_mtime_utc={pd.Timestamp(path.stat().st_mtime, unit='s', tz='UTC').isoformat()}")
+              present = [c for c in timestamp_candidates if c in df.columns]
+              print(f"[INFO] timestamp_columns_present={present}")
+              for col in present:
+                  parsed = pd.to_datetime(df[col].astype(str).str.replace('Z', '+00:00', regex=False), errors='coerce', utc=True)
+                  if parsed.notna().any():
+                      print(f"[INFO] {col}_min={parsed.min().isoformat()} {col}_max={parsed.max().isoformat()}")
+                  else:
+                      print(f"[INFO] {col}_min=n/a {col}_max=n/a")
+          PY
 
       - name: Validate predictions freshness and schedule recency
         run: python infra/ci/validate_predictions_freshness.py --data-dir data --max-age-hours "$PREDICTIONS_FRESHNESS_MAX_HOURS"
