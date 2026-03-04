@@ -1,91 +1,650 @@
 as_of_date,conference,team,conf_w,conf_l,conf_pct,overall_w,overall_l,overall_pct,streak,generated_at,conference_name,pipeline_run_id
-20260225,Patriot League,Auburn Tigers,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Patriot League,20260225_232535
-20260225,Southeastern Conference,Arizona State Sun Devils,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Southeastern Conference,20260225_232535
-20260225,Southeastern Conference,Arizona Wildcats,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Southeastern Conference,20260225_232535
-20260225,Independents,San José State Spartans,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Independents,20260225_232535
-20260225,Pac-12,UCLA Bruins,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Pac-12,20260225_232535
-20260225,Pac-12,USC Trojans,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Pac-12,20260225_232535
-20260225,Independents,Colorado State Rams,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Independents,20260225_232535
-20260225,Big Ten,George Washington Revolutionaries,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Big Ten,20260225_232535
-20260225,Big 12,Georgetown Hoyas,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Big 12,20260225_232535
-20260225,Big East,Florida State Seminoles,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Big East,20260225_232535
-20260225,Southeastern Conference,Iowa State Cyclones,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Southeastern Conference,20260225_232535
-20260225,Independents,Boise State Broncos,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Independents,20260225_232535
-20260225,Ohio Valley Conference,Bradley Braves,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Ohio Valley Conference,20260225_232535
-20260225,Pac-12,Northwestern Wildcats,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Pac-12,20260225_232535
-20260225,Ohio Valley Conference,UIC Flames,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Ohio Valley Conference,20260225_232535
-20260225,Pac-12,Indiana Hoosiers,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Pac-12,20260225_232535
-20260225,Big East,Notre Dame Fighting Irish,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Big East,20260225_232535
-20260225,Southland Conference,Southern Indiana Screaming Eagles,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Southland Conference,20260225_232535
-20260225,Patriot League,Kentucky Wildcats,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Patriot League,20260225_232535
-20260225,Big East,Louisville Cardinals,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Big East,20260225_232535
-20260225,Mid-American Conference,Massachusetts Minutemen,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Mid-American Conference,20260225_232535
-20260225,Pac-12,Michigan Wolverines,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Pac-12,20260225_232535
-20260225,Pac-12,Minnesota Golden Gophers,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Pac-12,20260225_232535
-20260225,Big Ten,Saint Louis Billikens,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Big Ten,20260225_232535
-20260225,Patriot League,Missouri Tigers,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Patriot League,20260225_232535
-20260225,Big East,Duke Blue Devils,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Big East,20260225_232535
-20260225,Big East,NC State Wolfpack,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Big East,20260225_232535
-20260225,Big East,North Carolina Tar Heels,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Big East,20260225_232535
-20260225,Pac-12,Rutgers Scarlet Knights,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Pac-12,20260225_232535
-20260225,Independents,New Mexico Lobos,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Independents,20260225_232535
-20260225,Mid-American Conference,Bowling Green Falcons,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Mid-American Conference,20260225_232535
-20260225,Mid-American Conference,Miami (OH) RedHawks,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Mid-American Conference,20260225_232535
-20260225,Southeastern Conference,Oklahoma State Cowboys,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Southeastern Conference,20260225_232535
-20260225,Patriot League,Oklahoma Sooners,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Patriot League,20260225_232535
-20260225,Southeastern Conference,Baylor Bears,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Southeastern Conference,20260225_232535
-20260225,Southeastern Conference,Houston Cougars,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Southeastern Conference,20260225_232535
-20260225,Southeastern Conference,BYU Cougars,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Southeastern Conference,20260225_232535
-20260225,Southeastern Conference,Utah Utes,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Southeastern Conference,20260225_232535
-20260225,Big East,Virginia Cavaliers,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Big East,20260225_232535
-20260225,Pac-12,Washington Huskies,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Pac-12,20260225_232535
-20260225,Big 12,Marquette Golden Eagles,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Big 12,20260225_232535
-20260225,Mid-Eastern Athletic Conference,Marshall Thundering Herd,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Mid-Eastern Athletic Conference,20260225_232535
-20260225,Southeastern Conference,West Virginia Mountaineers,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Southeastern Conference,20260225_232535
-20260225,Independents,Fresno State Bulldogs,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Independents,20260225_232535
-20260225,Horizon League,UT Rio Grande Valley Vaqueros,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Horizon League,20260225_232535
-20260225,Mid-Eastern Athletic Conference,Old Dominion Monarchs,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Mid-Eastern Athletic Conference,20260225_232535
-20260225,Mid-Eastern Athletic Conference,Louisiana Ragin' Cajuns,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Mid-Eastern Athletic Conference,20260225_232535
-20260225,Mid-Eastern Athletic Conference,Coastal Carolina Chanticleers,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Mid-Eastern Athletic Conference,20260225_232535
-20260225,Horizon League,Texas A&M-Corpus Christi Islanders,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Horizon League,20260225_232535
-20260225,Independents,Air Force Falcons,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Independents,20260225_232535
-20260225,Mid-American Conference,Akron Zips,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Mid-American Conference,20260225_232535
-20260225,Mid-Eastern Athletic Conference,Arkansas State Red Wolves,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Mid-Eastern Athletic Conference,20260225_232535
-20260225,Mid-American Conference,Ball State Cardinals,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Mid-American Conference,20260225_232535
-20260225,Mid-American Conference,Buffalo Bulls,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Mid-American Conference,20260225_232535
-20260225,Southeastern Conference,UCF Knights,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Southeastern Conference,20260225_232535
-20260225,Mid-American Conference,Central Michigan Chippewas,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Mid-American Conference,20260225_232535
-20260225,Southeastern Conference,Cincinnati Bearcats,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Southeastern Conference,20260225_232535
-20260225,Big Ten,Dayton Flyers,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Big Ten,20260225_232535
-20260225,Mid-American Conference,Eastern Michigan Eagles,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Mid-American Conference,20260225_232535
-20260225,Mid-Eastern Athletic Conference,Georgia State Panthers,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Mid-Eastern Athletic Conference,20260225_232535
-20260225,Horizon League,Houston Christian Huskies,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Horizon League,20260225_232535
-20260225,Southeastern Conference,Kansas Jayhawks,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Southeastern Conference,20260225_232535
-20260225,Mid-American Conference,Kent State Golden Flashes,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Mid-American Conference,20260225_232535
-20260225,Horizon League,Lamar Cardinals,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Horizon League,20260225_232535
-20260225,Big Ten,La Salle Explorers,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Big Ten,20260225_232535
-20260225,Horizon League,McNeese Cowboys,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Horizon League,20260225_232535
-20260225,Big East,Miami Hurricanes,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Big East,20260225_232535
-20260225,Southwestern Athletic Conference,Mississippi Valley State Delta Devils,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Southwestern Athletic Conference,20260225_232535
-20260225,Southland Conference,Morehead State Eagles,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Southland Conference,20260225_232535
-20260225,Independents,Nevada Wolf Pack,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Independents,20260225_232535
-20260225,Sun Belt Conference,New Haven Chargers,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Sun Belt Conference,20260225_232535
-20260225,Horizon League,New Orleans Privateers,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Horizon League,20260225_232535
-20260225,Horizon League,Nicholls Colonels,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Horizon League,20260225_232535
-20260225,Mid-American Conference,Northern Illinois Huskies,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Mid-American Conference,20260225_232535
-20260225,Horizon League,Northwestern State Demons,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Horizon League,20260225_232535
-20260225,Horizon League,SE Louisiana Lions,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Horizon League,20260225_232535
-20260225,Mid-Eastern Athletic Conference,Southern Miss Golden Eagles,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Mid-Eastern Athletic Conference,20260225_232535
-20260225,Patriot League,South Carolina Gamecocks,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Patriot League,20260225_232535
-20260225,Sun Belt Conference,Saint Francis Red Flash,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Sun Belt Conference,20260225_232535
-20260225,Horizon League,Stephen F. Austin Lumberjacks,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Horizon League,20260225_232535
-20260225,Southeastern Conference,TCU Horned Frogs,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Southeastern Conference,20260225_232535
-20260225,Patriot League,Tennessee Volunteers,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Patriot League,20260225_232535
-20260225,Southeastern Conference,Texas Tech Red Raiders,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Southeastern Conference,20260225_232535
-20260225,Mid-American Conference,Toledo Rockets,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Mid-American Conference,20260225_232535
-20260225,Mid-Eastern Athletic Conference,Troy Trojans,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Mid-Eastern Athletic Conference,20260225_232535
-20260225,Mid-American Conference,Western Michigan Broncos,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Mid-American Conference,20260225_232535
-20260225,Independents,Wyoming Cowboys,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Independents,20260225_232535
-20260225,Southwestern Athletic Conference,Grambling Tigers,0,0,0,1,0,1.0,0,2026-02-25T23:25:35Z,Southwestern Athletic Conference,20260225_232535
-20260225,Horizon League,East Texas A&M Lions,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Horizon League,20260225_232535
-20260225,Horizon League,Incarnate Word Cardinals,0,0,0,0,1,0.0,0,2026-02-25T23:25:35Z,Horizon League,20260225_232535
+20260304,,Alaska Anchorage Seawolves,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southeastern Conference,Auburn Tigers,0,0,0,14,14,0.5,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,American Athletic Conference,UAB Blazers,0,0,0,17,10,0.63,0,2026-03-04T22:22:32Z,American Athletic Conference,22692149656
+20260304,Sun Belt Conference,South Alabama Jaguars,0,0,0,18,10,0.643,0,2026-03-04T22:22:32Z,Sun Belt Conference,22692149656
+20260304,Southeastern Conference,Arkansas Razorbacks,0,0,0,20,7,0.741,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,Big 12,Arizona State Sun Devils,0,0,0,15,14,0.517,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,Big 12,Arizona Wildcats,0,0,0,26,2,0.929,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,Big West Conference,Cal Poly Mustangs,0,0,0,11,16,0.407,0,2026-03-04T22:22:32Z,Big West Conference,22692149656
+20260304,Big Sky Conference,Sacramento State Hornets,0,0,0,8,20,0.286,0,2026-03-04T22:22:32Z,Big Sky Conference,22692149656
+20260304,Mountain West,San Diego State Aztecs,0,0,0,18,10,0.643,0,2026-03-04T22:22:32Z,Mountain West,22692149656
+20260304,,San Francisco State Gators,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Mountain West,San José State Spartans,0,0,0,8,20,0.286,0,2026-03-04T22:22:32Z,Mountain West,22692149656
+20260304,Atlantic Coast Conference,Stanford Cardinal,0,0,0,16,11,0.593,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,Atlantic Coast Conference,California Golden Bears,0,0,0,18,9,0.667,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,Big Ten,UCLA Bruins,0,0,0,18,10,0.643,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,Big West Conference,UC Riverside Highlanders,0,0,0,8,21,0.276,0,2026-03-04T22:22:32Z,Big West Conference,22692149656
+20260304,Big West Conference,UC San Diego Tritons,0,0,0,19,9,0.679,0,2026-03-04T22:22:32Z,Big West Conference,22692149656
+20260304,,Redlands Bulldogs,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big Ten,USC Trojans,0,0,0,17,11,0.607,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,Mountain West,Colorado State Rams,0,0,0,18,10,0.643,0,2026-03-04T22:22:32Z,Mountain West,22692149656
+20260304,Big 12,Colorado Buffaloes,0,0,0,15,13,0.536,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,Big East,UConn Huskies,0,0,0,25,3,0.893,0,2026-03-04T22:22:32Z,Big East,22692149656
+20260304,Ivy League,Yale Bulldogs,0,0,0,21,5,0.808,0,2026-03-04T22:22:32Z,Ivy League,22692149656
+20260304,Patriot League,American University Eagles,0,0,0,16,14,0.533,0,2026-03-04T22:22:32Z,Patriot League,22692149656
+20260304,Atlantic 10,George Washington Revolutionaries,0,0,0,14,13,0.519,0,2026-03-04T22:22:32Z,Atlantic 10,22692149656
+20260304,Big East,Georgetown Hoyas,0,0,0,11,17,0.393,0,2026-03-04T22:22:32Z,Big East,22692149656
+20260304,Mid-Eastern Athletic Conference,Howard Bison,0,0,0,19,9,0.679,0,2026-03-04T22:22:32Z,Mid-Eastern Athletic Conference,22692149656
+20260304,Conference USA,Delaware Blue Hens,0,0,0,9,18,0.333,0,2026-03-04T22:22:32Z,Conference USA,22692149656
+20260304,Southwestern Athletic Conference,Florida A&M Rattlers,0,0,0,13,13,0.5,0,2026-03-04T22:22:32Z,Southwestern Athletic Conference,22692149656
+20260304,Atlantic Coast Conference,Florida State Seminoles,0,0,0,13,14,0.481,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,Conference USA,Jacksonville State Gamecocks,0,0,0,13,15,0.464,0,2026-03-04T22:22:32Z,Conference USA,22692149656
+20260304,ASUN Conference,Stetson Hatters,0,0,0,10,19,0.345,0,2026-03-04T22:22:32Z,ASUN Conference,22692149656
+20260304,Southeastern Conference,Florida Gators,0,0,0,23,5,0.821,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,American Athletic Conference,South Florida Bulls,0,0,0,20,7,0.741,0,2026-03-04T22:22:32Z,American Athletic Conference,22692149656
+20260304,Atlantic Coast Conference,Georgia Tech Yellow Jackets,0,0,0,9,18,0.333,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,,Morehouse Maroon Tigers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southeastern Conference,Georgia Bulldogs,0,0,0,19,9,0.679,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,Big West Conference,Hawai'i Rainbow Warriors,0,0,0,21,6,0.778,0,2026-03-04T22:22:32Z,Big West Conference,22692149656
+20260304,,Buena Vista Beavers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big 12,Iowa State Cyclones,0,0,0,22,6,0.786,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,Mountain West,Boise State Broncos,0,0,0,18,10,0.643,0,2026-03-04T22:22:32Z,Mountain West,22692149656
+20260304,Big Sky Conference,Idaho Vandals,0,0,0,15,14,0.517,0,2026-03-04T22:22:32Z,Big Sky Conference,22692149656
+20260304,Missouri Valley Conference,Bradley Braves,0,0,0,19,10,0.655,0,2026-03-04T22:22:32Z,Missouri Valley Conference,22692149656
+20260304,,Illinois Tech Scarlet Hawks,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big Ten,Northwestern Wildcats,0,0,0,11,16,0.407,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,Missouri Valley Conference,Southern Illinois Salukis,0,0,0,14,15,0.483,0,2026-03-04T22:22:32Z,Missouri Valley Conference,22692149656
+20260304,Missouri Valley Conference,UIC Flames,0,0,0,16,13,0.552,0,2026-03-04T22:22:32Z,Missouri Valley Conference,22692149656
+20260304,Big Ten,Indiana Hoosiers,0,0,0,16,12,0.571,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,Horizon League,IU Indianapolis Jaguars,0,0,0,7,22,0.241,0,2026-03-04T22:22:32Z,Horizon League,22692149656
+20260304,Atlantic Coast Conference,Notre Dame Fighting Irish,0,0,0,11,16,0.407,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,Ohio Valley Conference,Southern Indiana Screaming Eagles,0,0,0,7,21,0.25,0,2026-03-04T22:22:32Z,Ohio Valley Conference,22692149656
+20260304,ASUN Conference,Bellarmine Knights,0,0,0,13,16,0.448,0,2026-03-04T22:22:32Z,ASUN Conference,22692149656
+20260304,Missouri Valley Conference,Murray State Racers,0,0,0,18,11,0.621,0,2026-03-04T22:22:32Z,Missouri Valley Conference,22692149656
+20260304,Horizon League,Northern Kentucky Norse,0,0,0,17,12,0.586,0,2026-03-04T22:22:32Z,Horizon League,22692149656
+20260304,Southeastern Conference,Kentucky Wildcats,0,0,0,17,11,0.607,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,Atlantic Coast Conference,Louisville Cardinals,0,0,0,19,9,0.679,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,Conference USA,Western Kentucky Hilltoppers,0,0,0,17,11,0.607,0,2026-03-04T22:22:32Z,Conference USA,22692149656
+20260304,Southeastern Conference,LSU Tigers,0,0,0,14,15,0.483,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,,Eureka Red Devils,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Atlantic Coast Conference,Boston College Eagles,0,0,0,9,19,0.321,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,Patriot League,Boston University Terriers,0,0,0,14,15,0.483,0,2026-03-04T22:22:32Z,Patriot League,22692149656
+20260304,Patriot League,Holy Cross Crusaders,0,0,0,11,19,0.367,0,2026-03-04T22:22:32Z,Patriot League,22692149656
+20260304,Ivy League,Harvard Crimson,0,0,0,15,11,0.577,0,2026-03-04T22:22:32Z,Ivy League,22692149656
+20260304,Colonial Athletic Association,Northeastern Huskies,0,0,0,5,22,0.185,0,2026-03-04T22:22:32Z,Colonial Athletic Association,22692149656
+20260304,Mid-American Conference,Massachusetts Minutemen,0,0,0,15,14,0.517,0,2026-03-04T22:22:32Z,Mid-American Conference,22692149656
+20260304,Metro Atlantic Athletic Conference,Mount St. Mary's Mountaineers,0,0,0,15,14,0.517,0,2026-03-04T22:22:32Z,Metro Atlantic Athletic Conference,22692149656
+20260304,,St. Mary's (MD) Seahawks,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Colonial Athletic Association,Towson Tigers,0,0,0,16,13,0.552,0,2026-03-04T22:22:32Z,Colonial Athletic Association,22692149656
+20260304,Big Ten,Maryland Terrapins,0,0,0,10,17,0.37,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,Big Ten,Michigan State Spartans,0,0,0,22,5,0.815,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,Big Ten,Michigan Wolverines,0,0,0,26,2,0.929,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,Big Ten,Minnesota Golden Gophers,0,0,0,12,15,0.444,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,Atlantic 10,Saint Louis Billikens,0,0,0,24,3,0.889,0,2026-03-04T22:22:32Z,Atlantic 10,22692149656
+20260304,Summit League,Kansas City Roos,0,0,0,3,25,0.107,0,2026-03-04T22:22:32Z,Summit League,22692149656
+20260304,Southeastern Conference,Missouri Tigers,0,0,0,18,10,0.643,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,,Franklin Pierce Ravens,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southeastern Conference,Ole Miss Rebels,0,0,0,10,18,0.357,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,Big Sky Conference,Montana State Bobcats,0,0,0,17,12,0.586,0,2026-03-04T22:22:32Z,Big Sky Conference,22692149656
+20260304,,Montana Tech Orediggers,0,0,0,1,0,1.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big Sky Conference,Montana Grizzlies,0,0,0,14,14,0.5,0,2026-03-04T22:22:32Z,Big Sky Conference,22692149656
+20260304,Atlantic Coast Conference,Duke Blue Devils,0,0,0,26,2,0.929,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,American Athletic Conference,East Carolina Pirates,0,0,0,10,17,0.37,0,2026-03-04T22:22:32Z,American Athletic Conference,22692149656
+20260304,Atlantic Coast Conference,NC State Wolfpack,0,0,0,17,11,0.607,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,Atlantic Coast Conference,North Carolina Tar Heels,0,0,0,22,6,0.786,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,Atlantic Coast Conference,Wake Forest Demon Deacons,0,0,0,13,15,0.464,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,Summit League,North Dakota Fighting Hawks,0,0,0,16,14,0.533,0,2026-03-04T22:22:32Z,Summit League,22692149656
+20260304,Big East,Creighton Bluejays,0,0,0,13,16,0.448,0,2026-03-04T22:22:32Z,Big East,22692149656
+20260304,Big Ten,Nebraska Cornhuskers,0,0,0,23,5,0.821,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,Ivy League,Dartmouth Big Green,0,0,0,11,15,0.423,0,2026-03-04T22:22:32Z,Ivy League,22692149656
+20260304,America East Conference,New Hampshire Wildcats,0,0,0,8,19,0.296,0,2026-03-04T22:22:32Z,America East Conference,22692149656
+20260304,Northeast Conference,Fairleigh Dickinson Knights,0,0,0,11,18,0.379,0,2026-03-04T22:22:32Z,Northeast Conference,22692149656
+20260304,Ivy League,Princeton Tigers,0,0,0,9,18,0.333,0,2026-03-04T22:22:32Z,Ivy League,22692149656
+20260304,Big Ten,Rutgers Scarlet Knights,0,0,0,11,17,0.393,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,Conference USA,New Mexico State Aggies,0,0,0,12,15,0.444,0,2026-03-04T22:22:32Z,Conference USA,22692149656
+20260304,Mountain West,New Mexico Lobos,0,0,0,20,7,0.741,0,2026-03-04T22:22:32Z,Mountain West,22692149656
+20260304,,City College NY Beavers,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Ivy League,Columbia Lions,0,0,0,15,11,0.577,0,2026-03-04T22:22:32Z,Ivy League,22692149656
+20260304,Ivy League,Cornell Big Red,0,0,0,14,11,0.56,0,2026-03-04T22:22:32Z,Ivy League,22692149656
+20260304,,RIT Tigers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Atlantic 10,St. Bonaventure Bonnies,0,0,0,13,14,0.481,0,2026-03-04T22:22:32Z,Atlantic 10,22692149656
+20260304,Atlantic Coast Conference,Syracuse Orange,0,0,0,13,15,0.464,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,,Vassar Brewers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Mid-American Conference,Bowling Green Falcons,0,0,0,15,13,0.536,0,2026-03-04T22:22:32Z,Mid-American Conference,22692149656
+20260304,,Defiance Yellow Jackets,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Mid-American Conference,Miami (OH) RedHawks,0,0,0,28,0,1.0,0,2026-03-04T22:22:32Z,Mid-American Conference,22692149656
+20260304,Big Ten,Ohio State Buckeyes,0,0,0,16,11,0.593,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,Mid-American Conference,Ohio Bobcats,0,0,0,14,14,0.5,0,2026-03-04T22:22:32Z,Mid-American Conference,22692149656
+20260304,,Northeastern State RiverHawks,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big 12,Oklahoma State Cowboys,0,0,0,17,12,0.586,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,Summit League,Oral Roberts Golden Eagles,0,0,0,8,21,0.276,0,2026-03-04T22:22:32Z,Summit League,22692149656
+20260304,Southeastern Conference,Oklahoma Sooners,0,0,0,15,13,0.536,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,American Athletic Conference,Tulsa Golden Hurricane,0,0,0,21,6,0.778,0,2026-03-04T22:22:32Z,American Athletic Conference,22692149656
+20260304,West Coast Conference,Oregon State Beavers,0,0,0,14,15,0.483,0,2026-03-04T22:22:32Z,West Coast Conference,22692149656
+20260304,,John Jay College Bloodhounds,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big Ten,Penn State Nittany Lions,0,0,0,10,17,0.37,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,American Athletic Conference,Temple Owls,0,0,0,14,14,0.5,0,2026-03-04T22:22:32Z,American Athletic Conference,22692149656
+20260304,Ivy League,Pennsylvania Quakers,0,0,0,14,11,0.56,0,2026-03-04T22:22:32Z,Ivy League,22692149656
+20260304,Atlantic Coast Conference,Pittsburgh Panthers,0,0,0,9,18,0.333,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,Big East,Villanova Wildcats,0,0,0,21,6,0.778,0,2026-03-04T22:22:32Z,Big East,22692149656
+20260304,,Westminster (UT) Griffins,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Ivy League,Brown Bears,0,0,0,9,16,0.36,0,2026-03-04T22:22:32Z,Ivy League,22692149656
+20260304,Atlantic 10,Rhode Island Rams,0,0,0,14,13,0.519,0,2026-03-04T22:22:32Z,Atlantic 10,22692149656
+20260304,Atlantic Coast Conference,Clemson Tigers,0,0,0,19,9,0.679,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,Southern Conference,Furman Paladins,0,0,0,19,10,0.655,0,2026-03-04T22:22:32Z,Southern Conference,22692149656
+20260304,Colonial Athletic Association,Charleston Cougars,0,0,0,20,8,0.714,0,2026-03-04T22:22:32Z,Colonial Athletic Association,22692149656
+20260304,Summit League,South Dakota Coyotes,0,0,0,16,13,0.552,0,2026-03-04T22:22:32Z,Summit League,22692149656
+20260304,American Athletic Conference,Memphis Tigers,0,0,0,11,17,0.393,0,2026-03-04T22:22:32Z,American Athletic Conference,22692149656
+20260304,Southern Conference,Chattanooga Mocs,0,0,0,12,16,0.429,0,2026-03-04T22:22:32Z,Southern Conference,22692149656
+20260304,Southeastern Conference,Vanderbilt Commodores,0,0,0,21,7,0.75,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,Big 12,Baylor Bears,0,0,0,14,14,0.5,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,American Athletic Conference,Rice Owls,0,0,0,11,16,0.407,0,2026-03-04T22:22:32Z,American Athletic Conference,22692149656
+20260304,Southeastern Conference,Texas A&M Aggies,0,0,0,18,10,0.643,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,Big 12,Houston Cougars,0,0,0,22,5,0.815,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,American Athletic Conference,North Texas Mean Green,0,0,0,15,13,0.536,0,2026-03-04T22:22:32Z,American Athletic Conference,22692149656
+20260304,Western Athletic Conference,UT Arlington Mavericks,0,0,0,14,12,0.538,0,2026-03-04T22:22:32Z,Western Athletic Conference,22692149656
+20260304,Southeastern Conference,Texas Longhorns,0,0,0,17,10,0.63,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,Big 12,BYU Cougars,0,0,0,18,10,0.643,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,Western Athletic Conference,Southern Utah Thunderbirds,0,0,0,10,17,0.37,0,2026-03-04T22:22:32Z,Western Athletic Conference,22692149656
+20260304,Big 12,Utah Utes,0,0,0,8,20,0.286,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,Sun Belt Conference,James Madison Dukes,0,0,0,16,13,0.552,0,2026-03-04T22:22:32Z,Sun Belt Conference,22692149656
+20260304,Atlantic 10,Richmond Spiders,0,0,0,13,15,0.464,0,2026-03-04T22:22:32Z,Atlantic 10,22692149656
+20260304,Atlantic Coast Conference,Virginia Cavaliers,0,0,0,24,4,0.857,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,Atlantic Coast Conference,Virginia Tech Hokies,0,0,0,17,11,0.607,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,America East Conference,Vermont Catamounts,0,0,0,18,11,0.621,0,2026-03-04T22:22:32Z,America East Conference,22692149656
+20260304,,Loras Duhawks,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big Ten,Washington Huskies,0,0,0,12,15,0.444,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,West Coast Conference,Washington State Cougars,0,0,0,12,17,0.414,0,2026-03-04T22:22:32Z,West Coast Conference,22692149656
+20260304,,Lawrence University Vikings,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big East,Marquette Golden Eagles,0,0,0,8,19,0.296,0,2026-03-04T22:22:32Z,Big East,22692149656
+20260304,Horizon League,Milwaukee Panthers,0,0,0,11,18,0.379,0,2026-03-04T22:22:32Z,Horizon League,22692149656
+20260304,Big Ten,Wisconsin Badgers,0,0,0,18,9,0.667,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,Sun Belt Conference,Marshall Thundering Herd,0,0,0,17,12,0.586,0,2026-03-04T22:22:32Z,Sun Belt Conference,22692149656
+20260304,Big 12,West Virginia Mountaineers,0,0,0,15,13,0.536,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,Mountain West,Fresno State Bulldogs,0,0,0,11,16,0.407,0,2026-03-04T22:22:32Z,Mountain West,22692149656
+20260304,West Coast Conference,Pacific Tigers,0,0,0,16,13,0.552,0,2026-03-04T22:22:32Z,West Coast Conference,22692149656
+20260304,Missouri Valley Conference,Indiana State Sycamores,0,0,0,10,19,0.345,0,2026-03-04T22:22:32Z,Missouri Valley Conference,22692149656
+20260304,Northeast Conference,Stonehill Skyhawks,0,0,0,10,19,0.345,0,2026-03-04T22:22:32Z,Northeast Conference,22692149656
+20260304,ASUN Conference,Lipscomb Bisons,0,0,0,19,11,0.633,0,2026-03-04T22:22:32Z,ASUN Conference,22692149656
+20260304,Sun Belt Conference,Georgia Southern Eagles,0,0,0,15,14,0.517,0,2026-03-04T22:22:32Z,Sun Belt Conference,22692149656
+20260304,Southland Conference,UT Rio Grande Valley Vaqueros,0,0,0,17,12,0.586,0,2026-03-04T22:22:32Z,Southland Conference,22692149656
+20260304,ASUN Conference,Jacksonville Dolphins,0,0,0,11,19,0.367,0,2026-03-04T22:22:32Z,ASUN Conference,22692149656
+20260304,Sun Belt Conference,Old Dominion Monarchs,0,0,0,11,19,0.367,0,2026-03-04T22:22:32Z,Sun Belt Conference,22692149656
+20260304,Big West Conference,Long Beach State Beach,0,0,0,9,19,0.321,0,2026-03-04T22:22:32Z,Big West Conference,22692149656
+20260304,Big West Conference,UC Irvine Anteaters,0,0,0,19,9,0.679,0,2026-03-04T22:22:32Z,Big West Conference,22692149656
+20260304,West Coast Conference,San Diego Toreros,0,0,0,10,19,0.345,0,2026-03-04T22:22:32Z,West Coast Conference,22692149656
+20260304,Big West Conference,UC Davis Aggies,0,0,0,15,12,0.556,0,2026-03-04T22:22:32Z,Big West Conference,22692149656
+20260304,Big Sky Conference,Idaho State Bengals,0,0,0,10,19,0.345,0,2026-03-04T22:22:32Z,Big Sky Conference,22692149656
+20260304,Big East,DePaul Blue Demons,0,0,0,14,13,0.519,0,2026-03-04T22:22:32Z,Big East,22692149656
+20260304,Sun Belt Conference,Louisiana Ragin' Cajuns,0,0,0,10,20,0.333,0,2026-03-04T22:22:32Z,Sun Belt Conference,22692149656
+20260304,America East Conference,Maine Black Bears,0,0,0,8,21,0.276,0,2026-03-04T22:22:32Z,America East Conference,22692149656
+20260304,Metro Atlantic Athletic Conference,Iona Gaels,0,0,0,17,13,0.567,0,2026-03-04T22:22:32Z,Metro Atlantic Athletic Conference,22692149656
+20260304,Metro Atlantic Athletic Conference,Niagara Purple Eagles,0,0,0,7,21,0.25,0,2026-03-04T22:22:32Z,Metro Atlantic Athletic Conference,22692149656
+20260304,Patriot League,Lafayette Leopards,0,0,0,10,19,0.345,0,2026-03-04T22:22:32Z,Patriot League,22692149656
+20260304,Sun Belt Conference,Coastal Carolina Chanticleers,0,0,0,18,11,0.621,0,2026-03-04T22:22:32Z,Sun Belt Conference,22692149656
+20260304,Horizon League,Cleveland State Vikings,0,0,0,10,20,0.333,0,2026-03-04T22:22:32Z,Horizon League,22692149656
+20260304,Sun Belt Conference,Texas State Bobcats,0,0,0,18,10,0.643,0,2026-03-04T22:22:32Z,Sun Belt Conference,22692149656
+20260304,Mountain West,Utah State Aggies,0,0,0,22,6,0.786,0,2026-03-04T22:22:32Z,Mountain West,22692149656
+20260304,,Virginia St Trojans,0,0,0,1,0,1.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big Sky Conference,Eastern Washington Eagles,0,0,0,13,15,0.464,0,2026-03-04T22:22:32Z,Big Sky Conference,22692149656
+20260304,Southeastern Conference,Alabama Crimson Tide,0,0,0,20,8,0.714,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,Conference USA,Kennesaw State Owls,0,0,0,16,11,0.593,0,2026-03-04T22:22:32Z,Conference USA,22692149656
+20260304,Missouri Valley Conference,Evansville Purple Aces,0,0,0,6,23,0.207,0,2026-03-04T22:22:32Z,Missouri Valley Conference,22692149656
+20260304,Southeastern Conference,Mississippi State Bulldogs,0,0,0,12,17,0.414,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,,Elmira Soaring Eagles,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Patriot League,Army Black Knights,0,0,0,10,20,0.333,0,2026-03-04T22:22:32Z,Patriot League,22692149656
+20260304,Colonial Athletic Association,UNC Wilmington Seahawks,0,0,0,25,5,0.833,0,2026-03-04T22:22:32Z,Colonial Athletic Association,22692149656
+20260304,,Johnson & Wales (RI) Griffins,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Olivet Comets,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,SUNY-Oneonta Red Dragons,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big Ten,Illinois Fighting Illini,0,0,0,21,7,0.75,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,Southland Conference,Texas A&M-Corpus Christi Islanders,0,0,0,16,12,0.571,0,2026-03-04T22:22:32Z,Southland Conference,22692149656
+20260304,,Rutgers-Camden Scarlet Raptors,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,St. John Fisher Cardinals,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,St. Scholastica Saints,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,America East Conference,UAlbany Great Danes,0,0,0,11,18,0.379,0,2026-03-04T22:22:32Z,America East Conference,22692149656
+20260304,,Worcester State Lancers,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Arcadia ARCADIA,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,George Fox Bruins,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Gallaudet Bison,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Holy Family University Tigers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Gwynedd-Mercy Griffins,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Rosemont Ravens,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Alice Lloyd College Eagles,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Aquinas Saints,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Blue Mountain Toppers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Calumet Crimson Wave,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Concordia-Nebraska Clippers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Crown College Polars,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Culver-Stockton Wildcats,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Cumberland (KY) Patriots,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Dakota State Trojans,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Dakota Wesleyan Tigers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Fisher College Eagles,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,ASUN Conference,Florida Gulf Coast Eagles,0,0,0,13,16,0.448,0,2026-03-04T22:22:32Z,ASUN Conference,22692149656
+20260304,,Hannibal-Lagrange Trojans,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Harris-Stowe State Hornets,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Haskell Jayhawks,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Houghton Highlanders,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,LaGrange Panthers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Vermont State - Lyndon Hornets,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Maine-Fort Kent Bengals,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Mayville St Comets,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,McPherson Mcpherson,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Morris College Hornets,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Mount Marty College Lancers,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Pacific Union PACIFIC UNION,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Peru State Bobcats,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Science & Arts (OK) Drovers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Simpson University (CA) Red Hawks,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Western Athletic Conference,Abilene Christian Wildcats,0,0,0,11,16,0.407,0,2026-03-04T22:22:32Z,Western Athletic Conference,22692149656
+20260304,,Adrian Bulldogs,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Mountain West,Air Force Falcons,0,0,0,3,25,0.107,0,2026-03-04T22:22:32Z,Mountain West,22692149656
+20260304,Mid-American Conference,Akron Zips,0,0,0,23,5,0.821,0,2026-03-04T22:22:32Z,Mid-American Conference,22692149656
+20260304,Southwestern Athletic Conference,Alabama A&M Bulldogs,0,0,0,16,12,0.571,0,2026-03-04T22:22:32Z,Southwestern Athletic Conference,22692149656
+20260304,Southwestern Athletic Conference,Alabama State Hornets,0,0,0,10,19,0.345,0,2026-03-04T22:22:32Z,Southwestern Athletic Conference,22692149656
+20260304,,Albany St (GA) Golden Rams,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southwestern Athletic Conference,Alcorn State Braves,0,0,0,8,18,0.308,0,2026-03-04T22:22:32Z,Southwestern Athletic Conference,22692149656
+20260304,,Angelo State Rams,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Sun Belt Conference,App State Mountaineers,0,0,0,18,11,0.621,0,2026-03-04T22:22:32Z,Sun Belt Conference,22692149656
+20260304,,Arkansas Baptist Buffaloes,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southwestern Athletic Conference,Arkansas-Pine Bluff Golden Lions,0,0,0,12,15,0.444,0,2026-03-04T22:22:32Z,Southwestern Athletic Conference,22692149656
+20260304,Ohio Valley Conference,Little Rock Trojans,0,0,0,11,19,0.367,0,2026-03-04T22:22:32Z,Ohio Valley Conference,22692149656
+20260304,Sun Belt Conference,Arkansas State Red Wolves,0,0,0,19,10,0.655,0,2026-03-04T22:22:32Z,Sun Belt Conference,22692149656
+20260304,,Arkansas Tech Wonder Boys,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Auburn-Montgomery Senators,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,ASUN Conference,Austin Peay Governors,0,0,0,19,8,0.704,0,2026-03-04T22:22:32Z,ASUN Conference,22692149656
+20260304,,Averett Cougars,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Mid-American Conference,Ball State Cardinals,0,0,0,9,19,0.321,0,2026-03-04T22:22:32Z,Mid-American Conference,22692149656
+20260304,Missouri Valley Conference,Belmont Bruins,0,0,0,24,5,0.828,0,2026-03-04T22:22:32Z,Missouri Valley Conference,22692149656
+20260304,,Berea Mountaineers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Bethany (WV) Bison,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Bethel (TN) Wildcats,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southwestern Athletic Conference,Bethune-Cookman Wildcats,0,0,0,17,11,0.607,0,2026-03-04T22:22:32Z,Southwestern Athletic Conference,22692149656
+20260304,America East Conference,Binghamton Bearcats,0,0,0,7,21,0.25,0,2026-03-04T22:22:32Z,America East Conference,22692149656
+20260304,,Blackburn Beavers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Bloomsburg Huskies,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Bluefield State Big Blues,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Bowie State Bulldogs,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Brewton-Parker Wildcats,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Bryan (TN) Lions,0,0,0,0,3,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Patriot League,Bucknell Bison,0,0,0,8,22,0.267,0,2026-03-04T22:22:32Z,Patriot League,22692149656
+20260304,Mid-American Conference,Buffalo Bulls,0,0,0,15,13,0.536,0,2026-03-04T22:22:32Z,Mid-American Conference,22692149656
+20260304,Big East,Butler Bulldogs,0,0,0,13,14,0.481,0,2026-03-04T22:22:32Z,Big East,22692149656
+20260304,,Cameron Aggies,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Colonial Athletic Association,Campbell Fighting Camels,0,0,0,14,15,0.483,0,2026-03-04T22:22:32Z,Colonial Athletic Association,22692149656
+20260304,,Campbellsville Tigers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Metro Atlantic Athletic Conference,Canisius Golden Griffins,0,0,0,9,19,0.321,0,2026-03-04T22:22:32Z,Metro Atlantic Athletic Conference,22692149656
+20260304,,Catawba Chiefs,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,ASUN Conference,Central Arkansas Bears,0,0,0,19,10,0.655,0,2026-03-04T22:22:32Z,ASUN Conference,22692149656
+20260304,,Centenary (LA) Gentlemen,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Centenary (NJ) Cyclones,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Northeast Conference,Central Connecticut Blue Devils,0,0,0,17,10,0.63,0,2026-03-04T22:22:32Z,Northeast Conference,22692149656
+20260304,Big 12,UCF Knights,0,0,0,19,8,0.704,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,Mid-American Conference,Central Michigan Chippewas,0,0,0,9,19,0.321,0,2026-03-04T22:22:32Z,Mid-American Conference,22692149656
+20260304,,Central State (OH) Marauders,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Chaminade Silverswords,0,0,0,0,3,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big South Conference,Charleston Southern Buccaneers,0,0,0,14,15,0.483,0,2026-03-04T22:22:32Z,Big South Conference,22692149656
+20260304,,Cheyney (PA) Wolves,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Northeast Conference,Chicago State Cougars,0,0,0,7,22,0.241,0,2026-03-04T22:22:32Z,Northeast Conference,22692149656
+20260304,,Christian Brothers Buccaneers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big 12,Cincinnati Bearcats,0,0,0,15,13,0.536,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,,Coe Kohawks,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Patriot League,Colgate Raiders,0,0,0,17,12,0.586,0,2026-03-04T22:22:32Z,Patriot League,22692149656
+20260304,,Colorado-Colorado Springs Mountain Lions,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Concord Mountain Lions,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Mid-Eastern Athletic Conference,Coppin State Eagles,0,0,0,7,21,0.25,0,2026-03-04T22:22:32Z,Mid-Eastern Athletic Conference,22692149656
+20260304,,Cumberland (TN) Phoenix,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Dallas Crusaders,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Atlantic 10,Davidson Wildcats,0,0,0,16,11,0.593,0,2026-03-04T22:22:32Z,Atlantic 10,22692149656
+20260304,Atlantic 10,Dayton Flyers,0,0,0,19,9,0.679,0,2026-03-04T22:22:32Z,Atlantic 10,22692149656
+20260304,Mid-Eastern Athletic Conference,Delaware State Hornets,0,0,0,6,20,0.231,0,2026-03-04T22:22:32Z,Mid-Eastern Athletic Conference,22692149656
+20260304,Summit League,Denver Pioneers,0,0,0,15,14,0.517,0,2026-03-04T22:22:32Z,Summit League,22692149656
+20260304,Horizon League,Detroit Mercy Titans,0,0,0,15,12,0.556,0,2026-03-04T22:22:32Z,Horizon League,22692149656
+20260304,,Doane Tigers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Missouri Valley Conference,Drake Bulldogs,0,0,0,11,18,0.379,0,2026-03-04T22:22:32Z,Missouri Valley Conference,22692149656
+20260304,Colonial Athletic Association,Drexel Dragons,0,0,0,15,14,0.517,0,2026-03-04T22:22:32Z,Colonial Athletic Association,22692149656
+20260304,Atlantic 10,Duquesne Dukes,0,0,0,14,13,0.519,0,2026-03-04T22:22:32Z,Atlantic 10,22692149656
+20260304,,Earlham College Quakers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southern Conference,East Tennessee State Buccaneers,0,0,0,20,9,0.69,0,2026-03-04T22:22:32Z,Southern Conference,22692149656
+20260304,,Eastern University (PA) Eagles,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Ohio Valley Conference,Eastern Illinois Panthers,0,0,0,11,18,0.379,0,2026-03-04T22:22:32Z,Ohio Valley Conference,22692149656
+20260304,ASUN Conference,Eastern Kentucky Colonels,0,0,0,10,20,0.333,0,2026-03-04T22:22:32Z,ASUN Conference,22692149656
+20260304,Mid-American Conference,Eastern Michigan Eagles,0,0,0,9,20,0.31,0,2026-03-04T22:22:32Z,Mid-American Conference,22692149656
+20260304,,Eastern Oregon Mountaineers,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Elizabeth City State Vikings,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Colonial Athletic Association,Elon Phoenix,0,0,0,12,17,0.414,0,2026-03-04T22:22:32Z,Colonial Athletic Association,22692149656
+20260304,,Emmanuel (MA) Lions,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Erskine Flying Fleet,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Metro Atlantic Athletic Conference,Fairfield Stags,0,0,0,18,11,0.621,0,2026-03-04T22:22:32Z,Metro Atlantic Athletic Conference,22692149656
+20260304,,Fisk Bulldogs,0,0,0,0,3,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,American Athletic Conference,Florida Atlantic Owls,0,0,0,15,13,0.536,0,2026-03-04T22:22:32Z,American Athletic Conference,22692149656
+20260304,,Florida Memorial FLORIDA MEMORIAL,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Conference USA,Florida International Panthers,0,0,0,13,14,0.481,0,2026-03-04T22:22:32Z,Conference USA,22692149656
+20260304,Atlantic 10,Fordham Rams,0,0,0,15,12,0.556,0,2026-03-04T22:22:32Z,Atlantic 10,22692149656
+20260304,,Fort Valley State Wildcats,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big West Conference,Cal State Fullerton Titans,0,0,0,14,14,0.5,0,2026-03-04T22:22:32Z,Big West Conference,22692149656
+20260304,Big South Conference,Gardner-Webb Runnin' Bulldogs,0,0,0,3,26,0.103,0,2026-03-04T22:22:32Z,Big South Conference,22692149656
+20260304,,Geneva Golden Tornadoes,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Atlantic 10,George Mason Patriots,0,0,0,20,8,0.714,0,2026-03-04T22:22:32Z,Atlantic 10,22692149656
+20260304,,Georgia College Bobcats,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Sun Belt Conference,Georgia State Panthers,0,0,0,10,20,0.333,0,2026-03-04T22:22:32Z,Sun Belt Conference,22692149656
+20260304,West Coast Conference,Gonzaga Bulldogs,0,0,0,26,3,0.897,0,2026-03-04T22:22:32Z,West Coast Conference,22692149656
+20260304,Mountain West,Grand Canyon Lopes,0,0,0,18,10,0.643,0,2026-03-04T22:22:32Z,Mountain West,22692149656
+20260304,,Greensboro College Pride,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Colonial Athletic Association,Hampton Pirates,0,0,0,12,17,0.414,0,2026-03-04T22:22:32Z,Colonial Athletic Association,22692149656
+20260304,,Hanover Panthers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Hawai'i Hilo Vulcans,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Hawai'i Pacific Sea Warriors,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big South Conference,High Point Panthers,0,0,0,25,4,0.862,0,2026-03-04T22:22:32Z,Big South Conference,22692149656
+20260304,Colonial Athletic Association,Hofstra Pride,0,0,0,21,8,0.724,0,2026-03-04T22:22:32Z,Colonial Athletic Association,22692149656
+20260304,Southland Conference,Houston Christian Huskies,0,0,0,11,18,0.379,0,2026-03-04T22:22:32Z,Southland Conference,22692149656
+20260304,,Huston-Tillotson Rams,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Missouri Valley Conference,Illinois State Redbirds,0,0,0,20,10,0.667,0,2026-03-04T22:22:32Z,Missouri Valley Conference,22692149656
+20260304,Big Ten,Iowa Hawkeyes,0,0,0,18,9,0.667,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,Southwestern Athletic Conference,Jackson State Tigers,0,0,0,10,18,0.357,0,2026-03-04T22:22:32Z,Southwestern Athletic Conference,22692149656
+20260304,,Jarvis Christian Bulldogs,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Johnson C Smith Golden Bulls,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big 12,Kansas Jayhawks,0,0,0,20,8,0.714,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,Big 12,Kansas State Wildcats,0,0,0,10,18,0.357,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,Mid-American Conference,Kent State Golden Flashes,0,0,0,21,7,0.75,0,2026-03-04T22:22:32Z,Mid-American Conference,22692149656
+20260304,,Kentucky State Thorobreds,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southland Conference,Lamar Cardinals,0,0,0,11,19,0.367,0,2026-03-04T22:22:32Z,Southland Conference,22692149656
+20260304,Atlantic 10,La Salle Explorers,0,0,0,6,21,0.222,0,2026-03-04T22:22:32Z,Atlantic 10,22692149656
+20260304,Patriot League,Lehigh Mountain Hawks,0,0,0,14,15,0.483,0,2026-03-04T22:22:32Z,Patriot League,22692149656
+20260304,Northeast Conference,Le Moyne Dolphins,0,0,0,14,15,0.483,0,2026-03-04T22:22:32Z,Northeast Conference,22692149656
+20260304,,Lewis & Clark Pioneers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Conference USA,Liberty Flames,0,0,0,22,5,0.815,0,2026-03-04T22:22:32Z,Conference USA,22692149656
+20260304,Big South Conference,Longwood Lancers,0,0,0,15,14,0.517,0,2026-03-04T22:22:32Z,Big South Conference,22692149656
+20260304,,Louisiana Christian Wildcats,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Conference USA,Louisiana Tech Bulldogs,0,0,0,16,12,0.571,0,2026-03-04T22:22:32Z,Conference USA,22692149656
+20260304,America East Conference,UMass Lowell River Hawks,0,0,0,13,16,0.448,0,2026-03-04T22:22:32Z,America East Conference,22692149656
+20260304,Atlantic 10,Loyola Chicago Ramblers,0,0,0,6,21,0.222,0,2026-03-04T22:22:32Z,Atlantic 10,22692149656
+20260304,West Coast Conference,Loyola Marymount Lions,0,0,0,12,16,0.429,0,2026-03-04T22:22:32Z,West Coast Conference,22692149656
+20260304,Patriot League,Loyola Maryland Greyhounds,0,0,0,11,18,0.379,0,2026-03-04T22:22:32Z,Patriot League,22692149656
+20260304,,Lyon Scots,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Metro Atlantic Athletic Conference,Manhattan Jaspers,0,0,0,11,19,0.367,0,2026-03-04T22:22:32Z,Metro Atlantic Athletic Conference,22692149656
+20260304,Metro Atlantic Athletic Conference,Marist Red Foxes,0,0,0,18,10,0.643,0,2026-03-04T22:22:32Z,Metro Atlantic Athletic Conference,22692149656
+20260304,,Tennessee Southern Firehawks,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Marywood Pacers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southland Conference,McNeese Cowboys,0,0,0,25,4,0.862,0,2026-03-04T22:22:32Z,Southland Conference,22692149656
+20260304,America East Conference,UMBC Retrievers,0,0,0,20,7,0.741,0,2026-03-04T22:22:32Z,America East Conference,22692149656
+20260304,Mid-Eastern Athletic Conference,Maryland Eastern Shore Hawks,0,0,0,8,19,0.296,0,2026-03-04T22:22:32Z,Mid-Eastern Athletic Conference,22692149656
+20260304,Southern Conference,Mercer Bears,0,0,0,18,11,0.621,0,2026-03-04T22:22:32Z,Southern Conference,22692149656
+20260304,,Mercy Mavericks,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Northeast Conference,Mercyhurst Lakers,0,0,0,13,15,0.464,0,2026-03-04T22:22:32Z,Northeast Conference,22692149656
+20260304,Atlantic Coast Conference,Miami Hurricanes,0,0,0,21,6,0.778,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,Conference USA,Middle Tennessee Blue Raiders,0,0,0,13,14,0.481,0,2026-03-04T22:22:32Z,Conference USA,22692149656
+20260304,,Midwestern State Mustangs,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Milligan Buffaloes,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southwestern Athletic Conference,Mississippi Valley State Delta Devils,0,0,0,2,26,0.071,0,2026-03-04T22:22:32Z,Southwestern Athletic Conference,22692149656
+20260304,,Molloy Lions,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Colonial Athletic Association,Monmouth Hawks,0,0,0,16,13,0.552,0,2026-03-04T22:22:32Z,Colonial Athletic Association,22692149656
+20260304,Ohio Valley Conference,Morehead State Eagles,0,0,0,18,11,0.621,0,2026-03-04T22:22:32Z,Ohio Valley Conference,22692149656
+20260304,Mid-Eastern Athletic Conference,Morgan State Bears,0,0,0,12,14,0.462,0,2026-03-04T22:22:32Z,Mid-Eastern Athletic Conference,22692149656
+20260304,,New Mexico Highlands Cowboys,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Patriot League,Navy Midshipmen,0,0,0,24,5,0.828,0,2026-03-04T22:22:32Z,Patriot League,22692149656
+20260304,Big South Conference,UNC Asheville Bulldogs,0,0,0,14,14,0.5,0,2026-03-04T22:22:32Z,Big South Conference,22692149656
+20260304,Mid-Eastern Athletic Conference,North Carolina Central Eagles,0,0,0,12,14,0.462,0,2026-03-04T22:22:32Z,Mid-Eastern Athletic Conference,22692149656
+20260304,American Athletic Conference,Charlotte 49ers,0,0,0,13,14,0.481,0,2026-03-04T22:22:32Z,American Athletic Conference,22692149656
+20260304,Southern Conference,UNC Greensboro Spartans,0,0,0,13,16,0.448,0,2026-03-04T22:22:32Z,Southern Conference,22692149656
+20260304,Sun Belt Conference,UL Monroe Warhawks,0,0,0,4,26,0.133,0,2026-03-04T22:22:32Z,Sun Belt Conference,22692149656
+20260304,Summit League,Omaha Mavericks,0,0,0,15,14,0.517,0,2026-03-04T22:22:32Z,Summit League,22692149656
+20260304,Mountain West,UNLV Rebels,0,0,0,15,13,0.536,0,2026-03-04T22:22:32Z,Mountain West,22692149656
+20260304,Mountain West,Nevada Wolf Pack,0,0,0,17,11,0.607,0,2026-03-04T22:22:32Z,Mountain West,22692149656
+20260304,Northeast Conference,New Haven Chargers,0,0,0,14,14,0.5,0,2026-03-04T22:22:32Z,Northeast Conference,22692149656
+20260304,Southland Conference,New Orleans Privateers,0,0,0,13,17,0.433,0,2026-03-04T22:22:32Z,Southland Conference,22692149656
+20260304,Southland Conference,Nicholls Colonels,0,0,0,13,16,0.448,0,2026-03-04T22:22:32Z,Southland Conference,22692149656
+20260304,Colonial Athletic Association,North Carolina A&T Aggies,0,0,0,11,17,0.393,0,2026-03-04T22:22:32Z,Colonial Athletic Association,22692149656
+20260304,Summit League,North Dakota State Bison,0,0,0,24,5,0.828,0,2026-03-04T22:22:32Z,Summit League,22692149656
+20260304,Mid-Eastern Athletic Conference,Norfolk State Spartans,0,0,0,13,14,0.481,0,2026-03-04T22:22:32Z,Mid-Eastern Athletic Conference,22692149656
+20260304,ASUN Conference,North Alabama Lions,0,0,0,8,19,0.296,0,2026-03-04T22:22:32Z,ASUN Conference,22692149656
+20260304,ASUN Conference,North Florida Ospreys,0,0,0,7,23,0.233,0,2026-03-04T22:22:32Z,ASUN Conference,22692149656
+20260304,Big Sky Conference,Northern Colorado Bears,0,0,0,18,11,0.621,0,2026-03-04T22:22:32Z,Big Sky Conference,22692149656
+20260304,Mid-American Conference,Northern Illinois Huskies,0,0,0,8,19,0.296,0,2026-03-04T22:22:32Z,Mid-American Conference,22692149656
+20260304,Missouri Valley Conference,Northern Iowa Panthers,0,0,0,18,12,0.6,0,2026-03-04T22:22:32Z,Missouri Valley Conference,22692149656
+20260304,Big West Conference,Cal State Northridge Matadors,0,0,0,17,11,0.607,0,2026-03-04T22:22:32Z,Big West Conference,22692149656
+20260304,Big Sky Conference,Northern Arizona Lumberjacks,0,0,0,9,20,0.31,0,2026-03-04T22:22:32Z,Big Sky Conference,22692149656
+20260304,,Northwest University Eagles,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southland Conference,Northwestern State Demons,0,0,0,10,19,0.345,0,2026-03-04T22:22:32Z,Southland Conference,22692149656
+20260304,Horizon League,Oakland Golden Grizzlies,0,0,0,16,13,0.552,0,2026-03-04T22:22:32Z,Horizon League,22692149656
+20260304,,Oakland City Mighty Oaks,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Oglethorpe Stormy Petrels,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big Ten,Oregon Ducks,0,0,0,9,19,0.321,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,,Paul Quinn Tigers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,West Coast Conference,Pepperdine Waves,0,0,0,8,21,0.276,0,2026-03-04T22:22:32Z,West Coast Conference,22692149656
+20260304,,Piedmont Lions,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,West Coast Conference,Portland Pilots,0,0,0,11,18,0.379,0,2026-03-04T22:22:32Z,West Coast Conference,22692149656
+20260304,Big Sky Conference,Portland State Vikings,0,0,0,18,9,0.667,0,2026-03-04T22:22:32Z,Big Sky Conference,22692149656
+20260304,Southwestern Athletic Conference,Prairie View A&M Panthers,0,0,0,11,16,0.407,0,2026-03-04T22:22:32Z,Southwestern Athletic Conference,22692149656
+20260304,Big South Conference,Presbyterian Blue Hose,0,0,0,12,16,0.429,0,2026-03-04T22:22:32Z,Big South Conference,22692149656
+20260304,Big East,Providence Friars,0,0,0,13,14,0.481,0,2026-03-04T22:22:32Z,Big East,22692149656
+20260304,,Puget Sound Loggers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big Ten,Purdue Boilermakers,0,0,0,20,7,0.741,0,2026-03-04T22:22:32Z,Big Ten,22692149656
+20260304,ASUN Conference,Queens University Royals,0,0,0,17,11,0.607,0,2026-03-04T22:22:32Z,ASUN Conference,22692149656
+20260304,Metro Atlantic Athletic Conference,Quinnipiac Bobcats,0,0,0,18,11,0.621,0,2026-03-04T22:22:32Z,Metro Atlantic Athletic Conference,22692149656
+20260304,Big South Conference,Radford Highlanders,0,0,0,14,15,0.483,0,2026-03-04T22:22:32Z,Big South Conference,22692149656
+20260304,,Regis Pride,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Regis (CO) REGIS UNIVERSITY,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Rhodes Lynx,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Metro Atlantic Athletic Conference,Rider Broncs,0,0,0,4,23,0.148,0,2026-03-04T22:22:32Z,Metro Atlantic Athletic Conference,22692149656
+20260304,Horizon League,Robert Morris Colonials,0,0,0,20,9,0.69,0,2026-03-04T22:22:32Z,Horizon League,22692149656
+20260304,,Rockford Regents,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Metro Atlantic Athletic Conference,Sacred Heart Pioneers,0,0,0,12,17,0.414,0,2026-03-04T22:22:32Z,Metro Atlantic Athletic Conference,22692149656
+20260304,Conference USA,Sam Houston Bearkats,0,0,0,20,7,0.741,0,2026-03-04T22:22:32Z,Conference USA,22692149656
+20260304,Southern Conference,Samford Bulldogs,0,0,0,17,12,0.586,0,2026-03-04T22:22:32Z,Southern Conference,22692149656
+20260304,West Coast Conference,San Francisco Dons,0,0,0,15,14,0.517,0,2026-03-04T22:22:32Z,West Coast Conference,22692149656
+20260304,Big West Conference,UC Santa Barbara Gauchos,0,0,0,16,12,0.571,0,2026-03-04T22:22:32Z,Big West Conference,22692149656
+20260304,West Coast Conference,Santa Clara Broncos,0,0,0,22,7,0.759,0,2026-03-04T22:22:32Z,West Coast Conference,22692149656
+20260304,,Schreiner Mountaineers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southland Conference,SE Louisiana Lions,0,0,0,9,20,0.31,0,2026-03-04T22:22:32Z,Southland Conference,22692149656
+20260304,Ohio Valley Conference,Southeast Missouri State Redhawks,0,0,0,19,10,0.655,0,2026-03-04T22:22:32Z,Ohio Valley Conference,22692149656
+20260304,West Coast Conference,Seattle U Redhawks,0,0,0,18,11,0.621,0,2026-03-04T22:22:32Z,West Coast Conference,22692149656
+20260304,Big East,Seton Hall Pirates,0,0,0,18,10,0.643,0,2026-03-04T22:22:32Z,Big East,22692149656
+20260304,,Shaw Bears,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Metro Atlantic Athletic Conference,Siena Saints,0,0,0,18,11,0.621,0,2026-03-04T22:22:32Z,Metro Atlantic Athletic Conference,22692149656
+20260304,,Siena Heights Saints,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Simpson College (IA) Storm,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Ohio Valley Conference,SIU Edwardsville Cougars,0,0,0,17,12,0.586,0,2026-03-04T22:22:32Z,Ohio Valley Conference,22692149656
+20260304,Atlantic Coast Conference,SMU Mustangs,0,0,0,17,10,0.63,0,2026-03-04T22:22:32Z,Atlantic Coast Conference,22692149656
+20260304,Mid-Eastern Athletic Conference,South Carolina State Bulldogs,0,0,0,8,19,0.296,0,2026-03-04T22:22:32Z,Mid-Eastern Athletic Conference,22692149656
+20260304,Summit League,South Dakota State Jackrabbits,0,0,0,12,17,0.414,0,2026-03-04T22:22:32Z,Summit League,22692149656
+20260304,Sun Belt Conference,Southern Miss Golden Eagles,0,0,0,15,14,0.517,0,2026-03-04T22:22:32Z,Sun Belt Conference,22692149656
+20260304,,Southern-New Orleans Knights,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Southern Wesleyan Warriors,0,0,0,0,3,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southeastern Conference,South Carolina Gamecocks,0,0,0,11,18,0.379,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,Southwestern Athletic Conference,Southern Jaguars,0,0,0,14,14,0.5,0,2026-03-04T22:22:32Z,Southwestern Athletic Conference,22692149656
+20260304,,St. Ambrose Fighting Bees,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,St. Francis (IL) Fighting Saints,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Northeast Conference,Saint Francis Red Flash,0,0,0,7,22,0.241,0,2026-03-04T22:22:32Z,Northeast Conference,22692149656
+20260304,Big East,St. John's Red Storm,0,0,0,23,5,0.821,0,2026-03-04T22:22:32Z,Big East,22692149656
+20260304,,Saint John's (MN) Johnnies,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Atlantic 10,Saint Joseph's Hawks,0,0,0,17,10,0.63,0,2026-03-04T22:22:32Z,Atlantic 10,22692149656
+20260304,,Saint Leo Monarchs,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,West Coast Conference,Saint Mary's Gaels,0,0,0,25,4,0.862,0,2026-03-04T22:22:32Z,West Coast Conference,22692149656
+20260304,Metro Atlantic Athletic Conference,Saint Peter's Peacocks,0,0,0,16,10,0.615,0,2026-03-04T22:22:32Z,Metro Atlantic Athletic Conference,22692149656
+20260304,,St. Xavier  (IL) Cougars,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southland Conference,Stephen F. Austin Lumberjacks,0,0,0,25,4,0.862,0,2026-03-04T22:22:32Z,Southland Conference,22692149656
+20260304,Colonial Athletic Association,Stony Brook Seawolves,0,0,0,15,14,0.517,0,2026-03-04T22:22:32Z,Colonial Athletic Association,22692149656
+20260304,Conference USA,Missouri State Bears,0,0,0,11,16,0.407,0,2026-03-04T22:22:32Z,Conference USA,22692149656
+20260304,Western Athletic Conference,Tarleton State Texans,0,0,0,13,14,0.481,0,2026-03-04T22:22:32Z,Western Athletic Conference,22692149656
+20260304,Big 12,TCU Horned Frogs,0,0,0,19,9,0.679,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,Ohio Valley Conference,UT Martin Skyhawks,0,0,0,20,10,0.667,0,2026-03-04T22:22:32Z,Ohio Valley Conference,22692149656
+20260304,,Tennessee Wesleyan Bulldogs,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southeastern Conference,Tennessee Volunteers,0,0,0,19,9,0.679,0,2026-03-04T22:22:32Z,Southeastern Conference,22692149656
+20260304,Ohio Valley Conference,Tennessee State Tigers,0,0,0,20,8,0.714,0,2026-03-04T22:22:32Z,Ohio Valley Conference,22692149656
+20260304,Ohio Valley Conference,Tennessee Tech Golden Eagles,0,0,0,13,16,0.448,0,2026-03-04T22:22:32Z,Ohio Valley Conference,22692149656
+20260304,American Athletic Conference,UTSA Roadrunners,0,0,0,4,23,0.148,0,2026-03-04T22:22:32Z,American Athletic Conference,22692149656
+20260304,Conference USA,UTEP Miners,0,0,0,8,19,0.296,0,2026-03-04T22:22:32Z,Conference USA,22692149656
+20260304,,Texas Lutheran Bulldogs,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southwestern Athletic Conference,Texas Southern Tigers,0,0,0,12,14,0.462,0,2026-03-04T22:22:32Z,Southwestern Athletic Conference,22692149656
+20260304,Big 12,Texas Tech Red Raiders,0,0,0,20,8,0.714,0,2026-03-04T22:22:32Z,Big 12,22692149656
+20260304,Southern Conference,The Citadel Bulldogs,0,0,0,9,20,0.31,0,2026-03-04T22:22:32Z,Southern Conference,22692149656
+20260304,,Thiel Tomcats,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Toccoa Falls Eagles,0,0,0,0,3,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Mid-American Conference,Toledo Rockets,0,0,0,16,12,0.571,0,2026-03-04T22:22:32Z,Mid-American Conference,22692149656
+20260304,,Tougaloo Bulldogs,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Sun Belt Conference,Troy Trojans,0,0,0,18,11,0.621,0,2026-03-04T22:22:32Z,Sun Belt Conference,22692149656
+20260304,American Athletic Conference,Tulane Green Wave,0,0,0,15,12,0.556,0,2026-03-04T22:22:32Z,American Athletic Conference,22692149656
+20260304,,Massachusetts-Boston Beacons,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,UC Santa Cruz Banana Slugs,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Atlantic 10,VCU Rams,0,0,0,22,6,0.786,0,2026-03-04T22:22:32Z,Atlantic 10,22692149656
+20260304,Missouri Valley Conference,Valparaiso Beacons,0,0,0,16,13,0.552,0,2026-03-04T22:22:32Z,Missouri Valley Conference,22692149656
+20260304,Southern Conference,VMI Keydets,0,0,0,4,25,0.138,0,2026-03-04T22:22:32Z,Southern Conference,22692149656
+20260304,,Voorhees Tigers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Northeast Conference,Wagner Seahawks,0,0,0,13,14,0.481,0,2026-03-04T22:22:32Z,Northeast Conference,22692149656
+20260304,,Warren Wilson Owls,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Washington College (MD) Shoremen,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big Sky Conference,Weber State Wildcats,0,0,0,15,14,0.517,0,2026-03-04T22:22:32Z,Big Sky Conference,22692149656
+20260304,,Webster Gorloks,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,ASUN Conference,West Georgia Wolves,0,0,0,13,15,0.464,0,2026-03-04T22:22:32Z,ASUN Conference,22692149656
+20260304,,Montana-Western Bulldogs,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,WVU Tech Golden Bears,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Ohio Valley Conference,Western Illinois Leathernecks,0,0,0,5,24,0.172,0,2026-03-04T22:22:32Z,Ohio Valley Conference,22692149656
+20260304,Mid-American Conference,Western Michigan Broncos,0,0,0,9,19,0.321,0,2026-03-04T22:22:32Z,Mid-American Conference,22692149656
+20260304,Southern Conference,Western Carolina Catamounts,0,0,0,14,13,0.519,0,2026-03-04T22:22:32Z,Southern Conference,22692149656
+20260304,American Athletic Conference,Wichita State Shockers,0,0,0,18,10,0.643,0,2026-03-04T22:22:32Z,American Athletic Conference,22692149656
+20260304,Colonial Athletic Association,William & Mary Tribe,0,0,0,17,11,0.607,0,2026-03-04T22:22:32Z,Colonial Athletic Association,22692149656
+20260304,,William Carey Crusaders,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big South Conference,Winthrop Eagles,0,0,0,20,9,0.69,0,2026-03-04T22:22:32Z,Big South Conference,22692149656
+20260304,Horizon League,Green Bay Phoenix,0,0,0,18,12,0.6,0,2026-03-04T22:22:32Z,Horizon League,22692149656
+20260304,Southern Conference,Wofford Terriers,0,0,0,18,11,0.621,0,2026-03-04T22:22:32Z,Southern Conference,22692149656
+20260304,Horizon League,Wright State Raiders,0,0,0,19,10,0.655,0,2026-03-04T22:22:32Z,Horizon League,22692149656
+20260304,Mountain West,Wyoming Cowboys,0,0,0,15,13,0.536,0,2026-03-04T22:22:32Z,Mountain West,22692149656
+20260304,Big East,Xavier Musketeers,0,0,0,12,16,0.429,0,2026-03-04T22:22:32Z,Big East,22692149656
+20260304,Horizon League,Youngstown State Penguins,0,0,0,14,15,0.483,0,2026-03-04T22:22:32Z,Horizon League,22692149656
+20260304,Southwestern Athletic Conference,Grambling Tigers,0,0,0,11,17,0.393,0,2026-03-04T22:22:32Z,Southwestern Athletic Conference,22692149656
+20260304,,Howard Payne Yellow Jackets,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Metro Atlantic Athletic Conference,Merrimack Warriors,0,0,0,21,8,0.724,0,2026-03-04T22:22:32Z,Metro Atlantic Athletic Conference,22692149656
+20260304,,Minnesota Crookston Golden Eagles,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Salve Regina Seahawks,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,America East Conference,Bryant Bulldogs,0,0,0,9,19,0.321,0,2026-03-04T22:22:32Z,America East Conference,22692149656
+20260304,Ohio Valley Conference,Lindenwood Lions,0,0,0,16,13,0.552,0,2026-03-04T22:22:32Z,Ohio Valley Conference,22692149656
+20260304,,North Greenville Crusaders,0,0,0,1,1,0.5,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Shenandoah Hornets,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southland Conference,East Texas A&M Lions,0,0,0,10,20,0.333,0,2026-03-04T22:22:32Z,Southland Conference,22692149656
+20260304,,Tiffin Dragons,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Tusculum Pioneers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Union (KY) Bulldogs,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Waynesburg Yellow Jackets,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Whittier Poets,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Bloomfield Deacons,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Brescia Bearcats,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Western Athletic Conference,California Baptist Lancers,0,0,0,19,8,0.704,0,2026-03-04T22:22:32Z,Western Athletic Conference,22692149656
+20260304,,Colorado Christian Cougars,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Evergreen State Geoducks,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Horizon League,Purdue Fort Wayne Mastodons,0,0,0,17,13,0.567,0,2026-03-04T22:22:32Z,Horizon League,22692149656
+20260304,,Kean Cougars,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Manhattanville Valiants,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Missouri Baptist Spartans,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,America East Conference,NJIT Highlanders,0,0,0,14,15,0.483,0,2026-03-04T22:22:32Z,America East Conference,22692149656
+20260304,,Reinhardt Eagles,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Ripon Red Hawks,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Rust Bearcats,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Summit League,St. Thomas-Minnesota Tommies,0,0,0,22,7,0.759,0,2026-03-04T22:22:32Z,Summit League,22692149656
+20260304,,Southwestern Adventist Knights,0,0,0,0,3,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big South Conference,South Carolina Upstate Spartans,0,0,0,11,17,0.393,0,2026-03-04T22:22:32Z,Big South Conference,22692149656
+20260304,,Brevard Tornados,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Southland Conference,Incarnate Word Cardinals,0,0,0,11,18,0.379,0,2026-03-04T22:22:32Z,Southland Conference,22692149656
+20260304,,Mobile Rams,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Point University Skyhawks,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Big West Conference,Cal State Bakersfield Roadrunners,0,0,0,7,21,0.25,0,2026-03-04T22:22:32Z,Big West Conference,22692149656
+20260304,,Dominican (IL) Dominican,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Dallas Christian Crusaders,0,0,0,0,3,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Jamestown Jimmies,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Penn State-Behrend Lions,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Pfeiffer Falcons,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,SUNY-Maritime Privateers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Warner Pacific Knights,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Dominican (CA) Penguins,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Ohio Wesleyan Battling Bishops,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Williams Baptist Eagles,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,North Central College Cardinals,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Kentucky Christian Knights,0,0,0,0,3,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Oakwood Ambassadors,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Western Athletic Conference,Utah Valley Wolverines,0,0,0,21,6,0.778,0,2026-03-04T22:22:32Z,Western Athletic Conference,22692149656
+20260304,Western Athletic Conference,Utah Tech Trailblazers,0,0,0,16,12,0.571,0,2026-03-04T22:22:32Z,Western Athletic Conference,22692149656
+20260304,,East-West University Phantoms,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Apprentice School Builders,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Ecclesia Royals,0,0,0,0,5,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Ohio Christian Trailblazers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Mid-America Christian Evangels,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Champion Christian Tigers,0,0,0,0,4,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Indiana University East IU EAST,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Northern New Mexico Eagles,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,University of The Southwest Mustangs,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Our Lady Of The Lake Saints,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Central Penn Knights,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Arlington Baptist Patriots,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,La Sierra Golden Eagles,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,St. Thomas (TX) Celts,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Pensacola Christian College PENSACOLA CHRISTIAN,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Trinity College of Jacksonville Eagles,0,0,0,0,3,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Penn St Abington Nittany Lions,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,UC Merced Bobcats,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Coastal Georgia Mariner,0,0,0,0,3,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Saint Josephs Long Island Golden Eagles,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Virginia-Lynchburg Dragons,0,0,0,0,9,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Southwestern Christian Eagles,0,0,0,0,3,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Columbia International Rams,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Bob Jones Bruins,0,0,0,0,3,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Truett-McConnell Bears,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Bethesda University Flames,0,0,0,0,5,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Benedictine University (IL) Eagles,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Brandeis Judges,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Old Westbury Panthers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Washington Adventist Shock,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,St. Elizabeth Eagles,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Holy Cross College (IN) Saints,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Mid-Atlantic Christian Mustangs,0,0,0,0,5,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,William Peace Pacers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Alfred State Pioneers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Mitchell College Mariners,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Emerson Lions,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Sarah Lawrence Gryphons,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Carolina University Bruins,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Lourdes University Gray Wolves,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Boyce Bulldogs,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,York College Nebraska Panthers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Benedictine (AZ) Redhawks,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,West Coast Baptist Eagles,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Midway University Eagles,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Franciscan University Barons,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Georgian Court Lions,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Christendom Crusaders,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Penn State (Brandywine) Lions,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Embry-Riddle (AZ) Eagles,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Misericordia Cougars,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Wilson College WILSON,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Regent Royals,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,SUNY-Canton Roos,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Elms College Blazers,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,Northeast Conference,Long Island University Sharks,0,0,0,20,9,0.69,0,2026-03-04T22:22:32Z,Northeast Conference,22692149656
+20260304,,North Central (MN) Rams,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Lancasater Bible College Chargers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Fort Lauderdale Eagles,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Kansas Christian Falcons,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Miami (OH)-Hamilton Harriers,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Mary Baldwin Fighting Squirrels,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Lincoln University (CA) Oaklanders,0,0,0,0,4,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Spurgeon College Knights,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Vermont State - Johnson Badgers,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Pittsburgh - Greensburg Bobcats,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Saint Mary of the Woods College Pomeroys,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,SUNY Delhi Broncos,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Maine-Augusta Moose,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Clinton College Golden Bears,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Miami (OH)-Middletown ThunderHawks,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Ozark Christian Ambassadors,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,College Of Biblical Studies Ambassadors,0,0,0,0,6,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Notre Dame (MD) Gators,0,0,0,0,3,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Cleary University Cougars,0,0,0,0,3,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Stanton Elks,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Roberts Wesleyan Redhawks,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,New College (FL) Mighty Banyans,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Justice College Lions,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Lehman College Bridges,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Penn State-Shenango Nittany Lions,0,0,0,0,4,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Manor College Blue Jays,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Nobel Knights,0,0,0,0,6,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,IU Columbus Crimson Pride,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Columbia College (SC) Fighting Koalas,0,0,0,0,2,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Principia College PRINCIPIA,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Bryant Str-Alb Bobcats,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Manhattan Christian Thunder,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Paul Smith's Bobcats,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Penn State Hazleton Nittany Lions,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Bryant & Stratton (Ohio) Bobcats,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Salish Kootenai Bison,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656
+20260304,,Baptist (Fl) Eagles,0,0,0,0,1,0.0,0,2026-03-04T22:22:32Z,,22692149656

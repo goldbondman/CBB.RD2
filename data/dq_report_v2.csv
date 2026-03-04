@@ -73,6 +73,7 @@ data/predictions_20260226.csv,True,,57,117,5,4.27,4,0,False,,False,0
 data/predictions_20260227.csv,True,,21,118,5,4.24,4,0,False,,False,0
 data/predictions_20260228.csv,True,,143,118,5,4.24,4,0,False,,False,0
 data/predictions_20260301.csv,True,,6,118,5,4.24,4,0,False,,False,0
+data/predictions_20260304.csv,True,,38,120,5,4.17,4,0,False,,False,0
 data/predictions_combined_latest.csv,True,,221,163,50,30.67,4,0,False,,False,0
 data/predictions_graded.csv,True,,36,275,80,29.09,10,0,False,,False,0
 data/predictions_history.csv,True,,257,170,7,4.12,4,0,False,,False,0
