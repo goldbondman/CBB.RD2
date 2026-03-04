@@ -1,58 +1,9 @@
-"""
-Data loader for the CBB picks-tracking application.
-
-Provides :func:`load_app_data`, which reads the canonical CSV files used by
-the app and returns them as a dict of ``{name: pd.DataFrame}``.
-"""
-
-from __future__ import annotations
-
-from pathlib import Path
-from typing import Dict
-
-import pandas as pd
-
-# Root of the repository (this file lives at the repo root).
-_REPO_ROOT = Path(__file__).parent
-
-# Mapping of logical name → path relative to the repo root.
-_APP_DATA_FILES: Dict[str, Path] = {
-    "handicappers": _REPO_ROOT / "data" / "handicappers.csv",
-    "raw_tweets":   _REPO_ROOT / "data" / "raw_tweets.csv",
-    "raw_picks":    _REPO_ROOT / "data" / "raw_picks.csv",
-    "picks":        _REPO_ROOT / "data" / "picks.csv",
-    "games":        _REPO_ROOT / "data" / "app_games.csv",
-}
-
-
-def load_app_data() -> Dict[str, pd.DataFrame]:
-    """Load all application data files and return them as DataFrames.
-
-    Returns
-    -------
-    dict[str, pd.DataFrame]
-        Keys are logical file names (``handicappers``, ``raw_tweets``,
-        ``raw_picks``, ``picks``, ``games``); values are the corresponding
-        DataFrames.
-
-    Raises
-    ------
-    FileNotFoundError
-        If any expected data file is missing.
-    """
-    data: Dict[str, pd.DataFrame] = {}
-    for name, path in _APP_DATA_FILES.items():
-        if not path.exists():
-            raise FileNotFoundError(
-                f"Required app data file not found: {path}"
-            )
-        data[name] = pd.read_csv(path)
-    return data
 from __future__ import annotations
 
 import pandas as pd
 from pathlib import Path
 import numpy as np
+from typing import Dict, Any
 
 
 def load_app_data(data_dir="./data"):
@@ -137,3 +88,57 @@ def save_app_data(data, data_dir="./data"):
 
     for name, df in data.items():
         df.to_csv(Path(data_dir)/f"{name}.csv", index=False)
+
+
+class CSVDataManager:
+    """Manages loading and saving of handicapper app CSV data files."""
+
+    def __init__(self, data_dir: str = "./data/handicapper"):
+        self.data_dir = Path(data_dir)
+
+    def load_app_data(self) -> Dict[str, pd.DataFrame]:
+        """Load all app data files from data_dir."""
+        return load_app_data(self.data_dir)
+
+    def append_record(self, table_name: str, record: Dict[str, Any]) -> int:
+        """Append a new record to a CSV table and return its new primary key.
+
+        Parameters
+        ----------
+        table_name : str
+            Logical table name (e.g. ``'picks'``, ``'raw_picks'``).
+        record : dict
+            Column-value mapping for the new row.  The primary-key column
+            (``<table_name[:-1]>_id`` or ``<table_name>_id``) must *not* be
+            provided; it is assigned automatically.
+
+        Returns
+        -------
+        int
+            The new primary-key value that was assigned.
+        """
+        csv_path = self.data_dir / f"{table_name}.csv"
+        pk_col = f"{table_name[:-1]}_id" if table_name.endswith("s") else f"{table_name}_id"
+
+        if csv_path.exists():
+            df = pd.read_csv(csv_path)
+            if pk_col in df.columns and not df.empty:
+                new_id = int(df[pk_col].max()) + 1
+            else:
+                new_id = 1
+        else:
+            df = pd.DataFrame()
+            new_id = 1
+
+        record = dict(record)
+        record[pk_col] = new_id
+        new_row = pd.DataFrame([record])
+
+        if df.empty:
+            result = new_row
+        else:
+            result = pd.concat([df, new_row], ignore_index=True)
+
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        result.to_csv(csv_path, index=False)
+        return new_id
