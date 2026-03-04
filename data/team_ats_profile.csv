@@ -1,366 +1,366 @@
 team_id,team,conference,conference_name,cover_rate_season,cover_rate_l10,cover_rate_l5,ats_margin_season,ats_margin_l10,ats_margin_l5,ats_wins,ats_losses,ats_pushes,favorite_cover_rate,underdog_cover_rate,games_as_favorite,games_as_underdog,avg_cover_margin_when_covered,avg_loss_margin_when_failed,ats_regression_risk,home_cover_rate,away_cover_rate,cover_streak,games_with_spread,games_with_cover_result,ou_over_rate_season,ou_over_rate_l10,updated_at
-2,Auburn Tigers,Southeastern Conference,Southeastern Conference,0.3333,0.3333,0.3333,-8.5,-8.5,-8.5,1,2,0,0.5,0.0,2,1,5.5,-15.5,,0.5,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-5,UAB Blazers,American Athletic Conference,American Athletic Conference,0.0,0.0,0.0,-8.5,-8.5,-8.5,0,1,0,0.0,,1,0,,-8.5,,0.0,,-1,2,1,,,2026-03-04T22:32:23Z
-6,South Alabama Jaguars,Sun Belt Conference,Sun Belt Conference,0.5,0.5,0.5,1.5,1.5,1.5,1,1,0,0.5,,2,0,20.5,-17.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-8,Arkansas Razorbacks,Southeastern Conference,Southeastern Conference,0.5,0.5,0.5,-8.5,-8.5,-8.5,1,1,0,0.5,,2,0,7.5,-24.5,,1.0,0.0,-1,3,2,,,2026-03-04T22:32:23Z
-9,Arizona State Sun Devils,Big 12,Big 12,0.6667,0.6667,0.6667,5.8333,5.8333,5.8333,2,1,0,0.5,1.0,2,1,11.0,-4.5,,1.0,0.0,1,3,3,,,2026-03-04T22:32:23Z
-12,Arizona Wildcats,Big 12,Big 12,0.6667,0.6667,0.6667,6.8333,6.8333,6.8333,2,1,0,1.0,0.0,2,1,11.0,-1.5,,1.0,0.0,1,3,3,,,2026-03-04T22:32:23Z
-13,Cal Poly Mustangs,Big West Conference,Big West Conference,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,0.5,,2,0,4.5,-9.5,,1.0,0.0,1,2,2,,,2026-03-04T22:32:23Z
-16,Sacramento State Hornets,Big Sky Conference,Big Sky Conference,0.3333,0.3333,0.3333,1.5,1.5,1.5,1,2,0,0.3333,,3,0,16.5,-6.0,,1.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-21,San Diego State Aztecs,Mountain West,Mountain West,0.3333,0.3333,0.3333,1.8333,1.8333,1.8333,1,2,0,0.3333,,3,0,15.5,-5.0,,1.0,0.0,-1,3,3,,,2026-03-04T22:32:23Z
-23,San José State Spartans,Mountain West,Mountain West,0.0,0.0,0.0,-3.8333,-3.8333,-3.8333,0,3,0,0.0,0.0,1,2,,-3.8333,,0.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-24,Stanford Cardinal,Atlantic Coast Conference,Atlantic Coast Conference,0.5,0.5,0.5,10.5,10.5,10.5,1,1,0,0.0,1.0,1,1,21.5,-0.5,,0.5,,1,3,2,,,2026-03-04T22:32:23Z
-25,California Golden Bears,Atlantic Coast Conference,Atlantic Coast Conference,0.5,0.5,0.5,-7.5,-7.5,-7.5,1,1,0,0.0,1.0,1,1,8.5,-23.5,,0.5,,-1,3,2,,,2026-03-04T22:32:23Z
-26,UCLA Bruins,Big Ten,Big Ten,0.6667,0.6667,0.6667,7.8333,7.8333,7.8333,2,1,0,1.0,0.0,2,1,15.0,-6.5,,1.0,0.0,-1,3,3,,,2026-03-04T22:32:23Z
-27,UC Riverside Highlanders,Big West Conference,Big West Conference,0.5,0.5,0.5,7.5,7.5,7.5,1,1,0,0.0,1.0,1,1,15.5,-0.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-28,UC San Diego Tritons,Big West Conference,Big West Conference,0.5,0.5,0.5,3.5,3.5,3.5,1,1,0,0.5,,2,0,9.5,-2.5,,0.5,,-1,2,2,,,2026-03-04T22:32:23Z
-30,USC Trojans,Big Ten,Big Ten,0.0,0.0,0.0,-11.0,-11.0,-11.0,0,2,0,0.0,0.0,1,1,,-11.0,,0.0,0.0,-2,3,2,,,2026-03-04T22:32:23Z
-36,Colorado State Rams,Mountain West,Mountain West,0.5,0.5,0.5,0.0,0.0,0.0,1,1,0,0.0,1.0,1,1,4.5,-4.5,,0.0,1.0,1,3,2,,,2026-03-04T22:32:23Z
-38,Colorado Buffaloes,Big 12,Big 12,0.6667,0.6667,0.6667,-0.8333,-0.8333,-0.8333,2,1,0,0.6667,,3,0,9.0,-20.5,,1.0,0.5,-1,3,3,,,2026-03-04T22:32:23Z
-41,UConn Huskies,Big East,Big East,0.5,0.5,0.5,8.5,8.5,8.5,1,1,0,0.5,,2,0,26.5,-9.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-43,Yale Bulldogs,Ivy League,Ivy League,0.5,0.5,0.5,-3.0,-3.0,-3.0,1,1,0,,0.5,0,2,0.5,-6.5,,,0.5,-1,2,2,,,2026-03-04T22:32:23Z
-44,American University Eagles,Patriot League,Patriot League,0.0,0.0,0.0,-8.5,-8.5,-8.5,0,2,0,0.0,,2,0,,-8.5,,0.0,,-1,2,2,,,2026-03-04T22:32:23Z
-45,George Washington Revolutionaries,Atlantic 10,Atlantic 10,0.5,0.5,0.5,7.0,7.0,7.0,1,1,0,0.0,1.0,1,1,18.5,-4.5,,0.0,1.0,-1,3,2,,,2026-03-04T22:32:23Z
-46,Georgetown Hoyas,Big East,Big East,0.3333,0.3333,0.3333,-2.8333,-2.8333,-2.8333,1,2,0,0.3333,,3,0,12.5,-10.5,,0.0,0.5,-2,3,3,,,2026-03-04T22:32:23Z
-47,Howard Bison,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,1.0,1.0,1.0,8.5,8.5,8.5,2,0,0,1.0,1.0,1,1,8.5,,,1.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-48,Delaware Blue Hens,Conference USA,Conference USA,0.5,0.5,0.5,0.5,0.5,0.5,1,1,0,0.5,,2,0,3.5,-2.5,,,0.5,-1,2,2,,,2026-03-04T22:32:23Z
-50,Florida A&M Rattlers,Southwestern Athletic Conference,Southwestern Athletic Conference,1.0,1.0,1.0,16.0,16.0,16.0,2,0,0,1.0,,2,0,16.0,,,,1.0,1,2,2,,,2026-03-04T22:32:23Z
-52,Florida State Seminoles,Atlantic Coast Conference,Atlantic Coast Conference,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,,0.5,0,2,2.5,-7.5,,0.0,1.0,1,3,2,,,2026-03-04T22:32:23Z
-55,Jacksonville State Gamecocks,Conference USA,Conference USA,1.0,1.0,1.0,1.5,1.5,1.5,2,0,0,1.0,1.0,1,1,1.5,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-56,Stetson Hatters,ASUN Conference,ASUN Conference,1.0,1.0,1.0,10.0,10.0,10.0,2,0,0,1.0,1.0,1,1,10.0,,,1.0,1.0,2,3,2,,,2026-03-04T22:32:23Z
-57,Florida Gators,Southeastern Conference,Southeastern Conference,1.0,1.0,1.0,14.1667,14.1667,14.1667,3,0,0,1.0,1.0,2,1,14.1667,,,1.0,1.0,2,3,3,,,2026-03-04T22:32:23Z
-58,South Florida Bulls,American Athletic Conference,American Athletic Conference,1.0,1.0,1.0,10.5,10.5,10.5,2,0,0,1.0,1.0,1,1,10.5,,,1.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-59,Georgia Tech Yellow Jackets,Atlantic Coast Conference,Atlantic Coast Conference,0.0,0.0,0.0,-2.5,-2.5,-2.5,0,1,0,,0.0,0,1,,-2.5,,0.0,,-1,2,1,,,2026-03-04T22:32:23Z
-61,Georgia Bulldogs,Southeastern Conference,Southeastern Conference,0.6667,0.6667,0.6667,5.8333,5.8333,5.8333,2,1,0,0.5,1.0,2,1,9.0,-0.5,,1.0,0.0,1,3,3,,,2026-03-04T22:32:23Z
-62,Hawai'i Rainbow Warriors,Big West Conference,Big West Conference,0.5,0.5,0.5,0.5,0.5,0.5,1,1,0,,0.5,0,2,2.5,-1.5,,,0.5,1,2,2,,,2026-03-04T22:32:23Z
-66,Iowa State Cyclones,Big 12,Big 12,0.3333,0.3333,0.3333,-8.5,-8.5,-8.5,1,2,0,0.0,1.0,2,1,1.5,-13.5,,0.0,0.5,-1,3,3,,,2026-03-04T22:32:23Z
-68,Boise State Broncos,Mountain West,Mountain West,1.0,1.0,1.0,5.8333,5.8333,5.8333,3,0,0,1.0,1.0,2,1,5.8333,,,1.0,1.0,2,3,3,,,2026-03-04T22:32:23Z
-70,Idaho Vandals,Big Sky Conference,Big Sky Conference,0.6667,0.6667,0.6667,1.8333,1.8333,1.8333,2,1,0,0.6667,,3,0,8.5,-11.5,,0.5,1.0,-1,3,3,,,2026-03-04T22:32:23Z
-71,Bradley Braves,Missouri Valley Conference,Missouri Valley Conference,0.5,0.5,0.5,-0.5,-0.5,-0.5,1,1,0,0.5,,2,0,4.5,-5.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-77,Northwestern Wildcats,Big Ten,Big Ten,0.5,0.5,0.5,5.5,5.5,5.5,1,1,0,0.5,,2,0,13.5,-2.5,,0.0,1.0,-1,3,2,,,2026-03-04T22:32:23Z
-79,Southern Illinois Salukis,Missouri Valley Conference,Missouri Valley Conference,1.0,1.0,1.0,4.5,4.5,4.5,2,0,0,1.0,1.0,1,1,4.5,,,1.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-82,UIC Flames,Missouri Valley Conference,Missouri Valley Conference,0.5,0.5,0.5,-7.0,-7.0,-7.0,1,1,0,1.0,0.0,1,1,5.5,-19.5,,1.0,0.0,1,2,2,,,2026-03-04T22:32:23Z
-84,Indiana Hoosiers,Big Ten,Big Ten,0.0,0.0,0.0,-11.5,-11.5,-11.5,0,2,0,0.0,0.0,1,1,,-11.5,,0.0,,-2,3,2,,,2026-03-04T22:32:23Z
-85,IU Indianapolis Jaguars,Horizon League,Horizon League,0.0,0.0,0.0,-5.8333,-5.8333,-5.8333,0,3,0,0.0,0.0,1,2,,-5.8333,,0.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-87,Notre Dame Fighting Irish,Atlantic Coast Conference,Atlantic Coast Conference,0.5,0.5,0.5,-7.0,-7.0,-7.0,1,1,0,,0.5,0,2,12.5,-26.5,,0.5,,1,3,2,,,2026-03-04T22:32:23Z
-88,Southern Indiana Screaming Eagles,Ohio Valley Conference,Ohio Valley Conference,0.5,0.5,0.5,-3.0,-3.0,-3.0,1,1,0,0.5,,2,0,6.5,-12.5,,,0.5,1,2,2,,,2026-03-04T22:32:23Z
-91,Bellarmine Knights,ASUN Conference,ASUN Conference,0.6667,0.6667,0.6667,4.1667,4.1667,4.1667,2,1,0,1.0,0.5,1,2,10.0,-7.5,,1.0,0.0,1,3,3,,,2026-03-04T22:32:23Z
-93,Murray State Racers,Missouri Valley Conference,Missouri Valley Conference,0.0,0.0,0.0,-4.5,-4.5,-4.5,0,1,0,0.0,,1,0,,-4.5,,,0.0,0,1,1,,,2026-03-04T22:32:23Z
-94,Northern Kentucky Norse,Horizon League,Horizon League,0.5,0.5,0.5,-0.5,-0.5,-0.5,1,1,0,0.0,1.0,1,1,2.5,-3.5,,0.0,1.0,-1,3,2,,,2026-03-04T22:32:23Z
-96,Kentucky Wildcats,Southeastern Conference,Southeastern Conference,0.6667,0.6667,0.6667,1.8333,1.8333,1.8333,2,1,0,0.5,1.0,2,1,7.0,-8.5,,1.0,0.5,2,3,3,,,2026-03-04T22:32:23Z
-97,Louisville Cardinals,Atlantic Coast Conference,Atlantic Coast Conference,0.5,0.5,0.5,-2.0,-2.0,-2.0,1,1,0,1.0,0.0,1,1,2.5,-6.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-98,Western Kentucky Hilltoppers,Conference USA,Conference USA,1.0,1.0,1.0,20.5,20.5,20.5,2,0,0,1.0,,2,0,20.5,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-99,LSU Tigers,Southeastern Conference,Southeastern Conference,0.3333,0.3333,0.3333,-4.8333,-4.8333,-4.8333,1,2,0,0.3333,,3,0,8.5,-11.5,,0.0,0.5,-1,3,3,,,2026-03-04T22:32:23Z
-103,Boston College Eagles,Atlantic Coast Conference,Atlantic Coast Conference,0.6667,0.6667,0.6667,0.5,0.5,0.5,2,1,0,0.5,1.0,2,1,4.0,-6.5,,1.0,0.5,-1,3,3,,,2026-03-04T22:32:23Z
-104,Boston University Terriers,Patriot League,Patriot League,1.0,1.0,1.0,6.0,6.0,6.0,2,0,0,1.0,,2,0,6.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-107,Holy Cross Crusaders,Patriot League,Patriot League,0.3333,0.3333,0.3333,-4.5,-4.5,-4.5,1,2,0,0.3333,,3,0,8.5,-11.0,,0.0,0.5,-2,3,3,,,2026-03-04T22:32:23Z
-108,Harvard Crimson,Ivy League,Ivy League,0.0,0.0,0.0,-2.0,-2.0,-2.0,0,2,0,0.0,0.0,1,1,,-2.0,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-111,Northeastern Huskies,Colonial Athletic Association,Colonial Athletic Association,0.3333,0.3333,0.3333,-1.1667,-1.1667,-1.1667,1,2,0,0.5,0.0,2,1,4.5,-4.0,,0.0,0.5,-1,3,3,,,2026-03-04T22:32:23Z
-113,Massachusetts Minutemen,Mid-American Conference,Mid-American Conference,0.3333,0.3333,0.3333,-3.1667,-3.1667,-3.1667,1,2,0,0.5,0.0,2,1,9.5,-9.5,,1.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-116,Mount St. Mary's Mountaineers,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.5,0.5,0.5,10.5,10.5,10.5,1,1,0,0.5,,2,0,26.5,-5.5,,,0.5,-1,2,2,,,2026-03-04T22:32:23Z
-119,Towson Tigers,Colonial Athletic Association,Colonial Athletic Association,0.3333,0.3333,0.3333,2.1667,2.1667,2.1667,1,2,0,0.0,1.0,2,1,10.5,-2.0,,0.0,1.0,-2,3,3,,,2026-03-04T22:32:23Z
-120,Maryland Terrapins,Big Ten,Big Ten,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,0.5,,2,0,4.5,-9.5,,0.0,1.0,-1,3,2,,,2026-03-04T22:32:23Z
-127,Michigan State Spartans,Big Ten,Big Ten,1.0,1.0,1.0,9.0,9.0,9.0,2,0,0,1.0,1.0,1,1,9.0,,,,1.0,1,2,2,,,2026-03-04T22:32:23Z
-130,Michigan Wolverines,Big Ten,Big Ten,0.5,0.5,0.5,0.5,0.5,0.5,1,1,0,0.0,1.0,1,1,12.5,-11.5,,0.0,1.0,-1,2,2,,,2026-03-04T22:32:23Z
-135,Minnesota Golden Gophers,Big Ten,Big Ten,1.0,1.0,1.0,9.0,9.0,9.0,2,0,0,1.0,1.0,1,1,9.0,,,1.0,1.0,2,3,2,,,2026-03-04T22:32:23Z
-139,Saint Louis Billikens,Atlantic 10,Atlantic 10,0.0,0.0,0.0,-10.0,-10.0,-10.0,0,2,0,0.0,0.0,1,1,,-10.0,,0.0,0.0,-2,3,2,,,2026-03-04T22:32:23Z
-140,Kansas City Roos,Summit League,Summit League,0.0,0.0,0.0,-10.5,-10.5,-10.5,0,2,0,,0.0,0,2,,-10.5,,0.0,,-2,3,2,,,2026-03-04T22:32:23Z
-142,Missouri Tigers,Southeastern Conference,Southeastern Conference,0.6667,0.6667,0.6667,5.1667,5.1667,5.1667,2,1,0,0.0,1.0,1,2,14.5,-13.5,,1.0,0.5,2,3,3,,,2026-03-04T22:32:23Z
-145,Ole Miss Rebels,Southeastern Conference,Southeastern Conference,0.6667,0.6667,0.6667,3.5,3.5,3.5,2,1,0,0.5,1.0,2,1,9.5,-8.5,,0.5,1.0,1,3,3,,,2026-03-04T22:32:23Z
-147,Montana State Bobcats,Big Sky Conference,Big Sky Conference,1.0,1.0,1.0,9.8333,9.8333,9.8333,3,0,0,1.0,1.0,2,1,9.8333,,,1.0,1.0,2,3,3,,,2026-03-04T22:32:23Z
-149,Montana Grizzlies,Big Sky Conference,Big Sky Conference,0.6667,0.6667,0.6667,-5.8333,-5.8333,-5.8333,2,1,0,0.6667,,3,0,2.5,-22.5,,1.0,0.0,2,3,3,,,2026-03-04T22:32:23Z
-150,Duke Blue Devils,Atlantic Coast Conference,Atlantic Coast Conference,1.0,1.0,1.0,20.5,20.5,20.5,3,0,0,1.0,1.0,1,2,20.5,,,1.0,1.0,2,3,3,,,2026-03-04T22:32:23Z
-151,East Carolina Pirates,American Athletic Conference,American Athletic Conference,0.5,0.5,0.5,9.0,9.0,9.0,1,1,0,,0.5,0,2,21.5,-3.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-152,NC State Wolfpack,Atlantic Coast Conference,Atlantic Coast Conference,0.0,0.0,0.0,-18.5,-18.5,-18.5,0,3,0,0.0,0.0,1,2,,-18.5,,0.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-153,North Carolina Tar Heels,Atlantic Coast Conference,Atlantic Coast Conference,1.0,1.0,1.0,0.5,0.5,0.5,2,0,0,1.0,,2,0,0.5,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-154,Wake Forest Demon Deacons,Atlantic Coast Conference,Atlantic Coast Conference,0.6667,0.6667,0.6667,1.5,1.5,1.5,2,1,0,1.0,0.0,2,1,5.0,-5.5,,1.0,0.5,1,3,3,,,2026-03-04T22:32:23Z
-155,North Dakota Fighting Hawks,Summit League,Summit League,0.0,0.0,0.0,-20.5,-20.5,-20.5,0,1,0,0.0,,1,0,,-20.5,,,0.0,0,1,1,,,2026-03-04T22:32:23Z
-156,Creighton Bluejays,Big East,Big East,0.0,0.0,0.0,-5.0,-5.0,-5.0,0,2,0,0.0,,2,0,,-5.0,,0.0,,-2,3,2,,,2026-03-04T22:32:23Z
-158,Nebraska Cornhuskers,Big Ten,Big Ten,0.3333,0.3333,0.3333,-4.1667,-4.1667,-4.1667,1,2,0,0.0,1.0,2,1,10.5,-11.5,,0.0,0.5,1,3,3,,,2026-03-04T22:32:23Z
-159,Dartmouth Big Green,Ivy League,Ivy League,0.0,0.0,0.0,-10.5,-10.5,-10.5,0,2,0,0.0,,2,0,,-10.5,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-160,New Hampshire Wildcats,America East Conference,America East Conference,0.3333,0.3333,0.3333,-7.1667,-7.1667,-7.1667,1,2,0,0.5,0.0,2,1,2.5,-12.0,,1.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-161,Fairleigh Dickinson Knights,Northeast Conference,Northeast Conference,0.0,0.0,0.0,-8.0,-8.0,-8.0,0,2,0,0.0,,2,0,,-8.0,,,0.0,-2,3,2,,,2026-03-04T22:32:23Z
-163,Princeton Tigers,Ivy League,Ivy League,1.0,1.0,1.0,11.0,11.0,11.0,2,0,0,1.0,1.0,1,1,11.0,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-164,Rutgers Scarlet Knights,Big Ten,Big Ten,1.0,1.0,1.0,9.5,9.5,9.5,1,0,0,1.0,,1,0,9.5,,,,1.0,0,1,1,,,2026-03-04T22:32:23Z
-166,New Mexico State Aggies,Conference USA,Conference USA,0.5,0.5,0.5,-7.0,-7.0,-7.0,1,1,0,0.5,,2,0,4.5,-18.5,,,0.5,-1,2,2,,,2026-03-04T22:32:23Z
-167,New Mexico Lobos,Mountain West,Mountain West,0.5,0.5,0.5,-1.5,-1.5,-1.5,1,1,0,0.5,,2,0,2.5,-5.5,,1.0,0.0,1,3,2,,,2026-03-04T22:32:23Z
-171,Columbia Lions,Ivy League,Ivy League,0.5,0.5,0.5,6.0,6.0,6.0,1,1,0,1.0,0.0,1,1,12.5,-0.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-172,Cornell Big Red,Ivy League,Ivy League,0.5,0.5,0.5,1.5,1.5,1.5,1,1,0,0.0,1.0,1,1,6.5,-3.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-179,St. Bonaventure Bonnies,Atlantic 10,Atlantic 10,0.5,0.5,0.5,3.5,3.5,3.5,1,1,0,0.5,,2,0,15.5,-8.5,,1.0,0.0,-1,3,2,,,2026-03-04T22:32:23Z
-183,Syracuse Orange,Atlantic Coast Conference,Atlantic Coast Conference,0.0,0.0,0.0,-1.5,-1.5,-1.5,0,2,0,0.0,,2,0,,-1.5,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-189,Bowling Green Falcons,Mid-American Conference,Mid-American Conference,0.5,0.5,0.5,-3.5,-3.5,-3.5,1,1,0,0.5,,2,0,13.5,-20.5,,0.5,,-1,2,2,,,2026-03-04T22:32:23Z
-193,Miami (OH) RedHawks,Mid-American Conference,Mid-American Conference,0.3333,0.3333,0.3333,-4.8333,-4.8333,-4.8333,1,2,0,0.0,0.5,1,2,1.5,-8.0,,0.0,0.5,-1,3,3,,,2026-03-04T22:32:23Z
-194,Ohio State Buckeyes,Big Ten,Big Ten,0.5,0.5,0.5,2.0,2.0,2.0,1,1,0,0.0,1.0,1,1,14.5,-10.5,,1.0,0.0,1,3,2,,,2026-03-04T22:32:23Z
-195,Ohio Bobcats,Mid-American Conference,Mid-American Conference,0.0,0.0,0.0,-11.5,-11.5,-11.5,0,2,0,0.0,,2,0,,-11.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-197,Oklahoma State Cowboys,Big 12,Big 12,0.6667,0.6667,0.6667,2.5,2.5,2.5,2,1,0,0.6667,,3,0,10.5,-13.5,,1.0,0.5,-1,3,3,,,2026-03-04T22:32:23Z
-198,Oral Roberts Golden Eagles,Summit League,Summit League,1.0,1.0,1.0,22.0,22.0,22.0,2,0,0,,1.0,0,2,22.0,,,1.0,1.0,2,3,2,,,2026-03-04T22:32:23Z
-201,Oklahoma Sooners,Southeastern Conference,Southeastern Conference,1.0,1.0,1.0,15.5,15.5,15.5,3,0,0,1.0,1.0,2,1,15.5,,,1.0,1.0,2,3,3,,,2026-03-04T22:32:23Z
-202,Tulsa Golden Hurricane,American Athletic Conference,American Athletic Conference,1.0,1.0,1.0,28.5,28.5,28.5,1,0,0,,1.0,0,1,28.5,,,,1.0,0,1,1,,,2026-03-04T22:32:23Z
-204,Oregon State Beavers,West Coast Conference,West Coast Conference,0.5,0.5,0.5,-0.5,-0.5,-0.5,1,1,0,0.5,,2,0,3.5,-4.5,,1.0,0.0,1,2,2,,,2026-03-04T22:32:23Z
-213,Penn State Nittany Lions,Big Ten,Big Ten,1.0,1.0,1.0,11.5,11.5,11.5,1,0,0,,1.0,0,1,11.5,,,1.0,,1,2,1,,,2026-03-04T22:32:23Z
-218,Temple Owls,American Athletic Conference,American Athletic Conference,0.0,0.0,0.0,-7.0,-7.0,-7.0,0,2,0,0.0,,2,0,,-7.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-219,Pennsylvania Quakers,Ivy League,Ivy League,1.0,1.0,1.0,1.5,1.5,1.5,2,0,0,1.0,,2,0,1.5,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-221,Pittsburgh Panthers,Atlantic Coast Conference,Atlantic Coast Conference,1.0,1.0,1.0,12.0,12.0,12.0,2,0,0,1.0,,2,0,12.0,,,,1.0,2,3,2,,,2026-03-04T22:32:23Z
-222,Villanova Wildcats,Big East,Big East,0.0,0.0,0.0,-13.0,-13.0,-13.0,0,2,0,0.0,,2,0,,-13.0,,0.0,0.0,-2,3,2,,,2026-03-04T22:32:23Z
-225,Brown Bears,Ivy League,Ivy League,0.5,0.5,0.5,-4.5,-4.5,-4.5,1,1,0,0.5,,2,0,3.5,-12.5,,,0.5,-1,2,2,,,2026-03-04T22:32:23Z
-227,Rhode Island Rams,Atlantic 10,Atlantic 10,0.0,0.0,0.0,-12.5,-12.5,-12.5,0,2,0,0.0,,2,0,,-12.5,,0.0,0.0,-2,3,2,,,2026-03-04T22:32:23Z
-228,Clemson Tigers,Atlantic Coast Conference,Atlantic Coast Conference,0.5,0.5,0.5,3.0,3.0,3.0,1,1,0,0.0,1.0,1,1,6.5,-0.5,,1.0,0.0,1,2,2,,,2026-03-04T22:32:23Z
-231,Furman Paladins,Southern Conference,Southern Conference,0.5,0.5,0.5,-7.5,-7.5,-7.5,1,1,0,1.0,0.0,1,1,5.5,-20.5,,1.0,0.0,1,2,2,,,2026-03-04T22:32:23Z
-232,Charleston Cougars,Colonial Athletic Association,Colonial Athletic Association,1.0,1.0,1.0,8.5,8.5,8.5,2,0,0,1.0,1.0,1,1,8.5,,,,1.0,1,2,2,,,2026-03-04T22:32:23Z
-233,South Dakota Coyotes,Summit League,Summit League,1.0,1.0,1.0,13.0,13.0,13.0,2,0,0,,1.0,0,2,13.0,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-235,Memphis Tigers,American Athletic Conference,American Athletic Conference,0.0,0.0,0.0,-14.5,-14.5,-14.5,0,2,0,0.0,0.0,1,1,,-14.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-236,Chattanooga Mocs,Southern Conference,Southern Conference,0.0,0.0,0.0,-7.0,-7.0,-7.0,0,2,0,0.0,,2,0,,-7.0,,0.0,,-1,2,2,,,2026-03-04T22:32:23Z
-238,Vanderbilt Commodores,Southeastern Conference,Southeastern Conference,0.3333,0.3333,0.3333,-5.1667,-5.1667,-5.1667,1,2,0,0.5,0.0,2,1,0.5,-8.0,,1.0,0.0,-1,3,3,,,2026-03-04T22:32:23Z
-239,Baylor Bears,Big 12,Big 12,1.0,1.0,1.0,2.0,2.0,2.0,2,0,0,1.0,1.0,1,1,2.0,,,1.0,1.0,2,3,2,,,2026-03-04T22:32:23Z
-242,Rice Owls,American Athletic Conference,American Athletic Conference,0.5,0.5,0.5,3.0,3.0,3.0,1,1,0,1.0,0.0,1,1,13.5,-7.5,,0.0,1.0,1,3,2,,,2026-03-04T22:32:23Z
-245,Texas A&M Aggies,Southeastern Conference,Southeastern Conference,0.3333,0.3333,0.3333,-2.8333,-2.8333,-2.8333,1,2,0,0.3333,,3,0,8.5,-8.5,,0.5,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-248,Houston Cougars,Big 12,Big 12,1.0,1.0,1.0,20.5,20.5,20.5,1,0,0,1.0,,1,0,20.5,,,1.0,,1,2,1,,,2026-03-04T22:32:23Z
-249,North Texas Mean Green,American Athletic Conference,American Athletic Conference,0.5,0.5,0.5,3.0,3.0,3.0,1,1,0,1.0,0.0,1,1,8.5,-2.5,,,0.5,1,3,2,,,2026-03-04T22:32:23Z
-250,UT Arlington Mavericks,Western Athletic Conference,Western Athletic Conference,0.0,0.0,0.0,-5.5,-5.5,-5.5,0,1,0,0.0,,1,0,,-5.5,,,0.0,0,1,1,,,2026-03-04T22:32:23Z
-251,Texas Longhorns,Southeastern Conference,Southeastern Conference,0.5,0.5,0.5,1.5,1.5,1.5,1,1,0,1.0,0.0,1,1,9.5,-6.5,,0.0,1.0,1,3,2,,,2026-03-04T22:32:23Z
-252,BYU Cougars,Big 12,Big 12,0.0,0.0,0.0,-18.8333,-18.8333,-18.8333,0,3,0,0.0,0.0,2,1,,-18.8333,,0.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-253,Southern Utah Thunderbirds,Western Athletic Conference,Western Athletic Conference,1.0,1.0,1.0,15.5,15.5,15.5,1,0,0,,1.0,0,1,15.5,,,1.0,,0,1,1,,,2026-03-04T22:32:23Z
-254,Utah Utes,Big 12,Big 12,0.0,0.0,0.0,-7.8333,-7.8333,-7.8333,0,3,0,0.0,0.0,2,1,,-7.8333,,0.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-256,James Madison Dukes,Sun Belt Conference,Sun Belt Conference,0.5,0.5,0.5,2.0,2.0,2.0,1,1,0,0.5,,2,0,10.5,-6.5,,0.5,,-1,3,2,,,2026-03-04T22:32:23Z
-257,Richmond Spiders,Atlantic 10,Atlantic 10,0.5,0.5,0.5,-3.5,-3.5,-3.5,1,1,0,,0.5,0,2,0.5,-7.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-258,Virginia Cavaliers,Atlantic Coast Conference,Atlantic Coast Conference,0.3333,0.3333,0.3333,-0.5,-0.5,-0.5,1,2,0,0.3333,,3,0,23.5,-12.5,,0.5,0.0,-1,3,3,,,2026-03-04T22:32:23Z
-259,Virginia Tech Hokies,Atlantic Coast Conference,Atlantic Coast Conference,0.0,0.0,0.0,-1.5,-1.5,-1.5,0,2,0,0.0,,2,0,,-1.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-261,Vermont Catamounts,America East Conference,America East Conference,0.5,0.5,0.5,-1.0,-1.0,-1.0,1,1,0,0.5,,2,0,5.5,-7.5,,0.5,,-1,2,2,,,2026-03-04T22:32:23Z
-264,Washington Huskies,Big Ten,Big Ten,0.0,0.0,0.0,-15.5,-15.5,-15.5,0,1,0,,0.0,0,1,,-15.5,,0.0,,-1,2,1,,,2026-03-04T22:32:23Z
-265,Washington State Cougars,West Coast Conference,West Coast Conference,0.0,0.0,0.0,-9.5,-9.5,-9.5,0,2,0,,0.0,0,2,,-9.5,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-269,Marquette Golden Eagles,Big East,Big East,0.5,0.5,0.5,2.0,2.0,2.0,1,1,0,0.5,,2,0,18.5,-14.5,,0.0,1.0,-1,3,2,,,2026-03-04T22:32:23Z
-270,Milwaukee Panthers,Horizon League,Horizon League,1.0,1.0,1.0,14.5,14.5,14.5,1,0,0,,1.0,0,1,14.5,,,1.0,,1,2,1,,,2026-03-04T22:32:23Z
-275,Wisconsin Badgers,Big Ten,Big Ten,0.5,0.5,0.5,-2.0,-2.0,-2.0,1,1,0,,0.5,0,2,15.5,-19.5,,,0.5,1,3,2,,,2026-03-04T22:32:23Z
-276,Marshall Thundering Herd,Sun Belt Conference,Sun Belt Conference,0.5,0.5,0.5,-11.0,-11.0,-11.0,1,1,0,0.5,,2,0,1.5,-23.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-277,West Virginia Mountaineers,Big 12,Big 12,0.3333,0.3333,0.3333,0.5,0.5,0.5,1,2,0,0.0,0.5,1,2,10.5,-4.5,,1.0,0.0,1,3,3,,,2026-03-04T22:32:23Z
-278,Fresno State Bulldogs,Mountain West,Mountain West,0.6667,0.6667,0.6667,0.8333,0.8333,0.8333,2,1,0,1.0,0.0,2,1,5.5,-8.5,,0.5,1.0,-1,3,3,,,2026-03-04T22:32:23Z
-279,Pacific Tigers,West Coast Conference,West Coast Conference,0.0,0.0,0.0,-15.5,-15.5,-15.5,0,1,0,0.0,,1,0,,-15.5,,0.0,,0,1,1,,,2026-03-04T22:32:23Z
-282,Indiana State Sycamores,Missouri Valley Conference,Missouri Valley Conference,0.5,0.5,0.5,8.0,8.0,8.0,1,1,0,0.0,1.0,1,1,19.5,-3.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-284,Stonehill Skyhawks,Northeast Conference,Northeast Conference,0.5,0.5,0.5,9.5,9.5,9.5,1,1,0,1.0,0.0,1,1,20.5,-1.5,,0.5,,-1,3,2,,,2026-03-04T22:32:23Z
-288,Lipscomb Bisons,ASUN Conference,ASUN Conference,0.5,0.5,0.5,-6.0,-6.0,-6.0,1,1,0,,0.5,0,2,0.5,-12.5,,,0.5,-1,2,2,,,2026-03-04T22:32:23Z
-290,Georgia Southern Eagles,Sun Belt Conference,Sun Belt Conference,0.5,0.5,0.5,6.5,6.5,6.5,1,1,0,0.5,,2,0,23.5,-10.5,,,0.5,1,3,2,,,2026-03-04T22:32:23Z
-292,UT Rio Grande Valley Vaqueros,Southland Conference,Southland Conference,0.5,0.5,0.5,0.5,0.5,0.5,1,1,0,0.5,,2,0,2.5,-1.5,,0.5,,-1,2,2,,,2026-03-04T22:32:23Z
-294,Jacksonville Dolphins,ASUN Conference,ASUN Conference,0.3333,0.3333,0.3333,6.1667,6.1667,6.1667,1,2,0,0.0,1.0,2,1,22.5,-2.0,,0.0,0.5,1,3,3,,,2026-03-04T22:32:23Z
-295,Old Dominion Monarchs,Sun Belt Conference,Sun Belt Conference,0.3333,0.3333,0.3333,0.5,0.5,0.5,1,2,0,0.0,1.0,2,1,6.5,-2.5,,0.0,0.5,-1,4,3,,,2026-03-04T22:32:23Z
-299,Long Beach State Beach,Big West Conference,Big West Conference,0.0,0.0,0.0,-4.0,-4.0,-4.0,0,2,0,0.0,0.0,1,1,,-4.0,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-300,UC Irvine Anteaters,Big West Conference,Big West Conference,1.0,1.0,1.0,1.5,1.5,1.5,2,0,0,1.0,,2,0,1.5,,,1.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-301,San Diego Toreros,West Coast Conference,West Coast Conference,0.0,0.0,0.0,-6.5,-6.5,-6.5,0,2,0,0.0,,2,0,,-6.5,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-302,UC Davis Aggies,Big West Conference,Big West Conference,0.0,0.0,0.0,-2.5,-2.5,-2.5,0,1,0,,0.0,0,1,,-2.5,,0.0,,0,1,1,,,2026-03-04T22:32:23Z
-304,Idaho State Bengals,Big Sky Conference,Big Sky Conference,0.0,0.0,0.0,-14.0,-14.0,-14.0,0,2,0,0.0,,2,0,,-14.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-305,DePaul Blue Demons,Big East,Big East,1.0,1.0,1.0,9.5,9.5,9.5,2,0,0,1.0,,2,0,9.5,,,,1.0,2,3,2,,,2026-03-04T22:32:23Z
-309,Louisiana Ragin' Cajuns,Sun Belt Conference,Sun Belt Conference,0.3333,0.3333,0.3333,-1.8333,-1.8333,-1.8333,1,2,0,0.0,1.0,2,1,10.5,-8.0,,1.0,0.0,1,4,3,,,2026-03-04T22:32:23Z
-311,Maine Black Bears,America East Conference,America East Conference,0.3333,0.3333,0.3333,0.8333,0.8333,0.8333,1,2,0,0.5,0.0,2,1,17.5,-7.5,,0.0,0.5,-1,3,3,,,2026-03-04T22:32:23Z
-314,Iona Gaels,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,1.0,1.0,1.0,6.0,6.0,6.0,2,0,0,1.0,1.0,1,1,6.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-315,Niagara Purple Eagles,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,1.0,1.0,1.0,6.0,6.0,6.0,2,0,0,,1.0,0,2,6.0,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-322,Lafayette Leopards,Patriot League,Patriot League,0.6667,0.6667,0.6667,1.1667,1.1667,1.1667,2,1,0,0.6667,,3,0,6.0,-8.5,,0.5,1.0,2,3,3,,,2026-03-04T22:32:23Z
-324,Coastal Carolina Chanticleers,Sun Belt Conference,Sun Belt Conference,1.0,1.0,1.0,5.0,5.0,5.0,2,0,0,1.0,1.0,1,1,5.0,,,,1.0,1,2,2,,,2026-03-04T22:32:23Z
-325,Cleveland State Vikings,Horizon League,Horizon League,0.3333,0.3333,0.3333,-0.5,-0.5,-0.5,1,2,0,0.5,0.0,2,1,6.5,-4.0,,0.5,0.0,1,4,3,,,2026-03-04T22:32:23Z
-326,Texas State Bobcats,Sun Belt Conference,Sun Belt Conference,1.0,1.0,1.0,4.5,4.5,4.5,1,0,0,,1.0,0,1,4.5,,,1.0,,0,1,1,,,2026-03-04T22:32:23Z
-328,Utah State Aggies,Mountain West,Mountain West,0.0,0.0,0.0,-18.5,-18.5,-18.5,0,3,0,0.0,0.0,2,1,,-18.5,,0.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-331,Eastern Washington Eagles,Big Sky Conference,Big Sky Conference,0.6667,0.6667,0.6667,8.5,8.5,8.5,2,1,0,0.5,1.0,2,1,16.5,-7.5,,0.6667,,2,3,3,,,2026-03-04T22:32:23Z
-333,Alabama Crimson Tide,Southeastern Conference,Southeastern Conference,0.6667,0.6667,0.6667,2.5,2.5,2.5,2,1,0,1.0,0.0,2,1,9.5,-11.5,,1.0,0.5,2,3,3,,,2026-03-04T22:32:23Z
-338,Kennesaw State Owls,Conference USA,Conference USA,0.5,0.5,0.5,3.5,3.5,3.5,1,1,0,0.0,1.0,1,1,10.5,-3.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-339,Evansville Purple Aces,Missouri Valley Conference,Missouri Valley Conference,0.3333,0.3333,0.3333,-5.1667,-5.1667,-5.1667,1,2,0,0.0,0.5,1,2,5.5,-10.5,,0.5,0.0,1,3,3,,,2026-03-04T22:32:23Z
-344,Mississippi State Bulldogs,Southeastern Conference,Southeastern Conference,0.0,0.0,0.0,-15.5,-15.5,-15.5,0,3,0,0.0,0.0,2,1,,-15.5,,0.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-349,Army Black Knights,Patriot League,Patriot League,0.0,0.0,0.0,-5.1667,-5.1667,-5.1667,0,3,0,0.0,,3,0,,-5.1667,,0.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-350,UNC Wilmington Seahawks,Colonial Athletic Association,Colonial Athletic Association,0.6667,0.6667,0.6667,5.5,5.5,5.5,2,1,0,0.5,1.0,2,1,12.0,-7.5,,0.5,1.0,0,3,3,,,2026-03-04T22:32:23Z
-356,Illinois Fighting Illini,Big Ten,Big Ten,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,1.0,0.0,1,1,7.5,-12.5,,0.5,,-1,2,2,,,2026-03-04T22:32:23Z
-357,Texas A&M-Corpus Christi Islanders,Southland Conference,Southland Conference,1.0,1.0,1.0,5.5,5.5,5.5,2,0,0,1.0,,2,0,5.5,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-399,UAlbany Great Danes,America East Conference,America East Conference,0.3333,0.3333,0.3333,-0.8333,-0.8333,-0.8333,1,2,0,0.3333,,3,0,20.5,-11.5,,0.5,0.0,1,3,3,,,2026-03-04T22:32:23Z
-526,Florida Gulf Coast Eagles,ASUN Conference,ASUN Conference,0.0,0.0,0.0,-11.5,-11.5,-11.5,0,3,0,0.0,0.0,1,2,,-11.5,,0.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-2000,Abilene Christian Wildcats,Western Athletic Conference,Western Athletic Conference,0.5,0.5,0.5,3.0,3.0,3.0,1,1,0,0.5,,2,0,7.5,-1.5,,,0.5,-1,2,2,,,2026-03-04T22:32:23Z
-2005,Air Force Falcons,Mountain West,Mountain West,0.6667,0.6667,0.6667,3.8333,3.8333,3.8333,2,1,0,1.0,0.5,1,2,9.0,-6.5,,0.5,1.0,2,3,3,,,2026-03-04T22:32:23Z
-2006,Akron Zips,Mid-American Conference,Mid-American Conference,0.6667,0.6667,0.6667,6.1667,6.1667,6.1667,2,1,0,0.0,1.0,1,2,10.0,-1.5,,0.0,1.0,1,3,3,,,2026-03-04T22:32:23Z
-2010,Alabama A&M Bulldogs,Southwestern Athletic Conference,Southwestern Athletic Conference,0.5,0.5,0.5,4.5,4.5,4.5,1,1,0,0.5,,2,0,12.5,-3.5,,0.5,,-1,2,2,,,2026-03-04T22:32:23Z
-2011,Alabama State Hornets,Southwestern Athletic Conference,Southwestern Athletic Conference,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,0.5,,2,0,3.5,-8.5,,0.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2016,Alcorn State Braves,Southwestern Athletic Conference,Southwestern Athletic Conference,0.3333,0.3333,0.3333,-6.8333,-6.8333,-6.8333,1,2,0,0.3333,,3,0,1.5,-11.0,,0.0,0.5,-1,3,3,,,2026-03-04T22:32:23Z
-2026,App State Mountaineers,Sun Belt Conference,Sun Belt Conference,0.0,0.0,0.0,-4.5,-4.5,-4.5,0,1,0,,0.0,0,1,,-4.5,,,0.0,0,1,1,,,2026-03-04T22:32:23Z
-2029,Arkansas-Pine Bluff Golden Lions,Southwestern Athletic Conference,Southwestern Athletic Conference,0.0,0.0,0.0,-8.0,-8.0,-8.0,0,2,0,0.0,,2,0,,-8.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2031,Little Rock Trojans,Ohio Valley Conference,Ohio Valley Conference,0.5,0.5,0.5,2.0,2.0,2.0,1,1,0,0.5,,2,0,12.5,-8.5,,0.5,,1,3,2,,,2026-03-04T22:32:23Z
-2032,Arkansas State Red Wolves,Sun Belt Conference,Sun Belt Conference,0.5,0.5,0.5,2.0,2.0,2.0,1,1,0,0.5,,2,0,8.5,-4.5,,0.5,,-1,2,2,,,2026-03-04T22:32:23Z
-2046,Austin Peay Governors,ASUN Conference,ASUN Conference,0.0,0.0,0.0,-14.0,-14.0,-14.0,0,2,0,0.0,0.0,1,1,,-14.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2050,Ball State Cardinals,Mid-American Conference,Mid-American Conference,1.0,1.0,1.0,16.5,16.5,16.5,3,0,0,1.0,1.0,2,1,16.5,,,1.0,1.0,2,3,3,,,2026-03-04T22:32:23Z
-2057,Belmont Bruins,Missouri Valley Conference,Missouri Valley Conference,0.5,0.5,0.5,5.0,5.0,5.0,1,1,0,0.5,,2,0,15.5,-5.5,,1.0,0.0,1,2,2,,,2026-03-04T22:32:23Z
-2065,Bethune-Cookman Wildcats,Southwestern Athletic Conference,Southwestern Athletic Conference,1.0,1.0,1.0,4.0,4.0,4.0,2,0,0,1.0,1.0,1,1,4.0,,,,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2066,Binghamton Bearcats,America East Conference,America East Conference,1.0,1.0,1.0,4.5,4.5,4.5,2,0,0,1.0,1.0,1,1,4.5,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-2083,Bucknell Bison,Patriot League,Patriot League,0.6667,0.6667,0.6667,2.8333,2.8333,2.8333,2,1,0,0.6667,,3,0,6.5,-4.5,,1.0,0.5,-1,3,3,,,2026-03-04T22:32:23Z
-2084,Buffalo Bulls,Mid-American Conference,Mid-American Conference,0.6667,0.6667,0.6667,-2.5,-2.5,-2.5,2,1,0,0.6667,,3,0,1.5,-10.5,,0.5,1.0,-1,3,3,,,2026-03-04T22:32:23Z
-2086,Butler Bulldogs,Big East,Big East,1.0,1.0,1.0,1.5,1.5,1.5,1,0,0,1.0,,1,0,1.5,,,,1.0,1,2,1,,,2026-03-04T22:32:23Z
-2097,Campbell Fighting Camels,Colonial Athletic Association,Colonial Athletic Association,0.6667,0.6667,0.6667,2.5,2.5,2.5,2,1,0,0.6667,,3,0,5.5,-3.5,,1.0,0.5,1,3,3,,,2026-03-04T22:32:23Z
-2099,Canisius Golden Griffins,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,1.0,1.0,1.0,9.5,9.5,9.5,2,0,0,,1.0,0,2,9.5,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-2110,Central Arkansas Bears,ASUN Conference,ASUN Conference,1.0,1.0,1.0,6.0,6.0,6.0,2,0,0,1.0,,2,0,6.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2115,Central Connecticut Blue Devils,Northeast Conference,Northeast Conference,0.0,0.0,0.0,-2.5,-2.5,-2.5,0,2,0,0.0,,2,0,,-2.5,,0.0,,-2,3,2,,,2026-03-04T22:32:23Z
-2116,UCF Knights,Big 12,Big 12,0.3333,0.3333,0.3333,2.5,2.5,2.5,1,2,0,0.3333,,3,0,25.5,-9.0,,0.0,1.0,-1,3,3,,,2026-03-04T22:32:23Z
-2117,Central Michigan Chippewas,Mid-American Conference,Mid-American Conference,0.6667,0.6667,0.6667,6.1667,6.1667,6.1667,2,1,0,1.0,0.0,2,1,10.0,-1.5,,0.0,1.0,2,3,3,,,2026-03-04T22:32:23Z
-2127,Charleston Southern Buccaneers,Big South Conference,Big South Conference,1.0,1.0,1.0,15.5,15.5,15.5,2,0,0,1.0,1.0,1,1,15.5,,,1.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2130,Chicago State Cougars,Northeast Conference,Northeast Conference,0.0,0.0,0.0,-9.5,-9.5,-9.5,0,2,0,0.0,,2,0,,-9.5,,,0.0,-2,3,2,,,2026-03-04T22:32:23Z
-2132,Cincinnati Bearcats,Big 12,Big 12,0.6667,0.6667,0.6667,9.5,9.5,9.5,2,1,0,0.6667,,3,0,17.0,-5.5,,1.0,0.0,1,3,3,,,2026-03-04T22:32:23Z
-2142,Colgate Raiders,Patriot League,Patriot League,0.0,0.0,0.0,-9.5,-9.5,-9.5,0,2,0,0.0,,2,0,,-9.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2154,Coppin State Eagles,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,0.5,0.5,0.5,0.5,0.5,0.5,1,1,0,0.0,1.0,1,1,2.5,-1.5,,1.0,0.0,1,2,2,,,2026-03-04T22:32:23Z
-2166,Davidson Wildcats,Atlantic 10,Atlantic 10,0.5,0.5,0.5,5.5,5.5,5.5,1,1,0,0.5,,2,0,14.5,-3.5,,0.0,1.0,-1,3,2,,,2026-03-04T22:32:23Z
-2168,Dayton Flyers,Atlantic 10,Atlantic 10,0.6667,0.6667,0.6667,7.8333,7.8333,7.8333,2,1,0,1.0,0.5,1,2,12.0,-0.5,,1.0,0.5,2,3,3,,,2026-03-04T22:32:23Z
-2169,Delaware State Hornets,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,0.0,0.0,0.0,-8.0,-8.0,-8.0,0,2,0,0.0,0.0,1,1,,-8.0,,0.0,,-1,2,2,,,2026-03-04T22:32:23Z
-2172,Denver Pioneers,Summit League,Summit League,0.0,0.0,0.0,-24.5,-24.5,-24.5,0,1,0,,0.0,0,1,,-24.5,,,0.0,0,1,1,,,2026-03-04T22:32:23Z
-2174,Detroit Mercy Titans,Horizon League,Horizon League,0.5,0.5,0.5,5.0,5.0,5.0,1,1,0,0.5,,2,0,13.5,-3.5,,,0.5,1,3,2,,,2026-03-04T22:32:23Z
-2181,Drake Bulldogs,Missouri Valley Conference,Missouri Valley Conference,0.0,0.0,0.0,-9.5,-9.5,-9.5,0,2,0,0.0,0.0,1,1,,-9.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2182,Drexel Dragons,Colonial Athletic Association,Colonial Athletic Association,0.5,0.5,0.5,0.5,0.5,0.5,1,1,0,0.5,,2,0,3.5,-2.5,,1.0,0.0,1,2,2,,,2026-03-04T22:32:23Z
-2184,Duquesne Dukes,Atlantic 10,Atlantic 10,0.5,0.5,0.5,-7.0,-7.0,-7.0,1,1,0,0.5,,2,0,0.5,-14.5,,0.0,1.0,1,3,2,,,2026-03-04T22:32:23Z
-2193,East Tennessee State Buccaneers,Southern Conference,Southern Conference,0.0,0.0,0.0,-7.5,-7.5,-7.5,0,2,0,0.0,,2,0,,-7.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2197,Eastern Illinois Panthers,Ohio Valley Conference,Ohio Valley Conference,0.5,0.5,0.5,-4.5,-4.5,-4.5,1,1,0,0.5,,2,0,11.5,-20.5,,,0.5,-1,3,2,,,2026-03-04T22:32:23Z
-2198,Eastern Kentucky Colonels,ASUN Conference,ASUN Conference,0.0,0.0,0.0,-7.5,-7.5,-7.5,0,2,0,,0.0,0,2,,-7.5,,0.0,,-2,3,2,,,2026-03-04T22:32:23Z
-2199,Eastern Michigan Eagles,Mid-American Conference,Mid-American Conference,0.0,0.0,0.0,-1.5,-1.5,-1.5,0,2,0,0.0,0.0,1,1,,-1.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2210,Elon Phoenix,Colonial Athletic Association,Colonial Athletic Association,0.3333,0.3333,0.3333,-7.8333,-7.8333,-7.8333,1,2,0,0.5,0.0,2,1,3.5,-13.5,,0.0,0.5,-1,3,3,,,2026-03-04T22:32:23Z
-2217,Fairfield Stags,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.5,0.5,0.5,-5.5,-5.5,-5.5,1,1,0,0.0,1.0,1,1,15.5,-26.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-2226,Florida Atlantic Owls,American Athletic Conference,American Athletic Conference,0.5,0.5,0.5,-3.0,-3.0,-3.0,1,1,0,0.5,,2,0,0.5,-6.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-2229,Florida International Panthers,Conference USA,Conference USA,0.5,0.5,0.5,-8.0,-8.0,-8.0,1,1,0,0.5,,2,0,10.5,-26.5,,,0.5,-1,2,2,,,2026-03-04T22:32:23Z
-2230,Fordham Rams,Atlantic 10,Atlantic 10,0.0,0.0,0.0,-6.5,-6.5,-6.5,0,1,0,0.0,,1,0,,-6.5,,,0.0,-1,2,1,,,2026-03-04T22:32:23Z
-2239,Cal State Fullerton Titans,Big West Conference,Big West Conference,1.0,1.0,1.0,1.5,1.5,1.5,1,0,0,,1.0,0,1,1.5,,,1.0,,0,1,1,,,2026-03-04T22:32:23Z
-2241,Gardner-Webb Runnin' Bulldogs,Big South Conference,Big South Conference,1.0,1.0,1.0,4.5,4.5,4.5,2,0,0,1.0,1.0,1,1,4.5,,,1.0,1.0,2,3,2,,,2026-03-04T22:32:23Z
-2244,George Mason Patriots,Atlantic 10,Atlantic 10,0.6667,0.6667,0.6667,-1.5,-1.5,-1.5,2,1,0,1.0,0.0,2,1,7.5,-19.5,,1.0,0.5,1,3,3,,,2026-03-04T22:32:23Z
-2247,Georgia State Panthers,Sun Belt Conference,Sun Belt Conference,0.0,0.0,0.0,-6.8333,-6.8333,-6.8333,0,3,0,,0.0,0,3,,-6.8333,,0.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-2250,Gonzaga Bulldogs,West Coast Conference,West Coast Conference,0.5,0.5,0.5,0.5,0.5,0.5,1,1,0,1.0,0.0,1,1,14.5,-13.5,,1.0,0.0,1,2,2,,,2026-03-04T22:32:23Z
-2253,Grand Canyon Lopes,Mountain West,Mountain West,1.0,1.0,1.0,5.8333,5.8333,5.8333,3,0,0,1.0,1.0,2,1,5.8333,,,1.0,1.0,2,3,3,,,2026-03-04T22:32:23Z
-2261,Hampton Pirates,Colonial Athletic Association,Colonial Athletic Association,0.6667,0.6667,0.6667,-0.1667,-0.1667,-0.1667,2,1,0,1.0,0.0,2,1,4.5,-9.5,,0.5,1.0,1,3,3,,,2026-03-04T22:32:23Z
-2272,High Point Panthers,Big South Conference,Big South Conference,0.0,0.0,0.0,-6.5,-6.5,-6.5,0,1,0,,0.0,0,1,,-6.5,,,0.0,0,1,1,,,2026-03-04T22:32:23Z
-2275,Hofstra Pride,Colonial Athletic Association,Colonial Athletic Association,0.5,0.5,0.5,-0.5,-0.5,-0.5,1,1,0,0.5,,2,0,2.5,-3.5,,0.5,,-1,2,2,,,2026-03-04T22:32:23Z
-2277,Houston Christian Huskies,Southland Conference,Southland Conference,0.5,0.5,0.5,5.5,5.5,5.5,1,1,0,,0.5,0,2,23.5,-12.5,,0.5,,-1,2,2,,,2026-03-04T22:32:23Z
-2287,Illinois State Redbirds,Missouri Valley Conference,Missouri Valley Conference,1.0,1.0,1.0,6.0,6.0,6.0,2,0,0,1.0,,2,0,6.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2294,Iowa Hawkeyes,Big Ten,Big Ten,0.5,0.5,0.5,-0.5,-0.5,-0.5,1,1,0,1.0,0.0,1,1,10.5,-11.5,,1.0,0.0,1,2,2,,,2026-03-04T22:32:23Z
-2296,Jackson State Tigers,Southwestern Athletic Conference,Southwestern Athletic Conference,0.3333,0.3333,0.3333,-7.8333,-7.8333,-7.8333,1,2,0,0.3333,,3,0,1.5,-12.5,,1.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-2305,Kansas Jayhawks,Big 12,Big 12,0.0,0.0,0.0,-14.5,-14.5,-14.5,0,2,0,0.0,0.0,1,1,,-14.5,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2306,Kansas State Wildcats,Big 12,Big 12,0.3333,0.3333,0.3333,-1.5,-1.5,-1.5,1,2,0,0.0,0.5,1,2,3.5,-4.0,,0.5,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-2309,Kent State Golden Flashes,Mid-American Conference,Mid-American Conference,0.3333,0.3333,0.3333,-3.8333,-3.8333,-3.8333,1,2,0,0.0,0.5,1,2,16.5,-14.0,,0.0,1.0,-2,3,3,,,2026-03-04T22:32:23Z
-2320,Lamar Cardinals,Southland Conference,Southland Conference,0.0,0.0,0.0,-18.5,-18.5,-18.5,0,2,0,,0.0,0,2,,-18.5,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2325,La Salle Explorers,Atlantic 10,Atlantic 10,0.5,0.5,0.5,-7.5,-7.5,-7.5,1,1,0,1.0,0.0,1,1,3.5,-18.5,,0.0,1.0,1,3,2,,,2026-03-04T22:32:23Z
-2329,Lehigh Mountain Hawks,Patriot League,Patriot League,1.0,1.0,1.0,8.0,8.0,8.0,2,0,0,1.0,,2,0,8.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2330,Le Moyne Dolphins,Northeast Conference,Northeast Conference,0.5,0.5,0.5,1.5,1.5,1.5,1,1,0,1.0,0.0,1,1,11.5,-8.5,,1.0,0.0,-1,3,2,,,2026-03-04T22:32:23Z
-2335,Liberty Flames,Conference USA,Conference USA,0.0,0.0,0.0,-5.5,-5.5,-5.5,0,2,0,,0.0,0,2,,-5.5,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2344,Longwood Lancers,Big South Conference,Big South Conference,1.0,1.0,1.0,17.5,17.5,17.5,1,0,0,,1.0,0,1,17.5,,,1.0,,0,1,1,,,2026-03-04T22:32:23Z
-2348,Louisiana Tech Bulldogs,Conference USA,Conference USA,0.0,0.0,0.0,-5.5,-5.5,-5.5,0,2,0,0.0,,2,0,,-5.5,,0.0,,-1,2,2,,,2026-03-04T22:32:23Z
-2349,UMass Lowell River Hawks,America East Conference,America East Conference,0.6667,0.6667,0.6667,-1.8333,-1.8333,-1.8333,2,1,0,1.0,0.5,1,2,8.5,-22.5,,0.0,1.0,-1,3,3,,,2026-03-04T22:32:23Z
-2350,Loyola Chicago Ramblers,Atlantic 10,Atlantic 10,1.0,1.0,1.0,7.5,7.5,7.5,1,0,0,,1.0,0,1,7.5,,,1.0,,1,2,1,,,2026-03-04T22:32:23Z
-2351,Loyola Marymount Lions,West Coast Conference,West Coast Conference,0.5,0.5,0.5,-2.0,-2.0,-2.0,1,1,0,0.0,1.0,1,1,2.5,-6.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-2352,Loyola Maryland Greyhounds,Patriot League,Patriot League,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,1.0,0.0,1,1,15.5,-20.5,,0.0,1.0,-1,2,2,,,2026-03-04T22:32:23Z
-2363,Manhattan Jaspers,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.0,0.0,0.0,-2.0,-2.0,-2.0,0,2,0,0.0,0.0,1,1,,-2.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2368,Marist Red Foxes,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.0,0.0,0.0,-10.5,-10.5,-10.5,0,1,0,0.0,,1,0,,-10.5,,0.0,,0,1,1,,,2026-03-04T22:32:23Z
-2377,McNeese Cowboys,Southland Conference,Southland Conference,0.0,0.0,0.0,-3.5,-3.5,-3.5,0,2,0,,0.0,0,2,,-3.5,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2378,UMBC Retrievers,America East Conference,America East Conference,1.0,1.0,1.0,19.1667,19.1667,19.1667,3,0,0,1.0,1.0,1,2,19.1667,,,1.0,1.0,2,3,3,,,2026-03-04T22:32:23Z
-2379,Maryland Eastern Shore Hawks,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,0.5,0.5,0.5,0.0,0.0,0.0,1,1,0,0.5,,2,0,5.5,-5.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-2382,Mercer Bears,Southern Conference,Southern Conference,0.5,0.5,0.5,-0.5,-0.5,-0.5,1,1,0,1.0,0.0,1,1,4.5,-5.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2385,Mercyhurst Lakers,Northeast Conference,Northeast Conference,1.0,1.0,1.0,1.5,1.5,1.5,2,0,0,1.0,1.0,1,1,1.5,,,,1.0,2,3,2,,,2026-03-04T22:32:23Z
-2390,Miami Hurricanes,Atlantic Coast Conference,Atlantic Coast Conference,1.0,1.0,1.0,7.0,7.0,7.0,2,0,0,1.0,1.0,1,1,7.0,,,1.0,1.0,2,3,2,,,2026-03-04T22:32:23Z
-2393,Middle Tennessee Blue Raiders,Conference USA,Conference USA,0.5,0.5,0.5,-1.5,-1.5,-1.5,1,1,0,0.5,,2,0,1.5,-4.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-2400,Mississippi Valley State Delta Devils,Southwestern Athletic Conference,Southwestern Athletic Conference,1.0,1.0,1.0,10.5,10.5,10.5,2,0,0,1.0,,2,0,10.5,,,,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2405,Monmouth Hawks,Colonial Athletic Association,Colonial Athletic Association,1.0,1.0,1.0,7.8333,7.8333,7.8333,3,0,0,1.0,1.0,2,1,7.8333,,,1.0,1.0,2,3,3,,,2026-03-04T22:32:23Z
-2413,Morehead State Eagles,Ohio Valley Conference,Ohio Valley Conference,0.5,0.5,0.5,1.0,1.0,1.0,1,1,0,0.5,,2,0,8.5,-6.5,,0.0,1.0,-1,2,2,,,2026-03-04T22:32:23Z
-2415,Morgan State Bears,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,0.6667,0.6667,0.6667,0.5,0.5,0.5,2,1,0,1.0,0.5,1,2,8.5,-15.5,,0.5,1.0,-1,3,3,,,2026-03-04T22:32:23Z
-2426,Navy Midshipmen,Patriot League,Patriot League,1.0,1.0,1.0,15.0,15.0,15.0,2,0,0,1.0,1.0,1,1,15.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2427,UNC Asheville Bulldogs,Big South Conference,Big South Conference,0.0,0.0,0.0,-14.0,-14.0,-14.0,0,2,0,0.0,0.0,1,1,,-14.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2428,North Carolina Central Eagles,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,1.0,1.0,1.0,8.5,8.5,8.5,2,0,0,1.0,1.0,1,1,8.5,,,,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2429,Charlotte 49ers,American Athletic Conference,American Athletic Conference,1.0,1.0,1.0,4.5,4.5,4.5,2,0,0,1.0,1.0,1,1,4.5,,,1.0,1.0,2,3,2,,,2026-03-04T22:32:23Z
-2430,UNC Greensboro Spartans,Southern Conference,Southern Conference,1.0,1.0,1.0,5.0,5.0,5.0,2,0,0,1.0,,2,0,5.0,,,,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2433,UL Monroe Warhawks,Sun Belt Conference,Sun Belt Conference,0.6667,0.6667,0.6667,-4.1667,-4.1667,-4.1667,2,1,0,0.6667,,3,0,4.0,-20.5,,,0.6667,1,3,3,,,2026-03-04T22:32:23Z
-2437,Omaha Mavericks,Summit League,Summit League,0.0,0.0,0.0,-10.5,-10.5,-10.5,0,2,0,0.0,0.0,1,1,,-10.5,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2439,UNLV Rebels,Mountain West,Mountain West,0.6667,0.6667,0.6667,10.8333,10.8333,10.8333,2,1,0,0.0,1.0,1,2,19.0,-5.5,,1.0,0.0,1,3,3,,,2026-03-04T22:32:23Z
-2440,Nevada Wolf Pack,Mountain West,Mountain West,0.3333,0.3333,0.3333,-3.1667,-3.1667,-3.1667,1,2,0,1.0,0.0,1,2,5.5,-7.5,,1.0,0.0,-1,3,3,,,2026-03-04T22:32:23Z
-2441,New Haven Chargers,Northeast Conference,Northeast Conference,0.5,0.5,0.5,4.0,4.0,4.0,1,1,0,0.0,1.0,1,1,8.5,-0.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2443,New Orleans Privateers,Southland Conference,Southland Conference,0.5,0.5,0.5,-3.0,-3.0,-3.0,1,1,0,0.0,1.0,1,1,5.5,-11.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-2447,Nicholls Colonels,Southland Conference,Southland Conference,1.0,1.0,1.0,2.5,2.5,2.5,2,0,0,1.0,1.0,1,1,2.5,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-2448,North Carolina A&T Aggies,Colonial Athletic Association,Colonial Athletic Association,0.3333,0.3333,0.3333,-5.5,-5.5,-5.5,1,2,0,0.0,1.0,2,1,3.5,-10.0,,1.0,0.0,1,3,3,,,2026-03-04T22:32:23Z
-2449,North Dakota State Bison,Summit League,Summit League,0.5,0.5,0.5,1.0,1.0,1.0,1,1,0,0.5,,2,0,20.5,-18.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2450,Norfolk State Spartans,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,0.0,0.0,0.0,-5.5,-5.5,-5.5,0,2,0,,0.0,0,2,,-5.5,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2453,North Alabama Lions,ASUN Conference,ASUN Conference,0.6667,0.6667,0.6667,1.8333,1.8333,1.8333,2,1,0,0.5,1.0,2,1,6.0,-6.5,,1.0,0.5,-1,3,3,,,2026-03-04T22:32:23Z
-2454,North Florida Ospreys,ASUN Conference,ASUN Conference,0.5,0.5,0.5,-5.0,-5.0,-5.0,1,1,0,,0.5,0,2,12.5,-22.5,,0.5,,-1,3,2,,,2026-03-04T22:32:23Z
-2458,Northern Colorado Bears,Big Sky Conference,Big Sky Conference,0.6667,0.6667,0.6667,7.5,7.5,7.5,2,1,0,1.0,0.0,2,1,17.0,-11.5,,1.0,0.5,1,3,3,,,2026-03-04T22:32:23Z
-2459,Northern Illinois Huskies,Mid-American Conference,Mid-American Conference,0.3333,0.3333,0.3333,-17.1667,-17.1667,-17.1667,1,2,0,0.5,0.0,2,1,2.5,-27.0,,0.0,1.0,-1,3,3,,,2026-03-04T22:32:23Z
-2460,Northern Iowa Panthers,Missouri Valley Conference,Missouri Valley Conference,0.5,0.5,0.5,6.0,6.0,6.0,1,1,0,0.0,1.0,1,1,18.5,-6.5,,0.0,1.0,-1,2,2,,,2026-03-04T22:32:23Z
-2463,Cal State Northridge Matadors,Big West Conference,Big West Conference,0.0,0.0,0.0,-9.0,-9.0,-9.0,0,2,0,0.0,0.0,1,1,,-9.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2464,Northern Arizona Lumberjacks,Big Sky Conference,Big Sky Conference,0.0,0.0,0.0,-12.1667,-12.1667,-12.1667,0,3,0,0.0,0.0,2,1,,-12.1667,,0.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-2466,Northwestern State Demons,Southland Conference,Southland Conference,0.0,0.0,0.0,-4.0,-4.0,-4.0,0,2,0,0.0,,2,0,,-4.0,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2473,Oakland Golden Grizzlies,Horizon League,Horizon League,0.5,0.5,0.5,-3.5,-3.5,-3.5,1,1,0,0.0,1.0,1,1,6.5,-13.5,,0.0,1.0,-1,3,2,,,2026-03-04T22:32:23Z
-2483,Oregon Ducks,Big Ten,Big Ten,0.6667,0.6667,0.6667,4.8333,4.8333,4.8333,2,1,0,0.5,1.0,2,1,11.0,-7.5,,1.0,0.5,2,3,3,,,2026-03-04T22:32:23Z
-2492,Pepperdine Waves,West Coast Conference,West Coast Conference,0.5,0.5,0.5,8.0,8.0,8.0,1,1,0,,0.5,0,2,16.5,-0.5,,0.5,,-1,2,2,,,2026-03-04T22:32:23Z
-2501,Portland Pilots,West Coast Conference,West Coast Conference,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,0.5,,2,0,9.5,-14.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2502,Portland State Vikings,Big Sky Conference,Big Sky Conference,0.3333,0.3333,0.3333,0.8333,0.8333,0.8333,1,2,0,0.3333,,3,0,19.5,-8.5,,1.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-2504,Prairie View A&M Panthers,Southwestern Athletic Conference,Southwestern Athletic Conference,1.0,1.0,1.0,10.5,10.5,10.5,2,0,0,1.0,,2,0,10.5,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-2506,Presbyterian Blue Hose,Big South Conference,Big South Conference,1.0,1.0,1.0,5.0,5.0,5.0,2,0,0,1.0,1.0,1,1,5.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2507,Providence Friars,Big East,Big East,1.0,1.0,1.0,5.0,5.0,5.0,2,0,0,1.0,,2,0,5.0,,,1.0,1.0,2,3,2,,,2026-03-04T22:32:23Z
-2509,Purdue Boilermakers,Big Ten,Big Ten,0.0,0.0,0.0,-11.5,-11.5,-11.5,0,2,0,0.0,0.0,1,1,,-11.5,,0.0,0.0,-2,3,2,,,2026-03-04T22:32:23Z
-2511,Queens University Royals,ASUN Conference,ASUN Conference,0.5,0.5,0.5,6.0,6.0,6.0,1,1,0,0.0,1.0,1,1,14.5,-2.5,,,0.5,1,2,2,,,2026-03-04T22:32:23Z
-2514,Quinnipiac Bobcats,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.0,0.0,0.0,-7.0,-7.0,-7.0,0,2,0,,0.0,0,2,,-7.0,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2515,Radford Highlanders,Big South Conference,Big South Conference,0.5,0.5,0.5,-6.5,-6.5,-6.5,1,1,0,1.0,0.0,1,1,4.5,-17.5,,1.0,0.0,1,2,2,,,2026-03-04T22:32:23Z
-2520,Rider Broncs,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.5,0.5,0.5,-5.0,-5.0,-5.0,1,1,0,0.5,,2,0,0.5,-10.5,,,0.5,-1,2,2,,,2026-03-04T22:32:23Z
-2523,Robert Morris Colonials,Horizon League,Horizon League,1.0,1.0,1.0,4.5,4.5,4.5,2,0,0,1.0,,2,0,4.5,,,1.0,,2,3,2,,,2026-03-04T22:32:23Z
-2529,Sacred Heart Pioneers,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,1.0,1.0,1.0,5.5,5.5,5.5,1,0,0,1.0,,1,0,5.5,,,1.0,,0,1,1,,,2026-03-04T22:32:23Z
-2534,Sam Houston Bearkats,Conference USA,Conference USA,0.5,0.5,0.5,12.0,12.0,12.0,1,1,0,0.5,,2,0,26.5,-2.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-2535,Samford Bulldogs,Southern Conference,Southern Conference,0.5,0.5,0.5,1.0,1.0,1.0,1,1,0,0.5,,2,0,2.5,-0.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-2539,San Francisco Dons,West Coast Conference,West Coast Conference,1.0,1.0,1.0,15.5,15.5,15.5,1,0,0,1.0,,1,0,15.5,,,,1.0,0,1,1,,,2026-03-04T22:32:23Z
-2540,UC Santa Barbara Gauchos,Big West Conference,Big West Conference,0.5,0.5,0.5,0.0,0.0,0.0,1,1,0,0.5,,2,0,0.5,-0.5,,1.0,0.0,1,2,2,,,2026-03-04T22:32:23Z
-2541,Santa Clara Broncos,West Coast Conference,West Coast Conference,0.5,0.5,0.5,-4.5,-4.5,-4.5,1,1,0,0.5,,2,0,4.5,-13.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2545,SE Louisiana Lions,Southland Conference,Southland Conference,0.5,0.5,0.5,4.0,4.0,4.0,1,1,0,0.5,,2,0,11.5,-3.5,,,0.5,-1,2,2,,,2026-03-04T22:32:23Z
-2546,Southeast Missouri State Redhawks,Ohio Valley Conference,Ohio Valley Conference,0.5,0.5,0.5,-1.5,-1.5,-1.5,1,1,0,0.5,,2,0,8.5,-11.5,,0.5,,-1,2,2,,,2026-03-04T22:32:23Z
-2547,Seattle U Redhawks,West Coast Conference,West Coast Conference,1.0,1.0,1.0,3.5,3.5,3.5,2,0,0,1.0,1.0,1,1,3.5,,,,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2550,Seton Hall Pirates,Big East,Big East,1.0,1.0,1.0,8.5,8.5,8.5,2,0,0,1.0,1.0,1,1,8.5,,,,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2561,Siena Saints,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.0,0.0,0.0,-8.0,-8.0,-8.0,0,2,0,0.0,0.0,1,1,,-8.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2565,SIU Edwardsville Cougars,Ohio Valley Conference,Ohio Valley Conference,1.0,1.0,1.0,13.5,13.5,13.5,2,0,0,1.0,,2,0,13.5,,,1.0,,2,3,2,,,2026-03-04T22:32:23Z
-2567,SMU Mustangs,Atlantic Coast Conference,Atlantic Coast Conference,0.0,0.0,0.0,-15.0,-15.0,-15.0,0,2,0,,0.0,0,2,,-15.0,,,0.0,-2,3,2,,,2026-03-04T22:32:23Z
-2569,South Carolina State Bulldogs,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,0.3333,0.3333,0.3333,-3.1667,-3.1667,-3.1667,1,2,0,0.3333,,3,0,4.5,-7.0,,0.0,0.5,-2,3,3,,,2026-03-04T22:32:23Z
-2571,South Dakota State Jackrabbits,Summit League,Summit League,0.5,0.5,0.5,-3.0,-3.0,-3.0,1,1,0,,0.5,0,2,1.5,-7.5,,,0.5,1,2,2,,,2026-03-04T22:32:23Z
-2572,Southern Miss Golden Eagles,Sun Belt Conference,Sun Belt Conference,1.0,1.0,1.0,11.0,11.0,11.0,2,0,0,1.0,,2,0,11.0,,,,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2579,South Carolina Gamecocks,Southeastern Conference,Southeastern Conference,0.0,0.0,0.0,-6.1667,-6.1667,-6.1667,0,3,0,0.0,0.0,1,2,,-6.1667,,0.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-2582,Southern Jaguars,Southwestern Athletic Conference,Southwestern Athletic Conference,0.3333,0.3333,0.3333,-5.1667,-5.1667,-5.1667,1,2,0,0.3333,,3,0,8.5,-12.0,,0.0,1.0,-2,3,3,,,2026-03-04T22:32:23Z
-2598,Saint Francis Red Flash,Northeast Conference,Northeast Conference,0.5,0.5,0.5,-8.5,-8.5,-8.5,1,1,0,0.5,,2,0,3.5,-20.5,,,0.5,-1,2,2,,,2026-03-04T22:32:23Z
-2599,St. John's Red Storm,Big East,Big East,0.3333,0.3333,0.3333,-4.8333,-4.8333,-4.8333,1,2,0,0.3333,,3,0,24.5,-19.5,,0.5,0.0,1,3,3,,,2026-03-04T22:32:23Z
-2603,Saint Joseph's Hawks,Atlantic 10,Atlantic 10,1.0,1.0,1.0,14.5,14.5,14.5,2,0,0,1.0,1.0,1,1,14.5,,,1.0,1.0,2,3,2,,,2026-03-04T22:32:23Z
-2608,Saint Mary's Gaels,West Coast Conference,West Coast Conference,1.0,1.0,1.0,13.5,13.5,13.5,2,0,0,1.0,1.0,1,1,13.5,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-2612,Saint Peter's Peacocks,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,1.0,1.0,1.0,6.5,6.5,6.5,2,0,0,1.0,,2,0,6.5,,,1.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2617,Stephen F. Austin Lumberjacks,Southland Conference,Southland Conference,0.5,0.5,0.5,6.0,6.0,6.0,1,1,0,,0.5,0,2,12.5,-0.5,,,0.5,1,2,2,,,2026-03-04T22:32:23Z
-2619,Stony Brook Seawolves,Colonial Athletic Association,Colonial Athletic Association,0.3333,0.3333,0.3333,-5.5,-5.5,-5.5,1,2,0,0.5,0.0,2,1,3.5,-10.0,,0.0,0.5,1,3,3,,,2026-03-04T22:32:23Z
-2623,Missouri State Bears,Conference USA,Conference USA,1.0,1.0,1.0,1.5,1.5,1.5,2,0,0,1.0,,2,0,1.5,,,,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2627,Tarleton State Texans,Western Athletic Conference,Western Athletic Conference,0.5,0.5,0.5,1.5,1.5,1.5,1,1,0,0.5,,2,0,10.5,-7.5,,,0.5,1,2,2,,,2026-03-04T22:32:23Z
-2628,TCU Horned Frogs,Big 12,Big 12,1.0,1.0,1.0,9.1667,9.1667,9.1667,3,0,0,1.0,1.0,2,1,9.1667,,,1.0,1.0,2,3,3,,,2026-03-04T22:32:23Z
-2630,UT Martin Skyhawks,Ohio Valley Conference,Ohio Valley Conference,0.5,0.5,0.5,-10.0,-10.0,-10.0,1,1,0,0.5,,2,0,7.5,-27.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-2633,Tennessee Volunteers,Southeastern Conference,Southeastern Conference,0.3333,0.3333,0.3333,-0.8333,-0.8333,-0.8333,1,2,0,0.0,0.5,1,2,10.5,-6.5,,0.0,0.5,-2,3,3,,,2026-03-04T22:32:23Z
-2634,Tennessee State Tigers,Ohio Valley Conference,Ohio Valley Conference,1.0,1.0,1.0,19.5,19.5,19.5,2,0,0,1.0,,2,0,19.5,,,,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2635,Tennessee Tech Golden Eagles,Ohio Valley Conference,Ohio Valley Conference,0.0,0.0,0.0,-8.0,-8.0,-8.0,0,2,0,0.0,,2,0,,-8.0,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2636,UTSA Roadrunners,American Athletic Conference,American Athletic Conference,0.5,0.5,0.5,1.0,1.0,1.0,1,1,0,,0.5,0,2,3.5,-1.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-2638,UTEP Miners,Conference USA,Conference USA,0.0,0.0,0.0,-12.0,-12.0,-12.0,0,2,0,0.0,,2,0,,-12.0,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2640,Texas Southern Tigers,Southwestern Athletic Conference,Southwestern Athletic Conference,0.5,0.5,0.5,9.0,9.0,9.0,1,1,0,0.5,,2,0,19.5,-1.5,,0.5,,-1,2,2,,,2026-03-04T22:32:23Z
-2641,Texas Tech Red Raiders,Big 12,Big 12,0.6667,0.6667,0.6667,2.1667,2.1667,2.1667,2,1,0,0.6667,,3,0,12.0,-17.5,,0.5,1.0,2,3,3,,,2026-03-04T22:32:23Z
-2643,The Citadel Bulldogs,Southern Conference,Southern Conference,0.5,0.5,0.5,5.0,5.0,5.0,1,1,0,0.5,,2,0,15.5,-5.5,,,0.5,-1,2,2,,,2026-03-04T22:32:23Z
-2649,Toledo Rockets,Mid-American Conference,Mid-American Conference,0.6667,0.6667,0.6667,5.8333,5.8333,5.8333,2,1,0,0.6667,,3,0,10.0,-2.5,,0.0,1.0,1,3,3,,,2026-03-04T22:32:23Z
-2653,Troy Trojans,Sun Belt Conference,Sun Belt Conference,0.5,0.5,0.5,1.5,1.5,1.5,1,1,0,0.5,,2,0,7.5,-4.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-2655,Tulane Green Wave,American Athletic Conference,American Athletic Conference,0.0,0.0,0.0,-21.0,-21.0,-21.0,0,2,0,0.0,0.0,1,1,,-21.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2670,VCU Rams,Atlantic 10,Atlantic 10,0.5,0.5,0.5,0.0,0.0,0.0,1,1,0,0.5,,2,0,6.5,-6.5,,0.5,,1,2,2,,,2026-03-04T22:32:23Z
-2674,Valparaiso Beacons,Missouri Valley Conference,Missouri Valley Conference,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,1.0,0.0,1,1,0.5,-5.5,,1.0,0.0,1,2,2,,,2026-03-04T22:32:23Z
-2678,VMI Keydets,Southern Conference,Southern Conference,0.5,0.5,0.5,1.0,1.0,1.0,1,1,0,0.5,,2,0,4.5,-2.5,,,0.5,-1,2,2,,,2026-03-04T22:32:23Z
-2681,Wagner Seahawks,Northeast Conference,Northeast Conference,1.0,1.0,1.0,7.0,7.0,7.0,2,0,0,1.0,,2,0,7.0,,,1.0,,2,3,2,,,2026-03-04T22:32:23Z
-2692,Weber State Wildcats,Big Sky Conference,Big Sky Conference,0.5,0.5,0.5,-4.0,-4.0,-4.0,1,1,0,0.5,,2,0,11.5,-19.5,,,0.5,1,2,2,,,2026-03-04T22:32:23Z
-2698,West Georgia Wolves,ASUN Conference,ASUN Conference,1.0,1.0,1.0,9.5,9.5,9.5,2,0,0,1.0,1.0,1,1,9.5,,,1.0,,2,3,2,,,2026-03-04T22:32:23Z
-2710,Western Illinois Leathernecks,Ohio Valley Conference,Ohio Valley Conference,0.0,0.0,0.0,-9.0,-9.0,-9.0,0,2,0,0.0,0.0,1,1,,-9.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2711,Western Michigan Broncos,Mid-American Conference,Mid-American Conference,0.6667,0.6667,0.6667,7.8333,7.8333,7.8333,2,1,0,0.5,1.0,2,1,15.0,-6.5,,0.5,1.0,2,3,3,,,2026-03-04T22:32:23Z
-2717,Western Carolina Catamounts,Southern Conference,Southern Conference,1.0,1.0,1.0,13.0,13.0,13.0,2,0,0,,1.0,0,2,13.0,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-2724,Wichita State Shockers,American Athletic Conference,American Athletic Conference,1.0,1.0,1.0,4.5,4.5,4.5,2,0,0,1.0,1.0,1,1,4.5,,,,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2729,William & Mary Tribe,Colonial Athletic Association,Colonial Athletic Association,0.0,0.0,0.0,-3.5,-3.5,-3.5,0,3,0,0.0,0.0,2,1,,-3.5,,0.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-2737,Winthrop Eagles,Big South Conference,Big South Conference,0.0,0.0,0.0,-6.5,-6.5,-6.5,0,2,0,0.0,0.0,1,1,,-6.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2739,Green Bay Phoenix,Horizon League,Horizon League,1.0,1.0,1.0,11.0,11.0,11.0,2,0,0,1.0,,2,0,11.0,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-2747,Wofford Terriers,Southern Conference,Southern Conference,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,0.5,,2,0,10.5,-15.5,,0.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-2750,Wright State Raiders,Horizon League,Horizon League,1.0,1.0,1.0,3.0,3.0,3.0,2,0,0,1.0,1.0,1,1,3.0,,,,1.0,2,3,2,,,2026-03-04T22:32:23Z
-2751,Wyoming Cowboys,Mountain West,Mountain West,0.3333,0.3333,0.3333,-2.5,-2.5,-2.5,1,2,0,0.0,1.0,2,1,11.5,-9.5,,0.5,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-2752,Xavier Musketeers,Big East,Big East,0.3333,0.3333,0.3333,-3.1667,-3.1667,-3.1667,1,2,0,0.5,0.0,2,1,2.5,-6.0,,0.5,0.0,1,3,3,,,2026-03-04T22:32:23Z
-2754,Youngstown State Penguins,Horizon League,Horizon League,0.0,0.0,0.0,-17.5,-17.5,-17.5,0,2,0,0.0,0.0,1,1,,-17.5,,,0.0,-2,3,2,,,2026-03-04T22:32:23Z
-2755,Grambling Tigers,Southwestern Athletic Conference,Southwestern Athletic Conference,0.0,0.0,0.0,-9.5,-9.5,-9.5,0,3,0,0.0,0.0,2,1,,-9.5,,0.0,0.0,-2,3,3,,,2026-03-04T22:32:23Z
-2771,Merrimack Warriors,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.0,0.0,0.0,-8.5,-8.5,-8.5,0,2,0,,0.0,0,2,,-8.5,,,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2803,Bryant Bulldogs,America East Conference,America East Conference,0.3333,0.3333,0.3333,5.5,5.5,5.5,1,2,0,0.0,1.0,2,1,19.5,-1.5,,1.0,0.0,1,3,3,,,2026-03-04T22:32:23Z
-2815,Lindenwood Lions,Ohio Valley Conference,Ohio Valley Conference,0.5,0.5,0.5,0.0,0.0,0.0,1,1,0,0.0,1.0,1,1,11.5,-11.5,,0.0,1.0,1,3,2,,,2026-03-04T22:32:23Z
-2837,East Texas A&M Lions,Southland Conference,Southland Conference,0.5,0.5,0.5,-2.0,-2.0,-2.0,1,1,0,0.5,,2,0,1.5,-5.5,,,0.5,1,2,2,,,2026-03-04T22:32:23Z
-2856,California Baptist Lancers,Western Athletic Conference,Western Athletic Conference,1.0,1.0,1.0,6.5,6.5,6.5,2,0,0,1.0,,2,0,6.5,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-2870,Purdue Fort Wayne Mastodons,Horizon League,Horizon League,0.3333,0.3333,0.3333,0.1667,0.1667,0.1667,1,2,0,0.0,0.5,1,2,4.5,-2.0,,0.0,0.5,1,3,3,,,2026-03-04T22:32:23Z
-2885,NJIT Highlanders,America East Conference,America East Conference,0.0,0.0,0.0,-27.0,-27.0,-27.0,0,2,0,,0.0,0,2,,-27.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:32:23Z
-2900,St. Thomas-Minnesota Tommies,Summit League,Summit League,1.0,1.0,1.0,10.5,10.5,10.5,2,0,0,1.0,,2,0,10.5,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-2908,South Carolina Upstate Spartans,Big South Conference,Big South Conference,0.0,0.0,0.0,-3.5,-3.5,-3.5,0,2,0,0.0,,2,0,,-3.5,,0.0,0.0,-2,3,2,,,2026-03-04T22:32:23Z
-2916,Incarnate Word Cardinals,Southland Conference,Southland Conference,1.0,1.0,1.0,7.0,7.0,7.0,2,0,0,,1.0,0,2,7.0,,,1.0,,1,2,2,,,2026-03-04T22:32:23Z
-2934,Cal State Bakersfield Roadrunners,Big West Conference,Big West Conference,1.0,1.0,1.0,3.0,3.0,3.0,2,0,0,1.0,1.0,1,1,3.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:32:23Z
-3084,Utah Valley Wolverines,Western Athletic Conference,Western Athletic Conference,0.0,0.0,0.0,-9.0,-9.0,-9.0,0,2,0,0.0,,2,0,,-9.0,,0.0,,-1,2,2,,,2026-03-04T22:32:23Z
-3101,Utah Tech Trailblazers,Western Athletic Conference,Western Athletic Conference,0.5,0.5,0.5,-7.0,-7.0,-7.0,1,1,0,1.0,0.0,1,1,1.5,-15.5,,1.0,0.0,1,2,2,,,2026-03-04T22:32:23Z
-112358,Long Island University Sharks,Northeast Conference,Northeast Conference,1.0,1.0,1.0,5.0,5.0,5.0,2,0,0,1.0,,2,0,5.0,,,1.0,,2,3,2,,,2026-03-04T22:32:23Z
+2,Auburn Tigers,Southeastern Conference,Southeastern Conference,0.3333,0.3333,0.3333,-8.5,-8.5,-8.5,1,2,0,0.5,0.0,2,1,5.5,-15.5,,0.5,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+5,UAB Blazers,American Athletic Conference,American Athletic Conference,0.0,0.0,0.0,-8.5,-8.5,-8.5,0,1,0,0.0,,1,0,,-8.5,,0.0,,-1,2,1,,,2026-03-04T22:42:50Z
+6,South Alabama Jaguars,Sun Belt Conference,Sun Belt Conference,0.5,0.5,0.5,1.5,1.5,1.5,1,1,0,0.5,,2,0,20.5,-17.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+8,Arkansas Razorbacks,Southeastern Conference,Southeastern Conference,0.5,0.5,0.5,-8.5,-8.5,-8.5,1,1,0,0.5,,2,0,7.5,-24.5,,1.0,0.0,-1,3,2,,,2026-03-04T22:42:50Z
+9,Arizona State Sun Devils,Big 12,Big 12,0.6667,0.6667,0.6667,5.8333,5.8333,5.8333,2,1,0,0.5,1.0,2,1,11.0,-4.5,,1.0,0.0,1,3,3,,,2026-03-04T22:42:50Z
+12,Arizona Wildcats,Big 12,Big 12,0.6667,0.6667,0.6667,6.8333,6.8333,6.8333,2,1,0,1.0,0.0,2,1,11.0,-1.5,,1.0,0.0,1,3,3,,,2026-03-04T22:42:50Z
+13,Cal Poly Mustangs,Big West Conference,Big West Conference,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,0.5,,2,0,4.5,-9.5,,1.0,0.0,1,2,2,,,2026-03-04T22:42:50Z
+16,Sacramento State Hornets,Big Sky Conference,Big Sky Conference,0.3333,0.3333,0.3333,1.5,1.5,1.5,1,2,0,0.3333,,3,0,16.5,-6.0,,1.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+21,San Diego State Aztecs,Mountain West,Mountain West,0.3333,0.3333,0.3333,1.8333,1.8333,1.8333,1,2,0,0.3333,,3,0,15.5,-5.0,,1.0,0.0,-1,3,3,,,2026-03-04T22:42:50Z
+23,San José State Spartans,Mountain West,Mountain West,0.0,0.0,0.0,-3.8333,-3.8333,-3.8333,0,3,0,0.0,0.0,1,2,,-3.8333,,0.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+24,Stanford Cardinal,Atlantic Coast Conference,Atlantic Coast Conference,0.5,0.5,0.5,10.5,10.5,10.5,1,1,0,0.0,1.0,1,1,21.5,-0.5,,0.5,,1,3,2,,,2026-03-04T22:42:50Z
+25,California Golden Bears,Atlantic Coast Conference,Atlantic Coast Conference,0.5,0.5,0.5,-7.5,-7.5,-7.5,1,1,0,0.0,1.0,1,1,8.5,-23.5,,0.5,,-1,3,2,,,2026-03-04T22:42:50Z
+26,UCLA Bruins,Big Ten,Big Ten,0.6667,0.6667,0.6667,7.8333,7.8333,7.8333,2,1,0,1.0,0.0,2,1,15.0,-6.5,,1.0,0.0,-1,3,3,,,2026-03-04T22:42:50Z
+27,UC Riverside Highlanders,Big West Conference,Big West Conference,0.5,0.5,0.5,7.5,7.5,7.5,1,1,0,0.0,1.0,1,1,15.5,-0.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+28,UC San Diego Tritons,Big West Conference,Big West Conference,0.5,0.5,0.5,3.5,3.5,3.5,1,1,0,0.5,,2,0,9.5,-2.5,,0.5,,-1,2,2,,,2026-03-04T22:42:50Z
+30,USC Trojans,Big Ten,Big Ten,0.0,0.0,0.0,-11.0,-11.0,-11.0,0,2,0,0.0,0.0,1,1,,-11.0,,0.0,0.0,-2,3,2,,,2026-03-04T22:42:50Z
+36,Colorado State Rams,Mountain West,Mountain West,0.5,0.5,0.5,0.0,0.0,0.0,1,1,0,0.0,1.0,1,1,4.5,-4.5,,0.0,1.0,1,3,2,,,2026-03-04T22:42:50Z
+38,Colorado Buffaloes,Big 12,Big 12,0.6667,0.6667,0.6667,-0.8333,-0.8333,-0.8333,2,1,0,0.6667,,3,0,9.0,-20.5,,1.0,0.5,-1,3,3,,,2026-03-04T22:42:50Z
+41,UConn Huskies,Big East,Big East,0.5,0.5,0.5,8.5,8.5,8.5,1,1,0,0.5,,2,0,26.5,-9.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+43,Yale Bulldogs,Ivy League,Ivy League,0.5,0.5,0.5,-3.0,-3.0,-3.0,1,1,0,,0.5,0,2,0.5,-6.5,,,0.5,-1,2,2,,,2026-03-04T22:42:50Z
+44,American University Eagles,Patriot League,Patriot League,0.0,0.0,0.0,-8.5,-8.5,-8.5,0,2,0,0.0,,2,0,,-8.5,,0.0,,-1,2,2,,,2026-03-04T22:42:50Z
+45,George Washington Revolutionaries,Atlantic 10,Atlantic 10,0.5,0.5,0.5,7.0,7.0,7.0,1,1,0,0.0,1.0,1,1,18.5,-4.5,,0.0,1.0,-1,3,2,,,2026-03-04T22:42:50Z
+46,Georgetown Hoyas,Big East,Big East,0.3333,0.3333,0.3333,-2.8333,-2.8333,-2.8333,1,2,0,0.3333,,3,0,12.5,-10.5,,0.0,0.5,-2,3,3,,,2026-03-04T22:42:50Z
+47,Howard Bison,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,1.0,1.0,1.0,8.5,8.5,8.5,2,0,0,1.0,1.0,1,1,8.5,,,1.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+48,Delaware Blue Hens,Conference USA,Conference USA,0.5,0.5,0.5,0.5,0.5,0.5,1,1,0,0.5,,2,0,3.5,-2.5,,,0.5,-1,2,2,,,2026-03-04T22:42:50Z
+50,Florida A&M Rattlers,Southwestern Athletic Conference,Southwestern Athletic Conference,1.0,1.0,1.0,16.0,16.0,16.0,2,0,0,1.0,,2,0,16.0,,,,1.0,1,2,2,,,2026-03-04T22:42:50Z
+52,Florida State Seminoles,Atlantic Coast Conference,Atlantic Coast Conference,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,,0.5,0,2,2.5,-7.5,,0.0,1.0,1,3,2,,,2026-03-04T22:42:50Z
+55,Jacksonville State Gamecocks,Conference USA,Conference USA,1.0,1.0,1.0,1.5,1.5,1.5,2,0,0,1.0,1.0,1,1,1.5,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+56,Stetson Hatters,ASUN Conference,ASUN Conference,1.0,1.0,1.0,10.0,10.0,10.0,2,0,0,1.0,1.0,1,1,10.0,,,1.0,1.0,2,3,2,,,2026-03-04T22:42:50Z
+57,Florida Gators,Southeastern Conference,Southeastern Conference,1.0,1.0,1.0,14.1667,14.1667,14.1667,3,0,0,1.0,1.0,2,1,14.1667,,,1.0,1.0,2,3,3,,,2026-03-04T22:42:50Z
+58,South Florida Bulls,American Athletic Conference,American Athletic Conference,1.0,1.0,1.0,10.5,10.5,10.5,2,0,0,1.0,1.0,1,1,10.5,,,1.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+59,Georgia Tech Yellow Jackets,Atlantic Coast Conference,Atlantic Coast Conference,0.0,0.0,0.0,-2.5,-2.5,-2.5,0,1,0,,0.0,0,1,,-2.5,,0.0,,-1,2,1,,,2026-03-04T22:42:50Z
+61,Georgia Bulldogs,Southeastern Conference,Southeastern Conference,0.6667,0.6667,0.6667,5.8333,5.8333,5.8333,2,1,0,0.5,1.0,2,1,9.0,-0.5,,1.0,0.0,1,3,3,,,2026-03-04T22:42:50Z
+62,Hawai'i Rainbow Warriors,Big West Conference,Big West Conference,0.5,0.5,0.5,0.5,0.5,0.5,1,1,0,,0.5,0,2,2.5,-1.5,,,0.5,1,2,2,,,2026-03-04T22:42:50Z
+66,Iowa State Cyclones,Big 12,Big 12,0.3333,0.3333,0.3333,-8.5,-8.5,-8.5,1,2,0,0.0,1.0,2,1,1.5,-13.5,,0.0,0.5,-1,3,3,,,2026-03-04T22:42:50Z
+68,Boise State Broncos,Mountain West,Mountain West,1.0,1.0,1.0,5.8333,5.8333,5.8333,3,0,0,1.0,1.0,2,1,5.8333,,,1.0,1.0,2,3,3,,,2026-03-04T22:42:50Z
+70,Idaho Vandals,Big Sky Conference,Big Sky Conference,0.6667,0.6667,0.6667,1.8333,1.8333,1.8333,2,1,0,0.6667,,3,0,8.5,-11.5,,0.5,1.0,-1,3,3,,,2026-03-04T22:42:50Z
+71,Bradley Braves,Missouri Valley Conference,Missouri Valley Conference,0.5,0.5,0.5,-0.5,-0.5,-0.5,1,1,0,0.5,,2,0,4.5,-5.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+77,Northwestern Wildcats,Big Ten,Big Ten,0.5,0.5,0.5,5.5,5.5,5.5,1,1,0,0.5,,2,0,13.5,-2.5,,0.0,1.0,-1,3,2,,,2026-03-04T22:42:50Z
+79,Southern Illinois Salukis,Missouri Valley Conference,Missouri Valley Conference,1.0,1.0,1.0,4.5,4.5,4.5,2,0,0,1.0,1.0,1,1,4.5,,,1.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+82,UIC Flames,Missouri Valley Conference,Missouri Valley Conference,0.5,0.5,0.5,-7.0,-7.0,-7.0,1,1,0,1.0,0.0,1,1,5.5,-19.5,,1.0,0.0,1,2,2,,,2026-03-04T22:42:50Z
+84,Indiana Hoosiers,Big Ten,Big Ten,0.0,0.0,0.0,-11.5,-11.5,-11.5,0,2,0,0.0,0.0,1,1,,-11.5,,0.0,,-2,3,2,,,2026-03-04T22:42:50Z
+85,IU Indianapolis Jaguars,Horizon League,Horizon League,0.0,0.0,0.0,-5.8333,-5.8333,-5.8333,0,3,0,0.0,0.0,1,2,,-5.8333,,0.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+87,Notre Dame Fighting Irish,Atlantic Coast Conference,Atlantic Coast Conference,0.5,0.5,0.5,-7.0,-7.0,-7.0,1,1,0,,0.5,0,2,12.5,-26.5,,0.5,,1,3,2,,,2026-03-04T22:42:50Z
+88,Southern Indiana Screaming Eagles,Ohio Valley Conference,Ohio Valley Conference,0.5,0.5,0.5,-3.0,-3.0,-3.0,1,1,0,0.5,,2,0,6.5,-12.5,,,0.5,1,2,2,,,2026-03-04T22:42:50Z
+91,Bellarmine Knights,ASUN Conference,ASUN Conference,0.6667,0.6667,0.6667,4.1667,4.1667,4.1667,2,1,0,1.0,0.5,1,2,10.0,-7.5,,1.0,0.0,1,3,3,,,2026-03-04T22:42:50Z
+93,Murray State Racers,Missouri Valley Conference,Missouri Valley Conference,0.0,0.0,0.0,-4.5,-4.5,-4.5,0,1,0,0.0,,1,0,,-4.5,,,0.0,0,1,1,,,2026-03-04T22:42:50Z
+94,Northern Kentucky Norse,Horizon League,Horizon League,0.5,0.5,0.5,-0.5,-0.5,-0.5,1,1,0,0.0,1.0,1,1,2.5,-3.5,,0.0,1.0,-1,3,2,,,2026-03-04T22:42:50Z
+96,Kentucky Wildcats,Southeastern Conference,Southeastern Conference,0.6667,0.6667,0.6667,1.8333,1.8333,1.8333,2,1,0,0.5,1.0,2,1,7.0,-8.5,,1.0,0.5,2,3,3,,,2026-03-04T22:42:50Z
+97,Louisville Cardinals,Atlantic Coast Conference,Atlantic Coast Conference,0.5,0.5,0.5,-2.0,-2.0,-2.0,1,1,0,1.0,0.0,1,1,2.5,-6.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+98,Western Kentucky Hilltoppers,Conference USA,Conference USA,1.0,1.0,1.0,20.5,20.5,20.5,2,0,0,1.0,,2,0,20.5,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+99,LSU Tigers,Southeastern Conference,Southeastern Conference,0.3333,0.3333,0.3333,-4.8333,-4.8333,-4.8333,1,2,0,0.3333,,3,0,8.5,-11.5,,0.0,0.5,-1,3,3,,,2026-03-04T22:42:50Z
+103,Boston College Eagles,Atlantic Coast Conference,Atlantic Coast Conference,0.6667,0.6667,0.6667,0.5,0.5,0.5,2,1,0,0.5,1.0,2,1,4.0,-6.5,,1.0,0.5,-1,3,3,,,2026-03-04T22:42:50Z
+104,Boston University Terriers,Patriot League,Patriot League,1.0,1.0,1.0,6.0,6.0,6.0,2,0,0,1.0,,2,0,6.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+107,Holy Cross Crusaders,Patriot League,Patriot League,0.3333,0.3333,0.3333,-4.5,-4.5,-4.5,1,2,0,0.3333,,3,0,8.5,-11.0,,0.0,0.5,-2,3,3,,,2026-03-04T22:42:50Z
+108,Harvard Crimson,Ivy League,Ivy League,0.0,0.0,0.0,-2.0,-2.0,-2.0,0,2,0,0.0,0.0,1,1,,-2.0,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+111,Northeastern Huskies,Colonial Athletic Association,Colonial Athletic Association,0.3333,0.3333,0.3333,-1.1667,-1.1667,-1.1667,1,2,0,0.5,0.0,2,1,4.5,-4.0,,0.0,0.5,-1,3,3,,,2026-03-04T22:42:50Z
+113,Massachusetts Minutemen,Mid-American Conference,Mid-American Conference,0.3333,0.3333,0.3333,-3.1667,-3.1667,-3.1667,1,2,0,0.5,0.0,2,1,9.5,-9.5,,1.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+116,Mount St. Mary's Mountaineers,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.5,0.5,0.5,10.5,10.5,10.5,1,1,0,0.5,,2,0,26.5,-5.5,,,0.5,-1,2,2,,,2026-03-04T22:42:50Z
+119,Towson Tigers,Colonial Athletic Association,Colonial Athletic Association,0.3333,0.3333,0.3333,2.1667,2.1667,2.1667,1,2,0,0.0,1.0,2,1,10.5,-2.0,,0.0,1.0,-2,3,3,,,2026-03-04T22:42:50Z
+120,Maryland Terrapins,Big Ten,Big Ten,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,0.5,,2,0,4.5,-9.5,,0.0,1.0,-1,3,2,,,2026-03-04T22:42:50Z
+127,Michigan State Spartans,Big Ten,Big Ten,1.0,1.0,1.0,9.0,9.0,9.0,2,0,0,1.0,1.0,1,1,9.0,,,,1.0,1,2,2,,,2026-03-04T22:42:50Z
+130,Michigan Wolverines,Big Ten,Big Ten,0.5,0.5,0.5,0.5,0.5,0.5,1,1,0,0.0,1.0,1,1,12.5,-11.5,,0.0,1.0,-1,2,2,,,2026-03-04T22:42:50Z
+135,Minnesota Golden Gophers,Big Ten,Big Ten,1.0,1.0,1.0,9.0,9.0,9.0,2,0,0,1.0,1.0,1,1,9.0,,,1.0,1.0,2,3,2,,,2026-03-04T22:42:50Z
+139,Saint Louis Billikens,Atlantic 10,Atlantic 10,0.0,0.0,0.0,-10.0,-10.0,-10.0,0,2,0,0.0,0.0,1,1,,-10.0,,0.0,0.0,-2,3,2,,,2026-03-04T22:42:50Z
+140,Kansas City Roos,Summit League,Summit League,0.0,0.0,0.0,-10.5,-10.5,-10.5,0,2,0,,0.0,0,2,,-10.5,,0.0,,-2,3,2,,,2026-03-04T22:42:50Z
+142,Missouri Tigers,Southeastern Conference,Southeastern Conference,0.6667,0.6667,0.6667,5.1667,5.1667,5.1667,2,1,0,0.0,1.0,1,2,14.5,-13.5,,1.0,0.5,2,3,3,,,2026-03-04T22:42:50Z
+145,Ole Miss Rebels,Southeastern Conference,Southeastern Conference,0.6667,0.6667,0.6667,3.5,3.5,3.5,2,1,0,0.5,1.0,2,1,9.5,-8.5,,0.5,1.0,1,3,3,,,2026-03-04T22:42:50Z
+147,Montana State Bobcats,Big Sky Conference,Big Sky Conference,1.0,1.0,1.0,9.8333,9.8333,9.8333,3,0,0,1.0,1.0,2,1,9.8333,,,1.0,1.0,2,3,3,,,2026-03-04T22:42:50Z
+149,Montana Grizzlies,Big Sky Conference,Big Sky Conference,0.6667,0.6667,0.6667,-5.8333,-5.8333,-5.8333,2,1,0,0.6667,,3,0,2.5,-22.5,,1.0,0.0,2,3,3,,,2026-03-04T22:42:50Z
+150,Duke Blue Devils,Atlantic Coast Conference,Atlantic Coast Conference,1.0,1.0,1.0,20.5,20.5,20.5,3,0,0,1.0,1.0,1,2,20.5,,,1.0,1.0,2,3,3,,,2026-03-04T22:42:50Z
+151,East Carolina Pirates,American Athletic Conference,American Athletic Conference,0.5,0.5,0.5,9.0,9.0,9.0,1,1,0,,0.5,0,2,21.5,-3.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+152,NC State Wolfpack,Atlantic Coast Conference,Atlantic Coast Conference,0.0,0.0,0.0,-18.5,-18.5,-18.5,0,3,0,0.0,0.0,1,2,,-18.5,,0.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+153,North Carolina Tar Heels,Atlantic Coast Conference,Atlantic Coast Conference,1.0,1.0,1.0,0.5,0.5,0.5,2,0,0,1.0,,2,0,0.5,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+154,Wake Forest Demon Deacons,Atlantic Coast Conference,Atlantic Coast Conference,0.6667,0.6667,0.6667,1.5,1.5,1.5,2,1,0,1.0,0.0,2,1,5.0,-5.5,,1.0,0.5,1,3,3,,,2026-03-04T22:42:50Z
+155,North Dakota Fighting Hawks,Summit League,Summit League,0.0,0.0,0.0,-20.5,-20.5,-20.5,0,1,0,0.0,,1,0,,-20.5,,,0.0,0,1,1,,,2026-03-04T22:42:50Z
+156,Creighton Bluejays,Big East,Big East,0.0,0.0,0.0,-5.0,-5.0,-5.0,0,2,0,0.0,,2,0,,-5.0,,0.0,,-2,3,2,,,2026-03-04T22:42:50Z
+158,Nebraska Cornhuskers,Big Ten,Big Ten,0.3333,0.3333,0.3333,-4.1667,-4.1667,-4.1667,1,2,0,0.0,1.0,2,1,10.5,-11.5,,0.0,0.5,1,3,3,,,2026-03-04T22:42:50Z
+159,Dartmouth Big Green,Ivy League,Ivy League,0.0,0.0,0.0,-10.5,-10.5,-10.5,0,2,0,0.0,,2,0,,-10.5,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+160,New Hampshire Wildcats,America East Conference,America East Conference,0.3333,0.3333,0.3333,-7.1667,-7.1667,-7.1667,1,2,0,0.5,0.0,2,1,2.5,-12.0,,1.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+161,Fairleigh Dickinson Knights,Northeast Conference,Northeast Conference,0.0,0.0,0.0,-8.0,-8.0,-8.0,0,2,0,0.0,,2,0,,-8.0,,,0.0,-2,3,2,,,2026-03-04T22:42:50Z
+163,Princeton Tigers,Ivy League,Ivy League,1.0,1.0,1.0,11.0,11.0,11.0,2,0,0,1.0,1.0,1,1,11.0,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+164,Rutgers Scarlet Knights,Big Ten,Big Ten,1.0,1.0,1.0,9.5,9.5,9.5,1,0,0,1.0,,1,0,9.5,,,,1.0,0,1,1,,,2026-03-04T22:42:50Z
+166,New Mexico State Aggies,Conference USA,Conference USA,0.5,0.5,0.5,-7.0,-7.0,-7.0,1,1,0,0.5,,2,0,4.5,-18.5,,,0.5,-1,2,2,,,2026-03-04T22:42:50Z
+167,New Mexico Lobos,Mountain West,Mountain West,0.5,0.5,0.5,-1.5,-1.5,-1.5,1,1,0,0.5,,2,0,2.5,-5.5,,1.0,0.0,1,3,2,,,2026-03-04T22:42:50Z
+171,Columbia Lions,Ivy League,Ivy League,0.5,0.5,0.5,6.0,6.0,6.0,1,1,0,1.0,0.0,1,1,12.5,-0.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+172,Cornell Big Red,Ivy League,Ivy League,0.5,0.5,0.5,1.5,1.5,1.5,1,1,0,0.0,1.0,1,1,6.5,-3.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+179,St. Bonaventure Bonnies,Atlantic 10,Atlantic 10,0.5,0.5,0.5,3.5,3.5,3.5,1,1,0,0.5,,2,0,15.5,-8.5,,1.0,0.0,-1,3,2,,,2026-03-04T22:42:50Z
+183,Syracuse Orange,Atlantic Coast Conference,Atlantic Coast Conference,0.0,0.0,0.0,-1.5,-1.5,-1.5,0,2,0,0.0,,2,0,,-1.5,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+189,Bowling Green Falcons,Mid-American Conference,Mid-American Conference,0.5,0.5,0.5,-3.5,-3.5,-3.5,1,1,0,0.5,,2,0,13.5,-20.5,,0.5,,-1,2,2,,,2026-03-04T22:42:50Z
+193,Miami (OH) RedHawks,Mid-American Conference,Mid-American Conference,0.3333,0.3333,0.3333,-4.8333,-4.8333,-4.8333,1,2,0,0.0,0.5,1,2,1.5,-8.0,,0.0,0.5,-1,3,3,,,2026-03-04T22:42:50Z
+194,Ohio State Buckeyes,Big Ten,Big Ten,0.5,0.5,0.5,2.0,2.0,2.0,1,1,0,0.0,1.0,1,1,14.5,-10.5,,1.0,0.0,1,3,2,,,2026-03-04T22:42:50Z
+195,Ohio Bobcats,Mid-American Conference,Mid-American Conference,0.0,0.0,0.0,-11.5,-11.5,-11.5,0,2,0,0.0,,2,0,,-11.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+197,Oklahoma State Cowboys,Big 12,Big 12,0.6667,0.6667,0.6667,2.5,2.5,2.5,2,1,0,0.6667,,3,0,10.5,-13.5,,1.0,0.5,-1,3,3,,,2026-03-04T22:42:50Z
+198,Oral Roberts Golden Eagles,Summit League,Summit League,1.0,1.0,1.0,22.0,22.0,22.0,2,0,0,,1.0,0,2,22.0,,,1.0,1.0,2,3,2,,,2026-03-04T22:42:50Z
+201,Oklahoma Sooners,Southeastern Conference,Southeastern Conference,1.0,1.0,1.0,15.5,15.5,15.5,3,0,0,1.0,1.0,2,1,15.5,,,1.0,1.0,2,3,3,,,2026-03-04T22:42:50Z
+202,Tulsa Golden Hurricane,American Athletic Conference,American Athletic Conference,1.0,1.0,1.0,28.5,28.5,28.5,1,0,0,,1.0,0,1,28.5,,,,1.0,0,1,1,,,2026-03-04T22:42:50Z
+204,Oregon State Beavers,West Coast Conference,West Coast Conference,0.5,0.5,0.5,-0.5,-0.5,-0.5,1,1,0,0.5,,2,0,3.5,-4.5,,1.0,0.0,1,2,2,,,2026-03-04T22:42:50Z
+213,Penn State Nittany Lions,Big Ten,Big Ten,1.0,1.0,1.0,11.5,11.5,11.5,1,0,0,,1.0,0,1,11.5,,,1.0,,1,2,1,,,2026-03-04T22:42:50Z
+218,Temple Owls,American Athletic Conference,American Athletic Conference,0.0,0.0,0.0,-7.0,-7.0,-7.0,0,2,0,0.0,,2,0,,-7.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+219,Pennsylvania Quakers,Ivy League,Ivy League,1.0,1.0,1.0,1.5,1.5,1.5,2,0,0,1.0,,2,0,1.5,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+221,Pittsburgh Panthers,Atlantic Coast Conference,Atlantic Coast Conference,1.0,1.0,1.0,12.0,12.0,12.0,2,0,0,1.0,,2,0,12.0,,,,1.0,2,3,2,,,2026-03-04T22:42:50Z
+222,Villanova Wildcats,Big East,Big East,0.0,0.0,0.0,-13.0,-13.0,-13.0,0,2,0,0.0,,2,0,,-13.0,,0.0,0.0,-2,3,2,,,2026-03-04T22:42:50Z
+225,Brown Bears,Ivy League,Ivy League,0.5,0.5,0.5,-4.5,-4.5,-4.5,1,1,0,0.5,,2,0,3.5,-12.5,,,0.5,-1,2,2,,,2026-03-04T22:42:50Z
+227,Rhode Island Rams,Atlantic 10,Atlantic 10,0.0,0.0,0.0,-12.5,-12.5,-12.5,0,2,0,0.0,,2,0,,-12.5,,0.0,0.0,-2,3,2,,,2026-03-04T22:42:50Z
+228,Clemson Tigers,Atlantic Coast Conference,Atlantic Coast Conference,0.5,0.5,0.5,3.0,3.0,3.0,1,1,0,0.0,1.0,1,1,6.5,-0.5,,1.0,0.0,1,2,2,,,2026-03-04T22:42:50Z
+231,Furman Paladins,Southern Conference,Southern Conference,0.5,0.5,0.5,-7.5,-7.5,-7.5,1,1,0,1.0,0.0,1,1,5.5,-20.5,,1.0,0.0,1,2,2,,,2026-03-04T22:42:50Z
+232,Charleston Cougars,Colonial Athletic Association,Colonial Athletic Association,1.0,1.0,1.0,8.5,8.5,8.5,2,0,0,1.0,1.0,1,1,8.5,,,,1.0,1,2,2,,,2026-03-04T22:42:50Z
+233,South Dakota Coyotes,Summit League,Summit League,1.0,1.0,1.0,13.0,13.0,13.0,2,0,0,,1.0,0,2,13.0,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+235,Memphis Tigers,American Athletic Conference,American Athletic Conference,0.0,0.0,0.0,-14.5,-14.5,-14.5,0,2,0,0.0,0.0,1,1,,-14.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+236,Chattanooga Mocs,Southern Conference,Southern Conference,0.0,0.0,0.0,-7.0,-7.0,-7.0,0,2,0,0.0,,2,0,,-7.0,,0.0,,-1,2,2,,,2026-03-04T22:42:50Z
+238,Vanderbilt Commodores,Southeastern Conference,Southeastern Conference,0.3333,0.3333,0.3333,-5.1667,-5.1667,-5.1667,1,2,0,0.5,0.0,2,1,0.5,-8.0,,1.0,0.0,-1,3,3,,,2026-03-04T22:42:50Z
+239,Baylor Bears,Big 12,Big 12,1.0,1.0,1.0,2.0,2.0,2.0,2,0,0,1.0,1.0,1,1,2.0,,,1.0,1.0,2,3,2,,,2026-03-04T22:42:50Z
+242,Rice Owls,American Athletic Conference,American Athletic Conference,0.5,0.5,0.5,3.0,3.0,3.0,1,1,0,1.0,0.0,1,1,13.5,-7.5,,0.0,1.0,1,3,2,,,2026-03-04T22:42:50Z
+245,Texas A&M Aggies,Southeastern Conference,Southeastern Conference,0.3333,0.3333,0.3333,-2.8333,-2.8333,-2.8333,1,2,0,0.3333,,3,0,8.5,-8.5,,0.5,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+248,Houston Cougars,Big 12,Big 12,1.0,1.0,1.0,20.5,20.5,20.5,1,0,0,1.0,,1,0,20.5,,,1.0,,1,2,1,,,2026-03-04T22:42:50Z
+249,North Texas Mean Green,American Athletic Conference,American Athletic Conference,0.5,0.5,0.5,3.0,3.0,3.0,1,1,0,1.0,0.0,1,1,8.5,-2.5,,,0.5,1,3,2,,,2026-03-04T22:42:50Z
+250,UT Arlington Mavericks,Western Athletic Conference,Western Athletic Conference,0.0,0.0,0.0,-5.5,-5.5,-5.5,0,1,0,0.0,,1,0,,-5.5,,,0.0,0,1,1,,,2026-03-04T22:42:50Z
+251,Texas Longhorns,Southeastern Conference,Southeastern Conference,0.5,0.5,0.5,1.5,1.5,1.5,1,1,0,1.0,0.0,1,1,9.5,-6.5,,0.0,1.0,1,3,2,,,2026-03-04T22:42:50Z
+252,BYU Cougars,Big 12,Big 12,0.0,0.0,0.0,-18.8333,-18.8333,-18.8333,0,3,0,0.0,0.0,2,1,,-18.8333,,0.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+253,Southern Utah Thunderbirds,Western Athletic Conference,Western Athletic Conference,1.0,1.0,1.0,15.5,15.5,15.5,1,0,0,,1.0,0,1,15.5,,,1.0,,0,1,1,,,2026-03-04T22:42:50Z
+254,Utah Utes,Big 12,Big 12,0.0,0.0,0.0,-7.8333,-7.8333,-7.8333,0,3,0,0.0,0.0,2,1,,-7.8333,,0.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+256,James Madison Dukes,Sun Belt Conference,Sun Belt Conference,0.5,0.5,0.5,2.0,2.0,2.0,1,1,0,0.5,,2,0,10.5,-6.5,,0.5,,-1,3,2,,,2026-03-04T22:42:50Z
+257,Richmond Spiders,Atlantic 10,Atlantic 10,0.5,0.5,0.5,-3.5,-3.5,-3.5,1,1,0,,0.5,0,2,0.5,-7.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+258,Virginia Cavaliers,Atlantic Coast Conference,Atlantic Coast Conference,0.3333,0.3333,0.3333,-0.5,-0.5,-0.5,1,2,0,0.3333,,3,0,23.5,-12.5,,0.5,0.0,-1,3,3,,,2026-03-04T22:42:50Z
+259,Virginia Tech Hokies,Atlantic Coast Conference,Atlantic Coast Conference,0.0,0.0,0.0,-1.5,-1.5,-1.5,0,2,0,0.0,,2,0,,-1.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+261,Vermont Catamounts,America East Conference,America East Conference,0.5,0.5,0.5,-1.0,-1.0,-1.0,1,1,0,0.5,,2,0,5.5,-7.5,,0.5,,-1,2,2,,,2026-03-04T22:42:50Z
+264,Washington Huskies,Big Ten,Big Ten,0.0,0.0,0.0,-15.5,-15.5,-15.5,0,1,0,,0.0,0,1,,-15.5,,0.0,,-1,2,1,,,2026-03-04T22:42:50Z
+265,Washington State Cougars,West Coast Conference,West Coast Conference,0.0,0.0,0.0,-9.5,-9.5,-9.5,0,2,0,,0.0,0,2,,-9.5,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+269,Marquette Golden Eagles,Big East,Big East,0.5,0.5,0.5,2.0,2.0,2.0,1,1,0,0.5,,2,0,18.5,-14.5,,0.0,1.0,-1,3,2,,,2026-03-04T22:42:50Z
+270,Milwaukee Panthers,Horizon League,Horizon League,1.0,1.0,1.0,14.5,14.5,14.5,1,0,0,,1.0,0,1,14.5,,,1.0,,1,2,1,,,2026-03-04T22:42:50Z
+275,Wisconsin Badgers,Big Ten,Big Ten,0.5,0.5,0.5,-2.0,-2.0,-2.0,1,1,0,,0.5,0,2,15.5,-19.5,,,0.5,1,3,2,,,2026-03-04T22:42:50Z
+276,Marshall Thundering Herd,Sun Belt Conference,Sun Belt Conference,0.5,0.5,0.5,-11.0,-11.0,-11.0,1,1,0,0.5,,2,0,1.5,-23.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+277,West Virginia Mountaineers,Big 12,Big 12,0.3333,0.3333,0.3333,0.5,0.5,0.5,1,2,0,0.0,0.5,1,2,10.5,-4.5,,1.0,0.0,1,3,3,,,2026-03-04T22:42:50Z
+278,Fresno State Bulldogs,Mountain West,Mountain West,0.6667,0.6667,0.6667,0.8333,0.8333,0.8333,2,1,0,1.0,0.0,2,1,5.5,-8.5,,0.5,1.0,-1,3,3,,,2026-03-04T22:42:50Z
+279,Pacific Tigers,West Coast Conference,West Coast Conference,0.0,0.0,0.0,-15.5,-15.5,-15.5,0,1,0,0.0,,1,0,,-15.5,,0.0,,0,1,1,,,2026-03-04T22:42:50Z
+282,Indiana State Sycamores,Missouri Valley Conference,Missouri Valley Conference,0.5,0.5,0.5,8.0,8.0,8.0,1,1,0,0.0,1.0,1,1,19.5,-3.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+284,Stonehill Skyhawks,Northeast Conference,Northeast Conference,0.5,0.5,0.5,9.5,9.5,9.5,1,1,0,1.0,0.0,1,1,20.5,-1.5,,0.5,,-1,3,2,,,2026-03-04T22:42:50Z
+288,Lipscomb Bisons,ASUN Conference,ASUN Conference,0.5,0.5,0.5,-6.0,-6.0,-6.0,1,1,0,,0.5,0,2,0.5,-12.5,,,0.5,-1,2,2,,,2026-03-04T22:42:50Z
+290,Georgia Southern Eagles,Sun Belt Conference,Sun Belt Conference,0.5,0.5,0.5,6.5,6.5,6.5,1,1,0,0.5,,2,0,23.5,-10.5,,,0.5,1,3,2,,,2026-03-04T22:42:50Z
+292,UT Rio Grande Valley Vaqueros,Southland Conference,Southland Conference,0.5,0.5,0.5,0.5,0.5,0.5,1,1,0,0.5,,2,0,2.5,-1.5,,0.5,,-1,2,2,,,2026-03-04T22:42:50Z
+294,Jacksonville Dolphins,ASUN Conference,ASUN Conference,0.3333,0.3333,0.3333,6.1667,6.1667,6.1667,1,2,0,0.0,1.0,2,1,22.5,-2.0,,0.0,0.5,1,3,3,,,2026-03-04T22:42:50Z
+295,Old Dominion Monarchs,Sun Belt Conference,Sun Belt Conference,0.3333,0.3333,0.3333,0.5,0.5,0.5,1,2,0,0.0,1.0,2,1,6.5,-2.5,,0.0,0.5,-1,4,3,,,2026-03-04T22:42:50Z
+299,Long Beach State Beach,Big West Conference,Big West Conference,0.0,0.0,0.0,-4.0,-4.0,-4.0,0,2,0,0.0,0.0,1,1,,-4.0,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+300,UC Irvine Anteaters,Big West Conference,Big West Conference,1.0,1.0,1.0,1.5,1.5,1.5,2,0,0,1.0,,2,0,1.5,,,1.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+301,San Diego Toreros,West Coast Conference,West Coast Conference,0.0,0.0,0.0,-6.5,-6.5,-6.5,0,2,0,0.0,,2,0,,-6.5,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+302,UC Davis Aggies,Big West Conference,Big West Conference,0.0,0.0,0.0,-2.5,-2.5,-2.5,0,1,0,,0.0,0,1,,-2.5,,0.0,,0,1,1,,,2026-03-04T22:42:50Z
+304,Idaho State Bengals,Big Sky Conference,Big Sky Conference,0.0,0.0,0.0,-14.0,-14.0,-14.0,0,2,0,0.0,,2,0,,-14.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+305,DePaul Blue Demons,Big East,Big East,1.0,1.0,1.0,9.5,9.5,9.5,2,0,0,1.0,,2,0,9.5,,,,1.0,2,3,2,,,2026-03-04T22:42:50Z
+309,Louisiana Ragin' Cajuns,Sun Belt Conference,Sun Belt Conference,0.3333,0.3333,0.3333,-1.8333,-1.8333,-1.8333,1,2,0,0.0,1.0,2,1,10.5,-8.0,,1.0,0.0,1,4,3,,,2026-03-04T22:42:50Z
+311,Maine Black Bears,America East Conference,America East Conference,0.3333,0.3333,0.3333,0.8333,0.8333,0.8333,1,2,0,0.5,0.0,2,1,17.5,-7.5,,0.0,0.5,-1,3,3,,,2026-03-04T22:42:50Z
+314,Iona Gaels,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,1.0,1.0,1.0,6.0,6.0,6.0,2,0,0,1.0,1.0,1,1,6.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+315,Niagara Purple Eagles,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,1.0,1.0,1.0,6.0,6.0,6.0,2,0,0,,1.0,0,2,6.0,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+322,Lafayette Leopards,Patriot League,Patriot League,0.6667,0.6667,0.6667,1.1667,1.1667,1.1667,2,1,0,0.6667,,3,0,6.0,-8.5,,0.5,1.0,2,3,3,,,2026-03-04T22:42:50Z
+324,Coastal Carolina Chanticleers,Sun Belt Conference,Sun Belt Conference,1.0,1.0,1.0,5.0,5.0,5.0,2,0,0,1.0,1.0,1,1,5.0,,,,1.0,1,2,2,,,2026-03-04T22:42:50Z
+325,Cleveland State Vikings,Horizon League,Horizon League,0.3333,0.3333,0.3333,-0.5,-0.5,-0.5,1,2,0,0.5,0.0,2,1,6.5,-4.0,,0.5,0.0,1,4,3,,,2026-03-04T22:42:50Z
+326,Texas State Bobcats,Sun Belt Conference,Sun Belt Conference,1.0,1.0,1.0,4.5,4.5,4.5,1,0,0,,1.0,0,1,4.5,,,1.0,,0,1,1,,,2026-03-04T22:42:50Z
+328,Utah State Aggies,Mountain West,Mountain West,0.0,0.0,0.0,-18.5,-18.5,-18.5,0,3,0,0.0,0.0,2,1,,-18.5,,0.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+331,Eastern Washington Eagles,Big Sky Conference,Big Sky Conference,0.6667,0.6667,0.6667,8.5,8.5,8.5,2,1,0,0.5,1.0,2,1,16.5,-7.5,,0.6667,,2,3,3,,,2026-03-04T22:42:50Z
+333,Alabama Crimson Tide,Southeastern Conference,Southeastern Conference,0.6667,0.6667,0.6667,2.5,2.5,2.5,2,1,0,1.0,0.0,2,1,9.5,-11.5,,1.0,0.5,2,3,3,,,2026-03-04T22:42:50Z
+338,Kennesaw State Owls,Conference USA,Conference USA,0.5,0.5,0.5,3.5,3.5,3.5,1,1,0,0.0,1.0,1,1,10.5,-3.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+339,Evansville Purple Aces,Missouri Valley Conference,Missouri Valley Conference,0.3333,0.3333,0.3333,-5.1667,-5.1667,-5.1667,1,2,0,0.0,0.5,1,2,5.5,-10.5,,0.5,0.0,1,3,3,,,2026-03-04T22:42:50Z
+344,Mississippi State Bulldogs,Southeastern Conference,Southeastern Conference,0.0,0.0,0.0,-15.5,-15.5,-15.5,0,3,0,0.0,0.0,2,1,,-15.5,,0.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+349,Army Black Knights,Patriot League,Patriot League,0.0,0.0,0.0,-5.1667,-5.1667,-5.1667,0,3,0,0.0,,3,0,,-5.1667,,0.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+350,UNC Wilmington Seahawks,Colonial Athletic Association,Colonial Athletic Association,0.6667,0.6667,0.6667,5.5,5.5,5.5,2,1,0,0.5,1.0,2,1,12.0,-7.5,,0.5,1.0,0,3,3,,,2026-03-04T22:42:50Z
+356,Illinois Fighting Illini,Big Ten,Big Ten,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,1.0,0.0,1,1,7.5,-12.5,,0.5,,-1,2,2,,,2026-03-04T22:42:50Z
+357,Texas A&M-Corpus Christi Islanders,Southland Conference,Southland Conference,1.0,1.0,1.0,5.5,5.5,5.5,2,0,0,1.0,,2,0,5.5,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+399,UAlbany Great Danes,America East Conference,America East Conference,0.3333,0.3333,0.3333,-0.8333,-0.8333,-0.8333,1,2,0,0.3333,,3,0,20.5,-11.5,,0.5,0.0,1,3,3,,,2026-03-04T22:42:50Z
+526,Florida Gulf Coast Eagles,ASUN Conference,ASUN Conference,0.0,0.0,0.0,-11.5,-11.5,-11.5,0,3,0,0.0,0.0,1,2,,-11.5,,0.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+2000,Abilene Christian Wildcats,Western Athletic Conference,Western Athletic Conference,0.5,0.5,0.5,3.0,3.0,3.0,1,1,0,0.5,,2,0,7.5,-1.5,,,0.5,-1,2,2,,,2026-03-04T22:42:50Z
+2005,Air Force Falcons,Mountain West,Mountain West,0.6667,0.6667,0.6667,3.8333,3.8333,3.8333,2,1,0,1.0,0.5,1,2,9.0,-6.5,,0.5,1.0,2,3,3,,,2026-03-04T22:42:50Z
+2006,Akron Zips,Mid-American Conference,Mid-American Conference,0.6667,0.6667,0.6667,6.1667,6.1667,6.1667,2,1,0,0.0,1.0,1,2,10.0,-1.5,,0.0,1.0,1,3,3,,,2026-03-04T22:42:50Z
+2010,Alabama A&M Bulldogs,Southwestern Athletic Conference,Southwestern Athletic Conference,0.5,0.5,0.5,4.5,4.5,4.5,1,1,0,0.5,,2,0,12.5,-3.5,,0.5,,-1,2,2,,,2026-03-04T22:42:50Z
+2011,Alabama State Hornets,Southwestern Athletic Conference,Southwestern Athletic Conference,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,0.5,,2,0,3.5,-8.5,,0.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2016,Alcorn State Braves,Southwestern Athletic Conference,Southwestern Athletic Conference,0.3333,0.3333,0.3333,-6.8333,-6.8333,-6.8333,1,2,0,0.3333,,3,0,1.5,-11.0,,0.0,0.5,-1,3,3,,,2026-03-04T22:42:50Z
+2026,App State Mountaineers,Sun Belt Conference,Sun Belt Conference,0.0,0.0,0.0,-4.5,-4.5,-4.5,0,1,0,,0.0,0,1,,-4.5,,,0.0,0,1,1,,,2026-03-04T22:42:50Z
+2029,Arkansas-Pine Bluff Golden Lions,Southwestern Athletic Conference,Southwestern Athletic Conference,0.0,0.0,0.0,-8.0,-8.0,-8.0,0,2,0,0.0,,2,0,,-8.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2031,Little Rock Trojans,Ohio Valley Conference,Ohio Valley Conference,0.5,0.5,0.5,2.0,2.0,2.0,1,1,0,0.5,,2,0,12.5,-8.5,,0.5,,1,3,2,,,2026-03-04T22:42:50Z
+2032,Arkansas State Red Wolves,Sun Belt Conference,Sun Belt Conference,0.5,0.5,0.5,2.0,2.0,2.0,1,1,0,0.5,,2,0,8.5,-4.5,,0.5,,-1,2,2,,,2026-03-04T22:42:50Z
+2046,Austin Peay Governors,ASUN Conference,ASUN Conference,0.0,0.0,0.0,-14.0,-14.0,-14.0,0,2,0,0.0,0.0,1,1,,-14.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2050,Ball State Cardinals,Mid-American Conference,Mid-American Conference,1.0,1.0,1.0,16.5,16.5,16.5,3,0,0,1.0,1.0,2,1,16.5,,,1.0,1.0,2,3,3,,,2026-03-04T22:42:50Z
+2057,Belmont Bruins,Missouri Valley Conference,Missouri Valley Conference,0.5,0.5,0.5,5.0,5.0,5.0,1,1,0,0.5,,2,0,15.5,-5.5,,1.0,0.0,1,2,2,,,2026-03-04T22:42:50Z
+2065,Bethune-Cookman Wildcats,Southwestern Athletic Conference,Southwestern Athletic Conference,1.0,1.0,1.0,4.0,4.0,4.0,2,0,0,1.0,1.0,1,1,4.0,,,,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2066,Binghamton Bearcats,America East Conference,America East Conference,1.0,1.0,1.0,4.5,4.5,4.5,2,0,0,1.0,1.0,1,1,4.5,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+2083,Bucknell Bison,Patriot League,Patriot League,0.6667,0.6667,0.6667,2.8333,2.8333,2.8333,2,1,0,0.6667,,3,0,6.5,-4.5,,1.0,0.5,-1,3,3,,,2026-03-04T22:42:50Z
+2084,Buffalo Bulls,Mid-American Conference,Mid-American Conference,0.6667,0.6667,0.6667,-2.5,-2.5,-2.5,2,1,0,0.6667,,3,0,1.5,-10.5,,0.5,1.0,-1,3,3,,,2026-03-04T22:42:50Z
+2086,Butler Bulldogs,Big East,Big East,1.0,1.0,1.0,1.5,1.5,1.5,1,0,0,1.0,,1,0,1.5,,,,1.0,1,2,1,,,2026-03-04T22:42:50Z
+2097,Campbell Fighting Camels,Colonial Athletic Association,Colonial Athletic Association,0.6667,0.6667,0.6667,2.5,2.5,2.5,2,1,0,0.6667,,3,0,5.5,-3.5,,1.0,0.5,1,3,3,,,2026-03-04T22:42:50Z
+2099,Canisius Golden Griffins,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,1.0,1.0,1.0,9.5,9.5,9.5,2,0,0,,1.0,0,2,9.5,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+2110,Central Arkansas Bears,ASUN Conference,ASUN Conference,1.0,1.0,1.0,6.0,6.0,6.0,2,0,0,1.0,,2,0,6.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2115,Central Connecticut Blue Devils,Northeast Conference,Northeast Conference,0.0,0.0,0.0,-2.5,-2.5,-2.5,0,2,0,0.0,,2,0,,-2.5,,0.0,,-2,3,2,,,2026-03-04T22:42:50Z
+2116,UCF Knights,Big 12,Big 12,0.3333,0.3333,0.3333,2.5,2.5,2.5,1,2,0,0.3333,,3,0,25.5,-9.0,,0.0,1.0,-1,3,3,,,2026-03-04T22:42:50Z
+2117,Central Michigan Chippewas,Mid-American Conference,Mid-American Conference,0.6667,0.6667,0.6667,6.1667,6.1667,6.1667,2,1,0,1.0,0.0,2,1,10.0,-1.5,,0.0,1.0,2,3,3,,,2026-03-04T22:42:50Z
+2127,Charleston Southern Buccaneers,Big South Conference,Big South Conference,1.0,1.0,1.0,15.5,15.5,15.5,2,0,0,1.0,1.0,1,1,15.5,,,1.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2130,Chicago State Cougars,Northeast Conference,Northeast Conference,0.0,0.0,0.0,-9.5,-9.5,-9.5,0,2,0,0.0,,2,0,,-9.5,,,0.0,-2,3,2,,,2026-03-04T22:42:50Z
+2132,Cincinnati Bearcats,Big 12,Big 12,0.6667,0.6667,0.6667,9.5,9.5,9.5,2,1,0,0.6667,,3,0,17.0,-5.5,,1.0,0.0,1,3,3,,,2026-03-04T22:42:50Z
+2142,Colgate Raiders,Patriot League,Patriot League,0.0,0.0,0.0,-9.5,-9.5,-9.5,0,2,0,0.0,,2,0,,-9.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2154,Coppin State Eagles,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,0.5,0.5,0.5,0.5,0.5,0.5,1,1,0,0.0,1.0,1,1,2.5,-1.5,,1.0,0.0,1,2,2,,,2026-03-04T22:42:50Z
+2166,Davidson Wildcats,Atlantic 10,Atlantic 10,0.5,0.5,0.5,5.5,5.5,5.5,1,1,0,0.5,,2,0,14.5,-3.5,,0.0,1.0,-1,3,2,,,2026-03-04T22:42:50Z
+2168,Dayton Flyers,Atlantic 10,Atlantic 10,0.6667,0.6667,0.6667,7.8333,7.8333,7.8333,2,1,0,1.0,0.5,1,2,12.0,-0.5,,1.0,0.5,2,3,3,,,2026-03-04T22:42:50Z
+2169,Delaware State Hornets,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,0.0,0.0,0.0,-8.0,-8.0,-8.0,0,2,0,0.0,0.0,1,1,,-8.0,,0.0,,-1,2,2,,,2026-03-04T22:42:50Z
+2172,Denver Pioneers,Summit League,Summit League,0.0,0.0,0.0,-24.5,-24.5,-24.5,0,1,0,,0.0,0,1,,-24.5,,,0.0,0,1,1,,,2026-03-04T22:42:50Z
+2174,Detroit Mercy Titans,Horizon League,Horizon League,0.5,0.5,0.5,5.0,5.0,5.0,1,1,0,0.5,,2,0,13.5,-3.5,,,0.5,1,3,2,,,2026-03-04T22:42:50Z
+2181,Drake Bulldogs,Missouri Valley Conference,Missouri Valley Conference,0.0,0.0,0.0,-9.5,-9.5,-9.5,0,2,0,0.0,0.0,1,1,,-9.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2182,Drexel Dragons,Colonial Athletic Association,Colonial Athletic Association,0.5,0.5,0.5,0.5,0.5,0.5,1,1,0,0.5,,2,0,3.5,-2.5,,1.0,0.0,1,2,2,,,2026-03-04T22:42:50Z
+2184,Duquesne Dukes,Atlantic 10,Atlantic 10,0.5,0.5,0.5,-7.0,-7.0,-7.0,1,1,0,0.5,,2,0,0.5,-14.5,,0.0,1.0,1,3,2,,,2026-03-04T22:42:50Z
+2193,East Tennessee State Buccaneers,Southern Conference,Southern Conference,0.0,0.0,0.0,-7.5,-7.5,-7.5,0,2,0,0.0,,2,0,,-7.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2197,Eastern Illinois Panthers,Ohio Valley Conference,Ohio Valley Conference,0.5,0.5,0.5,-4.5,-4.5,-4.5,1,1,0,0.5,,2,0,11.5,-20.5,,,0.5,-1,3,2,,,2026-03-04T22:42:50Z
+2198,Eastern Kentucky Colonels,ASUN Conference,ASUN Conference,0.0,0.0,0.0,-7.5,-7.5,-7.5,0,2,0,,0.0,0,2,,-7.5,,0.0,,-2,3,2,,,2026-03-04T22:42:50Z
+2199,Eastern Michigan Eagles,Mid-American Conference,Mid-American Conference,0.0,0.0,0.0,-1.5,-1.5,-1.5,0,2,0,0.0,0.0,1,1,,-1.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2210,Elon Phoenix,Colonial Athletic Association,Colonial Athletic Association,0.3333,0.3333,0.3333,-7.8333,-7.8333,-7.8333,1,2,0,0.5,0.0,2,1,3.5,-13.5,,0.0,0.5,-1,3,3,,,2026-03-04T22:42:50Z
+2217,Fairfield Stags,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.5,0.5,0.5,-5.5,-5.5,-5.5,1,1,0,0.0,1.0,1,1,15.5,-26.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+2226,Florida Atlantic Owls,American Athletic Conference,American Athletic Conference,0.5,0.5,0.5,-3.0,-3.0,-3.0,1,1,0,0.5,,2,0,0.5,-6.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+2229,Florida International Panthers,Conference USA,Conference USA,0.5,0.5,0.5,-8.0,-8.0,-8.0,1,1,0,0.5,,2,0,10.5,-26.5,,,0.5,-1,2,2,,,2026-03-04T22:42:50Z
+2230,Fordham Rams,Atlantic 10,Atlantic 10,0.0,0.0,0.0,-6.5,-6.5,-6.5,0,1,0,0.0,,1,0,,-6.5,,,0.0,-1,2,1,,,2026-03-04T22:42:50Z
+2239,Cal State Fullerton Titans,Big West Conference,Big West Conference,1.0,1.0,1.0,1.5,1.5,1.5,1,0,0,,1.0,0,1,1.5,,,1.0,,0,1,1,,,2026-03-04T22:42:50Z
+2241,Gardner-Webb Runnin' Bulldogs,Big South Conference,Big South Conference,1.0,1.0,1.0,4.5,4.5,4.5,2,0,0,1.0,1.0,1,1,4.5,,,1.0,1.0,2,3,2,,,2026-03-04T22:42:50Z
+2244,George Mason Patriots,Atlantic 10,Atlantic 10,0.6667,0.6667,0.6667,-1.5,-1.5,-1.5,2,1,0,1.0,0.0,2,1,7.5,-19.5,,1.0,0.5,1,3,3,,,2026-03-04T22:42:50Z
+2247,Georgia State Panthers,Sun Belt Conference,Sun Belt Conference,0.0,0.0,0.0,-6.8333,-6.8333,-6.8333,0,3,0,,0.0,0,3,,-6.8333,,0.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+2250,Gonzaga Bulldogs,West Coast Conference,West Coast Conference,0.5,0.5,0.5,0.5,0.5,0.5,1,1,0,1.0,0.0,1,1,14.5,-13.5,,1.0,0.0,1,2,2,,,2026-03-04T22:42:50Z
+2253,Grand Canyon Lopes,Mountain West,Mountain West,1.0,1.0,1.0,5.8333,5.8333,5.8333,3,0,0,1.0,1.0,2,1,5.8333,,,1.0,1.0,2,3,3,,,2026-03-04T22:42:50Z
+2261,Hampton Pirates,Colonial Athletic Association,Colonial Athletic Association,0.6667,0.6667,0.6667,-0.1667,-0.1667,-0.1667,2,1,0,1.0,0.0,2,1,4.5,-9.5,,0.5,1.0,1,3,3,,,2026-03-04T22:42:50Z
+2272,High Point Panthers,Big South Conference,Big South Conference,0.0,0.0,0.0,-6.5,-6.5,-6.5,0,1,0,,0.0,0,1,,-6.5,,,0.0,0,1,1,,,2026-03-04T22:42:50Z
+2275,Hofstra Pride,Colonial Athletic Association,Colonial Athletic Association,0.5,0.5,0.5,-0.5,-0.5,-0.5,1,1,0,0.5,,2,0,2.5,-3.5,,0.5,,-1,2,2,,,2026-03-04T22:42:50Z
+2277,Houston Christian Huskies,Southland Conference,Southland Conference,0.5,0.5,0.5,5.5,5.5,5.5,1,1,0,,0.5,0,2,23.5,-12.5,,0.5,,-1,2,2,,,2026-03-04T22:42:50Z
+2287,Illinois State Redbirds,Missouri Valley Conference,Missouri Valley Conference,1.0,1.0,1.0,6.0,6.0,6.0,2,0,0,1.0,,2,0,6.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2294,Iowa Hawkeyes,Big Ten,Big Ten,0.5,0.5,0.5,-0.5,-0.5,-0.5,1,1,0,1.0,0.0,1,1,10.5,-11.5,,1.0,0.0,1,2,2,,,2026-03-04T22:42:50Z
+2296,Jackson State Tigers,Southwestern Athletic Conference,Southwestern Athletic Conference,0.3333,0.3333,0.3333,-7.8333,-7.8333,-7.8333,1,2,0,0.3333,,3,0,1.5,-12.5,,1.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+2305,Kansas Jayhawks,Big 12,Big 12,0.0,0.0,0.0,-14.5,-14.5,-14.5,0,2,0,0.0,0.0,1,1,,-14.5,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2306,Kansas State Wildcats,Big 12,Big 12,0.3333,0.3333,0.3333,-1.5,-1.5,-1.5,1,2,0,0.0,0.5,1,2,3.5,-4.0,,0.5,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+2309,Kent State Golden Flashes,Mid-American Conference,Mid-American Conference,0.3333,0.3333,0.3333,-3.8333,-3.8333,-3.8333,1,2,0,0.0,0.5,1,2,16.5,-14.0,,0.0,1.0,-2,3,3,,,2026-03-04T22:42:50Z
+2320,Lamar Cardinals,Southland Conference,Southland Conference,0.0,0.0,0.0,-18.5,-18.5,-18.5,0,2,0,,0.0,0,2,,-18.5,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2325,La Salle Explorers,Atlantic 10,Atlantic 10,0.5,0.5,0.5,-7.5,-7.5,-7.5,1,1,0,1.0,0.0,1,1,3.5,-18.5,,0.0,1.0,1,3,2,,,2026-03-04T22:42:50Z
+2329,Lehigh Mountain Hawks,Patriot League,Patriot League,1.0,1.0,1.0,8.0,8.0,8.0,2,0,0,1.0,,2,0,8.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2330,Le Moyne Dolphins,Northeast Conference,Northeast Conference,0.5,0.5,0.5,1.5,1.5,1.5,1,1,0,1.0,0.0,1,1,11.5,-8.5,,1.0,0.0,-1,3,2,,,2026-03-04T22:42:50Z
+2335,Liberty Flames,Conference USA,Conference USA,0.0,0.0,0.0,-5.5,-5.5,-5.5,0,2,0,,0.0,0,2,,-5.5,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2344,Longwood Lancers,Big South Conference,Big South Conference,1.0,1.0,1.0,17.5,17.5,17.5,1,0,0,,1.0,0,1,17.5,,,1.0,,0,1,1,,,2026-03-04T22:42:50Z
+2348,Louisiana Tech Bulldogs,Conference USA,Conference USA,0.0,0.0,0.0,-5.5,-5.5,-5.5,0,2,0,0.0,,2,0,,-5.5,,0.0,,-1,2,2,,,2026-03-04T22:42:50Z
+2349,UMass Lowell River Hawks,America East Conference,America East Conference,0.6667,0.6667,0.6667,-1.8333,-1.8333,-1.8333,2,1,0,1.0,0.5,1,2,8.5,-22.5,,0.0,1.0,-1,3,3,,,2026-03-04T22:42:50Z
+2350,Loyola Chicago Ramblers,Atlantic 10,Atlantic 10,1.0,1.0,1.0,7.5,7.5,7.5,1,0,0,,1.0,0,1,7.5,,,1.0,,1,2,1,,,2026-03-04T22:42:50Z
+2351,Loyola Marymount Lions,West Coast Conference,West Coast Conference,0.5,0.5,0.5,-2.0,-2.0,-2.0,1,1,0,0.0,1.0,1,1,2.5,-6.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+2352,Loyola Maryland Greyhounds,Patriot League,Patriot League,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,1.0,0.0,1,1,15.5,-20.5,,0.0,1.0,-1,2,2,,,2026-03-04T22:42:50Z
+2363,Manhattan Jaspers,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.0,0.0,0.0,-2.0,-2.0,-2.0,0,2,0,0.0,0.0,1,1,,-2.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2368,Marist Red Foxes,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.0,0.0,0.0,-10.5,-10.5,-10.5,0,1,0,0.0,,1,0,,-10.5,,0.0,,0,1,1,,,2026-03-04T22:42:50Z
+2377,McNeese Cowboys,Southland Conference,Southland Conference,0.0,0.0,0.0,-3.5,-3.5,-3.5,0,2,0,,0.0,0,2,,-3.5,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2378,UMBC Retrievers,America East Conference,America East Conference,1.0,1.0,1.0,19.1667,19.1667,19.1667,3,0,0,1.0,1.0,1,2,19.1667,,,1.0,1.0,2,3,3,,,2026-03-04T22:42:50Z
+2379,Maryland Eastern Shore Hawks,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,0.5,0.5,0.5,0.0,0.0,0.0,1,1,0,0.5,,2,0,5.5,-5.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+2382,Mercer Bears,Southern Conference,Southern Conference,0.5,0.5,0.5,-0.5,-0.5,-0.5,1,1,0,1.0,0.0,1,1,4.5,-5.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2385,Mercyhurst Lakers,Northeast Conference,Northeast Conference,1.0,1.0,1.0,1.5,1.5,1.5,2,0,0,1.0,1.0,1,1,1.5,,,,1.0,2,3,2,,,2026-03-04T22:42:50Z
+2390,Miami Hurricanes,Atlantic Coast Conference,Atlantic Coast Conference,1.0,1.0,1.0,7.0,7.0,7.0,2,0,0,1.0,1.0,1,1,7.0,,,1.0,1.0,2,3,2,,,2026-03-04T22:42:50Z
+2393,Middle Tennessee Blue Raiders,Conference USA,Conference USA,0.5,0.5,0.5,-1.5,-1.5,-1.5,1,1,0,0.5,,2,0,1.5,-4.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+2400,Mississippi Valley State Delta Devils,Southwestern Athletic Conference,Southwestern Athletic Conference,1.0,1.0,1.0,10.5,10.5,10.5,2,0,0,1.0,,2,0,10.5,,,,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2405,Monmouth Hawks,Colonial Athletic Association,Colonial Athletic Association,1.0,1.0,1.0,7.8333,7.8333,7.8333,3,0,0,1.0,1.0,2,1,7.8333,,,1.0,1.0,2,3,3,,,2026-03-04T22:42:50Z
+2413,Morehead State Eagles,Ohio Valley Conference,Ohio Valley Conference,0.5,0.5,0.5,1.0,1.0,1.0,1,1,0,0.5,,2,0,8.5,-6.5,,0.0,1.0,-1,2,2,,,2026-03-04T22:42:50Z
+2415,Morgan State Bears,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,0.6667,0.6667,0.6667,0.5,0.5,0.5,2,1,0,1.0,0.5,1,2,8.5,-15.5,,0.5,1.0,-1,3,3,,,2026-03-04T22:42:50Z
+2426,Navy Midshipmen,Patriot League,Patriot League,1.0,1.0,1.0,15.0,15.0,15.0,2,0,0,1.0,1.0,1,1,15.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2427,UNC Asheville Bulldogs,Big South Conference,Big South Conference,0.0,0.0,0.0,-14.0,-14.0,-14.0,0,2,0,0.0,0.0,1,1,,-14.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2428,North Carolina Central Eagles,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,1.0,1.0,1.0,8.5,8.5,8.5,2,0,0,1.0,1.0,1,1,8.5,,,,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2429,Charlotte 49ers,American Athletic Conference,American Athletic Conference,1.0,1.0,1.0,4.5,4.5,4.5,2,0,0,1.0,1.0,1,1,4.5,,,1.0,1.0,2,3,2,,,2026-03-04T22:42:50Z
+2430,UNC Greensboro Spartans,Southern Conference,Southern Conference,1.0,1.0,1.0,5.0,5.0,5.0,2,0,0,1.0,,2,0,5.0,,,,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2433,UL Monroe Warhawks,Sun Belt Conference,Sun Belt Conference,0.6667,0.6667,0.6667,-4.1667,-4.1667,-4.1667,2,1,0,0.6667,,3,0,4.0,-20.5,,,0.6667,1,3,3,,,2026-03-04T22:42:50Z
+2437,Omaha Mavericks,Summit League,Summit League,0.0,0.0,0.0,-10.5,-10.5,-10.5,0,2,0,0.0,0.0,1,1,,-10.5,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2439,UNLV Rebels,Mountain West,Mountain West,0.6667,0.6667,0.6667,10.8333,10.8333,10.8333,2,1,0,0.0,1.0,1,2,19.0,-5.5,,1.0,0.0,1,3,3,,,2026-03-04T22:42:50Z
+2440,Nevada Wolf Pack,Mountain West,Mountain West,0.3333,0.3333,0.3333,-3.1667,-3.1667,-3.1667,1,2,0,1.0,0.0,1,2,5.5,-7.5,,1.0,0.0,-1,3,3,,,2026-03-04T22:42:50Z
+2441,New Haven Chargers,Northeast Conference,Northeast Conference,0.5,0.5,0.5,4.0,4.0,4.0,1,1,0,0.0,1.0,1,1,8.5,-0.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2443,New Orleans Privateers,Southland Conference,Southland Conference,0.5,0.5,0.5,-3.0,-3.0,-3.0,1,1,0,0.0,1.0,1,1,5.5,-11.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+2447,Nicholls Colonels,Southland Conference,Southland Conference,1.0,1.0,1.0,2.5,2.5,2.5,2,0,0,1.0,1.0,1,1,2.5,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+2448,North Carolina A&T Aggies,Colonial Athletic Association,Colonial Athletic Association,0.3333,0.3333,0.3333,-5.5,-5.5,-5.5,1,2,0,0.0,1.0,2,1,3.5,-10.0,,1.0,0.0,1,3,3,,,2026-03-04T22:42:50Z
+2449,North Dakota State Bison,Summit League,Summit League,0.5,0.5,0.5,1.0,1.0,1.0,1,1,0,0.5,,2,0,20.5,-18.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2450,Norfolk State Spartans,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,0.0,0.0,0.0,-5.5,-5.5,-5.5,0,2,0,,0.0,0,2,,-5.5,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2453,North Alabama Lions,ASUN Conference,ASUN Conference,0.6667,0.6667,0.6667,1.8333,1.8333,1.8333,2,1,0,0.5,1.0,2,1,6.0,-6.5,,1.0,0.5,-1,3,3,,,2026-03-04T22:42:50Z
+2454,North Florida Ospreys,ASUN Conference,ASUN Conference,0.5,0.5,0.5,-5.0,-5.0,-5.0,1,1,0,,0.5,0,2,12.5,-22.5,,0.5,,-1,3,2,,,2026-03-04T22:42:50Z
+2458,Northern Colorado Bears,Big Sky Conference,Big Sky Conference,0.6667,0.6667,0.6667,7.5,7.5,7.5,2,1,0,1.0,0.0,2,1,17.0,-11.5,,1.0,0.5,1,3,3,,,2026-03-04T22:42:50Z
+2459,Northern Illinois Huskies,Mid-American Conference,Mid-American Conference,0.3333,0.3333,0.3333,-17.1667,-17.1667,-17.1667,1,2,0,0.5,0.0,2,1,2.5,-27.0,,0.0,1.0,-1,3,3,,,2026-03-04T22:42:50Z
+2460,Northern Iowa Panthers,Missouri Valley Conference,Missouri Valley Conference,0.5,0.5,0.5,6.0,6.0,6.0,1,1,0,0.0,1.0,1,1,18.5,-6.5,,0.0,1.0,-1,2,2,,,2026-03-04T22:42:50Z
+2463,Cal State Northridge Matadors,Big West Conference,Big West Conference,0.0,0.0,0.0,-9.0,-9.0,-9.0,0,2,0,0.0,0.0,1,1,,-9.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2464,Northern Arizona Lumberjacks,Big Sky Conference,Big Sky Conference,0.0,0.0,0.0,-12.1667,-12.1667,-12.1667,0,3,0,0.0,0.0,2,1,,-12.1667,,0.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+2466,Northwestern State Demons,Southland Conference,Southland Conference,0.0,0.0,0.0,-4.0,-4.0,-4.0,0,2,0,0.0,,2,0,,-4.0,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2473,Oakland Golden Grizzlies,Horizon League,Horizon League,0.5,0.5,0.5,-3.5,-3.5,-3.5,1,1,0,0.0,1.0,1,1,6.5,-13.5,,0.0,1.0,-1,3,2,,,2026-03-04T22:42:50Z
+2483,Oregon Ducks,Big Ten,Big Ten,0.6667,0.6667,0.6667,4.8333,4.8333,4.8333,2,1,0,0.5,1.0,2,1,11.0,-7.5,,1.0,0.5,2,3,3,,,2026-03-04T22:42:50Z
+2492,Pepperdine Waves,West Coast Conference,West Coast Conference,0.5,0.5,0.5,8.0,8.0,8.0,1,1,0,,0.5,0,2,16.5,-0.5,,0.5,,-1,2,2,,,2026-03-04T22:42:50Z
+2501,Portland Pilots,West Coast Conference,West Coast Conference,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,0.5,,2,0,9.5,-14.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2502,Portland State Vikings,Big Sky Conference,Big Sky Conference,0.3333,0.3333,0.3333,0.8333,0.8333,0.8333,1,2,0,0.3333,,3,0,19.5,-8.5,,1.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+2504,Prairie View A&M Panthers,Southwestern Athletic Conference,Southwestern Athletic Conference,1.0,1.0,1.0,10.5,10.5,10.5,2,0,0,1.0,,2,0,10.5,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+2506,Presbyterian Blue Hose,Big South Conference,Big South Conference,1.0,1.0,1.0,5.0,5.0,5.0,2,0,0,1.0,1.0,1,1,5.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2507,Providence Friars,Big East,Big East,1.0,1.0,1.0,5.0,5.0,5.0,2,0,0,1.0,,2,0,5.0,,,1.0,1.0,2,3,2,,,2026-03-04T22:42:50Z
+2509,Purdue Boilermakers,Big Ten,Big Ten,0.0,0.0,0.0,-11.5,-11.5,-11.5,0,2,0,0.0,0.0,1,1,,-11.5,,0.0,0.0,-2,3,2,,,2026-03-04T22:42:50Z
+2511,Queens University Royals,ASUN Conference,ASUN Conference,0.5,0.5,0.5,6.0,6.0,6.0,1,1,0,0.0,1.0,1,1,14.5,-2.5,,,0.5,1,2,2,,,2026-03-04T22:42:50Z
+2514,Quinnipiac Bobcats,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.0,0.0,0.0,-7.0,-7.0,-7.0,0,2,0,,0.0,0,2,,-7.0,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2515,Radford Highlanders,Big South Conference,Big South Conference,0.5,0.5,0.5,-6.5,-6.5,-6.5,1,1,0,1.0,0.0,1,1,4.5,-17.5,,1.0,0.0,1,2,2,,,2026-03-04T22:42:50Z
+2520,Rider Broncs,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.5,0.5,0.5,-5.0,-5.0,-5.0,1,1,0,0.5,,2,0,0.5,-10.5,,,0.5,-1,2,2,,,2026-03-04T22:42:50Z
+2523,Robert Morris Colonials,Horizon League,Horizon League,1.0,1.0,1.0,4.5,4.5,4.5,2,0,0,1.0,,2,0,4.5,,,1.0,,2,3,2,,,2026-03-04T22:42:50Z
+2529,Sacred Heart Pioneers,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,1.0,1.0,1.0,5.5,5.5,5.5,1,0,0,1.0,,1,0,5.5,,,1.0,,0,1,1,,,2026-03-04T22:42:50Z
+2534,Sam Houston Bearkats,Conference USA,Conference USA,0.5,0.5,0.5,12.0,12.0,12.0,1,1,0,0.5,,2,0,26.5,-2.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+2535,Samford Bulldogs,Southern Conference,Southern Conference,0.5,0.5,0.5,1.0,1.0,1.0,1,1,0,0.5,,2,0,2.5,-0.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+2539,San Francisco Dons,West Coast Conference,West Coast Conference,1.0,1.0,1.0,15.5,15.5,15.5,1,0,0,1.0,,1,0,15.5,,,,1.0,0,1,1,,,2026-03-04T22:42:50Z
+2540,UC Santa Barbara Gauchos,Big West Conference,Big West Conference,0.5,0.5,0.5,0.0,0.0,0.0,1,1,0,0.5,,2,0,0.5,-0.5,,1.0,0.0,1,2,2,,,2026-03-04T22:42:50Z
+2541,Santa Clara Broncos,West Coast Conference,West Coast Conference,0.5,0.5,0.5,-4.5,-4.5,-4.5,1,1,0,0.5,,2,0,4.5,-13.5,,1.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2545,SE Louisiana Lions,Southland Conference,Southland Conference,0.5,0.5,0.5,4.0,4.0,4.0,1,1,0,0.5,,2,0,11.5,-3.5,,,0.5,-1,2,2,,,2026-03-04T22:42:50Z
+2546,Southeast Missouri State Redhawks,Ohio Valley Conference,Ohio Valley Conference,0.5,0.5,0.5,-1.5,-1.5,-1.5,1,1,0,0.5,,2,0,8.5,-11.5,,0.5,,-1,2,2,,,2026-03-04T22:42:50Z
+2547,Seattle U Redhawks,West Coast Conference,West Coast Conference,1.0,1.0,1.0,3.5,3.5,3.5,2,0,0,1.0,1.0,1,1,3.5,,,,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2550,Seton Hall Pirates,Big East,Big East,1.0,1.0,1.0,8.5,8.5,8.5,2,0,0,1.0,1.0,1,1,8.5,,,,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2561,Siena Saints,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.0,0.0,0.0,-8.0,-8.0,-8.0,0,2,0,0.0,0.0,1,1,,-8.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2565,SIU Edwardsville Cougars,Ohio Valley Conference,Ohio Valley Conference,1.0,1.0,1.0,13.5,13.5,13.5,2,0,0,1.0,,2,0,13.5,,,1.0,,2,3,2,,,2026-03-04T22:42:50Z
+2567,SMU Mustangs,Atlantic Coast Conference,Atlantic Coast Conference,0.0,0.0,0.0,-15.0,-15.0,-15.0,0,2,0,,0.0,0,2,,-15.0,,,0.0,-2,3,2,,,2026-03-04T22:42:50Z
+2569,South Carolina State Bulldogs,Mid-Eastern Athletic Conference,Mid-Eastern Athletic Conference,0.3333,0.3333,0.3333,-3.1667,-3.1667,-3.1667,1,2,0,0.3333,,3,0,4.5,-7.0,,0.0,0.5,-2,3,3,,,2026-03-04T22:42:50Z
+2571,South Dakota State Jackrabbits,Summit League,Summit League,0.5,0.5,0.5,-3.0,-3.0,-3.0,1,1,0,,0.5,0,2,1.5,-7.5,,,0.5,1,2,2,,,2026-03-04T22:42:50Z
+2572,Southern Miss Golden Eagles,Sun Belt Conference,Sun Belt Conference,1.0,1.0,1.0,11.0,11.0,11.0,2,0,0,1.0,,2,0,11.0,,,,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2579,South Carolina Gamecocks,Southeastern Conference,Southeastern Conference,0.0,0.0,0.0,-6.1667,-6.1667,-6.1667,0,3,0,0.0,0.0,1,2,,-6.1667,,0.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+2582,Southern Jaguars,Southwestern Athletic Conference,Southwestern Athletic Conference,0.3333,0.3333,0.3333,-5.1667,-5.1667,-5.1667,1,2,0,0.3333,,3,0,8.5,-12.0,,0.0,1.0,-2,3,3,,,2026-03-04T22:42:50Z
+2598,Saint Francis Red Flash,Northeast Conference,Northeast Conference,0.5,0.5,0.5,-8.5,-8.5,-8.5,1,1,0,0.5,,2,0,3.5,-20.5,,,0.5,-1,2,2,,,2026-03-04T22:42:50Z
+2599,St. John's Red Storm,Big East,Big East,0.3333,0.3333,0.3333,-4.8333,-4.8333,-4.8333,1,2,0,0.3333,,3,0,24.5,-19.5,,0.5,0.0,1,3,3,,,2026-03-04T22:42:50Z
+2603,Saint Joseph's Hawks,Atlantic 10,Atlantic 10,1.0,1.0,1.0,14.5,14.5,14.5,2,0,0,1.0,1.0,1,1,14.5,,,1.0,1.0,2,3,2,,,2026-03-04T22:42:50Z
+2608,Saint Mary's Gaels,West Coast Conference,West Coast Conference,1.0,1.0,1.0,13.5,13.5,13.5,2,0,0,1.0,1.0,1,1,13.5,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+2612,Saint Peter's Peacocks,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,1.0,1.0,1.0,6.5,6.5,6.5,2,0,0,1.0,,2,0,6.5,,,1.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2617,Stephen F. Austin Lumberjacks,Southland Conference,Southland Conference,0.5,0.5,0.5,6.0,6.0,6.0,1,1,0,,0.5,0,2,12.5,-0.5,,,0.5,1,2,2,,,2026-03-04T22:42:50Z
+2619,Stony Brook Seawolves,Colonial Athletic Association,Colonial Athletic Association,0.3333,0.3333,0.3333,-5.5,-5.5,-5.5,1,2,0,0.5,0.0,2,1,3.5,-10.0,,0.0,0.5,1,3,3,,,2026-03-04T22:42:50Z
+2623,Missouri State Bears,Conference USA,Conference USA,1.0,1.0,1.0,1.5,1.5,1.5,2,0,0,1.0,,2,0,1.5,,,,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2627,Tarleton State Texans,Western Athletic Conference,Western Athletic Conference,0.5,0.5,0.5,1.5,1.5,1.5,1,1,0,0.5,,2,0,10.5,-7.5,,,0.5,1,2,2,,,2026-03-04T22:42:50Z
+2628,TCU Horned Frogs,Big 12,Big 12,1.0,1.0,1.0,9.1667,9.1667,9.1667,3,0,0,1.0,1.0,2,1,9.1667,,,1.0,1.0,2,3,3,,,2026-03-04T22:42:50Z
+2630,UT Martin Skyhawks,Ohio Valley Conference,Ohio Valley Conference,0.5,0.5,0.5,-10.0,-10.0,-10.0,1,1,0,0.5,,2,0,7.5,-27.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+2633,Tennessee Volunteers,Southeastern Conference,Southeastern Conference,0.3333,0.3333,0.3333,-0.8333,-0.8333,-0.8333,1,2,0,0.0,0.5,1,2,10.5,-6.5,,0.0,0.5,-2,3,3,,,2026-03-04T22:42:50Z
+2634,Tennessee State Tigers,Ohio Valley Conference,Ohio Valley Conference,1.0,1.0,1.0,19.5,19.5,19.5,2,0,0,1.0,,2,0,19.5,,,,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2635,Tennessee Tech Golden Eagles,Ohio Valley Conference,Ohio Valley Conference,0.0,0.0,0.0,-8.0,-8.0,-8.0,0,2,0,0.0,,2,0,,-8.0,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2636,UTSA Roadrunners,American Athletic Conference,American Athletic Conference,0.5,0.5,0.5,1.0,1.0,1.0,1,1,0,,0.5,0,2,3.5,-1.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+2638,UTEP Miners,Conference USA,Conference USA,0.0,0.0,0.0,-12.0,-12.0,-12.0,0,2,0,0.0,,2,0,,-12.0,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2640,Texas Southern Tigers,Southwestern Athletic Conference,Southwestern Athletic Conference,0.5,0.5,0.5,9.0,9.0,9.0,1,1,0,0.5,,2,0,19.5,-1.5,,0.5,,-1,2,2,,,2026-03-04T22:42:50Z
+2641,Texas Tech Red Raiders,Big 12,Big 12,0.6667,0.6667,0.6667,2.1667,2.1667,2.1667,2,1,0,0.6667,,3,0,12.0,-17.5,,0.5,1.0,2,3,3,,,2026-03-04T22:42:50Z
+2643,The Citadel Bulldogs,Southern Conference,Southern Conference,0.5,0.5,0.5,5.0,5.0,5.0,1,1,0,0.5,,2,0,15.5,-5.5,,,0.5,-1,2,2,,,2026-03-04T22:42:50Z
+2649,Toledo Rockets,Mid-American Conference,Mid-American Conference,0.6667,0.6667,0.6667,5.8333,5.8333,5.8333,2,1,0,0.6667,,3,0,10.0,-2.5,,0.0,1.0,1,3,3,,,2026-03-04T22:42:50Z
+2653,Troy Trojans,Sun Belt Conference,Sun Belt Conference,0.5,0.5,0.5,1.5,1.5,1.5,1,1,0,0.5,,2,0,7.5,-4.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+2655,Tulane Green Wave,American Athletic Conference,American Athletic Conference,0.0,0.0,0.0,-21.0,-21.0,-21.0,0,2,0,0.0,0.0,1,1,,-21.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2670,VCU Rams,Atlantic 10,Atlantic 10,0.5,0.5,0.5,0.0,0.0,0.0,1,1,0,0.5,,2,0,6.5,-6.5,,0.5,,1,2,2,,,2026-03-04T22:42:50Z
+2674,Valparaiso Beacons,Missouri Valley Conference,Missouri Valley Conference,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,1.0,0.0,1,1,0.5,-5.5,,1.0,0.0,1,2,2,,,2026-03-04T22:42:50Z
+2678,VMI Keydets,Southern Conference,Southern Conference,0.5,0.5,0.5,1.0,1.0,1.0,1,1,0,0.5,,2,0,4.5,-2.5,,,0.5,-1,2,2,,,2026-03-04T22:42:50Z
+2681,Wagner Seahawks,Northeast Conference,Northeast Conference,1.0,1.0,1.0,7.0,7.0,7.0,2,0,0,1.0,,2,0,7.0,,,1.0,,2,3,2,,,2026-03-04T22:42:50Z
+2692,Weber State Wildcats,Big Sky Conference,Big Sky Conference,0.5,0.5,0.5,-4.0,-4.0,-4.0,1,1,0,0.5,,2,0,11.5,-19.5,,,0.5,1,2,2,,,2026-03-04T22:42:50Z
+2698,West Georgia Wolves,ASUN Conference,ASUN Conference,1.0,1.0,1.0,9.5,9.5,9.5,2,0,0,1.0,1.0,1,1,9.5,,,1.0,,2,3,2,,,2026-03-04T22:42:50Z
+2710,Western Illinois Leathernecks,Ohio Valley Conference,Ohio Valley Conference,0.0,0.0,0.0,-9.0,-9.0,-9.0,0,2,0,0.0,0.0,1,1,,-9.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2711,Western Michigan Broncos,Mid-American Conference,Mid-American Conference,0.6667,0.6667,0.6667,7.8333,7.8333,7.8333,2,1,0,0.5,1.0,2,1,15.0,-6.5,,0.5,1.0,2,3,3,,,2026-03-04T22:42:50Z
+2717,Western Carolina Catamounts,Southern Conference,Southern Conference,1.0,1.0,1.0,13.0,13.0,13.0,2,0,0,,1.0,0,2,13.0,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+2724,Wichita State Shockers,American Athletic Conference,American Athletic Conference,1.0,1.0,1.0,4.5,4.5,4.5,2,0,0,1.0,1.0,1,1,4.5,,,,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2729,William & Mary Tribe,Colonial Athletic Association,Colonial Athletic Association,0.0,0.0,0.0,-3.5,-3.5,-3.5,0,3,0,0.0,0.0,2,1,,-3.5,,0.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+2737,Winthrop Eagles,Big South Conference,Big South Conference,0.0,0.0,0.0,-6.5,-6.5,-6.5,0,2,0,0.0,0.0,1,1,,-6.5,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2739,Green Bay Phoenix,Horizon League,Horizon League,1.0,1.0,1.0,11.0,11.0,11.0,2,0,0,1.0,,2,0,11.0,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+2747,Wofford Terriers,Southern Conference,Southern Conference,0.5,0.5,0.5,-2.5,-2.5,-2.5,1,1,0,0.5,,2,0,10.5,-15.5,,0.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+2750,Wright State Raiders,Horizon League,Horizon League,1.0,1.0,1.0,3.0,3.0,3.0,2,0,0,1.0,1.0,1,1,3.0,,,,1.0,2,3,2,,,2026-03-04T22:42:50Z
+2751,Wyoming Cowboys,Mountain West,Mountain West,0.3333,0.3333,0.3333,-2.5,-2.5,-2.5,1,2,0,0.0,1.0,2,1,11.5,-9.5,,0.5,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+2752,Xavier Musketeers,Big East,Big East,0.3333,0.3333,0.3333,-3.1667,-3.1667,-3.1667,1,2,0,0.5,0.0,2,1,2.5,-6.0,,0.5,0.0,1,3,3,,,2026-03-04T22:42:50Z
+2754,Youngstown State Penguins,Horizon League,Horizon League,0.0,0.0,0.0,-17.5,-17.5,-17.5,0,2,0,0.0,0.0,1,1,,-17.5,,,0.0,-2,3,2,,,2026-03-04T22:42:50Z
+2755,Grambling Tigers,Southwestern Athletic Conference,Southwestern Athletic Conference,0.0,0.0,0.0,-9.5,-9.5,-9.5,0,3,0,0.0,0.0,2,1,,-9.5,,0.0,0.0,-2,3,3,,,2026-03-04T22:42:50Z
+2771,Merrimack Warriors,Metro Atlantic Athletic Conference,Metro Atlantic Athletic Conference,0.0,0.0,0.0,-8.5,-8.5,-8.5,0,2,0,,0.0,0,2,,-8.5,,,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2803,Bryant Bulldogs,America East Conference,America East Conference,0.3333,0.3333,0.3333,5.5,5.5,5.5,1,2,0,0.0,1.0,2,1,19.5,-1.5,,1.0,0.0,1,3,3,,,2026-03-04T22:42:50Z
+2815,Lindenwood Lions,Ohio Valley Conference,Ohio Valley Conference,0.5,0.5,0.5,0.0,0.0,0.0,1,1,0,0.0,1.0,1,1,11.5,-11.5,,0.0,1.0,1,3,2,,,2026-03-04T22:42:50Z
+2837,East Texas A&M Lions,Southland Conference,Southland Conference,0.5,0.5,0.5,-2.0,-2.0,-2.0,1,1,0,0.5,,2,0,1.5,-5.5,,,0.5,1,2,2,,,2026-03-04T22:42:50Z
+2856,California Baptist Lancers,Western Athletic Conference,Western Athletic Conference,1.0,1.0,1.0,6.5,6.5,6.5,2,0,0,1.0,,2,0,6.5,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+2870,Purdue Fort Wayne Mastodons,Horizon League,Horizon League,0.3333,0.3333,0.3333,0.1667,0.1667,0.1667,1,2,0,0.0,0.5,1,2,4.5,-2.0,,0.0,0.5,1,3,3,,,2026-03-04T22:42:50Z
+2885,NJIT Highlanders,America East Conference,America East Conference,0.0,0.0,0.0,-27.0,-27.0,-27.0,0,2,0,,0.0,0,2,,-27.0,,0.0,0.0,-1,2,2,,,2026-03-04T22:42:50Z
+2900,St. Thomas-Minnesota Tommies,Summit League,Summit League,1.0,1.0,1.0,10.5,10.5,10.5,2,0,0,1.0,,2,0,10.5,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+2908,South Carolina Upstate Spartans,Big South Conference,Big South Conference,0.0,0.0,0.0,-3.5,-3.5,-3.5,0,2,0,0.0,,2,0,,-3.5,,0.0,0.0,-2,3,2,,,2026-03-04T22:42:50Z
+2916,Incarnate Word Cardinals,Southland Conference,Southland Conference,1.0,1.0,1.0,7.0,7.0,7.0,2,0,0,,1.0,0,2,7.0,,,1.0,,1,2,2,,,2026-03-04T22:42:50Z
+2934,Cal State Bakersfield Roadrunners,Big West Conference,Big West Conference,1.0,1.0,1.0,3.0,3.0,3.0,2,0,0,1.0,1.0,1,1,3.0,,,1.0,1.0,1,2,2,,,2026-03-04T22:42:50Z
+3084,Utah Valley Wolverines,Western Athletic Conference,Western Athletic Conference,0.0,0.0,0.0,-9.0,-9.0,-9.0,0,2,0,0.0,,2,0,,-9.0,,0.0,,-1,2,2,,,2026-03-04T22:42:50Z
+3101,Utah Tech Trailblazers,Western Athletic Conference,Western Athletic Conference,0.5,0.5,0.5,-7.0,-7.0,-7.0,1,1,0,1.0,0.0,1,1,1.5,-15.5,,1.0,0.0,1,2,2,,,2026-03-04T22:42:50Z
+112358,Long Island University Sharks,Northeast Conference,Northeast Conference,1.0,1.0,1.0,5.0,5.0,5.0,2,0,0,1.0,,2,0,5.0,,,1.0,,2,3,2,,,2026-03-04T22:42:50Z
