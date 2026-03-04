@@ -1132,18 +1132,29 @@ def build_predictions_with_context(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     # Only write predictions for today (PST) and future dates — do not carry
     # forward stale rows from previous pipeline runs that have different game_ids.
+    # Exception: if all rows would be filtered out (stale input), fall back to
+    # including all rows so the output file is never blank.
     _ref = reference_date if reference_date is not None else pd.Timestamp.now(tz="America/Los_Angeles")
     _today_pst = _ref.tz_convert("America/Los_Angeles").normalize().tz_localize(None)
     if "game_datetime_utc" in df.columns:
         _dt = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
         _dt_pst = _dt.dt.tz_convert("America/Los_Angeles").dt.normalize().dt.tz_localize(None)
         _keep = _dt_pst.isna() | (_dt_pst >= _today_pst)
-        df = df[_keep]
-        if df.empty:
+        _df_filtered = df[_keep]
+        if _df_filtered.empty and not df.empty:
             log.warning(
-                "[ENRICH] No games for today (%s PST) found in predictions — writing empty output",
+                "[ENRICH] No games for today (%s PST) or later found in predictions "
+                "(%d total rows). Falling back to full input to avoid blank output.",
                 _today_pst.date(),
+                len(df),
             )
+        else:
+            df = _df_filtered
+            if df.empty:
+                log.warning(
+                    "[ENRICH] No games for today (%s PST) found in predictions — writing empty output",
+                    _today_pst.date(),
+                )
     df.astype(str).to_csv(out_path, index=False)
     log.info("[ENRICH] Wrote %d rows to %s", len(df), out_path)
 
