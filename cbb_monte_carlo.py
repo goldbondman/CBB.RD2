@@ -20,6 +20,7 @@ CLI:
     python cbb_monte_carlo.py --game-id 401XXXXXX
     python cbb_monte_carlo.py --report
 """
+# home/away splits
 
 from __future__ import annotations
 

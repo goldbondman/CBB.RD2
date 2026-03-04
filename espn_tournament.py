@@ -27,6 +27,7 @@ Pipeline position:
   espn_pipeline.py calls compute_tournament_metrics() after compute_sos_metrics()
   and compute_matchup_projections() after joining game opponents.
 """
+# home/away splits
 
 import logging
 from typing import Optional, Tuple

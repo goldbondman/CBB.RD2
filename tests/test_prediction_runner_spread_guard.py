@@ -18,8 +18,8 @@ def test_resolve_predicted_spread_falls_back_to_net_eff_when_nan():
 
     out = _resolve_predicted_spread(prediction, home_ctx, away_ctx, neutral_site=False)
 
-    # -(home-away+hca) => -(8+3.5) = -11.5
-    assert out == -11.5
+    # -(home-away+hca) => -(8+1.0) = -9.0
+    assert out == -9.0
 
 
 def test_resolve_predicted_spread_returns_none_when_no_inputs_available():

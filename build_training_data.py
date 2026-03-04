@@ -14,6 +14,7 @@ Pipeline:
   7. team_pretournament_snapshot.csv → player/injury cols     → join
   8. predictions_history.csv → pred_spread/pred_total        → optional join
 """
+# home/away splits
 
 from __future__ import annotations
 

@@ -23,6 +23,7 @@ Rolling windows (L5, L10) — all leak-free via shift(1):
   ATS rolling: cover_rate_l10, ats_margin_l10
   Close game: close_win_pct_season
 """
+# home/away splits
 
 import logging
 from typing import List

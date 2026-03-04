@@ -16,6 +16,7 @@ Outputs (written to both data/csv/ and data/ root):
 Called from update_espn_cbb.yml after "Run tournament metrics" and
 before "Validate outputs".
 """
+# home/away splits
 
 from __future__ import annotations
 

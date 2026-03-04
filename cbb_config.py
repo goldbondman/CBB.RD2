@@ -18,7 +18,7 @@ LEAGUE_AVG_FTR  = 28.0
 LEAGUE_AVG_ORB  = 30.0
 LEAGUE_AVG_DRB  = 70.0
 
-HCA            = 3.2
+HCA            = 1.0  # Residual HCA after home/away splits
 PYTH_EXP       = 11.5
 SIGMA          = 11.0
 VIG_BREAK_EVEN = 52.38

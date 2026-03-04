@@ -33,6 +33,7 @@ Consumed by:
   cbb_backtester.py   (imports models + TeamProfile for historical replay)
   cbb_predictions_rolling.yml  (GitHub Actions workflow inline Python)
 """
+# home/away splits
 
 import json
 import logging
@@ -814,7 +815,7 @@ class SituationalModel(_BaseModel):
         pace = self._expected_pace(home, away)
         margin = eff_edge + rest_edge + fatigue_edge + split_edge + close_edge + streak_edge
         if not neutral:
-            margin += HCA * 0.5
+            margin += HCA  # Residual HCA after home/away splits
         spread = -margin
 
         total = self._off_vs_def_total(
@@ -1027,7 +1028,7 @@ class HomeAwayFormModel(_BaseModel):
         location_edge = h_loc - a_loc
         margin = location_edge * (pace / 100.0)
         if not neutral:
-            margin += HCA * 0.5
+            margin += HCA  # Residual HCA after home/away splits
         spread = -margin
         h_form_off = home.ortg_l10 if abs(home.ortg_l10) > 1e-6 else home.cage_o
         a_form_off = away.ortg_l10 if abs(away.ortg_l10) > 1e-6 else away.cage_o

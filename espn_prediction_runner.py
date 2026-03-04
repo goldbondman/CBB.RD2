@@ -26,6 +26,7 @@ Outputs written to data/:
 Important:
     - Leak-free history: for each predicted matchup, the cutoff is the game kickoff time in UTC.
 """
+# home/away splits
 
 import argparse
 import dataclasses
@@ -34,6 +35,7 @@ import math
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from team_splits import get_team_splits
 from espn_config import (
     CSV_DIR as DATA_DIR,
     OUT_WEIGHTED  as CSV_WEIGHTED,
@@ -661,7 +663,13 @@ def run_predictions(
         spread_line = _safe_float(matchup.get("spread"))
         total_line = _safe_float(matchup.get("over_under"))
 
-        pred_spread = _resolve_predicted_spread(prediction, home_ctx, away_ctx, neutral)
+        pred_spread = _resolve_predicted_spread(
+            prediction,
+            home_ctx,
+            away_ctx,
+            neutral,
+            game_datetime_utc=matchup.get("game_datetime_utc"),
+        )
         if pred_spread is None:
             log.error(
                 "[DQ] game_id=%s invalid predicted spread; skipping game. available_keys=%s",
@@ -1033,6 +1041,7 @@ def _resolve_predicted_spread(
     home_ctx: Dict,
     away_ctx: Dict,
     neutral_site: bool,
+    game_datetime_utc: Optional[object] = None,
 ) -> Optional[float]:
     """
     Return a finite spread value for output rows.
@@ -1054,6 +1063,12 @@ def _resolve_predicted_spread(
         if value is not None and np.isfinite(value):
             return round(float(value), 2)
 
+    split_matchup = None
+    home_team_id = home_ctx.get("team_id") if isinstance(home_ctx, dict) else None
+    away_team_id = away_ctx.get("team_id") if isinstance(away_ctx, dict) else None
+    if home_team_id is not None and away_team_id is not None:
+        split_matchup = get_team_splits(game_datetime_utc, str(home_team_id), str(away_team_id))
+
     home_net = _safe_float(
         prediction.get("home_net_eff"),
         _safe_float(home_ctx.get("adj_net_rtg"), _safe_float(home_ctx.get("net_eff"), _safe_float(home_ctx.get("net_rtg")))),
@@ -1062,10 +1077,13 @@ def _resolve_predicted_spread(
         prediction.get("away_net_eff"),
         _safe_float(away_ctx.get("adj_net_rtg"), _safe_float(away_ctx.get("net_eff"), _safe_float(away_ctx.get("net_rtg")))),
     )
+    if split_matchup is not None:
+        home_net = _safe_float(split_matchup.home_netrtg, home_net)
+        away_net = _safe_float(split_matchup.away_netrtg, away_net)
     if home_net is None or away_net is None:
         return None
 
-    hca = 0.0 if neutral_site else 3.5
+    hca = 0.0 if neutral_site else 1.0  # Residual HCA after home/away splits
     fallback_spread = -(home_net - away_net + hca)
     if not np.isfinite(fallback_spread):
         return None

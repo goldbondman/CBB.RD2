@@ -29,6 +29,7 @@ Usage:
 
 Pipeline position: run after espn_pipeline.py + espn_tournament.py
 """
+# home/away splits
 
 import argparse
 from datetime import datetime
