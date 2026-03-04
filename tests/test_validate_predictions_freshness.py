@@ -36,6 +36,35 @@ def test_validator_passes_with_real_schema_game_datetime_utc() -> None:
     assert summary.parseable_rate == 1.0
 
 
+
+
+def test_validate_prefers_game_datetime_utc_regression() -> None:
+    now_utc = _base_now()
+    df = pd.DataFrame(
+        {
+            "game_id": ["g1", "g2"],
+            "generated_at_utc": ["2026-03-01T17:30:00Z", "2026-03-01T17:30:00Z"],
+            "game_datetime_utc": ["2026-03-01T20:45Z", "2026-03-01T21:45Z"],
+            "start_time": ["2026-03-01 20:45:00", "2026-03-01 21:45:00"],
+        }
+    )
+
+    summary = validate(
+        df,
+        selected_file="data/predictions_latest.csv",
+        now_utc=now_utc,
+        timezone_local="America/Los_Angeles",
+        max_hours=6,
+    )
+
+    assert summary.result == "PASS"
+    assert summary.time_column_used == "game_datetime_utc"
+    assert summary.time_parseable_rate == 1.0
+
+def test_validate_predictions_freshness_fail_stale() -> None:
+    now_utc = _base_now()
+    df = _base_frame()
+    df["generated_at_utc"] = "2026-03-01T00:00:00Z"
 def test_validator_passes_with_canonical_game_time_utc() -> None:
     df = pd.DataFrame(
         {
