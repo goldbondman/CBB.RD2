@@ -53,6 +53,9 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
 
     runs-on: ubuntu-latest
+    env:
+      PREDICTIONS_FRESHNESS_MAX_HOURS: "6"
+      TIMEZONE_LOCAL: "America/Los_Angeles"
     permissions:
       contents: write
       actions: write
@@ -297,6 +300,13 @@ jobs:
       - name: Run player matchup enrichment
         continue-on-error: true
         run: python cbb_player_matchup.py --games data/predictions_combined_latest.csv
+
+      - name: Validate predictions freshness (fail-fast gate)
+        run: python infra/ci/validate_predictions_freshness.py
+
+      - name: Build derived CSVs (bet_recs, matchup preview, upset watch)
+        continue-on-error: true
+        run: python build_derived_csvs.py
 
       # Pattern 10: Upload artifacts even on failure to aid debugging
       - name: Upload artifacts
