@@ -26,9 +26,10 @@ data/cbb_rankings_by_conference.csv,True,,31,13,0,0.0,0,0,False,,False,0
 data/cbb_rankings_data_dictionary.csv,True,,58,6,0,0.0,0,0,False,,False,0
 data/clv_by_submodel.csv,True,,8,7,1,14.29,0,0,False,,False,0
 data/clv_report.csv,True,,60,14,2,14.29,0,0,False,,False,0
-data/conference_daily_summary.csv,True,,1086,9,0,0.0,0,0,False,,False,0
+data/conference_daily_summary.csv,True,,1148,9,0,0.0,0,0,False,,False,0
 data/conference_summary.csv,True,,602,13,0,0.0,0,0,False,,False,0
 data/dq_audit.csv,True,,11,10,0,0.0,0,0,False,,False,0
+data/dq_report_v2.csv,True,,111,13,1,7.69,3,0,False,,False,0
 data/edge_history.csv,True,,7,13,5,38.46,0,0,False,,False,0
 data/ensemble_predictions_20260221.csv,True,,22,36,0,0.0,0,0,False,,False,0
 data/ensemble_predictions_20260222.csv,True,,16,36,0,0.0,0,0,False,,False,0

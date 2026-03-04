@@ -1,6 +1,6 @@
 # CSV Quality Audit v2
 
-- Files audited: 111
+- Files audited: 112
 - Violations: 23
 
 ## Top Violations
