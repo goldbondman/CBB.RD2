@@ -21,3 +21,4 @@ run_timestamp_utc,trigger,days_back,dates_fetched,games_found,games_parsed,games
 2026-03-03T10:48:36Z,schedule,3,113,94,94,0,188,803,v1.0.0,False,ok
 2026-03-04T10:47:09Z,schedule,3,114,111,111,0,222,1366,v1.0.0,False,ok
 2026-03-04T20:16:33Z,workflow_dispatch,3,114,111,111,0,222,1414,v1.0.0,False,ok
+2026-03-04T20:37:29Z,workflow_dispatch,3,114,111,111,0,222,1414,v1.0.0,False,ok
