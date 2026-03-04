@@ -5088,7 +5088,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401807754,2453,North Alabama Lions,288,Lipscomb Bisons,2026-02-21T22:30:00Z,away,2.9,2,4,2.45,-1,0,0.6,,11.25,1.0,0.0,-22.0,-15.0
 401807758,2453,North Alabama Lions,91,Bellarmine Knights,2026-02-26T02:27:00Z,home,4.2,1,3,1.5,-2,0,0.6,,8.89,0.0,1.0,5.0,5.0
 401807767,2453,North Alabama Lions,2698,West Georgia Wolves,2026-02-28T19:00:00Z,away,2.7,2,4,2.55,1,1,0.667,1.0,10.29,0.0,0.0,-12.0,-12.0
-401851239,2453,North Alabama Lions,526,Florida Gulf Coast Eagles,2026-03-04T19:30:00Z,away,4.0,2,4,2.4,-1,2,0.667,1.0,10.56,0.0,1.0,-1.0,-1.0
+401851239,2453,North Alabama Lions,526,Florida Gulf Coast Eagles,2026-03-04T19:30:00Z,away,4.0,2,4,2.4,-1,2,0.667,1.0,10.56,0.0,1.0,-2.0,-2.0
 401823442,2454,North Florida Ospreys,2633,Tennessee Volunteers,2025-11-13T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-33.0,-15.0
 401823443,2454,North Florida Ospreys,128550,New College (FL) Mighty Banyans,2025-11-15T19:00:00Z,home,2.8,1,1,1.0,-1,0,,,,1.0,0.0,55.0,15.0
 401823444,2454,North Florida Ospreys,2747,Wofford Terriers,2025-11-20T00:00:00Z,away,4.2,2,2,1.8,1,0,,,,0.0,0.0,-8.0,-8.0
@@ -9971,7 +9971,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401807752,526,Florida Gulf Coast Eagles,2110,Central Arkansas Bears,2026-02-21T19:00:00Z,home,2.8,2,4,2.5,3,0,0.375,0.667,8.29,0.0,1.0,4.0,4.0
 401807760,526,Florida Gulf Coast Eagles,2454,North Florida Ospreys,2026-02-27T00:00:00Z,away,5.2,1,3,1.5,4,0,0.444,0.75,8.49,0.0,0.0,-6.0,-6.0
 401807764,526,Florida Gulf Coast Eagles,56,Stetson Hatters,2026-02-28T19:00:00Z,away,1.8,2,4,3.0,-1,1,0.444,0.75,4.83,1.0,0.0,-15.0,-15.0
-401851239,526,Florida Gulf Coast Eagles,2453,North Alabama Lions,2026-03-04T19:30:00Z,home,4.0,2,4,2.4,-2,2,0.444,0.75,7.09,0.0,1.0,1.0,1.0
+401851239,526,Florida Gulf Coast Eagles,2453,North Alabama Lions,2026-03-04T19:30:00Z,home,4.0,2,4,2.4,-2,2,0.444,0.75,7.09,0.0,1.0,2.0,2.0
 401830634,533,Hannibal-Lagrange Trojans,2710,Western Illinois Leathernecks,2025-12-06T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-31.0,-15.0
 401822396,534,Harris-Stowe State Hornets,2815,Lindenwood Lions,2025-12-20T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-57.0,-15.0
 401823463,5345,Benedictine University (IL) Eagles,2459,Northern Illinois Huskies,2025-11-14T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-55.0,-15.0
