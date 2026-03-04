@@ -597,8 +597,28 @@ def build_predictions_with_context(
         home_sit["home_team_id"] = home_sit["home_team_id"].astype(str).str.strip()
         away_sit["away_team_id"] = away_sit["away_team_id"].astype(str).str.strip()
 
-        df = df.merge(home_sit, on=["event_id", "home_team_id"], how="left")
-        df = df.merge(away_sit, on=["event_id", "away_team_id"], how="left")
+        home_feature_cols = [c for c in home_rename.values() if c in home_sit.columns]
+        away_feature_cols = [c for c in away_rename.values() if c in away_sit.columns]
+        home_new_cols = [c for c in home_feature_cols if c not in df.columns]
+        away_new_cols = [c for c in away_feature_cols if c not in df.columns]
+
+        if home_new_cols:
+            df = df.merge(
+                home_sit[["event_id", "home_team_id", *home_new_cols]],
+                on=["event_id", "home_team_id"],
+                how="left",
+            )
+        else:
+            log.info("Situational merge skipped home features; all home_* situational columns already present.")
+
+        if away_new_cols:
+            df = df.merge(
+                away_sit[["event_id", "away_team_id", *away_new_cols]],
+                on=["event_id", "away_team_id"],
+                how="left",
+            )
+        else:
+            log.info("Situational merge skipped away features; all away_* situational columns already present.")
         log.info(
             "Situational features merged for %d/%d home, %d/%d away games",
             df.get("home_rest_days", pd.Series(dtype=float)).notna().sum(),
