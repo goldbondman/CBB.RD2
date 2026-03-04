@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PREDICTIONS_FRESHNESS_MAX_HOURS: "6"
+      TIMEZONE_LOCAL: "America/Los_Angeles"
 
     steps:
       - name: Checkout (workflow_run SHA)
