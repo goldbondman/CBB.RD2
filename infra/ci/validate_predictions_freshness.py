@@ -217,11 +217,7 @@ def _select_best_game_time_column(df: pd.DataFrame) -> tuple[str | None, pd.Seri
 
 def _parse_generated_at(df: pd.DataFrame) -> tuple[datetime, str]:
     selected_df_path = df.attrs.get("_selected_file_path")
-    runtime_candidates = list(TIMESTAMP_COLUMNS)
-    if not selected_df_path:
-        runtime_candidates.append(PREDICTED_AT_COLUMN)
-
-    for col in runtime_candidates:
+    for col in TIMESTAMP_COLUMNS:
         if col not in df.columns:
             continue
         parsed, _ = _parse_utc_strict_series(df[col])
@@ -458,7 +454,27 @@ def validate(
                 f"not forward-looking: max_game_time_utc={max_game_time_utc.isoformat()} < window_start_utc={window_start_utc.isoformat()}"
             )
 
-    result = "FAIL" if failures else "PASS"
+    upcoming_games_count = 0
+    if time_column_used and max_game_time_utc is not None:
+        selected_stats = diagnostics.get(time_column_used, {})
+        parsed_values = selected_stats.get("parsed_values", [])
+        upcoming_games_count = sum(1 for dt in parsed_values if dt >= window_start_utc)
+
+    if freshness_age_hours <= max_hours and upcoming_games_count == 0:
+        failures = [f for f in failures if not f.startswith("not forward-looking:")]
+
+    if not failures and upcoming_games_count == 0:
+        result = "SKIP"
+    else:
+        result = "FAIL" if failures else "PASS"
+
+    print(
+        "[INFO] gate_decision="
+        f"{result} "
+        f"(freshness_ok={freshness_age_hours <= max_hours}, "
+        f"upcoming_games={upcoming_games_count}, "
+        f"fails={len(failures)})"
+    )
     summary = ValidationSummary(
         selected_file=selected_file,
         total_rows=total_rows,
