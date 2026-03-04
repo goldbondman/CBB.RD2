@@ -8,51 +8,8 @@ the app and returns them as a dict of ``{name: pd.DataFrame}``.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict
 
 import pandas as pd
-
-# Root of the repository (this file lives at the repo root).
-_REPO_ROOT = Path(__file__).parent
-
-# Mapping of logical name → path relative to the repo root.
-_APP_DATA_FILES: Dict[str, Path] = {
-    "handicappers": _REPO_ROOT / "data" / "handicappers.csv",
-    "raw_tweets":   _REPO_ROOT / "data" / "raw_tweets.csv",
-    "raw_picks":    _REPO_ROOT / "data" / "raw_picks.csv",
-    "picks":        _REPO_ROOT / "data" / "picks.csv",
-    "games":        _REPO_ROOT / "data" / "app_games.csv",
-}
-
-
-def load_app_data() -> Dict[str, pd.DataFrame]:
-    """Load all application data files and return them as DataFrames.
-
-    Returns
-    -------
-    dict[str, pd.DataFrame]
-        Keys are logical file names (``handicappers``, ``raw_tweets``,
-        ``raw_picks``, ``picks``, ``games``); values are the corresponding
-        DataFrames.
-
-    Raises
-    ------
-    FileNotFoundError
-        If any expected data file is missing.
-    """
-    data: Dict[str, pd.DataFrame] = {}
-    for name, path in _APP_DATA_FILES.items():
-        if not path.exists():
-            raise FileNotFoundError(
-                f"Required app data file not found: {path}"
-            )
-        data[name] = pd.read_csv(path)
-    return data
-from __future__ import annotations
-
-import pandas as pd
-from pathlib import Path
-import numpy as np
 
 
 def load_app_data(data_dir="./data"):
@@ -137,3 +94,35 @@ def save_app_data(data, data_dir="./data"):
 
     for name, df in data.items():
         df.to_csv(Path(data_dir)/f"{name}.csv", index=False)
+
+
+class CSVDataManager:
+    """Wrapper around load_app_data/save_app_data for object-oriented access."""
+
+    _PK_COLUMNS = {
+        'handicappers': 'handicapper_id',
+        'raw_tweets': 'tweet_id',
+        'raw_picks': 'raw_pick_id',
+        'picks': 'pick_id',
+        'games': 'game_id',
+    }
+
+    def __init__(self, data_dir="./data"):
+        self._data_dir = str(data_dir)
+
+    def load_app_data(self):
+        """Load all app data CSVs and return as dict of DataFrames."""
+        return load_app_data(self._data_dir)
+
+    def save_app_data(self, data):
+        """Save all DataFrames back to CSVs."""
+        save_app_data(data, self._data_dir)
+
+    def get_next_id(self, table_name: str) -> int:
+        """Return the next available integer primary key for *table_name*."""
+        data = self.load_app_data()
+        df = data.get(table_name)
+        pk_col = self._PK_COLUMNS.get(table_name)
+        if df is None or pk_col is None or df.empty or pk_col not in df.columns:
+            return 1
+        return int(df[pk_col].max()) + 1
