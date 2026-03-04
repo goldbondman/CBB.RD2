@@ -577,6 +577,15 @@ def build_team_state_before(
         except (TypeError, ValueError):
             return default
 
+    home_rows = team_rows[team_rows["home_away"].astype(str).str.lower() == "home"]
+    away_rows = team_rows[team_rows["home_away"].astype(str).str.lower() == "away"]
+
+    def split_mean(rows: pd.DataFrame, col: str, default: float) -> float:
+        if col not in rows.columns or rows.empty:
+            return float(default)
+        s = pd.to_numeric(rows[col], errors="coerce").dropna()
+        return float(s.mean()) if not s.empty else float(default)
+
     return {
         "team_id":        str(team_id),
         "team_name":      str(latest.get("team", "")),
@@ -652,6 +661,23 @@ def build_team_state_before(
         "win_streak":         g("win_streak",           0.0),
         "sos":                g("opp_avg_net_rtg_season", 0.0),
         "opp_avg_net_rtg":    g("opp_avg_net_rtg_season", 0.0),
+        "home_net_rtg_season": g("home_net_rtg_season", split_mean(home_rows, "net_rtg", 0.0)),
+        "away_net_rtg_season": g("away_net_rtg_season", split_mean(away_rows, "net_rtg", 0.0)),
+        "ha_net_rtg_l10":      g("ha_net_rtg_l10",        0.0),
+        "home_efg_pct":       split_mean(home_rows, "efg_pct", g("efg_pct", LEAGUE_AVG_EFG)),
+        "away_efg_pct":       split_mean(away_rows, "efg_pct", g("efg_pct", LEAGUE_AVG_EFG)),
+        "home_tov_pct":       split_mean(home_rows, "tov_pct", g("tov_pct", LEAGUE_AVG_TOV)),
+        "away_tov_pct":       split_mean(away_rows, "tov_pct", g("tov_pct", LEAGUE_AVG_TOV)),
+        "home_orb_pct":       split_mean(home_rows, "orb_pct", g("orb_pct", 30.0)),
+        "away_orb_pct":       split_mean(away_rows, "orb_pct", g("orb_pct", 30.0)),
+        "home_ftr":           split_mean(home_rows, "ftr", g("ftr", LEAGUE_AVG_FTR)),
+        "away_ftr":           split_mean(away_rows, "ftr", g("ftr", LEAGUE_AVG_FTR)),
+        "home_ortg":          split_mean(home_rows, "ortg", g("ortg", LEAGUE_AVG_ORTG)),
+        "away_ortg":          split_mean(away_rows, "ortg", g("ortg", LEAGUE_AVG_ORTG)),
+        "home_drtg":          split_mean(home_rows, "drtg", g("drtg", LEAGUE_AVG_DRTG)),
+        "away_drtg":          split_mean(away_rows, "drtg", g("drtg", LEAGUE_AVG_DRTG)),
+        "home_pace":          split_mean(home_rows, "pace", g("pace", LEAGUE_AVG_PACE)),
+        "away_pace":          split_mean(away_rows, "pace", g("pace", LEAGUE_AVG_PACE)),
 
         # Opponent context — M6 (CAGERankings) reads wab; M1 (FourFactors) reads opp_orb_pct
         "wab":          g("wab",                  0.0),

@@ -39,6 +39,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from datetime import timedelta
+from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -77,6 +78,7 @@ log = logging.getLogger(__name__)
 DATA_DIR = Path("data")
 STACKING_PATH = DATA_DIR / "stacking_coefficients.json"
 DYNAMIC_WEIGHTS_PATH = DATA_DIR / "dynamic_model_weights.json"
+WEIGHTS_PATH = WEIGHT_SOURCES[0]
 
 MODEL_ID_TO_NAME = {
     "m1": "FourFactors",
@@ -99,12 +101,17 @@ DEFAULT_WEIGHTS = {
 }
 
 
+@lru_cache(maxsize=4)
 def load_model_weights(weights_path: Path = Path("data/model_weights.json")) -> Dict[str, float]:
     log.info("Attempting to load model weights from %s", weights_path)
     if weights_path.exists():
         try:
             with open(weights_path) as f:
-                loaded = json.load(f)
+                payload = json.load(f)
+            loaded = payload.get("weights", payload) if isinstance(payload, dict) else payload
+            if not isinstance(loaded, dict):
+                raise ValueError("Weights payload must be a dict")
+            loaded = {str(k): float(v) for k, v in loaded.items()}
             total = sum(loaded.values())
             if abs(total - 1.0) > 0.02:
                 raise ValueError(f"Weights sum to {total:.3f}, not 1.0")
@@ -245,6 +252,22 @@ class TeamProfile:
     cover_streak:      float = 0.0
     momentum_tier:     str   = ""
     ha_net_rtg_l10:    float = 0.0
+    home_net_rtg_season: float = 0.0
+    away_net_rtg_season: float = 0.0
+    home_efg_pct:      float = LEAGUE_AVG_EFG
+    away_efg_pct:      float = LEAGUE_AVG_EFG
+    home_tov_pct:      float = LEAGUE_AVG_TOV
+    away_tov_pct:      float = LEAGUE_AVG_TOV
+    home_orb_pct:      float = 30.0
+    away_orb_pct:      float = 30.0
+    home_ftr:          float = LEAGUE_AVG_FTR
+    away_ftr:          float = LEAGUE_AVG_FTR
+    home_ortg:         float = LEAGUE_AVG_ORTG
+    away_ortg:         float = LEAGUE_AVG_ORTG
+    home_drtg:         float = LEAGUE_AVG_DRTG
+    away_drtg:         float = LEAGUE_AVG_DRTG
+    home_pace:         float = LEAGUE_AVG_PACE
+    away_pace:         float = LEAGUE_AVG_PACE
 
 
 @dataclass
@@ -377,7 +400,8 @@ class EnsembleConfig:
     def from_optimized(cls) -> "EnsembleConfig":
         """Load deployed/optimized weights if available, else defaults."""
         config = cls()
-        weight_source = next((p for p in WEIGHT_SOURCES if p.exists() and p.stat().st_size > 10), None)
+        candidate_sources = [WEIGHTS_PATH] + [p for p in WEIGHT_SOURCES if p != WEIGHTS_PATH]
+        weight_source = next((p for p in candidate_sources if p.exists() and p.stat().st_size > 10), None)
         if weight_source is None:
             log.warning("[CONFIG] No weight file found — using hardcoded defaults")
         else:
@@ -431,19 +455,19 @@ def apply_calibration(
     if calib is None:
         return float(raw_confidence)
 
-    X = np.array([[raw_confidence, spread_std or 0.0, cage_edge or 0.0]], dtype=float)
-    coef = np.array(calib.get("coef", []), dtype=float)
+    X = np.array([raw_confidence, spread_std or 0.0, cage_edge or 0.0], dtype=float)
+    coef = np.array(calib.get("coef", []), dtype=float).reshape(-1)
     intercept = float(calib.get("intercept", 0.0))
 
-    if coef.size != X.shape[1]:
+    if coef.size != X.size:
         log.warning(
             "Calibration coefficient length mismatch (got=%d expected=%d); using raw confidence",
             coef.size,
-            X.shape[1],
+            X.size,
         )
         return float(raw_confidence)
 
-    logit = float(X @ coef + intercept)
+    logit = float(np.dot(X, coef) + intercept)
     calibrated = float(1 / (1 + np.exp(-logit)))
     return max(0.0, min(1.0, calibrated))
 
@@ -470,6 +494,80 @@ class _BaseModel:
     @staticmethod
     def _hca(neutral: bool) -> float:
         return 0.0 if neutral else HCA
+
+    @staticmethod
+    def _loc_value(
+        team: TeamProfile,
+        is_home: bool,
+        home_attr: str,
+        away_attr: str,
+        fallback_attr: str,
+        neutral: bool = False,
+    ) -> float:
+        h = float(getattr(team, home_attr, 0.0) or 0.0)
+        a = float(getattr(team, away_attr, 0.0) or 0.0)
+        fallback = float(getattr(team, fallback_attr, 0.0) or 0.0)
+        if neutral:
+            vals = [v for v in (h, a) if abs(v) > 1e-6]
+            return float(np.mean(vals)) if vals else fallback
+
+        preferred = h if is_home else a
+        if abs(preferred) > 1e-6:
+            return preferred
+        secondary = a if is_home else h
+        if abs(secondary) > 1e-6:
+            return secondary
+        return fallback
+
+    @classmethod
+    def _loc_net(cls, team: TeamProfile, is_home: bool, neutral: bool = False) -> float:
+        return cls._loc_value(
+            team,
+            is_home,
+            "home_net_rtg_season",
+            "away_net_rtg_season",
+            "cage_em",
+            neutral,
+        )
+
+    @classmethod
+    def _loc_off(cls, team: TeamProfile, is_home: bool, neutral: bool = False) -> float:
+        return cls._loc_value(team, is_home, "home_ortg", "away_ortg", "cage_o", neutral)
+
+    @classmethod
+    def _loc_def(cls, team: TeamProfile, is_home: bool, neutral: bool = False) -> float:
+        return cls._loc_value(team, is_home, "home_drtg", "away_drtg", "cage_d", neutral)
+
+    @classmethod
+    def _loc_pace(cls, team: TeamProfile, is_home: bool, neutral: bool = False) -> float:
+        return cls._loc_value(team, is_home, "home_pace", "away_pace", "cage_t", neutral)
+
+    @classmethod
+    def _loc_efg(cls, team: TeamProfile, is_home: bool, neutral: bool = False) -> float:
+        return cls._loc_value(team, is_home, "home_efg_pct", "away_efg_pct", "efg_pct", neutral)
+
+    @classmethod
+    def _loc_tov(cls, team: TeamProfile, is_home: bool, neutral: bool = False) -> float:
+        return cls._loc_value(team, is_home, "home_tov_pct", "away_tov_pct", "tov_pct", neutral)
+
+    @classmethod
+    def _loc_orb(cls, team: TeamProfile, is_home: bool, neutral: bool = False) -> float:
+        return cls._loc_value(team, is_home, "home_orb_pct", "away_orb_pct", "orb_pct", neutral)
+
+    @classmethod
+    def _loc_ftr(cls, team: TeamProfile, is_home: bool, neutral: bool = False) -> float:
+        return cls._loc_value(team, is_home, "home_ftr", "away_ftr", "ftr", neutral)
+
+    @classmethod
+    def _loc_game_pace(
+        cls,
+        home: TeamProfile,
+        away: TeamProfile,
+        neutral: bool = False,
+    ) -> float:
+        h_pace = cls._loc_pace(home, True, neutral)
+        a_pace = cls._loc_pace(away, False, neutral)
+        return (h_pace + a_pace) / 2.0
 
     @staticmethod
     def _expected_pace(home: TeamProfile, away: TeamProfile) -> float:
@@ -547,28 +645,49 @@ class FourFactorsModel(_BaseModel):
             v = float(v)
             return v / 100.0 if abs(v) > 1.5 else v
 
+        h_efg = self._loc_efg(home, True, neutral)
+        a_efg = self._loc_efg(away, False, neutral)
+        h_tov = self._loc_tov(home, True, neutral)
+        a_tov = self._loc_tov(away, False, neutral)
+        h_orb = self._loc_orb(home, True, neutral)
+        a_orb = self._loc_orb(away, False, neutral)
+        h_ftr = self._loc_ftr(home, True, neutral)
+        a_ftr = self._loc_ftr(away, False, neutral)
+
         if use_vs_opp:
-            efg_delta = _to_unit_rate(home.efg_vs_opp - away.efg_vs_opp)
-            tov_delta = -_to_unit_rate(home.tov_vs_opp - away.tov_vs_opp)
-            orb_delta = _to_unit_rate(home.orb_vs_opp - away.orb_vs_opp)
-            ftr_delta = _to_unit_rate(home.ftr_vs_opp - away.ftr_vs_opp)
+            efg_delta = (
+                0.60 * _to_unit_rate(home.efg_vs_opp - away.efg_vs_opp)
+                + 0.40 * _to_unit_rate(h_efg - a_efg)
+            )
+            tov_delta = (
+                -0.60 * _to_unit_rate(home.tov_vs_opp - away.tov_vs_opp)
+                -0.40 * _to_unit_rate(h_tov - a_tov)
+            )
+            orb_delta = (
+                0.60 * _to_unit_rate(home.orb_vs_opp - away.orb_vs_opp)
+                + 0.40 * _to_unit_rate(h_orb - a_orb)
+            )
+            ftr_delta = (
+                0.60 * _to_unit_rate(home.ftr_vs_opp - away.ftr_vs_opp)
+                + 0.40 * _to_unit_rate(h_ftr - a_ftr)
+            )
         else:
             # Fallback to raw Four Factors vs each opponent profile if
             # vs-opponent columns are missing in source data.
             efg_delta = _to_unit_rate(
-                (home.efg_pct - away.opp_efg_pct)
-                - (away.efg_pct - home.opp_efg_pct)
+                (h_efg - away.opp_efg_pct)
+                - (a_efg - home.opp_efg_pct)
             )
             tov_delta = -_to_unit_rate(
-                (home.tov_pct - away.opp_tov_pct)
-                - (away.tov_pct - home.opp_tov_pct)
+                (h_tov - away.opp_tov_pct)
+                - (a_tov - home.opp_tov_pct)
             )
-            orb_delta = _to_unit_rate(home.orb_pct - away.orb_pct)
+            orb_delta = _to_unit_rate(h_orb - a_orb)
             ftr_delta = _to_unit_rate(
-                (home.ftr - away.opp_ftr) - (away.ftr - home.opp_ftr)
+                (h_ftr - away.opp_ftr) - (a_ftr - home.opp_ftr)
             )
             # Inject a modest efficiency anchor when four-factor deltas are sparse.
-            efg_delta += (home.cage_em - away.cage_em) * 0.05
+            efg_delta += (self._loc_net(home, True, neutral) - self._loc_net(away, False, neutral)) * 0.05
 
         composite = (
             self.W_EFG * efg_delta
@@ -580,12 +699,12 @@ class FourFactorsModel(_BaseModel):
         margin = composite * 0.8 + self._hca(neutral)
         spread = -margin
 
-        pace  = self._expected_pace(home, away)
+        pace = self._loc_game_pace(home, away, neutral)
         total = self._off_vs_def_total(
-            home_off=home.cage_o,
-            away_off=away.cage_o,
-            home_def=home.cage_d,
-            away_def=away.cage_d,
+            home_off=self._loc_off(home, True, neutral),
+            away_off=self._loc_off(away, False, neutral),
+            home_def=self._loc_def(home, True, neutral),
+            away_def=self._loc_def(away, False, neutral),
             pace=pace,
         )
 
@@ -620,8 +739,9 @@ class AdjustedEfficiencyModel(_BaseModel):
         away: TeamProfile,
         neutral: bool = False,
     ) -> ModelPrediction:
-        eff_edge = home.cage_em - away.cage_em
-        pace = self._expected_pace(home, away)
+        loc_eff_edge = self._loc_net(home, True, neutral) - self._loc_net(away, False, neutral)
+        eff_edge = 0.70 * (home.cage_em - away.cage_em) + 0.30 * loc_eff_edge
+        pace = self._loc_game_pace(home, away, neutral)
         base_scale = pace / 100.0
         consistency_blend = np.clip(
             (home.consistency_score + away.consistency_score) / 200.0,
@@ -632,7 +752,13 @@ class AdjustedEfficiencyModel(_BaseModel):
         margin = eff_edge * base_scale * consistency_reg + self._hca(neutral)
         spread = -margin
 
-        base_total = self._eff_to_total(home.cage_o, away.cage_o, pace)
+        base_total = self._off_vs_def_total(
+            home_off=self._loc_off(home, True, neutral),
+            away_off=self._loc_off(away, False, neutral),
+            home_def=self._loc_def(home, True, neutral),
+            away_def=self._loc_def(away, False, neutral),
+            pace=pace,
+        )
         luck_drag = (abs(home.luck) + abs(away.luck)) * 0.15
         total = base_total - luck_drag
 
@@ -665,18 +791,27 @@ class PythagoreanModel(_BaseModel):
         away: TeamProfile,
         neutral: bool = False,
     ) -> ModelPrediction:
-        h_wp = np.clip(home.pythagorean_win_pct, 0.01, 0.99)
-        a_wp = np.clip(away.pythagorean_win_pct, 0.01, 0.99)
+        h_loc_wp = (home.home_wpct + home.away_wpct) / 2.0 if neutral else home.home_wpct
+        a_loc_wp = (away.home_wpct + away.away_wpct) / 2.0 if neutral else away.away_wpct
+        h_wp = np.clip(0.75 * home.pythagorean_win_pct + 0.25 * h_loc_wp, 0.01, 0.99)
+        a_wp = np.clip(0.75 * away.pythagorean_win_pct + 0.25 * a_loc_wp, 0.01, 0.99)
 
         h_implied = scipy_stats.norm.ppf(h_wp) * SIGMA
         a_implied = scipy_stats.norm.ppf(a_wp) * SIGMA
 
-        margin = (h_implied - a_implied) + self._hca(neutral)
+        loc_net_edge = (
+            self._loc_net(home, True, neutral) - self._loc_net(away, False, neutral)
+        ) * 0.03
+        margin = (h_implied - a_implied) + loc_net_edge + self._hca(neutral)
         spread = -margin
 
-        pace  = self._expected_pace(home, away)
+        pace = self._loc_game_pace(home, away, neutral)
         style_adj = (home.cover_margin + away.cover_margin) * 0.15
-        total = self._eff_to_total(home.cage_o, away.cage_o, pace) + style_adj
+        total = self._eff_to_total(
+            self._loc_off(home, True, neutral),
+            self._loc_off(away, False, neutral),
+            pace,
+        ) + style_adj
 
         luck_penalty = (abs(home.luck) + abs(away.luck)) / 20.0
         sample_conf = self._confidence_from_games(home, away)
@@ -721,18 +856,23 @@ class MomentumModel(_BaseModel):
         h_trend = home.net_rtg_l5 - home.net_rtg_l10
         a_trend = away.net_rtg_l5 - away.net_rtg_l10
         trend_edge = (h_trend - a_trend) * 0.25
+        loc_context_edge = (
+            self._loc_net(home, True, neutral) - self._loc_net(away, False, neutral)
+        ) * 0.20
 
-        pace = self._expected_pace(home, away)
-        raw_margin = (h_net - a_net) * (pace / 100.0) + trend_edge
+        pace = self._loc_game_pace(home, away, neutral)
+        raw_margin = (h_net - a_net) * (pace / 100.0) + trend_edge + loc_context_edge
         margin = raw_margin + self._hca(neutral)
         spread = -margin
 
-        h_off = (
+        h_off_form = (
             self.L5_WEIGHT * home.ortg_l5 + self.L10_WEIGHT * home.ortg_l10
         )
-        a_off = (
+        a_off_form = (
             self.L5_WEIGHT * away.ortg_l5 + self.L10_WEIGHT * away.ortg_l10
         )
+        h_off = 0.70 * h_off_form + 0.30 * self._loc_off(home, True, neutral)
+        a_off = 0.70 * a_off_form + 0.30 * self._loc_off(away, False, neutral)
         total = self._eff_to_total(h_off, a_off, pace)
 
         h_var = abs(home.net_rtg_l5 - home.net_rtg_l10)
@@ -768,12 +908,17 @@ class ATSIntelligenceModel(_BaseModel):
             (cover_a - cover_b) * 3.0
             + (ats_a - ats_b) * 0.4
             + (streak_a - streak_b) * 0.15
+            + (self._loc_net(home, True, neutral) - self._loc_net(away, False, neutral)) * 0.15
             + self._hca(neutral)
         )
         spread = -margin
-        pace = self._expected_pace(home, away)
+        pace = self._loc_game_pace(home, away, neutral)
         pace_adj = (home.momentum + away.momentum - 100.0) * 0.03
-        total = self._eff_to_total(home.cage_o, away.cage_o, pace) + pace_adj
+        total = self._eff_to_total(
+            self._loc_off(home, True, neutral),
+            self._loc_off(away, False, neutral),
+            pace,
+        ) + pace_adj
         conf = max(0.10, min(0.90, self._confidence_from_games(home, away)))
         return ModelPrediction(self.name, round(spread, 2), round(total, 1), round(conf, 3))
 
@@ -802,27 +947,39 @@ class SituationalModel(_BaseModel):
 
         if neutral:
             split_edge = 0.0
+            loc_net_edge = 0.0
         else:
             h_strength = home.home_wpct - 0.50
             a_strength = away.away_wpct - 0.50
             split_edge = (h_strength - a_strength) * 4.0
+            loc_net_edge = (
+                home.home_net_rtg_season - away.away_net_rtg_season
+            ) * 0.20
 
         close_edge = (home.close_wpct - away.close_wpct) * 2.0
         streak_edge = np.clip(
             home.win_streak - away.win_streak, -5, 5
         ) * 0.3
 
-        pace = self._expected_pace(home, away)
-        margin = eff_edge + rest_edge + fatigue_edge + split_edge + close_edge + streak_edge
+        pace = self._loc_game_pace(home, away, neutral)
+        margin = (
+            eff_edge
+            + rest_edge
+            + fatigue_edge
+            + split_edge
+            + loc_net_edge
+            + close_edge
+            + streak_edge
+        )
         if not neutral:
             margin += HCA  # Residual HCA after home/away splits
         spread = -margin
 
         total = self._off_vs_def_total(
-            home_off=home.cage_o,
-            away_off=away.cage_o,
-            home_def=home.cage_d,
-            away_def=away.cage_d,
+            home_off=self._loc_off(home, True, neutral),
+            away_off=self._loc_off(away, False, neutral),
+            home_def=self._loc_def(home, True, neutral),
+            away_def=self._loc_def(away, False, neutral),
             pace=pace,
         )
 
@@ -891,12 +1048,15 @@ class CAGERankingsModel(_BaseModel):
         ):
             base_margin = (home.cage_em - away.cage_em) * 0.45
 
-        margin = base_margin + self._hca(neutral)
+        loc_context_edge = (
+            self._loc_net(home, True, neutral) - self._loc_net(away, False, neutral)
+        ) * 0.20
+        margin = base_margin + loc_context_edge + self._hca(neutral)
         spread = -margin
 
-        pace = self._expected_pace(home, away)
-        h_form_off = home.ortg_l10 if abs(home.ortg_l10) > 1e-6 else home.cage_o
-        a_form_off = away.ortg_l10 if abs(away.ortg_l10) > 1e-6 else away.cage_o
+        pace = self._loc_game_pace(home, away, neutral)
+        h_form_off = home.ortg_l10 if abs(home.ortg_l10) > 1e-6 else self._loc_off(home, True, neutral)
+        a_form_off = away.ortg_l10 if abs(away.ortg_l10) > 1e-6 else self._loc_off(away, False, neutral)
         total = self._eff_to_total(h_form_off, a_form_off, pace)
 
         sample_conf = self._confidence_from_games(home, away)
@@ -929,19 +1089,21 @@ class RegressedEfficiencyModel(_BaseModel):
         away: TeamProfile,
         neutral: bool = False,
     ) -> ModelPrediction:
-        h_reg = self._regress(home)
-        a_reg = self._regress(away)
+        h_reg = 0.75 * self._regress(home) + 0.25 * self._loc_net(home, True, neutral)
+        a_reg = 0.75 * self._regress(away) + 0.25 * self._loc_net(away, False, neutral)
 
-        pace = self._expected_pace(home, away)
+        pace = self._loc_game_pace(home, away, neutral)
         margin = (h_reg - a_reg) * (pace / 100.0) + self._hca(neutral)
         spread = -margin
 
+        h_loc_off = self._loc_off(home, True, neutral)
+        a_loc_off = self._loc_off(away, False, neutral)
         h_ortg_reg = LEAGUE_AVG_ORTG + (
             (home.cage_o - LEAGUE_AVG_ORTG) * self._reg_factor(home)
-        )
+        ) + (h_loc_off - home.cage_o) * 0.25
         a_ortg_reg = LEAGUE_AVG_ORTG + (
             (away.cage_o - LEAGUE_AVG_ORTG) * self._reg_factor(away)
-        )
+        ) + (a_loc_off - away.cage_o) * 0.25
         total = self._eff_to_total(h_ortg_reg, a_ortg_reg, pace)
 
         sample_conf = self._confidence_from_games(home, away)
@@ -974,15 +1136,20 @@ class LuckRegressionModel(_BaseModel):
         away: TeamProfile,
         neutral: bool = False,
     ) -> ModelPrediction:
-        pace = self._expected_pace(home, away)
+        pace = self._loc_game_pace(home, away, neutral)
         margin = (
             (home.pythagorean_win_pct - away.pythagorean_win_pct) * 25.0
             - (home.luck - away.luck) * 0.3
+            + (self._loc_net(home, True, neutral) - self._loc_net(away, False, neutral)) * 0.05
             + self._hca(neutral)
         )
         spread = -margin
         luck_drag = (abs(home.luck) + abs(away.luck)) * 0.2
-        total = self._eff_to_total(home.cage_o, away.cage_o, pace) - luck_drag
+        total = self._eff_to_total(
+            self._loc_off(home, True, neutral),
+            self._loc_off(away, False, neutral),
+            pace,
+        ) - luck_drag
         conf = max(0.10, min(0.90, self._confidence_from_games(home, away)))
         return ModelPrediction(self.name, round(spread, 2), round(total, 1), round(conf, 3))
 
@@ -998,15 +1165,21 @@ class VarianceModel(_BaseModel):
         away: TeamProfile,
         neutral: bool = False,
     ) -> ModelPrediction:
-        pace = self._expected_pace(home, away)
+        pace = self._loc_game_pace(home, away, neutral)
         h_std = max(home.net_rtg_std_l10, 0.0)
         a_std = max(away.net_rtg_std_l10, 0.0)
-        eff_edge = home.cage_em - away.cage_em
+        eff_edge = 0.70 * (home.cage_em - away.cage_em) + 0.30 * (
+            self._loc_net(home, True, neutral) - self._loc_net(away, False, neutral)
+        )
         confidence_adj = float(np.clip(1.0 - (h_std + a_std) / 40.0, 0.35, 1.0))
         margin = eff_edge * confidence_adj * (pace / 100.0) + self._hca(neutral)
         spread = -margin
         volatility_drag = (h_std + a_std) * 0.12
-        total = self._eff_to_total(home.cage_o, away.cage_o, pace) - volatility_drag
+        total = self._eff_to_total(
+            self._loc_off(home, True, neutral),
+            self._loc_off(away, False, neutral),
+            pace,
+        ) - volatility_drag
         conf = max(0.10, min(0.90, self._confidence_from_games(home, away) * confidence_adj))
         return ModelPrediction(self.name, round(spread, 2), round(total, 1), round(conf, 3))
 
@@ -1022,16 +1195,24 @@ class HomeAwayFormModel(_BaseModel):
         away: TeamProfile,
         neutral: bool = False,
     ) -> ModelPrediction:
-        pace = self._expected_pace(home, away)
-        h_loc = home.ha_net_rtg_l10 if abs(home.ha_net_rtg_l10) > 1e-6 else home.cage_em
-        a_loc = away.ha_net_rtg_l10 if abs(away.ha_net_rtg_l10) > 1e-6 else away.cage_em
+        pace = self._loc_game_pace(home, away, neutral)
+        h_loc = (
+            home.home_net_rtg_season
+            if abs(home.home_net_rtg_season) > 1e-6
+            else (home.ha_net_rtg_l10 if abs(home.ha_net_rtg_l10) > 1e-6 else home.cage_em)
+        )
+        a_loc = (
+            away.away_net_rtg_season
+            if abs(away.away_net_rtg_season) > 1e-6
+            else (away.ha_net_rtg_l10 if abs(away.ha_net_rtg_l10) > 1e-6 else away.cage_em)
+        )
         location_edge = h_loc - a_loc
         margin = location_edge * (pace / 100.0)
         if not neutral:
             margin += HCA  # Residual HCA after home/away splits
         spread = -margin
-        h_form_off = home.ortg_l10 if abs(home.ortg_l10) > 1e-6 else home.cage_o
-        a_form_off = away.ortg_l10 if abs(away.ortg_l10) > 1e-6 else away.cage_o
+        h_form_off = home.ortg_l10 if abs(home.ortg_l10) > 1e-6 else self._loc_off(home, True, neutral)
+        a_form_off = away.ortg_l10 if abs(away.ortg_l10) > 1e-6 else self._loc_off(away, False, neutral)
         total = self._eff_to_total(h_form_off, a_form_off, pace)
         conf = max(0.10, min(0.85, self._confidence_from_games(home, away)))
         return ModelPrediction(self.name, round(spread, 2), round(total, 1), round(conf, 3))
@@ -1482,6 +1663,22 @@ def load_team_profiles(
     _team_o_agg: dict[str, float] = {}
     _team_d_agg: dict[str, float] = {}
     _team_t_agg: dict[str, float] = {}
+    _home_net_split: dict[str, float] = {}
+    _away_net_split: dict[str, float] = {}
+    _home_efg_split: dict[str, float] = {}
+    _away_efg_split: dict[str, float] = {}
+    _home_tov_split: dict[str, float] = {}
+    _away_tov_split: dict[str, float] = {}
+    _home_orb_split: dict[str, float] = {}
+    _away_orb_split: dict[str, float] = {}
+    _home_ftr_split: dict[str, float] = {}
+    _away_ftr_split: dict[str, float] = {}
+    _home_ortg_split: dict[str, float] = {}
+    _away_ortg_split: dict[str, float] = {}
+    _home_drtg_split: dict[str, float] = {}
+    _away_drtg_split: dict[str, float] = {}
+    _home_pace_split: dict[str, float] = {}
+    _away_pace_split: dict[str, float] = {}
 
     _agg_candidates = ["adj_net_rtg", "net_eff", "net_rtg", "cage_em"]
     _agg_col = next((c for c in _agg_candidates if c in df_all.columns), None)
@@ -1497,6 +1694,42 @@ def load_team_profiles(
         _team_d_agg = pd.to_numeric(df_all[_d_col], errors="coerce").groupby(df_all["team_id"].astype(str)).mean().dropna().to_dict()
     if _t_col and "team_id" in df_all.columns:
         _team_t_agg = pd.to_numeric(df_all[_t_col], errors="coerce").groupby(df_all["team_id"].astype(str)).mean().dropna().to_dict()
+
+    def _split_team_means(column: str) -> tuple[dict[str, float], dict[str, float]]:
+        if (
+            column not in df_all.columns
+            or "team_id" not in df_all.columns
+            or "home_away" not in df_all.columns
+        ):
+            return {}, {}
+        tmp = df_all[["team_id", "home_away", column]].copy()
+        tmp["team_id"] = tmp["team_id"].astype(str)
+        tmp["home_away"] = tmp["home_away"].astype(str).str.lower()
+        tmp[column] = pd.to_numeric(tmp[column], errors="coerce")
+        home_means = (
+            tmp[tmp["home_away"] == "home"]
+            .groupby("team_id")[column]
+            .mean()
+            .dropna()
+            .to_dict()
+        )
+        away_means = (
+            tmp[tmp["home_away"] == "away"]
+            .groupby("team_id")[column]
+            .mean()
+            .dropna()
+            .to_dict()
+        )
+        return home_means, away_means
+
+    _home_net_split, _away_net_split = _split_team_means("net_rtg")
+    _home_efg_split, _away_efg_split = _split_team_means("efg_pct")
+    _home_tov_split, _away_tov_split = _split_team_means("tov_pct")
+    _home_orb_split, _away_orb_split = _split_team_means("orb_pct")
+    _home_ftr_split, _away_ftr_split = _split_team_means("ftr")
+    _home_ortg_split, _away_ortg_split = _split_team_means("ortg")
+    _home_drtg_split, _away_drtg_split = _split_team_means("drtg")
+    _home_pace_split, _away_pace_split = _split_team_means("pace")
 
     if _agg_col:
         _non_zero = sum(1 for v in _team_agg.values() if v != 0.0)
@@ -1681,6 +1914,28 @@ def load_team_profiles(
                 "net_rtg",
                 default=0.0,
             ),
+            home_net_rtg_season=_home_net_split.get(
+                tid,
+                col(row, "home_net_rtg_season", "home_adj_net_rtg_season", default=0.0),
+            ),
+            away_net_rtg_season=_away_net_split.get(
+                tid,
+                col(row, "away_net_rtg_season", "away_adj_net_rtg_season", default=0.0),
+            ),
+            home_efg_pct=_home_efg_split.get(tid, col(row, "efg_pct", default=LEAGUE_AVG_EFG)),
+            away_efg_pct=_away_efg_split.get(tid, col(row, "efg_pct", default=LEAGUE_AVG_EFG)),
+            home_tov_pct=_home_tov_split.get(tid, col(row, "tov_pct", default=LEAGUE_AVG_TOV)),
+            away_tov_pct=_away_tov_split.get(tid, col(row, "tov_pct", default=LEAGUE_AVG_TOV)),
+            home_orb_pct=_home_orb_split.get(tid, col(row, "orb_pct", default=30.0)),
+            away_orb_pct=_away_orb_split.get(tid, col(row, "orb_pct", default=30.0)),
+            home_ftr=_home_ftr_split.get(tid, col(row, "ftr", default=LEAGUE_AVG_FTR)),
+            away_ftr=_away_ftr_split.get(tid, col(row, "ftr", default=LEAGUE_AVG_FTR)),
+            home_ortg=_home_ortg_split.get(tid, col(row, "ortg", default=LEAGUE_AVG_ORTG)),
+            away_ortg=_away_ortg_split.get(tid, col(row, "ortg", default=LEAGUE_AVG_ORTG)),
+            home_drtg=_home_drtg_split.get(tid, col(row, "drtg", default=LEAGUE_AVG_DRTG)),
+            away_drtg=_away_drtg_split.get(tid, col(row, "drtg", default=LEAGUE_AVG_DRTG)),
+            home_pace=_home_pace_split.get(tid, col(row, "pace", default=LEAGUE_AVG_PACE)),
+            away_pace=_away_pace_split.get(tid, col(row, "pace", default=LEAGUE_AVG_PACE)),
         )
         profiles[tid] = tp
 
