@@ -11,30 +11,29 @@ REQUIRED_CONCURRENCY_GROUP = "cbb-data-pipeline"
 
 # Artifact contract mapping: artifact_name -> {uploaded_by, downloaded_by}
 ARTIFACT_CONTRACTS = {
-    "cbb-predictions-rolling-latest": {
+    "INFRA-predictions-rolling": {
         "uploaded_by": "cbb_predictions_rolling.yml",
-        "downloaded_by": ["market_lines.yml"],
+        "downloaded_by": ["market_lines.yml", "cbb_user_deliverables.yml"],
     },
-    "cbb-market-lines": {
+    "INFRA-market-lines": {
         "uploaded_by": "market_lines.yml",
         "downloaded_by": ["cbb_analytics.yml"],
     },
-    "cbb-predictions-with-context": {
+    "INFRA-predictions-with-context": {
         "uploaded_by": "market_lines.yml",
         "downloaded_by": ["cbb_analytics.yml"],
     },
-    "cbb-espn-data": {
+    "INFRA-espn-data": {
         "uploaded_by": "update_espn_cbb.yml",
-        "downloaded_by": ["cbb_predictions_rolling.yml"],
+        "downloaded_by": ["cbb_predictions_rolling.yml", "cbb_analytics.yml"],
     },
 }
-
 errors = []
 warnings = []
 
 # Audit each workflow file
 for wf in WORKFLOW_DIR.glob("*.yml"):
-    content = wf.read_text()
+    content = wf.read_text(encoding="utf-8", errors="replace")
 
     # Check 1: Concurrency group must be standardized
     if "concurrency:" in content:
@@ -74,7 +73,7 @@ for wf in WORKFLOW_DIR.glob("*.yml"):
 uploads = {}
 downloads = {}
 for wf in WORKFLOW_DIR.glob("*.yml"):
-    content = wf.read_text()
+    content = wf.read_text(encoding="utf-8", errors="replace")
     for name in ARTIFACT_CONTRACTS:
         # Use regex to find "name: <name>" and ensure it's not just a comment
         # We look for it preceded by some whitespace and 'name:'
@@ -107,15 +106,15 @@ for name, contract in ARTIFACT_CONTRACTS.items():
 if errors:
     print("\nERRORS:")
     for e in errors:
-        print(f"  ✗ {e}")
+        print(f"  - {e}")
 if warnings:
     print("\nWARNINGS:")
     for w in warnings:
-        print(f"  ⚠ {w}")
+        print(f"  - {w}")
 
 if not errors and not warnings:
-    print("\n✓ All workflow checks passed")
+    print("\nAll workflow checks passed")
 elif not errors:
-    print("\n✓ Workflow audit passed (with warnings)")
+    print("\nWorkflow audit passed (with warnings)")
 
 sys.exit(1 if errors else 0)
