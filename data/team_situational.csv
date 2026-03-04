@@ -5088,7 +5088,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401807754,2453,North Alabama Lions,288,Lipscomb Bisons,2026-02-21T22:30:00Z,away,2.9,2,4,2.45,-1,0,0.6,,11.25,1.0,0.0,-22.0,-15.0
 401807758,2453,North Alabama Lions,91,Bellarmine Knights,2026-02-26T02:27:00Z,home,4.2,1,3,1.5,-2,0,0.6,,8.89,0.0,1.0,5.0,5.0
 401807767,2453,North Alabama Lions,2698,West Georgia Wolves,2026-02-28T19:00:00Z,away,2.7,2,4,2.55,1,1,0.667,1.0,10.29,0.0,0.0,-12.0,-12.0
-401851239,2453,North Alabama Lions,526,Florida Gulf Coast Eagles,2026-03-04T19:30:00Z,away,4.0,2,4,2.4,-1,2,0.667,1.0,10.56,,,,
+401851239,2453,North Alabama Lions,526,Florida Gulf Coast Eagles,2026-03-04T19:30:00Z,away,4.0,2,4,2.4,-1,2,0.667,1.0,10.56,0.0,1.0,-1.0,-1.0
 401823442,2454,North Florida Ospreys,2633,Tennessee Volunteers,2025-11-13T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-33.0,-15.0
 401823443,2454,North Florida Ospreys,128550,New College (FL) Mighty Banyans,2025-11-15T19:00:00Z,home,2.8,1,1,1.0,-1,0,,,,1.0,0.0,55.0,15.0
 401823444,2454,North Florida Ospreys,2747,Wofford Terriers,2025-11-20T00:00:00Z,away,4.2,2,2,1.8,1,0,,,,0.0,0.0,-8.0,-8.0
@@ -8664,7 +8664,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401807751,294,Jacksonville Dolphins,2046,Austin Peay Governors,2026-02-22T00:00:00Z,home,3.0,1,3,1.5,-1,0,0.556,0.5,7.06,0.0,1.0,-4.0,-4.0
 401807762,294,Jacksonville Dolphins,56,Stetson Hatters,2026-02-27T00:00:00Z,home,5.0,1,3,1.5,-2,0,0.5,0.4,6.71,0.0,1.0,4.0,4.0
 401807765,294,Jacksonville Dolphins,2454,North Florida Ospreys,2026-02-28T23:00:00Z,away,2.0,2,3,2.6,1,1,0.545,0.5,4.69,1.0,0.0,24.0,15.0
-401851238,294,Jacksonville Dolphins,91,Bellarmine Knights,2026-03-04T17:00:00Z,away,3.8,2,4,2.4,2,-1,0.545,0.4,9.93,,,,
+401851238,294,Jacksonville Dolphins,91,Bellarmine Knights,2026-03-04T17:00:00Z,away,3.8,2,4,2.4,2,-1,0.545,0.4,9.93,0.0,1.0,-3.0,-3.0
 401823453,2944,Penn State-Behrend Lions,2084,Buffalo Bulls,2025-12-22T23:30:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-29.0,-15.0
 401826994,2945,Pfeiffer Falcons,2344,Longwood Lancers,2025-12-04T00:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-46.0,-15.0
 401826981,2945,Pfeiffer Falcons,2272,High Point Panthers,2025-12-28T19:00:00Z,away,14.0,0,0,0.0,-1,0,,,,1.0,0.0,-59.0,-15.0
@@ -9971,7 +9971,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401807752,526,Florida Gulf Coast Eagles,2110,Central Arkansas Bears,2026-02-21T19:00:00Z,home,2.8,2,4,2.5,3,0,0.375,0.667,8.29,0.0,1.0,4.0,4.0
 401807760,526,Florida Gulf Coast Eagles,2454,North Florida Ospreys,2026-02-27T00:00:00Z,away,5.2,1,3,1.5,4,0,0.444,0.75,8.49,0.0,0.0,-6.0,-6.0
 401807764,526,Florida Gulf Coast Eagles,56,Stetson Hatters,2026-02-28T19:00:00Z,away,1.8,2,4,3.0,-1,1,0.444,0.75,4.83,1.0,0.0,-15.0,-15.0
-401851239,526,Florida Gulf Coast Eagles,2453,North Alabama Lions,2026-03-04T19:30:00Z,home,4.0,2,4,2.4,-2,2,0.444,0.75,7.09,,,,
+401851239,526,Florida Gulf Coast Eagles,2453,North Alabama Lions,2026-03-04T19:30:00Z,home,4.0,2,4,2.4,-2,2,0.444,0.75,7.09,0.0,1.0,1.0,1.0
 401830634,533,Hannibal-Lagrange Trojans,2710,Western Illinois Leathernecks,2025-12-06T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-31.0,-15.0
 401822396,534,Harris-Stowe State Hornets,2815,Lindenwood Lions,2025-12-20T19:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-57.0,-15.0
 401823463,5345,Benedictine University (IL) Eagles,2459,Northern Illinois Huskies,2025-11-14T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,1.0,0.0,-55.0,-15.0
@@ -10622,7 +10622,7 @@ event_id,team_id,team_name,opponent_id,opponent_name,game_datetime_utc,home_away
 401807753,91,Bellarmine Knights,2198,Eastern Kentucky Colonels,2026-02-22T00:00:00Z,home,3.0,1,3,1.5,-3,0,0.375,0.5,15.25,0.0,1.0,-3.0,-3.0
 401807758,91,Bellarmine Knights,2453,North Alabama Lions,2026-02-26T02:27:00Z,away,4.1,1,3,1.5,-4,0,0.333,0.4,11.6,0.0,1.0,-5.0,-5.0
 401807763,91,Bellarmine Knights,2046,Austin Peay Governors,2026-02-28T19:00:00Z,home,2.7,2,4,2.55,-5,1,0.3,0.333,6.37,0.0,0.0,14.0,14.0
-401851238,91,Bellarmine Knights,294,Jacksonville Dolphins,2026-03-04T17:00:00Z,home,3.9,2,4,2.4,1,2,0.3,0.4,10.78,,,,
+401851238,91,Bellarmine Knights,294,Jacksonville Dolphins,2026-03-04T17:00:00Z,home,3.9,2,4,2.4,1,2,0.3,0.4,10.78,0.0,1.0,3.0,3.0
 401817454,93,Murray State Racers,2567,SMU Mustangs,2025-11-12T01:00:00Z,away,7.0,0,0,0.0,0,0,,,,0.0,0.0,-11.0,-11.0
 401826747,93,Murray State Racers,2447,Nicholls Colonels,2025-11-15T22:30:00Z,home,3.9,1,1,0.9,-1,0,,,,1.0,0.0,20.0,15.0
 401825186,93,Murray State Racers,2031,Little Rock Trojans,2025-11-19T01:00:00Z,home,3.1,2,2,1.8,1,0,,,,1.0,0.0,21.0,15.0
