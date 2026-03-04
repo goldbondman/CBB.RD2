@@ -32,7 +32,7 @@ import dataclasses
 import json
 import math
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from espn_config import (
     CSV_DIR as DATA_DIR,
@@ -1240,6 +1240,7 @@ def _validate_prediction_output_schema(df: pd.DataFrame) -> None:
 def write_predictions(df: pd.DataFrame, label: str) -> Path:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     out_df = normalize_column_names(df)
+    generated_at_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
     # Backward-compatible normalization for downstream schema + dedupe contracts.
     # Keep legacy columns (game_id/pred_spread) while adding canonical aliases
@@ -1254,6 +1255,23 @@ def write_predictions(df: pd.DataFrame, label: str) -> Path:
     if "predicted_spread" not in out_df.columns and "pred_spread" in out_df.columns:
         out_df["predicted_spread"] = out_df["pred_spread"]
         log.info("Normalized prediction output: added predicted_spread from pred_spread")
+
+    if "game_datetime_utc" in out_df.columns:
+        parsed_game_time = pd.to_datetime(out_df["game_datetime_utc"], errors="coerce", utc=True)
+        missing_rate = float(parsed_game_time.isna().mean()) if len(out_df) else 0.0
+        if missing_rate > 0.01:
+            raise RuntimeError(
+                f"game_datetime_utc parse/missing rate {missing_rate:.3f} exceeds 1% integrity threshold"
+            )
+        if parsed_game_time.isna().any():
+            drop_count = int(parsed_game_time.isna().sum())
+            log.warning("Dropping %s rows with missing/invalid game_datetime_utc", drop_count)
+            out_df = out_df.loc[parsed_game_time.notna()].copy()
+            parsed_game_time = parsed_game_time.loc[parsed_game_time.notna()]
+        out_df["game_datetime_utc"] = parsed_game_time.dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        out_df["game_time_utc"] = out_df["game_datetime_utc"]
+
+    out_df["generated_at_utc"] = generated_at_utc
 
     out_df = add_conference_name(out_df)
 

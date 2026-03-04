@@ -27,6 +27,7 @@ import argparse
 import json
 import logging
 import time
+from datetime import datetime, timezone
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Optional
@@ -1130,6 +1131,23 @@ def main() -> None:
             log.warning(f"[MC] {missing_mc} games missing MC results after join")
     else:
         enriched = pd.concat([df.reset_index(drop=True), mc_df.reset_index(drop=True)], axis=1)
+
+    generated_at_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    if "game_datetime_utc" in enriched.columns:
+        parsed_game_time = pd.to_datetime(enriched["game_datetime_utc"], errors="coerce", utc=True)
+        missing_rate = float(parsed_game_time.isna().mean()) if len(enriched) else 0.0
+        if missing_rate > 0.01:
+            raise RuntimeError(
+                f"game_datetime_utc parse/missing rate {missing_rate:.3f} exceeds 1% integrity threshold"
+            )
+        if parsed_game_time.isna().any():
+            drop_count = int(parsed_game_time.isna().sum())
+            log.warning("[MC] Dropping %s rows with invalid game_datetime_utc", drop_count)
+            enriched = enriched.loc[parsed_game_time.notna()].copy()
+            parsed_game_time = parsed_game_time.loc[parsed_game_time.notna()]
+        enriched["game_datetime_utc"] = parsed_game_time.dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        enriched["game_time_utc"] = enriched["game_datetime_utc"]
+    enriched["generated_at_utc"] = generated_at_utc
 
     # Write enriched predictions
     mc_path = DATA_DIR / "predictions_mc_latest.csv"
