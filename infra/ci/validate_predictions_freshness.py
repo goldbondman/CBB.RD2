@@ -17,16 +17,19 @@ TIMESTAMP_COLUMNS = [
     "model_run_utc",
     "created_at_utc",
     "pipeline_run_utc",
+    "generated_at",
     "timestamp",
 ]
 GAME_TIME_COLUMNS = [
     "game_time_utc",
     "game_datetime_utc",
     "game_datetime",
-TIMESTAMP_COLUMNS = ["generated_at_utc", "run_time_utc", "model_run_utc", "generated_at", "predicted_at_utc", "timestamp"]
-GAME_TIME_COLUMNS = [
-    "game_time_utc",
-    "game_datetime_utc",
+    "start_time_utc",
+    "commence_time_utc",
+    "scheduled_utc",
+    "scheduled",
+    "tipoff_utc",
+    "tipoff",
     "commence_time",
     "start_time",
     "date",
@@ -36,13 +39,6 @@ GAME_TIME_COLUMNS = [
 PREDICTED_AT_COLUMN = "predicted_at_utc"
 ARTIFACT_MARKER_FILE = ".artifact_marker.txt"
 TIME_LIKE_TOKENS = ("time", "date", "start", "utc", "commence", "tip", "sched")
-    "start_time_utc",
-    "commence_time_utc",
-    "scheduled_utc",
-    "scheduled",
-    "tipoff_utc",
-    "tipoff",
-]
 
 
 @dataclass
@@ -136,20 +132,6 @@ def _select_source(data_dir: Path) -> tuple[Path, pd.DataFrame, pd.Timestamp, st
     viable: list[tuple[pd.Timestamp, Path, pd.DataFrame, str, str | None]] = []
 
     for path in candidates:
-def _fallback_select_prediction_source(
-    predictions_latest_path: Path,
-    predictions_mc_latest_path: Path,
-) -> tuple[pd.DataFrame, str, Path]:
-    candidates: list[tuple[str, Path]] = [
-        ("predictions_latest", predictions_latest_path),
-        ("predictions_mc_latest", predictions_mc_latest_path),
-    ]
-    best_df: Optional[pd.DataFrame] = None
-    best_label: Optional[str] = None
-    best_path: Optional[Path] = None
-    best_ts: Optional[pd.Timestamp] = None
-
-    for label, path in candidates:
         df = _load_csv(path)
         if df is None:
             continue
@@ -158,25 +140,6 @@ def _fallback_select_prediction_source(
 
     if not viable:
         raise RuntimeError("No predictions source found (predictions_latest.csv/predictions_mc_latest.csv missing or empty)")
-        max_ts: Optional[pd.Timestamp] = None
-        for col in ["game_time_utc", "game_datetime_utc", "generated_at_utc", "generated_at"]:
-            if col in df.columns:
-                ts = pd.to_datetime(df[col], errors="coerce", utc=True)
-                if ts.notna().any():
-                    max_ts = ts.max()
-                    break
-
-        if best_df is None:
-            best_df, best_label, best_path, best_ts = df, label, path, max_ts
-            continue
-        if best_ts is None and max_ts is not None:
-            best_df, best_label, best_path, best_ts = df, label, path, max_ts
-            continue
-        if max_ts is not None and best_ts is not None and max_ts > best_ts:
-            best_df, best_label, best_path, best_ts = df, label, path, max_ts
-            continue
-        if max_ts == best_ts and len(df) > len(best_df):
-            best_df, best_label, best_path, best_ts = df, label, path, max_ts
 
     viable.sort(key=lambda row: row[0])
     selected_ts, selected_path, selected_df, timestamp_source, warning = viable[-1]
@@ -188,6 +151,16 @@ def _fallback_select_prediction_source(
     return selected_path, selected_df, selected_ts, timestamp_source, warning
 
 
+def _fallback_select_prediction_source(
+    predictions_latest_path: Path,
+    predictions_mc_latest_path: Path,
+) -> tuple[pd.DataFrame, str, Path]:
+    local_data_dir = predictions_latest_path.parent
+    source_path, source_df, _, _, _ = _select_source(local_data_dir)
+    label = "predictions_latest" if source_path.name == "predictions_latest.csv" else "predictions_mc_latest"
+    return source_df, label, source_path
+
+
 def _time_like_columns(columns: list[str]) -> list[str]:
     lowered = []
     for col in columns:
@@ -195,16 +168,6 @@ def _time_like_columns(columns: list[str]) -> list[str]:
         if any(token in name for token in TIME_LIKE_TOKENS):
             lowered.append(col)
     return lowered
-def select_prediction_source(
-    predictions_latest_path: Path = Path("data/predictions_latest.csv"),
-    predictions_mc_latest_path: Path = Path("data/predictions_mc_latest.csv"),
-) -> tuple[pd.DataFrame, str, Path]:
-    label_to_path = {
-        "predictions_latest": predictions_latest_path,
-        "predictions_mc_latest": predictions_mc_latest_path,
-    }
-    try:
-        from build_derived_csvs import _select_prediction_source
 
 
 def _column_priority(name: str) -> int:
@@ -253,14 +216,18 @@ def _select_best_game_time_column(df: pd.DataFrame) -> tuple[str | None, pd.Seri
 
 
 def _parse_generated_at(df: pd.DataFrame) -> tuple[datetime, str]:
-    for col in TIMESTAMP_COLUMNS:
+    selected_df_path = df.attrs.get("_selected_file_path")
+    runtime_candidates = list(TIMESTAMP_COLUMNS)
+    if not selected_df_path:
+        runtime_candidates.append(PREDICTED_AT_COLUMN)
+
+    for col in runtime_candidates:
         if col not in df.columns:
             continue
         parsed, _ = _parse_utc_strict_series(df[col])
         if parsed.notna().any():
             return parsed.max().to_pydatetime().astimezone(timezone.utc), col
 
-    selected_df_path = df.attrs.get("_selected_file_path")
     if not selected_df_path:
         raise RuntimeError("Internal error: selected file path unavailable for mtime fallback")
     print("[WARN] No generated-at column found; falling back to file mtime (UTC).")
@@ -498,7 +465,6 @@ def validate(
         timestamp_source_used=timestamp_source,
         generated_at_utc=generated_at_utc,
         freshness_age_hours=freshness_age_hours,
-        time_column_used=time_column_used,
         time_non_null_rate=time_non_null_rate,
         time_parseable_rate=time_parseable_rate,
         time_column_used=time_column_used or "",
@@ -564,70 +530,6 @@ def select_prediction_source(
     }
     try:
         from build_derived_csvs import _select_prediction_source
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate predictions freshness and forward-looking schedule windows")
-    parser.add_argument("--data-dir", default="data", help="Directory containing predictions_latest.csv and predictions_mc_latest.csv")
-    parser.add_argument(
-        "--max-age-hours",
-        type=float,
-        default=float(os.getenv("PREDICTIONS_FRESHNESS_MAX_HOURS", "6")),
-        help="Maximum allowed age in hours of predictions generation timestamp",
-    )
-    args = parser.parse_args()
-
-    max_hours = float(args.max_age_hours)
-    timezone_local = os.getenv("TIMEZONE_LOCAL", "America/Los_Angeles")
-    now_utc = datetime.now(timezone.utc)
-    data_dir = Path(args.data_dir)
-
-    try:
-        df, _label, path = select_prediction_source(
-            predictions_latest_path=data_dir / "predictions_latest.csv",
-            predictions_mc_latest_path=data_dir / "predictions_mc_latest.csv",
-        )
-        df.attrs["_selected_file_path"] = str(path)
-        validate(
-            df,
-            selected_file=str(path),
-            now_utc=now_utc,
-            timezone_local=timezone_local,
-            max_hours=max_hours,
-        )
-        return 0
-    except Exception as exc:
-        print(f"[ERROR] {exc}")
-        return 2
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
-import argparse
-import os
-from datetime import datetime, timezone
-from pathlib import Path
-
-import pandas as pd
-
-GAME_TIME_COLUMNS = (
-    "game_datetime_utc",
-    "game_datetime",
-    "start_time",
-    "commence_time",
-    "game_time",
-    "date",
-    "game_date",
-)
-RUN_TIMESTAMP_COLUMNS = (
-    "generated_at_utc",
-    "run_time_utc",
-    "model_run_utc",
-    "created_at_utc",
-    "pipeline_run_utc",
-)
-PREDICTED_AT_COLUMN = "predicted_at_utc"
-ARTIFACT_MARKER_FILE = ".artifact_marker.txt"
-
-
         selected_df, selected_label = _select_prediction_source()
         if selected_df is None or selected_label is None:
             raise RuntimeError("build_derived_csvs selector returned no usable predictions source")
