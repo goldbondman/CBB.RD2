@@ -1,6 +1,5 @@
 handicapper_id,handle,tier,status,lifetime_roi,win_pct,total_picks,parse_template_id,notes,created_at
 1,@CBB_Edge,sharp,active,0.032,0.562,245,1,"Consistent sharp, great with spreads",2026-01-15
-2,@HoopsLock,sharp,active,0.018,0.548,198,2,"Excellent totals specialist",2026-01-20
-3,@MidMajorGuru,medium,active,-0.012,0.521,156,3,"Good with underdogs",2026-01-18
-4,@PublicFader,public,paused,-0.045,0.489,89,1,"Reverse line movement tracker",2026-01-22
-5,@BracketBuster,sharp,active,0.027,0.559,167,4,"Tournament specialist",2026-02-01
+2,@HoopsLock,sharp,active,0.018,0.548,198,2,Excellent totals specialist,2026-01-20
+3,@MidMajorGuru,medium,active,-0.012,0.521,156,3,Good with underdogs,2026-01-18
+4,@PublicFader,public,paused,-0.045,0.489,89,1,Reverse line movement tracker,2026-01-22
