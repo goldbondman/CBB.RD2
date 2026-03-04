@@ -23,6 +23,7 @@ Methodology:
     6. Validate ensemble on test set; flag if overfit (train-test gap > 3pts)
     7. Print full results; save CSVs and JSON
 """
+# home/away splits
 
 from __future__ import annotations
 

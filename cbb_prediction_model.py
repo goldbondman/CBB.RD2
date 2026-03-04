@@ -27,6 +27,7 @@ Author: Quant team
 Philosophy: Beat the market through normalized performance vs expectation
 ─────────────────────────────────────────────────────────────────────────────
 """
+# home/away splits
 
 import pandas as pd
 import numpy as np
@@ -36,6 +37,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 import warnings
 from pipeline_csv_utils import normalize_numeric_dtypes
+from team_splits import get_team_splits
 warnings.filterwarnings('ignore')
 
 
@@ -91,7 +93,7 @@ class ModelConfig:
     avg_pace: float = 67.2
     adj_pace_weight: float = 0.00
     pace_regression_factor: float = 0.00
-    default_hca: float = 3.2
+    default_hca: float = 1.0
     league_avg_off_eff: float = 105.0
     cage_prior_weight: float = 0.00
     cage_prior_decay_games: int = 10
@@ -827,10 +829,49 @@ class CBBPredictionModel:
                 ):
                     return round(max(0.5, min(8.0, float(ha_net) / 2.0)), 2)
 
-            return 3.2
+            return cfg.default_hca  # Residual HCA after home/away splits
+
+        # ── Optional split override (date+team aware) ───────────────────────────
+        game_dt = None
+        home_team_id = None
+        away_team_id = None
+        if home_team_profile:
+            game_dt = home_team_profile.get('game_datetime_utc') or game_dt
+            home_team_id = home_team_profile.get('team_id')
+        if away_team_profile:
+            game_dt = away_team_profile.get('game_datetime_utc') or game_dt
+            away_team_id = away_team_profile.get('team_id')
+
+        split_matchup = None
+        if home_team_id is not None and away_team_id is not None:
+            split_matchup = get_team_splits(game_dt, str(home_team_id), str(away_team_id))
+
+        home_efg_raw = home['team_efg']
+        away_efg_raw = away['team_efg']
+        home_orb_raw = home['team_orb_pct']
+        away_orb_raw = away['team_orb_pct']
+        home_tov_raw = home['team_tov_pct']
+        away_tov_raw = away['team_tov_pct']
+        home_ftr_raw = home['team_ftr']
+        away_ftr_raw = away['team_ftr']
+        home_net_eff_raw = home['team_net_eff']
+        away_net_eff_raw = away['team_net_eff']
 
         # ── Expected pace ─────────────────────────────────────────────────────
         raw_avg_pace = (home['team_pace'] + away['team_pace']) / 2.0
+        if split_matchup is not None:
+            raw_avg_pace = 0.5 * (split_matchup.home_pace + split_matchup.away_pace)
+            home_efg_raw = split_matchup.home_efg
+            away_efg_raw = split_matchup.away_efg
+            home_orb_raw = split_matchup.home_orb
+            away_orb_raw = split_matchup.away_orb
+            home_tov_raw = split_matchup.home_tov
+            away_tov_raw = split_matchup.away_tov
+            home_ftr_raw = split_matchup.home_ftr
+            away_ftr_raw = split_matchup.away_ftr
+            home_net_eff_raw = split_matchup.home_netrtg
+            away_net_eff_raw = split_matchup.away_netrtg
+
         exp_pace = raw_avg_pace * (1 - cfg.pace_regression_factor) + cfg.avg_pace * cfg.pace_regression_factor
         if (
             home_team_profile
@@ -848,15 +889,15 @@ class CBBPredictionModel:
             return cfg.raw_weight * raw + cfg.vs_exp_weight * vs_exp
 
         efg_delta = _delta(
-            _to_unit_rate(home['team_efg']), _to_unit_rate(away['team_efg']),
+            _to_unit_rate(home_efg_raw), _to_unit_rate(away_efg_raw),
             home['efg_vs_exp'],              away['efg_vs_exp'],
         )
         tov_delta = _delta(
-            _to_unit_rate(away['team_tov_pct']), _to_unit_rate(home['team_tov_pct']),
+            _to_unit_rate(away_tov_raw), _to_unit_rate(home_tov_raw),
             home['tov_vs_exp'],                away['tov_vs_exp'],
         )
         orb_delta = _delta(
-            _to_unit_rate(home['team_orb_pct']), _to_unit_rate(away['team_orb_pct']),
+            _to_unit_rate(home_orb_raw), _to_unit_rate(away_orb_raw),
             home['orb_vs_exp'],                away['orb_vs_exp'],
         )
         drb_delta = _delta(
@@ -864,7 +905,7 @@ class CBBPredictionModel:
             home['drb_vs_exp'],                away['drb_vs_exp'],
         )
         ftr_delta = _delta(
-            _to_unit_rate(home['team_ftr']), _to_unit_rate(away['team_ftr']),
+            _to_unit_rate(home_ftr_raw), _to_unit_rate(away_ftr_raw),
             home['ftr_vs_exp'],          away['ftr_vs_exp'],
         )
         tpar_delta = _delta(
@@ -886,8 +927,8 @@ class CBBPredictionModel:
 
         # ── Efficiency edge ───────────────────────────────────────────────────
         raw_eff = (
-            home['team_net_eff'] + _luck_regression(home_team_profile)
-            - away['team_net_eff'] - _luck_regression(away_team_profile)
+            home_net_eff_raw + _luck_regression(home_team_profile)
+            - away_net_eff_raw - _luck_regression(away_team_profile)
         )
         vs_exp_eff = home['off_eff_vs_exp']  - away['off_eff_vs_exp']
         eff_edge   = cfg.raw_weight * raw_eff + cfg.vs_exp_weight * vs_exp_eff
@@ -925,8 +966,8 @@ class CBBPredictionModel:
             'predicted_total':       round(predicted_total,  1),
             'raw_total':             round(raw_total, 1),
             'tournament_multiplier': tourn_mult,
-            'home_net_eff':          round(home['team_net_eff'],   2),
-            'away_net_eff':          round(away['team_net_eff'],   2),
+            'home_net_eff':          round(home_net_eff_raw,   2),
+            'away_net_eff':          round(away_net_eff_raw,   2),
             'home_off_eff':          round(home['team_off_eff'],   2),
             'away_off_eff':          round(away['team_off_eff'],   2),
             'home_off_eff_vs_exp':   round(home['off_eff_vs_exp'], 2),
@@ -946,6 +987,7 @@ class CBBPredictionModel:
                 'tpar_delta':     round(tpar_delta,     2),
                 'raw_total':      round(raw_total,      1),
                 'tourn_mult':     tourn_mult,
+                'split_source':   bool(split_matchup is not None),
             },
         }
 

@@ -25,6 +25,7 @@ CLI:
   python build_backtest_csvs.py --dry-run          # compute and print, don't write
   python build_backtest_csvs.py --validate         # check results_log integrity only
 """
+# home/away splits
 
 from __future__ import annotations
 

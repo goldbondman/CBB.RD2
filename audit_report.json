@@ -1,0 +1,336 @@
+{
+  "model_files": [
+    {
+      "filename": "build_backtest_csvs.py",
+      "functions": [
+        "enrich_spread_lines_from_closing",
+        "grade_prediction"
+      ],
+      "team_metrics_used": [
+        "odi"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "build_derived_csvs.py",
+      "functions": [
+        "_select_prediction_source"
+      ],
+      "team_metrics_used": [
+        "pace"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "build_training_data.py",
+      "functions": [
+        "_join_team_feature"
+      ],
+      "team_metrics_used": [
+        "efg",
+        "orb",
+        "tov",
+        "pace"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "cbb_backtester.py",
+      "functions": [
+        "grade_historical_predictions",
+        "predict_game_historical"
+      ],
+      "team_metrics_used": [
+        "efg",
+        "orb",
+        "tov",
+        "pace"
+      ],
+      "hca_locations": [
+        "line 219: \"intercept\": float(stacker.intercept_),",
+        "line 1846: \"intercept\": float(clf.intercept_[0]),"
+      ]
+    },
+    {
+      "filename": "cbb_ensemble.py",
+      "functions": [
+        "_coalesce_pred_spread",
+        "_eff_to_total",
+        "_off_vs_def_total",
+        "predict"
+      ],
+      "team_metrics_used": [
+        "efg",
+        "orb",
+        "tov",
+        "pace",
+        "odi"
+      ],
+      "hca_locations": [
+        "line 67: HCA,",
+        "line 125: required = {\"coef\", \"intercept\", \"features\"}",
+        "line 435: intercept = float(calib.get(\"intercept\", 0.0))",
+        "line 445: logit = float(X @ coef + intercept)",
+        "line 471: return 0.0 if neutral else HCA",
+        "line 817: margin += HCA * 0.5",
+        "line 1030: margin += HCA * 0.5",
+        "line 1089: intercept = float(params.get(\"intercept\", 0.0))"
+      ]
+    },
+    {
+      "filename": "cbb_line_movement_features.py",
+      "functions": [
+        "build_features"
+      ],
+      "team_metrics_used": [
+        "pace"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "cbb_luck_regression_features.py",
+      "functions": [
+        "build_features"
+      ],
+      "team_metrics_used": [
+        "efg",
+        "tov"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "cbb_monte_carlo.py",
+      "functions": [
+        "compute_spread_std",
+        "compute_total_std"
+      ],
+      "team_metrics_used": [
+        "pace"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "cbb_prediction_model.py",
+      "functions": [
+        "predict_game",
+        "predict_game_with_components",
+        "quick_predict"
+      ],
+      "team_metrics_used": [
+        "efg",
+        "orb",
+        "tov",
+        "pace"
+      ],
+      "hca_locations": [
+        "line 758: prediction['model_hca_applied'] = breakdown.get('hca')",
+        "line 816: def home_court_advantage(",
+        "line 903: # \u2500\u2500 HCA and final spread \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "line 906: hca        = home_court_advantage(home_team_profile, is_neutral=neutral)",
+        "line 907: final_edge = raw_edge + hca",
+        "line 939: 'hca':            round(hca,            2),",
+        "line 1146: print(f\"HCA:                      {bd['hca']:+.2f}  (0 = neutral site)\")"
+      ]
+    },
+    {
+      "filename": "cbb_results_tracker.py",
+      "functions": [
+        "_compute_margin_error",
+        "_resolve_pred_spread",
+        "load_predictions"
+      ],
+      "team_metrics_used": [
+        "pace"
+      ],
+      "hca_locations": [
+        "line 917: if split_ats > strong_ats + 3.0:"
+      ]
+    },
+    {
+      "filename": "cbb_rotation_features.py",
+      "functions": [
+        "add_team_rolling_features",
+        "build_rotation_features"
+      ],
+      "team_metrics_used": [
+        "efg",
+        "tov"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "cbb_situational.py",
+      "functions": [
+        "model_total"
+      ],
+      "team_metrics_used": [
+        "pace"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "espn_metrics.py",
+      "functions": [
+        "add_schedule_features",
+        "flag_dead_spread"
+      ],
+      "team_metrics_used": [
+        "efg",
+        "orb",
+        "tov",
+        "pace"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "espn_prediction_runner.py",
+      "functions": [
+        "_coalesce_pred_spread",
+        "_resolve_predicted_spread",
+        "_validate_prediction_output_schema",
+        "run_predictions",
+        "write_predictions"
+      ],
+      "team_metrics_used": [
+        "efg",
+        "orb",
+        "tov",
+        "pace",
+        "odi"
+      ],
+      "hca_locations": [
+        "line 787: \"hca\": round(prediction.get(\"model_hca_applied\", bd.get(\"hca\", 0)), 2),",
+        "line 1042: 2) Deterministic fallback from net efficiency differential + HCA.",
+        "line 1068: hca = 0.0 if neutral_site else 3.5",
+        "line 1069: fallback_spread = -(home_net - away_net + hca)"
+      ]
+    },
+    {
+      "filename": "espn_rankings.py",
+      "functions": [
+        "_bubble_win_prob"
+      ],
+      "team_metrics_used": [
+        "efg",
+        "orb",
+        "tov",
+        "pace"
+      ],
+      "hca_locations": [
+        "line 497: KenPom accounts for this via his HCA correction. We expose it explicitly."
+      ]
+    },
+    {
+      "filename": "espn_tournament.py",
+      "functions": [
+        "compute_game_totals_df",
+        "project_game_total"
+      ],
+      "team_metrics_used": [
+        "efg",
+        "orb",
+        "tov",
+        "pace"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "infra/ci/test_validate_predictions_freshness_smoke.py",
+      "functions": [
+        "_write_predictions"
+      ],
+      "team_metrics_used": [
+        "odi"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "infra/ci/validate_predictions_freshness.py",
+      "functions": [
+        "_fallback_select_prediction_source",
+        "select_prediction_source",
+        "validate_predictions_freshness"
+      ],
+      "team_metrics_used": [
+        "odi"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "models/player_matchup_overlay.py",
+      "functions": [
+        "build_player_overlay_predictions"
+      ],
+      "team_metrics_used": [
+        "efg",
+        "pace"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "player_availability_features.py",
+      "functions": [
+        "build_player_availability_features"
+      ],
+      "team_metrics_used": [
+        "tov"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "scripts/verify_pipeline_integrity.py",
+      "functions": [
+        "check_predictions_latest_columns_and_dtypes"
+      ],
+      "team_metrics_used": [
+        "odi"
+      ],
+      "hca_locations": []
+    },
+    {
+      "filename": "stat_ranker.py",
+      "functions": [
+        "composite_predictions"
+      ],
+      "team_metrics_used": [
+        "efg",
+        "orb",
+        "tov",
+        "pace"
+      ],
+      "hca_locations": []
+    }
+  ],
+  "data_files": [
+    "data/ensemble_predictions_latest.csv",
+    "data/games.csv",
+    "data/line_movement_features.csv",
+    "data/luck_regression_features.csv",
+    "data/market_lines.csv",
+    "data/market_lines_closing.csv",
+    "data/market_lines_snapshots.csv",
+    "data/matchup_preview.csv",
+    "data/player_availability_features.csv",
+    "data/player_game_logs.csv",
+    "data/player_game_metrics.csv",
+    "data/predictions_combined_latest.csv",
+    "data/predictions_graded.csv",
+    "data/predictions_history.csv",
+    "data/predictions_latest.csv",
+    "data/predictions_mc_latest.csv",
+    "data/predictions_with_context.csv",
+    "data/results_log_by_team.csv",
+    "data/rotation_features.csv",
+    "data/situational_features.csv",
+    "data/team_ats_profile.csv",
+    "data/team_form_snapshot.csv",
+    "data/team_game_logs.csv",
+    "data/team_game_metrics.csv",
+    "data/team_game_weighted.csv",
+    "data/team_injury_impact.csv",
+    "data/team_pretournament_snapshot.csv",
+    "data/team_season_summary.csv",
+    "data/team_season_summary_latest.csv"
+  ],
+  "total_models_found": 22
+}

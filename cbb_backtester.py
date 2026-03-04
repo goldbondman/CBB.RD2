@@ -43,6 +43,7 @@ Usage:
     python cbb_backtester.py --min-games 8 --start-date 20250101 --top-n 25
     python cbb_backtester.py --optimize-weights --output-dir data/
 """
+# home/away splits
 
 import argparse
 import random

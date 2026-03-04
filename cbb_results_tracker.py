@@ -42,6 +42,7 @@ Usage:
     python cbb_results_tracker.py --reprocess-days 30 # reprocess last N days
     python cbb_results_tracker.py --summary           # print summary only, no write
 """
+# home/away splits
 
 import argparse
 import json
