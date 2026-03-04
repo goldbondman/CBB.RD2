@@ -24,6 +24,8 @@ import pathlib
 import argparse
 import sys
 import traceback
+import os
+import re
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from zoneinfo import ZoneInfo
@@ -57,7 +59,8 @@ WINDOW_BEHIND_HOURS = 0.0
 WINDOW_AHEAD_HOURS = 30.0
 WINDOW_TIMEZONE = "America/Los_Angeles"
 BET_RECS_WINDOW_HOURS = 40.0
-
+USER_WINDOW_HOURS = 40.0
+DATED_ENSEMBLE_RE = re.compile(r"^ensemble_predictions_(\d{8})\.csv$")
 
 EXPECTED_OUTPUT_SCHEMAS = {
     "bet_recs.csv": [
@@ -108,10 +111,89 @@ def _load(path: str | pathlib.Path, label: str = "") -> Optional[pd.DataFrame]:
         print(f"[WARN] {label or p.name}: failed to load — {exc}")
         return None
 
+def _is_user_window_only() -> bool:
+    return os.getenv("USER_WINDOW_ONLY", "").strip() == "1"
+
+
+def _user_window_bounds_utc() -> tuple[datetime, datetime]:
+    window_start_utc = NOW_UTC
+    window_end_utc = NOW_UTC + timedelta(hours=USER_WINDOW_HOURS)
+    return window_start_utc, window_end_utc
+
+
+def _is_user_window_scoped_output(stem: str) -> bool:
+    return stem in {"bet_recs.csv", "matchup_preview.csv", "upset_watch.csv"} or stem.startswith("ensemble_predictions")
+
+
+def _is_dated_ensemble_name(name: str) -> bool:
+    return bool(DATED_ENSEMBLE_RE.match(name))
+
+
+def _dated_name_in_user_window(name: str) -> bool:
+    match = DATED_ENSEMBLE_RE.match(name)
+    if not match:
+        return True
+    try:
+        file_date = datetime.strptime(match.group(1), "%Y%m%d").date()
+    except ValueError:
+        return False
+    window_start_utc, window_end_utc = _user_window_bounds_utc()
+    return window_start_utc.date() <= file_date <= window_end_utc.date()
+
+
+def _filter_user_window(df: pd.DataFrame, time_col: str | None = None, label: str = "output") -> pd.DataFrame:
+    """Filter rows to [now_utc, now_utc+40h] using a UTC datetime column."""
+    if df.empty:
+        return df.copy()
+
+    dt_candidates = [
+        "game_time_utc",
+        "_game_time_utc",
+        "game_datetime_utc",
+        "game_datetime",
+        "start_time",
+        "commence_time",
+        "date",
+        "game_date",
+    ]
+    dt_col = time_col if time_col in df.columns else next((c for c in dt_candidates if c in df.columns), None)
+    if dt_col is None:
+        print(f"[WARN] {label}: no datetime column found for USER_WINDOW_ONLY; dropping all rows")
+        return df.iloc[0:0].copy()
+
+    parsed = pd.to_datetime(df[dt_col], errors="coerce", utc=True)
+    invalid = int(parsed.isna().sum())
+    if invalid:
+        print(f"[WARN] {label}: dropping {invalid} row(s) with invalid {dt_col} for USER_WINDOW_ONLY")
+
+    window_start_utc, window_end_utc = _user_window_bounds_utc()
+    mask = parsed.notna() & (parsed >= pd.Timestamp(window_start_utc)) & (parsed <= pd.Timestamp(window_end_utc))
+    filtered = df.loc[mask].copy()
+    print(
+        f"[INFO] USER_WINDOW_ONLY {label}: datetime_col={dt_col} "
+        f"window_start_utc={window_start_utc.isoformat()} window_end_utc={window_end_utc.isoformat()} "
+        f"kept={len(filtered)} dropped={len(df) - len(filtered)}"
+    )
+    return filtered
+
+
 def _write(df: pd.DataFrame, stem: str, sources: list[str],
            dated_copy: bool = False) -> None:
     """Write df to data/csv/<stem> and data/<stem>; print status."""
     df = df.copy()
+    if _is_user_window_only() and _is_user_window_scoped_output(stem):
+        filtered = _filter_user_window(df, label=stem)
+        if filtered.empty:
+            if stem == "bet_recs.csv":
+                print(f"[OK] no in-window games for {stem}, writing empty output")
+                df = df.iloc[0:0].copy()
+            else:
+                print(f"[OK] no in-window games for {stem}, skipping")
+                _results.append({"file": stem, "rows": 0, "sources": ", ".join(sources), "status": "SKIP"})
+                return
+        else:
+            df = filtered
+
     csv_path  = CSV_DIR / stem
     root_path = DATA / stem
     try:
@@ -119,18 +201,19 @@ def _write(df: pd.DataFrame, stem: str, sources: list[str],
         safe_write_csv(df, csv_path, index=False)
         safe_write_csv(df, root_path, index=False)
         n = len(df)
-        print(f"[OK]  {stem}: {n} rows")
+        print(f"[OK] wrote {stem} ({n} rows)")
         if dated_copy:
             dated = DATA / stem.replace(".csv", f"_{TODAY_STAMP}.csv")
-            safe_write_csv(df, dated, index=False)
-            print(f"[OK]  {dated.name}: archive copy written")
+            if _is_user_window_only() and _is_dated_ensemble_name(dated.name) and not _dated_name_in_user_window(dated.name):
+                print(f"[SKIP] {dated.name} outside window")
+            else:
+                safe_write_csv(df, dated, index=False)
+                print(f"[OK] wrote {dated.name} ({n} rows)")
         _results.append({"file": stem, "rows": n, "sources": ", ".join(sources), "status": "OK"})
     except Exception as exc:
         print(f"[WARN] {stem}: write failed — {exc}")
         traceback.print_exc()
         _results.append({"file": stem, "rows": 0, "sources": ", ".join(sources), "status": f"FAIL: {exc}"})
-
-
 def _select_prediction_source() -> tuple[Optional[pd.DataFrame], Optional[str]]:
     """Load the freshest predictions source available for derived outputs."""
     candidates: list[tuple[str, pathlib.Path]] = [
@@ -261,16 +344,18 @@ def _parse_game_time_to_utc(raw_value: object) -> tuple[pd.Timestamp, str | None
 
 
 def _filter_bet_recs_window(df: pd.DataFrame) -> pd.DataFrame:
-    """Strict bet recs window filter: [now_local, now_local+40h) in UTC."""
+    """Strict bet recs window filter: [now_utc, now_utc+40h) in UTC."""
     dt_candidates = ["game_datetime_utc", "game_datetime", "start_time", "commence_time", "game_time", "date", "game_date"]
     dt_col = next((col for col in dt_candidates if col in df.columns), None)
     if dt_col is None:
+        if _is_user_window_only():
+            print(f"[OK] no in-window games for bet_recs.csv, missing datetime column ({dt_candidates})")
+            out = df.iloc[0:0].copy()
+            out["_game_time_utc"] = pd.Series(dtype="datetime64[ns, UTC]")
+            return out
         raise RuntimeError(f"bet_recs: missing datetime column; expected one of {dt_candidates}")
 
-    tz_local = ZoneInfo("America/Los_Angeles")
-    run_time_local = NOW_UTC.astimezone(tz_local)
-    window_start_utc = run_time_local.astimezone(timezone.utc)
-    window_end_utc = (run_time_local + timedelta(hours=BET_RECS_WINDOW_HOURS)).astimezone(timezone.utc)
+    window_start_utc, window_end_utc = _user_window_bounds_utc()
 
     parsed_values: list[pd.Timestamp] = []
     parse_failures = 0
@@ -291,12 +376,24 @@ def _filter_bet_recs_window(df: pd.DataFrame) -> pd.DataFrame:
     out["_game_time_utc"] = pd.to_datetime(parsed_values, utc=True, errors="coerce")
 
     if before_count > 0 and (parse_failures / before_count) > 0.30:
-        raise RuntimeError(
-            "bet_recs: parse failure ratio exceeds 30% "
-            f"({parse_failures}/{before_count}); likely upstream schema/timestamp format change"
-        )
+        if _is_user_window_only():
+            print(
+                "[WARN] bet_recs: parse failure ratio exceeds 30% in USER_WINDOW_ONLY; "
+                "continuing with parsed rows only"
+            )
+        else:
+            raise RuntimeError(
+                "bet_recs: parse failure ratio exceeds 30% "
+                f"({parse_failures}/{before_count}); likely upstream schema/timestamp format change"
+            )
 
     if out["_game_time_utc"].notna().any() and out["_game_time_utc"].max() < pd.Timestamp(window_start_utc):
+        if _is_user_window_only():
+            print(
+                "[OK] no in-window games for bet_recs.csv, source data appears stale "
+                f"(latest={out['_game_time_utc'].max().isoformat()}, window_start_utc={window_start_utc.isoformat()})"
+            )
+            return out.iloc[0:0].copy()
         raise RuntimeError(
             "bet_recs: source data appears stale; latest game time is before current run window start "
             f"(latest={out['_game_time_utc'].max().isoformat()}, window_start_utc={window_start_utc.isoformat()})"
@@ -312,7 +409,6 @@ def _filter_bet_recs_window(df: pd.DataFrame) -> pd.DataFrame:
     min_time = filtered["_game_time_utc"].min()
     max_time = filtered["_game_time_utc"].max()
     print("[DEBUG] bet_recs time window")
-    print(f"  run_time_local={run_time_local.isoformat()}")
     print(f"  window_start_utc={window_start_utc.isoformat()}")
     print(f"  window_end_utc={window_end_utc.isoformat()}")
     print(f"  min_game_time_utc={min_time.isoformat() if pd.notna(min_time) else 'None'}")
@@ -326,7 +422,6 @@ def _filter_bet_recs_window(df: pd.DataFrame) -> pd.DataFrame:
         print(preview.to_string(index=False))
 
     return filtered
-
 # ── Matchup enrichment ─────────────────────────────────────────────────────
 
 def enrich_with_matchup_summary(df: pd.DataFrame) -> pd.DataFrame:
@@ -478,8 +573,16 @@ def enrich_ensemble_team_names() -> None:
         after_missing = ((merged["home_team"] == "") | (merged["away_team"] == "")).sum()
         recovered = int(before_missing - after_missing)
         if recovered > 0:
+            if _is_user_window_only() and _is_dated_ensemble_name(ensemble_path.name) and not _dated_name_in_user_window(ensemble_path.name):
+                print(f"[SKIP] {ensemble_path.name} outside window")
+                continue
+            if _is_user_window_only() and _is_dated_ensemble_name(ensemble_path.name):
+                in_window = _filter_user_window(merged, label=ensemble_path.name)
+                if in_window.empty:
+                    print(f"[SKIP] {ensemble_path.name} outside window")
+                    continue
             safe_write_csv(merged, ensemble_path, index=False)
-            print(f"[OK]  {ensemble_path.name}: backfilled team names for {recovered} rows")
+            print(f"[OK] wrote {ensemble_path.name} ({len(merged)} rows)")
 
 
 def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
@@ -577,11 +680,8 @@ def build_bet_recs_csv(predictions: pd.DataFrame) -> None:
             "market_line", "model_line", "edge", "model_prob", "market_prob",
             "expected_roi", "confidence",
         ])
-        out_df["generated_at"] = NOW_ISO
-        for out_path in (CSV_DIR / "bet_recs.csv", DATA / "bet_recs.csv"):
-            out_df.to_csv(out_path, index=False)
-        print("[INFO] bet_recs: wrote empty file after PST date filtering (prevents stale recs)")
-        _results.append({"file": "bet_recs.csv", "rows": 0, "sources": "predictions_mc_latest", "status": "OK"})
+        print("[OK] no in-window games for bet_recs.csv, skipping")
+        _write(out_df, "bet_recs.csv", ["predictions_mc_latest"])
         return
 
     _write(out_df, "bet_recs.csv", ["predictions_mc_latest"])
@@ -664,7 +764,7 @@ def build_matchup_preview_csv(predictions: pd.DataFrame) -> None:
 
     # Final columns
     cols = [
-        "game_id", "game_date", "home_team", "away_team", "spread_line", "total_line",
+        "game_id", "game_datetime_utc", "game_date", "home_team", "away_team", "spread_line", "total_line",
         "ens_spread", "ens_total", "mc_home_win_pct",
         "ens_spread_edge_pts", "ens_total_edge_pts", "ens_ml_edge_prob",
         "home_adj_net_rtg", "home_tempo", "home_last5_net", "home_last10_net",
@@ -800,7 +900,7 @@ def build_upset_watch_csv(predictions: pd.DataFrame) -> None:
     # Filter
     watch = dogs[dogs["uws_total"] >= 40].sort_values("uws_total", ascending=False)
 
-    cols = ["game_id", "game_date", "favorite_team", "underdog_team", "spread_line", "model_spread",
+    cols = ["game_id", "game_datetime_utc", "game_date", "favorite_team", "underdog_team", "spread_line", "model_spread",
             "underdog_win_prob", "underdog_spread_edge_pts", "uws_prob", "uws_edge", "uws_disagree", "uws_total"]
     present = [c for c in cols if c in watch.columns]
     _write(watch[present], "upset_watch.csv", ["predictions_mc_latest"])
@@ -899,6 +999,13 @@ def main() -> None:
     # 0. Load freshest prediction source
     preds, _pred_source = _select_prediction_source()
 
+
+    if _is_user_window_only():
+        window_start_utc, window_end_utc = _user_window_bounds_utc()
+        print(
+            f"[INFO] USER_WINDOW_ONLY=1 window_start_utc={window_start_utc.isoformat()} "
+            f"window_end_utc={window_end_utc.isoformat()}"
+        )
     if preds is not None:
         enrich_ensemble_team_names()
 

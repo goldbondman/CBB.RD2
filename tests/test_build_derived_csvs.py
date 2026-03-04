@@ -210,3 +210,57 @@ def test_filter_bet_recs_window_fails_when_parse_failures_exceed_30pct(monkeypat
 
     with pytest.raises(RuntimeError, match="parse failure ratio exceeds 30%"):
         bdc._filter_bet_recs_window(df)
+
+
+def test_user_window_only_skips_stale_dated_ensemble_write(monkeypatch, tmp_path, capsys):
+    from datetime import datetime, timezone
+
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+
+    stale_path = data_dir / "ensemble_predictions_20260301.csv"
+    pd.DataFrame(
+        [
+            {
+                "game_id": "1001",
+                "game_datetime_utc": "2026-03-01T20:00:00Z",
+                "home_team": "",
+                "away_team": "",
+            }
+        ]
+    ).to_csv(stale_path, index=False)
+
+    pd.DataFrame(
+        [
+            {"game_id": "1001", "home_team": "Duke", "away_team": "UNC"},
+        ]
+    ).to_csv(data_dir / "predictions_latest.csv", index=False)
+
+    monkeypatch.setattr(bdc, "DATA", data_dir)
+    monkeypatch.setattr(bdc, "NOW_UTC", datetime(2026, 3, 3, 22, 54, tzinfo=timezone.utc))
+    monkeypatch.setenv("USER_WINDOW_ONLY", "1")
+
+    bdc.enrich_ensemble_team_names()
+
+    captured = capsys.readouterr().out
+    out = pd.read_csv(stale_path, dtype=str)
+
+    assert "[SKIP] ensemble_predictions_20260301.csv outside window" in captured
+    assert out.loc[0, "home_team"] == ""
+    assert out.loc[0, "away_team"] == ""
+
+
+def test_filter_bet_recs_window_user_mode_does_not_raise_on_stale(monkeypatch):
+    from datetime import datetime, timezone
+
+    monkeypatch.setattr(bdc, "NOW_UTC", datetime(2026, 3, 3, 22, 54, tzinfo=timezone.utc))
+    monkeypatch.setenv("USER_WINDOW_ONLY", "1")
+
+    df = pd.DataFrame(
+        [
+            {"game_id": "stale", "game_datetime_utc": "2026-03-01T01:00:00Z"},
+        ]
+    )
+
+    out = bdc._filter_bet_recs_window(df)
+    assert out.empty
