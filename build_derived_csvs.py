@@ -146,14 +146,12 @@ def _select_prediction_source() -> tuple[Optional[pd.DataFrame], Optional[str]]:
             continue
 
         max_ts: pd.Timestamp | None = None
-        if "game_datetime_utc" in df.columns:
-            ts = pd.to_datetime(df["game_datetime_utc"], errors="coerce", utc=True)
-            if ts.notna().any():
-                max_ts = ts.max()
-        if max_ts is None and "generated_at" in df.columns:
-            ts = pd.to_datetime(df["generated_at"], errors="coerce", utc=True)
-            if ts.notna().any():
-                max_ts = ts.max()
+        for ts_col in ["game_time_utc", "game_datetime_utc", "generated_at_utc", "generated_at"]:
+            if ts_col in df.columns:
+                ts = pd.to_datetime(df[ts_col], errors="coerce", utc=True)
+                if ts.notna().any():
+                    max_ts = ts.max()
+                    break
 
         if best_df is None:
             best_df, best_label, best_ts = df, label, max_ts
@@ -190,6 +188,7 @@ def _filter_upcoming_window(
         return df.iloc[0:0].copy()
 
     dt_candidates = [
+        "game_time_utc",
         "game_datetime_utc",
         "game_datetime",
         "date",

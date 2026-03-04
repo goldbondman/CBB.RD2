@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -10,8 +11,21 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
-TIMESTAMP_COLUMNS = ["generated_at_utc", "run_time_utc", "model_run_utc", "timestamp"]
-GAME_TIME_COLUMNS = ["game_time_utc", "commence_time", "start_time", "date", "game_time"]
+TIMESTAMP_COLUMNS = ["generated_at_utc", "run_time_utc", "model_run_utc", "generated_at", "predicted_at_utc", "timestamp"]
+GAME_TIME_COLUMNS = [
+    "game_time_utc",
+    "game_datetime_utc",
+    "commence_time",
+    "start_time",
+    "date",
+    "game_time",
+    "start_time_utc",
+    "commence_time_utc",
+    "scheduled_utc",
+    "scheduled",
+    "tipoff_utc",
+    "tipoff",
+]
 
 
 @dataclass
@@ -22,6 +36,8 @@ class ValidationSummary:
     generated_at_utc: datetime
     freshness_age_hours: float
     time_column_used: str
+    non_null_rate: float
+    parseable_rate: float
     parse_fail_rate: float
     window_start_utc: datetime
     max_game_time_utc: Optional[datetime]
@@ -42,7 +58,6 @@ def _fallback_select_prediction_source(
     predictions_latest_path: Path,
     predictions_mc_latest_path: Path,
 ) -> tuple[pd.DataFrame, str, Path]:
-    """Local mirror of build_derived_csvs._select_prediction_source() semantics."""
     candidates: list[tuple[str, Path]] = [
         ("predictions_latest", predictions_latest_path),
         ("predictions_mc_latest", predictions_mc_latest_path),
@@ -58,14 +73,12 @@ def _fallback_select_prediction_source(
             continue
 
         max_ts: Optional[pd.Timestamp] = None
-        if "game_datetime_utc" in df.columns:
-            ts = pd.to_datetime(df["game_datetime_utc"], errors="coerce", utc=True)
-            if ts.notna().any():
-                max_ts = ts.max()
-        if max_ts is None and "generated_at" in df.columns:
-            ts = pd.to_datetime(df["generated_at"], errors="coerce", utc=True)
-            if ts.notna().any():
-                max_ts = ts.max()
+        for col in ["game_time_utc", "game_datetime_utc", "generated_at_utc", "generated_at"]:
+            if col in df.columns:
+                ts = pd.to_datetime(df[col], errors="coerce", utc=True)
+                if ts.notna().any():
+                    max_ts = ts.max()
+                    break
 
         if best_df is None:
             best_df, best_label, best_path, best_ts = df, label, path, max_ts
@@ -88,13 +101,12 @@ def select_prediction_source(
     predictions_latest_path: Path = Path("data/predictions_latest.csv"),
     predictions_mc_latest_path: Path = Path("data/predictions_mc_latest.csv"),
 ) -> tuple[pd.DataFrame, str, Path]:
-    """Use build_derived_csvs selector directly when possible, else local fallback."""
     label_to_path = {
         "predictions_latest": predictions_latest_path,
         "predictions_mc_latest": predictions_mc_latest_path,
     }
     try:
-        from build_derived_csvs import _select_prediction_source  # local import to avoid heavy import at module load
+        from build_derived_csvs import _select_prediction_source
 
         selected_df, selected_label = _select_prediction_source()
         if selected_df is None or selected_label is None:
@@ -139,6 +151,94 @@ def _parse_aware_utc(raw: object) -> Optional[datetime]:
     return parsed.astimezone(timezone.utc)
 
 
+def _detect_time_like_columns(df: pd.DataFrame) -> list[str]:
+    needles = ("time", "date", "start", "utc")
+    return [c for c in df.columns if any(n in c.lower() for n in needles)]
+
+
+def _column_rates(df: pd.DataFrame, col: str) -> tuple[float, float, list[datetime], list[object]]:
+    total_rows = len(df)
+    if total_rows == 0:
+        return 0.0, 0.0, [], []
+    non_null = df[col].notna() & (df[col].astype(str).str.strip() != "")
+    non_null_count = int(non_null.sum())
+    non_null_rate = non_null_count / total_rows
+    parsed_values: list[datetime] = []
+    raw_non_null = df.loc[non_null, col]
+    for raw in raw_non_null:
+        parsed = _parse_aware_utc(raw)
+        if parsed is not None:
+            parsed_values.append(parsed)
+    parseable_rate = (len(parsed_values) / non_null_count) if non_null_count else 0.0
+    sample_raw = raw_non_null.head(5).tolist()
+    return non_null_rate, parseable_rate, parsed_values, sample_raw
+
+
+def _select_best_time_column(df: pd.DataFrame) -> tuple[Optional[str], dict[str, dict[str, object]]]:
+    diagnostics: dict[str, dict[str, object]] = {}
+    for col in GAME_TIME_COLUMNS:
+        if col not in df.columns:
+            continue
+        non_null_rate, parseable_rate, parsed_values, sample_raw = _column_rates(df, col)
+        diagnostics[col] = {
+            "non_null_rate": non_null_rate,
+            "parseable_rate": parseable_rate,
+            "parsed_values": parsed_values,
+            "sample_raw": sample_raw,
+        }
+
+    if not diagnostics:
+        return None, diagnostics
+
+    ranked = sorted(
+        diagnostics.items(),
+        key=lambda item: (item[1]["parseable_rate"], item[1]["non_null_rate"]),
+        reverse=True,
+    )
+    best_col, best_stats = ranked[0]
+    if best_stats["parseable_rate"] >= 0.70 and best_stats["non_null_rate"] >= 0.50:
+        return best_col, diagnostics
+    return None, diagnostics
+
+
+def _print_missing_time_diagnostics(df: pd.DataFrame, diagnostics: dict[str, dict[str, object]]) -> None:
+    print("[ERROR] Unable to identify a usable game time column.")
+    print(f"[ERROR] Columns found ({len(df.columns)}): {list(df.columns)}")
+    time_like_cols = _detect_time_like_columns(df)
+    print(f"[ERROR] Detected time-like columns: {time_like_cols}")
+
+    ranked = sorted(
+        ((col, diagnostics[col]) for col in diagnostics),
+        key=lambda item: (item[1]["parseable_rate"], item[1]["non_null_rate"]),
+        reverse=True,
+    )
+    top_cols = ranked[:5]
+    for col, stats in top_cols:
+        print(
+            "[ERROR]",
+            f"column={col}",
+            f"non_null_rate={stats['non_null_rate']:.3f}",
+            f"parseable_rate={stats['parseable_rate']:.3f}",
+            f"sample_values={stats['sample_raw']}",
+        )
+
+
+def _print_summary(summary: ValidationSummary) -> None:
+    print("\n=== VALIDATION SUMMARY ===")
+    print(f"selected_file: {summary.selected_file}")
+    print(f"total_rows: {summary.total_rows}")
+    print(f"timestamp_source_used: {summary.timestamp_source_used}")
+    print(f"generated_at_utc: {summary.generated_at_utc.isoformat()}")
+    print(f"freshness_age_hours: {summary.freshness_age_hours:.3f}")
+    print(f"time_column_used: {summary.time_column_used}")
+    print(f"non_null_rate: {summary.non_null_rate:.3f}")
+    print(f"parseable_rate: {summary.parseable_rate:.3f}")
+    print(f"window_start_utc: {summary.window_start_utc.isoformat()}")
+    print(f"max_game_time_utc: {summary.max_game_time_utc.isoformat() if summary.max_game_time_utc else 'None'}")
+    print(f"result: {summary.result}")
+    print("=== END VALIDATION SUMMARY ===\n")
+
+
 def validate(
     df: pd.DataFrame,
     *,
@@ -158,37 +258,33 @@ def validate(
     generated_at_utc, timestamp_source = _parse_generated_at(df)
     freshness_age_hours = (now_utc - generated_at_utc).total_seconds() / 3600.0
 
-    time_column_used = next((col for col in GAME_TIME_COLUMNS if col in df.columns), "")
-    parse_fail_rate = 1.0 if total_rows else 0.0
-    max_game_time_utc: Optional[datetime] = None
-
     if total_rows < 1:
         failures.append("selected predictions file is empty")
     if freshness_age_hours > max_hours:
         failures.append(f"stale predictions: freshness_age_hours={freshness_age_hours:.3f} exceeds max_hours={max_hours:.3f}")
 
-    parse_failures: list[tuple[int, str, object]] = []
+    time_column_used, diagnostics = _select_best_time_column(df)
+
+    non_null_rate = 0.0
+    parseable_rate = 0.0
+    parse_fail_rate = 1.0 if total_rows else 0.0
+    max_game_time_utc: Optional[datetime] = None
+
     if not time_column_used:
         failures.append(f"No game time column found. Checked {GAME_TIME_COLUMNS}")
+        _print_missing_time_diagnostics(df, diagnostics)
     else:
-        game_id_col = next((c for c in ["game_id", "event_id", "id"] if c in df.columns), None)
-        for idx, raw in df[time_column_used].items():
-            parsed = _parse_aware_utc(raw)
-            if parsed is None:
-                gid = str(df.at[idx, game_id_col]) if game_id_col else "n/a"
-                parse_failures.append((int(idx), gid, raw))
-                continue
-            if max_game_time_utc is None or parsed > max_game_time_utc:
-                max_game_time_utc = parsed
+        selected_stats = diagnostics[time_column_used]
+        non_null_rate = float(selected_stats["non_null_rate"])
+        parseable_rate = float(selected_stats["parseable_rate"])
+        parsed_values = selected_stats["parsed_values"]
 
-        parse_fail_rate = len(parse_failures) / total_rows if total_rows else 1.0
-        if parse_failures:
-            print("[WARN] Time parse failures (first 20):")
-            for row_idx, gid, raw in parse_failures[:20]:
-                print(f"  - row={row_idx}, game_id={gid}, raw_time={raw!r}")
-            omitted = len(parse_failures) - 20
-            if omitted > 0:
-                print(f"  ... omitted {omitted} additional parse failures")
+        non_null_count = int((df[time_column_used].notna() & (df[time_column_used].astype(str).str.strip() != "")).sum())
+        parse_fail_count = non_null_count - len(parsed_values)
+        parse_fail_rate = (parse_fail_count / non_null_count) if non_null_count else 1.0
+
+        if parsed_values:
+            max_game_time_utc = max(parsed_values)
 
         if parse_fail_rate > 0.30:
             failures.append(f"parse_fail_rate={parse_fail_rate:.3f} exceeds threshold=0.300")
@@ -206,7 +302,9 @@ def validate(
         timestamp_source_used=timestamp_source,
         generated_at_utc=generated_at_utc,
         freshness_age_hours=freshness_age_hours,
-        time_column_used=time_column_used,
+        time_column_used=time_column_used or "",
+        non_null_rate=non_null_rate,
+        parseable_rate=parseable_rate,
         parse_fail_rate=parse_fail_rate,
         window_start_utc=window_start_utc,
         max_game_time_utc=max_game_time_utc,
@@ -239,28 +337,27 @@ def validate_file(
     )
 
 
-def _print_summary(summary: ValidationSummary) -> None:
-    print("\n=== VALIDATION SUMMARY ===")
-    print(f"selected_file: {summary.selected_file}")
-    print(f"total_rows: {summary.total_rows}")
-    print(f"timestamp_source_used: {summary.timestamp_source_used}")
-    print(f"generated_at_utc: {summary.generated_at_utc.isoformat()}")
-    print(f"freshness_age_hours: {summary.freshness_age_hours:.3f}")
-    print(f"time_column_used: {summary.time_column_used}")
-    print(f"parse_fail_rate: {summary.parse_fail_rate:.3f}")
-    print(f"window_start_utc: {summary.window_start_utc.isoformat()}")
-    print(f"max_game_time_utc: {summary.max_game_time_utc.isoformat() if summary.max_game_time_utc else 'None'}")
-    print(f"result: {summary.result}")
-    print("=== END VALIDATION SUMMARY ===\n")
-
-
 def main() -> int:
-    max_hours = float(os.getenv("PREDICTIONS_FRESHNESS_MAX_HOURS", "6"))
+    parser = argparse.ArgumentParser(description="Validate predictions freshness and forward-looking schedule windows")
+    parser.add_argument("--data-dir", default="data", help="Directory containing predictions_latest.csv and predictions_mc_latest.csv")
+    parser.add_argument(
+        "--max-age-hours",
+        type=float,
+        default=float(os.getenv("PREDICTIONS_FRESHNESS_MAX_HOURS", "6")),
+        help="Maximum allowed age in hours of predictions generation timestamp",
+    )
+    args = parser.parse_args()
+
+    max_hours = float(args.max_age_hours)
     timezone_local = os.getenv("TIMEZONE_LOCAL", "America/Los_Angeles")
     now_utc = datetime.now(timezone.utc)
+    data_dir = Path(args.data_dir)
 
     try:
-        df, _label, path = select_prediction_source()
+        df, _label, path = select_prediction_source(
+            predictions_latest_path=data_dir / "predictions_latest.csv",
+            predictions_mc_latest_path=data_dir / "predictions_mc_latest.csv",
+        )
         df.attrs["_selected_file_path"] = str(path)
         validate(
             df,
@@ -277,113 +374,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-import argparse
-import os
-from datetime import datetime, timezone
-from pathlib import Path
-
-import pandas as pd
-
-GAME_TIME_COLUMNS = ("game_datetime_utc", "game_datetime", "start_time", "commence_time", "game_time", "date", "game_date")
-TIMESTAMP_COLUMNS = ("generated_at_utc", "generated_at", "predicted_at_utc", "created_at")
-
-
-def _parse_utc(series: pd.Series) -> pd.Series:
-    return pd.to_datetime(series, errors="coerce", utc=True)
-
-
-def _select_source(data_dir: Path) -> tuple[Path, pd.DataFrame]:
-    candidates = [data_dir / "predictions_latest.csv", data_dir / "predictions_mc_latest.csv"]
-    viable: list[tuple[pd.Timestamp, Path, pd.DataFrame]] = []
-
-    for path in candidates:
-        if not path.exists() or path.stat().st_size < 10:
-            continue
-        df = pd.read_csv(path, low_memory=False)
-        if df.empty:
-            continue
-
-        max_ts = pd.NaT
-        for col in TIMESTAMP_COLUMNS:
-            if col in df.columns:
-                parsed = _parse_utc(df[col])
-                if parsed.notna().any():
-                    max_ts = parsed.max()
-                    break
-        if pd.isna(max_ts):
-            max_ts = pd.Timestamp(path.stat().st_mtime, unit="s", tz="UTC")
-
-        viable.append((max_ts, path, df))
-
-    if not viable:
-        raise RuntimeError("No predictions source found (predictions_latest.csv/predictions_mc_latest.csv missing or empty)")
-
-    viable.sort(key=lambda row: row[0])
-    selected_ts, selected_path, selected_df = viable[-1]
-    print(f"[INFO] selected_predictions_source={selected_path}")
-    print(f"[INFO] selected_predictions_timestamp_utc={selected_ts.isoformat()}")
-    return selected_path, selected_df
-
-
-def validate_predictions_freshness(data_dir: Path, max_age_hours: float) -> None:
-    now_utc = datetime.now(timezone.utc)
-    max_age = pd.Timedelta(hours=max_age_hours)
-    source_path, source_df = _select_source(data_dir)
-
-    max_prediction_ts = pd.NaT
-    used_timestamp_col = None
-    for col in TIMESTAMP_COLUMNS:
-        if col in source_df.columns:
-            parsed = _parse_utc(source_df[col])
-            if parsed.notna().any():
-                max_prediction_ts = parsed.max()
-                used_timestamp_col = col
-                break
-    if pd.isna(max_prediction_ts):
-        max_prediction_ts = pd.Timestamp(source_path.stat().st_mtime, unit="s", tz="UTC")
-        used_timestamp_col = "file_mtime"
-
-    age = pd.Timestamp(now_utc) - max_prediction_ts
-    if age > max_age:
-        raise RuntimeError(
-            f"Predictions artifact is stale: age={age} max_allowed={max_age}; "
-            f"source={source_path} timestamp_col={used_timestamp_col}"
-        )
-
-    game_time_col = next((c for c in GAME_TIME_COLUMNS if c in source_df.columns), None)
-    if game_time_col is None:
-        raise RuntimeError(f"Predictions file has no game time column. Expected one of {GAME_TIME_COLUMNS}")
-
-    game_times = _parse_utc(source_df[game_time_col])
-    if game_times.notna().sum() == 0:
-        raise RuntimeError(f"Predictions file has no parseable game times in column '{game_time_col}'")
-
-    max_game_time = game_times.max()
-    if max_game_time < pd.Timestamp(now_utc):
-        raise RuntimeError(
-            f"Predictions schedule is stale: max_game_time_utc={max_game_time.isoformat()} now_utc={now_utc.isoformat()}"
-        )
-
-    print(f"[INFO] now_utc={now_utc.isoformat()}")
-    print(f"[INFO] freshness_threshold_hours={max_age_hours}")
-    print(f"[INFO] freshness_timestamp_col={used_timestamp_col}")
-    print(f"[INFO] max_prediction_timestamp_utc={max_prediction_ts.isoformat()}")
-    print(f"[INFO] game_time_column={game_time_col}")
-    print(f"[INFO] max_game_time_utc={max_game_time.isoformat()}")
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Validate predictions artifact freshness and forward-looking schedule")
-    parser.add_argument("--data-dir", default="data", help="Directory containing predictions files")
-    parser.add_argument(
-        "--max-age-hours",
-        type=float,
-        default=float(os.getenv("PREDICTIONS_FRESHNESS_MAX_HOURS", "6")),
-        help="Maximum allowed age for predictions artifact",
-    )
-    args = parser.parse_args()
-    validate_predictions_freshness(Path(args.data_dir), args.max_age_hours)
-
-
-if __name__ == "__main__":
-    main()

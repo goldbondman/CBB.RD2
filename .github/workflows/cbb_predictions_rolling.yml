@@ -302,7 +302,7 @@ jobs:
         run: python cbb_player_matchup.py --games data/predictions_combined_latest.csv
 
       - name: Validate predictions freshness (fail-fast gate)
-        run: python infra/ci/validate_predictions_freshness.py
+        run: python infra/ci/validate_predictions_freshness.py --data-dir data --max-age-hours "$PREDICTIONS_FRESHNESS_MAX_HOURS"
 
       - name: Build derived CSVs (bet_recs, matchup preview, upset watch)
         continue-on-error: true
