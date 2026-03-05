@@ -19,6 +19,7 @@ from .config import (
     write_manifest,
 )
 from .data_builder import FrameBuildResult, build_frames, write_frames
+from .edge_analyzer import run_edge_analysis
 from .ensemble import build_market_dataset, evaluate_ensemble
 from .executive_summary import generate_exec_summary
 from .evaluators import evaluate_predictions
@@ -404,6 +405,50 @@ def cmd_select_features(args: argparse.Namespace, config: ModelLabConfig) -> int
     return 0
 
 
+def cmd_edge_analyze(args: argparse.Namespace, config: ModelLabConfig) -> int:
+    run_id = args.run_id or default_run_id()
+    run_dir = ensure_run_dir(config, run_id)
+    _ensure_manifest(config, run_dir, run_id)
+
+    result = run_edge_analysis(
+        run_dir,
+        config,
+        market=args.market,
+        model_name=args.model,
+        min_n=int(args.min_n),
+        limit=int(args.limit) if args.limit is not None else None,
+    )
+
+    manifest = load_manifest(run_dir)
+    manifest["updated_at_utc"] = utc_now_iso()
+    edge_key = f"{args.market}:{args.model}"
+    manifest.setdefault("edge_analyzer", {})[edge_key] = {
+        "rows_analyzed": result.rows_analyzed,
+        "run_manifest": str(result.run_manifest_path.resolve()),
+        "blocked_segments": result.blocked_segments,
+        "blocked_reasons": result.blocked_reasons,
+    }
+    manifest["blocked_reasons"] = _merge_blocked(manifest.get("blocked_reasons"), result.blocked_reasons)
+    manifest.setdefault("artifacts", {}).update(
+        {
+            f"edge_bucket_report_{args.market}_{args.model}": str(result.edge_bucket_report_path.resolve()),
+            f"segment_report_{args.market}_{args.model}": str(result.segment_report_path.resolve()),
+            f"worst_misses_{args.market}_{args.model}": str(result.worst_misses_path.resolve()),
+            f"edge_exec_summary_{args.market}_{args.model}": str(result.exec_summary_path.resolve()),
+            "edge_analyzer_run_manifest": str(result.run_manifest_path.resolve()),
+        }
+    )
+    write_manifest(run_dir, manifest)
+
+    print(f"run_id={run_id}")
+    print(f"edge_bucket_report={result.edge_bucket_report_path}")
+    print(f"segment_report={result.segment_report_path}")
+    print(f"worst_misses={result.worst_misses_path}")
+    print(f"edge_exec_summary={result.exec_summary_path}")
+    print(f"edge_analyzer_manifest={result.run_manifest_path}")
+    return 0
+
+
 def cmd_exec_summary(args: argparse.Namespace, config: ModelLabConfig) -> int:
     run_id = args.run_id or default_run_id()
     run_dir = ensure_run_dir(config, run_id)
@@ -516,6 +561,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_select.add_argument("--run-id", default=None, help="Run identifier. Defaults to UTC timestamp.")
     p_select.add_argument("--markets", nargs="*", choices=["spread", "total", "ml"], default=None)
 
+    p_edge = sub.add_parser("edge-analyze", help="Analyze edge buckets/segments on rolling test folds")
+    p_edge.add_argument("--run-id", default=None, help="Run identifier. Defaults to UTC timestamp.")
+    p_edge.add_argument("--market", required=True, choices=["spread", "total", "ml"])
+    p_edge.add_argument("--model", required=True, choices=DEFAULT_MODEL_NAMES + ["ensemble"])
+    p_edge.add_argument("--min-n", type=int, default=50, help="Minimum sample threshold for stable segments/buckets.")
+    p_edge.add_argument("--limit", type=int, default=None, help="Optional row limit before fold construction.")
+
     p_ens = sub.add_parser("ensemble", help="Optimize and evaluate weighted ensemble on rolling folds")
     p_ens.add_argument("--markets", nargs="*", choices=["spread", "total", "ml"], default=None)
     p_ens.add_argument("--max-weight", type=float, default=0.5)
@@ -548,6 +600,8 @@ def main() -> int:
         return cmd_window_grid(args, config)
     if args.command == "select-features":
         return cmd_select_features(args, config)
+    if args.command == "edge-analyze":
+        return cmd_edge_analyze(args, config)
     if args.command == "ensemble":
         return cmd_ensemble(args, config)
     if args.command == "exec-summary":
