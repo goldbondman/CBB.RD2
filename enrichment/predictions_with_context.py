@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import numpy as np
 import pandas as pd
 import requests
 
@@ -20,6 +21,7 @@ from espn_config import (
     conference_id_to_name,
 )
 from models.alpha_evaluator import evaluate_alpha
+from pipeline.market_canonical import merge_market_lines, write_market_canonical_outputs
 from pipeline_csv_utils import (
     add_conference_name,
     normalize_column_names,
@@ -392,10 +394,28 @@ def _fill_first_numeric(df: pd.DataFrame, target_col: str, source_cols: list[str
     merged = pd.Series(float("nan"), index=df.index, dtype="float64")
     for col in source_cols:
         if col in df.columns:
-            numeric = pd.to_numeric(df[col], errors="coerce")
-            merged = merged.fillna(numeric)
+            candidate = df[col]
+            if isinstance(candidate, pd.DataFrame):
+                for idx in range(candidate.shape[1]):
+                    numeric = pd.to_numeric(candidate.iloc[:, idx], errors="coerce")
+                    merged = merged.fillna(numeric)
+            else:
+                numeric = pd.to_numeric(candidate, errors="coerce")
+                merged = merged.fillna(numeric)
     df[target_col] = merged
     return df
+
+
+def _numeric_series(df: pd.DataFrame, col: str) -> pd.Series:
+    if col not in df.columns:
+        return pd.Series(np.nan, index=df.index, dtype="float64")
+    candidate = df[col]
+    if isinstance(candidate, pd.DataFrame):
+        out = pd.Series(np.nan, index=df.index, dtype="float64")
+        for idx in range(candidate.shape[1]):
+            out = out.fillna(pd.to_numeric(candidate.iloc[:, idx], errors="coerce"))
+        return out
+    return pd.to_numeric(candidate, errors="coerce")
 
 
 def _normalize_event_id_series(series: pd.Series) -> pd.Series:
@@ -406,7 +426,12 @@ def _pick_first_non_null_series(df: pd.DataFrame, cols: list[str]) -> pd.Series:
     out = pd.Series(pd.NA, index=df.index, dtype="object")
     for col in cols:
         if col in df.columns:
-            out = out.where(out.notna(), df[col])
+            candidate = df[col]
+            if isinstance(candidate, pd.DataFrame):
+                for idx in range(candidate.shape[1]):
+                    out = out.where(out.notna(), candidate.iloc[:, idx])
+            else:
+                out = out.where(out.notna(), candidate)
     return out
 
 
@@ -476,32 +501,82 @@ def _load_market_source(path: Path, source_name: str, priority: int) -> tuple[pd
 
 
 def _build_canonical_market_map() -> tuple[pd.DataFrame, dict[str, set[str]]]:
-    source_specs = [
-        ("market_lines_latest", DATA_DIR / "market_lines_latest.csv", 0),
-        ("odds_snapshot", DATA_DIR / "odds_snapshot.csv", 1),
-        ("market_lines", DATA_DIR / "market_lines.csv", 2),
-    ]
-    frames: list[pd.DataFrame] = []
-    ids_by_source: dict[str, set[str]] = {}
-    for source_name, path, priority in source_specs:
-        frame, ids = _load_market_source(path, source_name, priority)
-        ids_by_source[source_name] = ids
-        if not frame.empty:
-            frames.append(frame)
-            log.info("Loaded market source %s: rows=%d ids=%d", path, len(frame), len(ids))
-        else:
-            log.warning("Market source unavailable/empty: %s", path)
+    write_market_canonical_outputs(DATA_DIR)
+    latest_path = DATA_DIR / "market_lines_latest_by_game.csv"
+    if not latest_path.exists() or latest_path.stat().st_size == 0:
+        return pd.DataFrame(), {}
 
-    if not frames:
-        return pd.DataFrame(), ids_by_source
+    latest = pd.read_csv(latest_path, low_memory=False)
+    if latest.empty:
+        return pd.DataFrame(), {}
 
-    combined = pd.concat(frames, ignore_index=True, sort=False)
-    combined = combined.sort_values(
-        ["event_id", "_line_source_priority", "_line_timestamp_utc"],
-        ascending=[True, True, False],
-        kind="mergesort",
+    latest = normalize_numeric_dtypes(latest)
+    latest = normalize_column_names(latest)
+    if "event_id" not in latest.columns and "game_id" in latest.columns:
+        latest["event_id"] = latest["game_id"]
+    latest["event_id"] = latest.get("event_id", pd.Series(dtype=str)).astype(str).str.strip().map(normalize_game_id)
+    latest = latest[latest["event_id"].astype(str).str.len() > 0].copy()
+    if latest.empty:
+        return pd.DataFrame(), {}
+
+    canonical = pd.DataFrame(index=latest.index)
+    canonical["event_id"] = latest["event_id"]
+    canonical["home_spread_open"] = pd.to_numeric(latest.get("opening_spread"), errors="coerce")
+    canonical["home_spread_current"] = pd.to_numeric(
+        latest.get("closing_spread", latest.get("spread_line")),
+        errors="coerce",
     )
-    canonical = combined.groupby("event_id", as_index=False).first()
+    canonical["market_spread"] = pd.to_numeric(latest.get("spread_line"), errors="coerce")
+    canonical["spread"] = canonical["market_spread"]
+    canonical["total_open"] = pd.to_numeric(latest.get("opening_total"), errors="coerce")
+    canonical["total_current"] = pd.to_numeric(
+        latest.get("closing_total", latest.get("total_line")),
+        errors="coerce",
+    )
+    canonical["over_under"] = pd.to_numeric(latest.get("total_line"), errors="coerce")
+    canonical["home_ml"] = pd.to_numeric(latest.get("moneyline_home"), errors="coerce")
+    canonical["away_ml"] = pd.to_numeric(latest.get("moneyline_away"), errors="coerce")
+    canonical["line_movement"] = canonical["home_spread_current"] - canonical["home_spread_open"]
+    canonical["_line_source_used"] = latest.get("line_source_used", latest.get("source"))
+    canonical["_line_timestamp_utc"] = pd.to_datetime(latest.get("line_timestamp_utc"), utc=True, errors="coerce")
+
+    for flag_col in [
+        "home_win_prob",
+        "away_win_prob",
+        "pinnacle_spread",
+        "draftkings_spread",
+        "home_tickets_pct",
+        "home_money_pct",
+        "steam_flag",
+        "rlm_flag",
+        "rlm_sharp_side",
+        "book_disagreement_flag",
+        "book_sharp_side",
+        "book_spread_diff",
+        "line_freeze_flag",
+    ]:
+        canonical[flag_col] = latest.get(flag_col, pd.NA)
+
+    def _source_ids(path: Path) -> set[str]:
+        if not path.exists() or path.stat().st_size == 0:
+            return set()
+        src = pd.read_csv(path, dtype={"event_id": str, "game_id": str}, low_memory=False)
+        if src.empty:
+            return set()
+        id_col = "event_id" if "event_id" in src.columns else ("game_id" if "game_id" in src.columns else None)
+        if id_col is None:
+            return set()
+        return {
+            normalize_game_id(v)
+            for v in src[id_col].astype(str).tolist()
+            if str(v).strip() and str(v).strip().lower() != "nan"
+        }
+
+    ids_by_source = {
+        "market_lines_latest": _source_ids(DATA_DIR / "market_lines_latest.csv"),
+        "odds_snapshot": _source_ids(DATA_DIR / "odds_snapshot.csv"),
+        "market_lines": _source_ids(DATA_DIR / "market_lines.csv"),
+    }
     return canonical, ids_by_source
 
 
@@ -1088,6 +1163,13 @@ def build_predictions_with_context(
         "total_line",
         ["total_line", "over_under", "total_current", "total_open", "total"],
     )
+    df = merge_market_lines(
+        df,
+        data_dir=DATA_DIR,
+        output_name="predictions_with_context.csv",
+        required_columns=["opening_spread", "closing_spread", "spread_line", "total_line", "line_source_used", "line_timestamp_utc", "market_status"],
+        debug_dir=DATA_DIR.parent / "debug",
+    )
 
     spread_line_numeric = pd.to_numeric(df.get("spread_line"), errors="coerce")
     total_line_numeric = pd.to_numeric(df.get("total_line"), errors="coerce")
@@ -1118,30 +1200,30 @@ def build_predictions_with_context(
     )
 
     try:
-        _pred = pd.to_numeric(df[pred_col], errors="coerce")             if pred_col in df.columns else pd.Series(dtype=float)
+        _pred = _numeric_series(df, pred_col) if pred_col in df.columns else pd.Series(dtype=float)
 
         # Build _line using fillna chaining - never use `or` with Series
         _line = pd.Series(dtype=float)
         for _lcol in ["spread_line", "home_spread_current", "market_spread", "home_spread_open"]:
             if _lcol in df.columns:
-                _s = pd.to_numeric(df[_lcol], errors="coerce")
+                _s = _numeric_series(df, _lcol)
                 if _line.empty:
                     _line = _s
                 else:
                     _line = _line.fillna(_s)
 
-        _open = pd.to_numeric(df["home_spread_open"], errors="coerce")             if "home_spread_open" in df.columns             else pd.Series(dtype=float)
+        _open = _numeric_series(df, "home_spread_open") if "home_spread_open" in df.columns else pd.Series(dtype=float)
 
         _home_net = pd.Series(dtype=float)
         for _nc in ["home_net_eff", "home_adj_net_rtg", "home_net_rtg"]:
             if _nc in df.columns:
-                _home_net = pd.to_numeric(df[_nc], errors="coerce")
+                _home_net = _numeric_series(df, _nc)
                 break
 
         _away_net = pd.Series(dtype=float)
         for _nc in ["away_net_eff", "away_adj_net_rtg", "away_net_rtg"]:
             if _nc in df.columns:
-                _away_net = pd.to_numeric(df[_nc], errors="coerce")
+                _away_net = _numeric_series(df, _nc)
                 break
 
         if len(_line) > 0 and len(_pred) > 0:
@@ -1154,7 +1236,7 @@ def build_predictions_with_context(
         else:
             df["eff_edge"] = pd.NA
 
-        _close = pd.to_numeric(df["home_spread_current"], errors="coerce")             if "home_spread_current" in df.columns             else pd.Series(dtype=float)
+        _close = _numeric_series(df, "home_spread_current") if "home_spread_current" in df.columns else pd.Series(dtype=float)
 
         if len(_open) > 0 and _open.notna().any() and len(_pred) > 0:
             df["clv_vs_open"] = (_open - _pred).round(3)
@@ -1170,7 +1252,7 @@ def build_predictions_with_context(
             df["predicted_spread"] = _pred
 
         if "pred_total" in df.columns and len(_pred) > 0:
-            _total = pd.to_numeric(df["pred_total"], errors="coerce")
+            _total = _numeric_series(df, "pred_total")
             if _pred.notna().any() and _total.notna().any():
                 df["pred_home_score"] = ((_total - _pred) / 2).round(1)
                 df["pred_away_score"] = ((_total + _pred) / 2).round(1)

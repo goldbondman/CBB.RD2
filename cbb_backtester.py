@@ -75,6 +75,7 @@ from cbb_config import (
     DEFAULT_SPREAD_WEIGHTS as CONFIG_DEFAULT_SPREAD_WEIGHTS,
 )
 from espn_config import PIPELINE_RUN_ID
+from pipeline.market_canonical import merge_market_lines
 from pipeline_csv_utils import safe_write_csv
 from pipeline.id_utils import canonicalize_espn_game_id
 
@@ -1277,106 +1278,35 @@ class BacktestEngine:
         Prefers closing snapshots when available, then latest/open snapshots.
         Also computes ATS and Total margins for actual and predicted.
         """
-        def _pick_first(frame: pd.DataFrame, cols: List[str]) -> pd.Series:
-            out = pd.Series(np.nan, index=frame.index, dtype="float64")
-            for col in cols:
-                if col in frame.columns:
-                    out = out.fillna(pd.to_numeric(frame[col], errors="coerce"))
-            return out
-
-        frames: List[pd.DataFrame] = []
-        source_counts: List[str] = []
-        market_paths = [
-            ("market_lines_closing.csv", DATA_DIR / "market_lines_closing.csv", 0),
-            ("market_lines_latest.csv", DATA_DIR / "market_lines_latest.csv", 1),
-            ("market_lines.csv", fallback_lines_path, 2),
-            ("odds_snapshot.csv", DATA_DIR / "odds_snapshot.csv", 3),
-        ]
-        for label, path_obj, source_rank in market_paths:
-            if not path_obj.exists() or path_obj.stat().st_size == 0:
-                continue
-            raw = pd.read_csv(path_obj, low_memory=False)
-            if raw.empty:
-                continue
-            id_col = "espn_game_id" if "espn_game_id" in raw.columns else (
-                "game_id" if "game_id" in raw.columns else ("event_id" if "event_id" in raw.columns else None)
-            )
-            if id_col is None:
-                continue
-
-            work = pd.DataFrame()
-            work["espn_game_id"] = raw[id_col].apply(canonicalize_espn_game_id)
-            work["opening_spread"] = _pick_first(raw, ["opening_spread", "home_spread_open"])
-            work["closing_spread"] = _pick_first(
-                raw,
-                ["closing_spread", "close_home_spread", "home_spread_current", "home_spread", "spread", "spread_line"],
-            )
-            work["market_total"] = _pick_first(
-                raw,
-                ["total_line", "market_total", "close_total", "total_current", "over_under", "total"],
-            )
-            ts_col = next((c for c in ["captured_at_utc", "pulled_at_utc", "snapshot_ts_utc"] if c in raw.columns), None)
-            if ts_col:
-                work["_capture_ts"] = pd.to_datetime(raw[ts_col], errors="coerce", utc=True)
-            else:
-                work["_capture_ts"] = pd.NaT
-            capture_type = raw.get("capture_type", pd.Series("", index=raw.index)).astype(str).str.lower()
-            work["_is_closing"] = (capture_type == "closing").astype(int)
-            work["_source_rank"] = source_rank
-            work["_source"] = label
-            work = work[work["espn_game_id"].notna()]
-            if work.empty:
-                continue
-            frames.append(work)
-            source_counts.append(f"{label}:{len(work)}")
-
-        if not frames:
-            log.warning("No market files found for attachment. Preserving records with ESPN fallback columns only.")
-            for col in ["opening_spread", "closing_spread", "spread_line", "total_line", "clv_delta", "line_source_used", "line_timestamp_utc"]:
-                if col not in records.columns:
-                    records[col] = np.nan
-            if "pred_spread" not in records.columns:
-                records["pred_spread"] = pd.to_numeric(records.get("ens_spread"), errors="coerce")
-            if "pred_total" not in records.columns:
-                records["pred_total"] = pd.to_numeric(records.get("ens_total"), errors="coerce")
+        if records.empty:
             return records
 
-        gdf = pd.concat(frames, ignore_index=True)
-        gdf = gdf.sort_values(
-            ["espn_game_id", "_is_closing", "_source_rank", "_capture_ts"],
-            ascending=[True, False, True, False],
-        ).drop_duplicates("espn_game_id", keep="first")
-        gdf["home_market_spread"] = gdf["closing_spread"].fillna(gdf["opening_spread"])
-
+        records = records.copy()
         records["game_id"] = records["game_id"].apply(canonicalize_espn_game_id)
-        records = records.merge(
-            gdf[["espn_game_id", "opening_spread", "closing_spread", "home_market_spread", "market_total", "_capture_ts", "_source"]],
-            left_on="game_id",
-            right_on="espn_game_id",
-            how="left",
-            suffixes=("", "_line"),
-        )
-        if "espn_game_id" in records.columns:
-            records = records.drop(columns=["espn_game_id"])
-        if "market_total_line" in records.columns:
-            records["market_total"] = pd.to_numeric(records.get("market_total"), errors="coerce").fillna(
-                pd.to_numeric(records["market_total_line"], errors="coerce")
-            )
-            records = records.drop(columns=["market_total_line"])
+        if "event_id" not in records.columns:
+            records["event_id"] = records["game_id"]
 
-        records["home_market_spread"] = pd.to_numeric(records["home_market_spread"], errors="coerce").fillna(
+        records = merge_market_lines(
+            records,
+            data_dir=DATA_DIR,
+            output_name="backtest_results_latest.csv",
+            required_columns=["opening_spread", "closing_spread", "spread_line", "total_line", "line_source_used", "line_timestamp_utc"],
+            debug_dir=DATA_DIR.parent / "debug",
+        )
+
+        records["home_market_spread"] = pd.to_numeric(records.get("spread_line"), errors="coerce").fillna(
             pd.to_numeric(records.get("espn_spread"), errors="coerce")
         )
-        records["market_total"] = pd.to_numeric(records.get("market_total"), errors="coerce").fillna(
+        records["market_total"] = pd.to_numeric(records.get("total_line"), errors="coerce").fillna(
             pd.to_numeric(records.get("espn_total"), errors="coerce")
         )
         records["opening_spread"] = pd.to_numeric(records.get("opening_spread"), errors="coerce")
         records["closing_spread"] = pd.to_numeric(records.get("closing_spread"), errors="coerce").fillna(records["home_market_spread"])
         records["spread_line"] = records["home_market_spread"]
         records["total_line"] = records["market_total"]
-        records["line_timestamp_utc"] = pd.to_datetime(records.get("_capture_ts"), errors="coerce", utc=True).dt.strftime("%Y-%m-%dT%H:%M:%S%z")
-        records["line_source_used"] = records.get("_source")
-        records = records.drop(columns=[c for c in ["_capture_ts", "_source"] if c in records.columns], errors="ignore")
+        records["line_timestamp_utc"] = pd.to_datetime(records.get("line_timestamp_utc"), errors="coerce", utc=True).dt.strftime("%Y-%m-%dT%H:%M:%S%z")
+        if "line_source_used" not in records.columns:
+            records["line_source_used"] = pd.NA
 
         records["away_market_spread"] = -records["home_market_spread"]
         records["actual_margin_ATS"] = records["actual_margin"] + records["home_market_spread"]
@@ -1407,7 +1337,7 @@ class BacktestEngine:
             records = records[final_cols]
 
         lined = records["home_market_spread"].notna().sum()
-        log.info("Market lines attached (%s): %d/%d games have a spread", ",".join(source_counts), lined, len(records))
+        log.info("Market lines attached: %d/%d games have a spread", lined, len(records))
         return records
 
 
