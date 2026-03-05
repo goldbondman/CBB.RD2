@@ -466,6 +466,10 @@ def _build_market_lookup() -> dict[str, dict[str, Any]]:
     return {}
 
 
+def _log_written_csv(path: Path, df: pd.DataFrame) -> None:
+    log.info(f"csv_write path={path.resolve()} rows={len(df)} cols={len(df.columns)}")
+
+
 def run_joint_predictions(
     games_path: Path = GAMES_PATH,
     weighted_path: Path = WEIGHTED_PATH,
@@ -543,6 +547,7 @@ def run_joint_predictions(
     out = pd.DataFrame(rows).sort_values(["game_datetime_utc", "game_id"]).reset_index(drop=True)
     out_latest.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(out_latest, index=False)
+    _log_written_csv(out_latest, out)
 
     if out_snapshots.exists() and out_snapshots.stat().st_size > 0:
         snap_prev = pd.read_csv(out_snapshots, low_memory=False)
@@ -550,6 +555,7 @@ def run_joint_predictions(
     else:
         snap = out.copy()
     snap.to_csv(out_snapshots, index=False)
+    _log_written_csv(out_snapshots, snap)
 
     null_rate = out[["pred_total", "allocation_pct", "pred_margin"]].isna().mean().to_dict() if not out.empty else {}
     status_counts = out["model_status"].value_counts(dropna=False).to_dict() if "model_status" in out.columns else {}

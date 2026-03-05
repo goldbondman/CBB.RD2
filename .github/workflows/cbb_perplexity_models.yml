@@ -82,26 +82,111 @@ jobs:
           print("[OK] dependency import guard passed")
           PY
 
-      - name: Run dependency-aware perplexity stages via contract runner
+      - name: Preflight contract runner bounds
+        id: preflight
         shell: bash
         run: |
           set -euo pipefail
+          DAYS_BACK="${{ steps.resolve_inputs.outputs.days_back }}"
+          MAX_DAYS_BACK=14
+          ALLOW_RUN="true"
+          REASON=""
+          if (( DAYS_BACK > MAX_DAYS_BACK )); then
+            ALLOW_RUN="false"
+            REASON="days_back=${DAYS_BACK} exceeds safe cap ${MAX_DAYS_BACK} for this workflow; skip heavy espn_pipeline backfills here and use update_espn_cbb instead."
+          fi
+          echo "[INFO] preflight allow_run=${ALLOW_RUN} reason='${REASON}'"
+          echo "allow_run=${ALLOW_RUN}" >> "$GITHUB_OUTPUT"
+          {
+            echo "reason<<EOF"
+            echo "${REASON}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run dependency-aware perplexity stages via contract runner
+        id: contract_runner
+        if: ${{ steps.preflight.outputs.allow_run == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p data
+          LOG_PATH="data/perplexity_contract_runner.log"
+          set +e
           python .github/scripts/run_pipeline_contract.py \
             --contract .github/pipeline_contracts/espn_pipeline_contract.json \
             --job update \
             --days-back "${{ steps.resolve_inputs.outputs.days_back }}" \
             --manifest data/perplexity_models_manifest.json \
-            --stages "espn_pipeline,rotation_features,situational_features,advanced_metrics_builder,joint_models_predictions"
+            --stages "espn_pipeline,rotation_features,situational_features,advanced_metrics_builder,joint_models_predictions" \
+            2>&1 | tee "${LOG_PATH}"
+          CONTRACT_EXIT_CODE=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=${CONTRACT_EXIT_CODE}" >> "$GITHUB_OUTPUT"
+          echo "[INFO] contract_runner_exit_code=${CONTRACT_EXIT_CODE}"
 
-      - name: Validate required outputs
+      - name: Pre-upload diagnostics
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
-          bash .github/scripts/check_csv.sh data/advanced_metrics.csv 1 "event_id,team_id"
-          bash .github/scripts/check_csv.sh data/predictions_joint_latest.csv 1 "game_id,pred_total,pred_margin"
-          bash .github/scripts/check_csv.sh data/predictions_joint_snapshots.csv 1 "game_id,generated_at_utc"
+          echo "[DIAG] pwd"
+          pwd
+          echo "[DIAG] ls -la"
+          ls -la
+          echo "[DIAG] ls -la data/"
+          ls -la data/ || true
+          echo "[DIAG] find data candidate files"
+          find data -maxdepth 2 -type f \( -name "*advanced*" -o -name "*predictions*joint*" -o -name "*snapshots*" \) -print || true
+          echo "[DIAG] find repo candidate files"
+          find . -maxdepth 4 -type f \( -name "*advanced*" -o -name "*predictions*joint*" -o -name "*snapshots*" \) -print | sort || true
+          python - <<'PY'
+          from pathlib import Path
+          import pandas as pd
+
+          expected = [
+              Path("data/advanced_metrics.csv"),
+              Path("data/predictions_joint_latest.csv"),
+              Path("data/predictions_joint_snapshots.csv"),
+          ]
+          for path in expected:
+              if not path.exists():
+                  print(f"[DIAG] missing {path}")
+                  continue
+              if path.stat().st_size == 0:
+                  print(f"[DIAG] empty-file {path.resolve()} size=0")
+                  continue
+              try:
+                  df = pd.read_csv(path, dtype=str, low_memory=False)
+                  print(f"[DIAG] file={path.resolve()} rows={len(df)} cols={len(df.columns)}")
+              except Exception as exc:
+                  print(f"[DIAG] unreadable-csv {path.resolve()} error={exc}")
+          PY
+
+      - name: Write run manifest
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/write_run_manifest.py \
+            --output data/run_manifest.json \
+            --contract-manifest data/perplexity_models_manifest.json \
+            --contract-log data/perplexity_contract_runner.log \
+            --days-back "${{ steps.resolve_inputs.outputs.days_back }}" \
+            --run-mode "${{ steps.resolve_inputs.outputs.run_mode }}" \
+            --preflight-allow "${{ steps.preflight.outputs.allow_run }}" \
+            --preflight-reason "${{ steps.preflight.outputs.reason }}" \
+            --contract-exit-code "${{ steps.contract_runner.outputs.exit_code }}" \
+            --files data/advanced_metrics.csv data/predictions_joint_latest.csv data/predictions_joint_snapshots.csv
+
+      - name: Validate required outputs
+        if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash .github/scripts/validate_perplexity_outputs.sh data/perplexity_contract_runner.log
 
       - name: Health summary
+        if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -132,12 +217,43 @@ jobs:
           PY
           cat health_summary.md >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload artifact bundle
+      - name: Fail fast with root-cause details
+        if: ${{ always() && (steps.preflight.outputs.allow_run != 'true' || steps.contract_runner.outputs.exit_code != '0') }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "[ERROR] Required producer output chain did not complete."
+          echo "[INFO] producer stages: espn_pipeline -> advanced_metrics_builder -> joint_models_predictions"
+          echo "[INFO] producer command: python .github/scripts/run_pipeline_contract.py --contract .github/pipeline_contracts/espn_pipeline_contract.json --job update --days-back '${{ steps.resolve_inputs.outputs.days_back }}' --manifest data/perplexity_models_manifest.json --stages 'espn_pipeline,rotation_features,situational_features,advanced_metrics_builder,joint_models_predictions'"
+          echo "[INFO] preflight_allow_run='${{ steps.preflight.outputs.allow_run }}' reason='${{ steps.preflight.outputs.reason }}'"
+          echo "[INFO] contract_runner_exit_code='${{ steps.contract_runner.outputs.exit_code }}'"
+          if [[ -f data/perplexity_contract_runner.log ]]; then
+            echo "[INFO] last 50 lines from data/perplexity_contract_runner.log:"
+            tail -n 50 data/perplexity_contract_runner.log || true
+          else
+            echo "[WARN] data/perplexity_contract_runner.log not found"
+          fi
+          exit 1
+
+      - name: Upload diagnostics artifact bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-perplexity-models-diagnostics
+          if-no-files-found: error
+          retention-days: 21
+          path: |
+            data/run_manifest.json
+            data/perplexity_models_manifest.json
+            data/perplexity_contract_runner.log
+            health_summary.md
+
+      - name: Upload model-output artifact bundle
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: INFRA-perplexity-models
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 21
           path: |
             data/advanced_metrics.csv
@@ -145,6 +261,7 @@ jobs:
             data/predictions_joint_snapshots.csv
 
       - name: Commit and push model outputs to main
+        if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
         shell: bash
         run: |
           set -euo pipefail

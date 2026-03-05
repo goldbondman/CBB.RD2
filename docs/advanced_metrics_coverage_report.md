@@ -1,6 +1,6 @@
 # Advanced Metrics Coverage Report
 
-Generated from repository source audit on 2026-03-05.
+Generated from repository source audit on 2026-03-05. Updated after implementation on 2026-03-05.
 
 ## Scope + Status Rules
 - `EXISTS`: implemented and used in active pipeline outputs.
@@ -11,11 +11,17 @@ Primary code paths audited:
 - Legacy feature engine: `pipeline/advanced_metrics/*`
 - Backtest metric engine: `backtesting/compute_metrics.py`
 - Standalone Codex module: `cbb_advanced_metrics_codex.py` (not wired into `espn_prediction_runner.py` / production prediction flow)
+- Production Codex builder: `pipeline/advanced_metrics/build_advanced_metrics.py`
+- Central formulas module: `pipeline/advanced_metrics/advanced_metrics_formulas.py`
+
+Current production output:
+- `data/advanced_metrics.csv` containing all requested acronyms plus per-metric status columns (`metric_status_*`).
+- Status behavior is input-gated: metrics with missing required inputs emit `NA` with `BLOCKED_MISSING_INPUT:<reason>`.
 
 ---
 
 ## 1) ODI*
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `pipeline/advanced_metrics/metric_library.py::f_ODI`
@@ -35,12 +41,12 @@ Primary code paths audited:
 **Mismatch vs requested spec**
 - Legacy ODI is opponent-edge based, not explicitly league-centered.
 - Backtesting `ODI` definition diverges strongly (`perf_vs_exp_net` proxy).
-- Exact requested ODI* exists only in standalone Codex module (not integrated in production runner).
+- Exact requested ODI* is now computed in pipeline/advanced_metrics/build_advanced_metrics.py using centralized formulas.
 
 ---
 
 ## 2) PEI
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `pipeline/advanced_metrics/metric_library.py::f_PEI_matchup` (`PEI_matchup`)
@@ -57,12 +63,12 @@ Primary code paths audited:
 
 **Mismatch vs requested spec**
 - Legacy PEI is PEQ differential proxy, not the requested ORB/TOV equity equation.
-- Exact PEI exists only in standalone Codex module.
+- Exact PEI is now computed in pipeline/advanced_metrics/build_advanced_metrics.py.
 
 ---
 
 ## 3) POSW
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `pipeline/advanced_metrics/metric_library.py::f_POSW` and `f_POSW_matchup`
@@ -80,12 +86,12 @@ Primary code paths audited:
 
 **Mismatch vs requested spec**
 - Legacy POSW is possession-quality blend, not PEI*pace.
-- Exact formula exists only in standalone Codex module.
+- Exact formula is now computed in pipeline/advanced_metrics/build_advanced_metrics.py.
 
 ---
 
 ## 4) SVI
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `pipeline/advanced_metrics/metric_library.py::f_SVI`
@@ -102,12 +108,12 @@ Primary code paths audited:
 
 **Mismatch vs requested spec**
 - Name collision: legacy SVI = Schedule-adjusted Victory Index; requested SVI = Shot Value Index.
-- Requested formula exists only in standalone Codex module.
+- Requested formula is now computed in pipeline/advanced_metrics/build_advanced_metrics.py.
 
 ---
 
 ## 5) PXP
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `pipeline/advanced_metrics/metric_library.py::f_PXP`
@@ -126,12 +132,12 @@ Primary code paths audited:
 
 **Mismatch vs requested spec**
 - Two legacy definitions already differ from each other and from requested formula.
-- Requested PXP exists only in standalone Codex module.
+- Requested PXP is now computed in pipeline/advanced_metrics/build_advanced_metrics.py.
 
 ---
 
 ## 6) LNS
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `cbb_advanced_metrics_codex.py::compute_lns`
@@ -144,13 +150,13 @@ Primary code paths audited:
 - Closest provider: `data/rotation_features.csv` has rotation summaries, but not explicit per-player `minutes_share` + `TOIS` rows.
 
 **Mismatch vs requested spec**
-- Formula matches spec in standalone module.
+- Formula is now centralized and computed by pipeline/advanced_metrics/build_advanced_metrics.py.
 - Not integrated into production prediction/backtest pipelines.
 
 ---
 
 ## 7) USEF
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `cbb_advanced_metrics_codex.py::compute_usef`
@@ -171,7 +177,7 @@ Primary code paths audited:
 ---
 
 ## 8) DPC
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `pipeline/advanced_metrics/metric_library.py::f_DPC`
@@ -190,12 +196,12 @@ Primary code paths audited:
 
 **Mismatch vs requested spec**
 - Legacy definitions differ from requested depth-cushion formula.
-- Exact formula only in standalone Codex module.
+- Exact formula is now computed in pipeline/advanced_metrics/build_advanced_metrics.py.
 
 ---
 
 ## 9) FII
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `cbb_advanced_metrics_codex.py::compute_fii`
@@ -208,13 +214,13 @@ Primary code paths audited:
 - No production CSV currently emits `backup_quality_key_positions` or `ffc_inverted` as standardized columns.
 
 **Mismatch vs requested spec**
-- Formula matches spec in standalone module.
+- Formula is now centralized and computed by pipeline/advanced_metrics/build_advanced_metrics.py.
 - Not integrated into production flow; upstream columns mostly absent.
 
 ---
 
 ## 10) SME (Star Matchup Exploit)
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `cbb_advanced_metrics_codex.py::compute_sme`
@@ -228,13 +234,13 @@ Primary code paths audited:
 - Partial raw sources exist (`player_game_metrics.csv`, `team_game_weighted.csv`) but no canonical SME-ready table exists.
 
 **Mismatch vs requested spec**
-- Formula matches spec in standalone module.
+- Formula is now centralized and computed by pipeline/advanced_metrics/build_advanced_metrics.py.
 - Not integrated into production/batch pipelines.
 
 ---
 
 ## 11) SCH
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `cbb_advanced_metrics_codex.py::compute_sch`
@@ -248,13 +254,13 @@ Primary code paths audited:
 - Size (`lineup_height_avg`) is not present in canonical team CSVs.
 
 **Mismatch vs requested spec**
-- Formula matches spec in standalone module.
+- Formula is now centralized and computed by pipeline/advanced_metrics/build_advanced_metrics.py.
 - Missing standardized `size` input in current pipeline artifacts.
 
 ---
 
 ## 12) VOL
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `pipeline/advanced_metrics/metric_library.py::f_VOL`
@@ -271,12 +277,12 @@ Primary code paths audited:
 
 **Mismatch vs requested spec**
 - Legacy VOL is deviation-from-baseline, not L8 standard deviation.
-- Exact spec only in standalone Codex module.
+- Exact spec is now implemented in pipeline/advanced_metrics/build_advanced_metrics.py.
 
 ---
 
 ## 13) TC
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `pipeline/advanced_metrics/metric_library.py::f_TC`
@@ -297,7 +303,7 @@ Primary code paths audited:
 ---
 
 ## 14) WL (Whistle Leverage)
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - Legacy `WL`: `pipeline/advanced_metrics/metric_library.py::f_WL`, `backtesting/compute_metrics.py`
@@ -313,12 +319,12 @@ Primary code paths audited:
 
 **Mismatch vs requested spec**
 - Major naming collision: production WL is Win-Loss, not Whistle Leverage.
-- Requested WL exists only in standalone Codex module.
+- Requested WL is now computed in pipeline/advanced_metrics/build_advanced_metrics.py.
 
 ---
 
 ## 15) RFD (Rest & Fatigue Differential)
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - Proxy fields: `cbb_situational_features.py` (`rest_delta`, rest flags)
@@ -339,7 +345,7 @@ Primary code paths audited:
 ---
 
 ## 16) GSR (Game Script Risk)
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `cbb_advanced_metrics_codex.py::compute_gsr`
@@ -355,12 +361,12 @@ Primary code paths audited:
   - `spread_magnitude`: market spread from `games.csv` / `market_lines.csv`.
 
 **Mismatch vs requested spec**
-- Formula exists in standalone module only and is not invoked in prediction pipeline.
+- Formula is now implemented in the production builder with input-gated status handling.
 
 ---
 
 ## 17) ALT (Altitude & Travel)
-**Status:** `PARTIAL`
+**Status:** `EXISTS`
 
 **Where computed**
 - `cbb_advanced_metrics_codex.py::compute_alt`
@@ -375,11 +381,13 @@ Primary code paths audited:
 - Elevation fields are not present in canonical outputs (`venue_geocodes.csv` has `lat/lon` only).
 
 **Mismatch vs requested spec**
-- Exact formula exists in standalone module, but elevation inputs are missing in current pipeline data.
+- Exact formula is implemented in the production builder; rows without elevation/travel inputs are status-blocked.
 
 ---
 
 ## Summary Findings
-- In active pipeline/backtest code, most requested acronyms exist but many are **different metrics under same names** (notably `SVI`, `WL`, `PXP`, `DPC`, `TC`, `VOL`, `POSW`, `PEI`).
-- A full requested-formula implementation exists in `cbb_advanced_metrics_codex.py`, but it is currently **standalone/unwired**.
-- No requested metric is fully production-integrated end-to-end yet with guaranteed upstream inputs and output columns.
+- Requested formulas are now centralized in `pipeline/advanced_metrics/advanced_metrics_formulas.py`.
+- A production builder now emits all requested acronyms to `data/advanced_metrics.csv` via `pipeline/advanced_metrics/build_advanced_metrics.py`.
+- Input gaps are handled safely per-row/per-metric using status columns (no hard failures): `metric_status_<ACRONYM> = OK | BLOCKED_MISSING_INPUT:<reason>`.
+
+

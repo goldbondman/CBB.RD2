@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import logging
+import os
 import time
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
@@ -29,6 +32,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | 
 
 RECORDS_CACHE_PATH = DATA_DIR / "team_records.csv"
 TEAM_CONTEXT_LOOKBACK_GAMES = 12
+DEFAULT_PIPELINE_TIMEZONE = os.getenv("PIPELINE_TZ", "America/Los_Angeles")
 
 
 def _fetch_team_record(team_id: str) -> dict:
@@ -376,6 +380,8 @@ def _enrich_win_probabilities(df: pd.DataFrame) -> pd.DataFrame:
 
     if "win_prob_source" not in df.columns:
         df["win_prob_source"] = pd.NA
+    else:
+        df["win_prob_source"] = df["win_prob_source"].astype("object")
     null_source = df["win_prob_source"].isna() & df["home_win_prob"].notna() & df["away_win_prob"].notna()
     df.loc[null_source, "win_prob_source"] = "model_implied"
     return df
@@ -389,6 +395,123 @@ def _fill_first_numeric(df: pd.DataFrame, target_col: str, source_cols: list[str
             numeric = pd.to_numeric(df[col], errors="coerce")
             merged = merged.fillna(numeric)
     df[target_col] = merged
+    return df
+
+
+def _normalize_event_id_series(series: pd.Series) -> pd.Series:
+    return series.astype(str).str.strip().map(normalize_game_id)
+
+
+def _pick_first_non_null_series(df: pd.DataFrame, cols: list[str]) -> pd.Series:
+    out = pd.Series(pd.NA, index=df.index, dtype="object")
+    for col in cols:
+        if col in df.columns:
+            out = out.where(out.notna(), df[col])
+    return out
+
+
+def _load_market_source(path: Path, source_name: str, priority: int) -> tuple[pd.DataFrame, set[str]]:
+    if not path.exists():
+        return pd.DataFrame(), set()
+    try:
+        source_df = pd.read_csv(path, dtype={"event_id": str, "game_id": str}, low_memory=False)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Failed reading market source %s: %s", path, exc)
+        return pd.DataFrame(), set()
+    if source_df.empty:
+        return pd.DataFrame(), set()
+
+    source_df = normalize_numeric_dtypes(source_df)
+    source_df = normalize_column_names(source_df)
+    if "event_id" not in source_df.columns and "game_id" in source_df.columns:
+        source_df["event_id"] = source_df["game_id"]
+    if "event_id" not in source_df.columns:
+        return pd.DataFrame(), set()
+
+    source_df["event_id"] = _normalize_event_id_series(source_df["event_id"])
+    source_df = source_df[source_df["event_id"].notna() & (source_df["event_id"] != "")]
+    if source_df.empty:
+        return pd.DataFrame(), set()
+
+    timestamp_cols = [c for c in ["captured_at_utc", "pulled_at_utc"] if c in source_df.columns]
+    if timestamp_cols:
+        source_df["_line_timestamp_utc"] = pd.to_datetime(
+            _pick_first_non_null_series(source_df, timestamp_cols), utc=True, errors="coerce"
+        )
+    else:
+        source_df["_line_timestamp_utc"] = pd.NaT
+
+    source_df["_line_source_priority"] = priority
+    source_df["_line_source_used"] = source_name
+
+    for required in [
+        "home_spread_open",
+        "home_spread_current",
+        "spread",
+        "line_movement",
+        "over_under",
+        "total_current",
+        "total_open",
+        "home_ml",
+        "away_ml",
+        "home_win_prob",
+        "away_win_prob",
+        "pinnacle_spread",
+        "draftkings_spread",
+        "home_tickets_pct",
+        "home_money_pct",
+        "steam_flag",
+        "rlm_flag",
+        "rlm_sharp_side",
+        "book_disagreement_flag",
+        "book_sharp_side",
+        "book_spread_diff",
+        "line_freeze_flag",
+    ]:
+        if required not in source_df.columns:
+            source_df[required] = pd.NA
+
+    ids = set(source_df["event_id"].astype(str).tolist())
+    return source_df, ids
+
+
+def _build_canonical_market_map() -> tuple[pd.DataFrame, dict[str, set[str]]]:
+    source_specs = [
+        ("market_lines_latest", DATA_DIR / "market_lines_latest.csv", 0),
+        ("odds_snapshot", DATA_DIR / "odds_snapshot.csv", 1),
+        ("market_lines", DATA_DIR / "market_lines.csv", 2),
+    ]
+    frames: list[pd.DataFrame] = []
+    ids_by_source: dict[str, set[str]] = {}
+    for source_name, path, priority in source_specs:
+        frame, ids = _load_market_source(path, source_name, priority)
+        ids_by_source[source_name] = ids
+        if not frame.empty:
+            frames.append(frame)
+            log.info("Loaded market source %s: rows=%d ids=%d", path, len(frame), len(ids))
+        else:
+            log.warning("Market source unavailable/empty: %s", path)
+
+    if not frames:
+        return pd.DataFrame(), ids_by_source
+
+    combined = pd.concat(frames, ignore_index=True, sort=False)
+    combined = combined.sort_values(
+        ["event_id", "_line_source_priority", "_line_timestamp_utc"],
+        ascending=[True, True, False],
+        kind="mergesort",
+    )
+    canonical = combined.groupby("event_id", as_index=False).first()
+    return canonical, ids_by_source
+
+
+def _clean_string_nan_values(df: pd.DataFrame) -> pd.DataFrame:
+    object_cols = df.select_dtypes(include=["object", "string"]).columns
+    for col in object_cols:
+        series = df[col].astype("string")
+        mask = series.str.strip().str.lower().isin({"nan", "none", "<na>"})
+        if bool(mask.any()):
+            df.loc[mask, col] = pd.NA
     return df
 
 def build_predictions_with_context(
@@ -436,135 +559,106 @@ def build_predictions_with_context(
 
     expected_market_cols = [
         "home_spread_open", "home_spread_current", "spread", "line_movement",
-        "over_under", "home_ml", "away_ml", "home_win_prob", "away_win_prob",
+        "over_under", "total_open", "total_current", "home_ml", "away_ml", "home_win_prob", "away_win_prob",
         "pinnacle_spread", "draftkings_spread",
         "home_tickets_pct", "home_money_pct",
         "steam_flag", "rlm_flag", "rlm_sharp_side",
         "book_disagreement_flag", "book_sharp_side", "book_spread_diff",
         "line_freeze_flag",
     ]
-    market_path = DATA_DIR / "market_lines.csv"
     market_merged = False
 
-    market = pd.DataFrame()
-    if market_path.exists():
-        market = pd.read_csv(market_path, dtype={"event_id": str})
-        market = normalize_numeric_dtypes(market)
-        market = normalize_column_names(market)
+    market_latest_ids: set[str] = set()
+    market_snapshot_ids: set[str] = set()
+    market_history_ids: set[str] = set()
+
+    market_latest, ids_by_source = _build_canonical_market_map()
+    market_latest_ids = ids_by_source.get("market_lines_latest", set())
+    market_snapshot_ids = ids_by_source.get("odds_snapshot", set())
+    market_history_ids = ids_by_source.get("market_lines", set())
+
+    if market_latest.empty:
+        fallback = _build_market_lines_fallback(df, DATA_DIR / "market_lines.csv")
+        if not fallback.empty:
+            market_latest, ids_by_source = _build_canonical_market_map()
+            market_latest_ids = ids_by_source.get("market_lines_latest", set())
+            market_snapshot_ids = ids_by_source.get("odds_snapshot", set())
+            market_history_ids = ids_by_source.get("market_lines", set())
+
+    if not market_latest.empty:
+        if "spread" in market_latest.columns:
+            market_latest = market_latest.rename(columns={"spread": "market_spread"})
+        if "pred_spread" in market_latest.columns:
+            market_latest = market_latest.drop(columns=["pred_spread"])
+
+        market_cols = ["event_id"] + expected_market_cols + ["market_spread", "_line_source_used", "_line_timestamp_utc"]
+        available = [c for c in market_cols if c in market_latest.columns]
+
+        _pred_spread_backup = df["pred_spread"].copy() if "pred_spread" in df.columns else None
+        _ens_spread_backup = df["ens_ens_spread"].copy() if "ens_ens_spread" in df.columns else None
+
+        _protected = {"pred_spread", "ens_ens_spread", "predicted_spread", "pred_total", "pred_home_score", "pred_away_score"}
+        drop_cols = []
+        for c in expected_market_cols + ["market_spread", "line_source_used", "line_timestamp_utc"]:
+            for cand in (c, f"{c}_x", f"{c}_y"):
+                if cand in df.columns and cand not in _protected:
+                    drop_cols.append(cand)
+        df = df.drop(columns=sorted(set(drop_cols)), errors="ignore")
+
+        df["event_id"] = _normalize_event_id_series(df["event_id"])
+        market_latest["event_id"] = _normalize_event_id_series(market_latest["event_id"])
+
+        before_rows = len(df)
+        df = df.merge(market_latest[available], on="event_id", how="left")
+        if "_line_source_used" in df.columns:
+            df["line_source_used"] = df["_line_source_used"]
+            df = df.drop(columns=["_line_source_used"], errors="ignore")
+        if "_line_timestamp_utc" in df.columns:
+            df["line_timestamp_utc"] = pd.to_datetime(df["_line_timestamp_utc"], utc=True, errors="coerce")
+            df = df.drop(columns=["_line_timestamp_utc"], errors="ignore")
+        if "line_source_used" not in df.columns:
+            df["line_source_used"] = pd.NA
+        if "line_timestamp_utc" not in df.columns:
+            df["line_timestamp_utc"] = pd.NaT
+
+        if {"home_spread_current", "pred_spread"}.issubset(df.columns):
+            matched_sign = df[df["home_spread_current"].notna() & df["pred_spread"].notna()].copy()
+            if len(matched_sign) >= 3:
+                sign_agree = (
+                    (pd.to_numeric(matched_sign["pred_spread"], errors="coerce")
+                     * pd.to_numeric(matched_sign["home_spread_current"], errors="coerce")) > 0
+                ).mean()
+                if pd.notna(sign_agree) and sign_agree < 0.70:
+                    log.warning(
+                        "[ENRICH] Spread sign convention mismatch: %.0f%% of %d matched rows have opposing signs.",
+                        (1 - sign_agree) * 100,
+                        len(matched_sign),
+                    )
+
+        if _pred_spread_backup is not None:
+            df["pred_spread"] = _pred_spread_backup.values
+        if _ens_spread_backup is not None:
+            df["ens_ens_spread"] = _ens_spread_backup.values
+
+        matched = int(df["line_source_used"].notna().sum())
+        log.info(
+            "Market lines merged: %d/%d games matched | steam=%d, RLM=%d, book_dis=%d",
+            matched,
+            before_rows,
+            int(df.get("steam_flag", pd.Series(dtype=bool)).dropna().astype(bool).sum()),
+            int(df.get("rlm_flag", pd.Series(dtype=bool)).dropna().astype(bool).sum()),
+            int(df.get("book_disagreement_flag", pd.Series(dtype=bool)).dropna().astype(bool).sum()),
+        )
+        if matched == 0:
+            log.warning(
+                "ZERO market lines matched. Market sample: %s | Pred sample: %s",
+                market_latest["event_id"].head(3).tolist(),
+                df["event_id"].head(3).tolist(),
+            )
+        else:
+            market_merged = True
     else:
-        market = _build_market_lines_fallback(df, market_path)
-
-    if not market.empty:
-        # Protect model columns from market collision
-        if "spread" in market.columns:
-            market = market.rename(columns={"spread": "market_spread"})
-        if "pred_spread" in market.columns:
-            market = market.drop(columns=["pred_spread"])
-
-        if "captured_at_utc" in market.columns:
-            capture_order = {"closing": 0, "pregame": 1, "opening": 2}
-            market["_cap_rank"] = (
-                market.get("capture_type", pd.Series(dtype=str))
-                .map(capture_order).fillna(9)
-            )
-            market_latest = (
-                market
-                .sort_values("_cap_rank")
-                .groupby("event_id")
-                .first()
-                .reset_index()
-                .drop(columns=["_cap_rank"], errors="ignore")
-            )
-            market_cols = ["event_id"] + expected_market_cols
-            available = [c for c in market_cols if c in market_latest.columns]
-
-            # Preserve model spreads before merge to handle potential market line collisions
-            _pred_spread_backup = df["pred_spread"].copy() if "pred_spread" in df.columns else None
-            _ens_spread_backup = df["ens_ens_spread"].copy() if "ens_ens_spread" in df.columns else None
-
-            # Drop market columns from df before merge — but NEVER drop
-            # model output columns even if they share a name with a market col.
-            _protected = {"pred_spread", "ens_ens_spread", "predicted_spread",
-                          "pred_total", "pred_home_score", "pred_away_score"}
-            # Bugfix: stale *_x/*_y columns from prior merges can survive and then
-            # collide again, silently shadowing market values. Drop base/_x/_y variants.
-            drop_cols = []
-            for c in expected_market_cols:
-                for cand in (c, f"{c}_x", f"{c}_y"):
-                    if cand in df.columns and cand not in _protected:
-                        drop_cols.append(cand)
-            df = df.drop(columns=sorted(set(drop_cols)), errors="ignore")
-
-            df["event_id"] = df["event_id"].map(normalize_game_id)
-            market_latest["event_id"] = market_latest["event_id"].map(normalize_game_id)
-
-            before_rows = len(df)
-            df = df.merge(
-                market_latest[available], on="event_id", how="left"
-            )
-
-            # Sign convention check: model pred_spread and market home_spread_current
-            # should have the same sign for the same game. If >30% of matched rows
-            # disagree in sign, log a warning — do not silently invert.
-            if {"home_spread_current", "pred_spread"}.issubset(df.columns):
-                matched_sign = df[df["home_spread_current"].notna() & df["pred_spread"].notna()].copy()
-                if len(matched_sign) >= 3:
-                    sign_agree = (
-                        (pd.to_numeric(matched_sign["pred_spread"], errors="coerce")
-                         * pd.to_numeric(matched_sign["home_spread_current"], errors="coerce")) > 0
-                    ).mean()
-                    if pd.notna(sign_agree) and sign_agree < 0.70:
-                        log.warning(
-                            "[ENRICH] Spread sign convention mismatch: %.0f%% of %d matched rows "
-                            "have opposing signs between pred_spread and home_spread_current. "
-                            "Check ingestion sign convention.",
-                            (1 - sign_agree) * 100,
-                            len(matched_sign),
-                        )
-
-            log.info(
-                "[DIAG] build_predictions_with_context | post-market-merge | pred_spread non-null: %d/%d (%.1f%% null)",
-                int(df["pred_spread"].notna().sum()) if "pred_spread" in df.columns else 0,
-                len(df),
-                (df["pred_spread"].isna().mean() * 100) if "pred_spread" in df.columns else 100.0
-            )
-
-            # Restore model spreads if they were lost or partially nullified by merge
-            if _pred_spread_backup is not None:
-                df["pred_spread"] = _pred_spread_backup.values
-            if _ens_spread_backup is not None:
-                df["ens_ens_spread"] = _ens_spread_backup.values
-
-            log.info(
-                "Market merge diagnostic: pred_spread null rate = %.1f%%",
-                df["pred_spread"].isna().mean() * 100 if "pred_spread" in df.columns else 100.0
-            )
-
-            market_signal_cols = [
-                c for c in [
-                    "home_spread_current", "home_spread_open", "line_movement",
-                    "pinnacle_spread", "draftkings_spread", "home_tickets_pct",
-                    "home_money_pct",
-                ] if c in df.columns
-            ]
-            matched = int(df[market_signal_cols].notna().any(axis=1).sum()) if market_signal_cols else 0
-            log.info(
-                "Market lines merged: %d/%d games matched | steam=%d, RLM=%d, book_dis=%d",
-                matched, before_rows,
-                int(df.get("steam_flag", pd.Series(dtype=bool)).dropna().astype(bool).sum()),
-                int(df.get("rlm_flag", pd.Series(dtype=bool)).dropna().astype(bool).sum()),
-                int(df.get("book_disagreement_flag", pd.Series(dtype=bool)).dropna().astype(bool).sum()),
-            )
-            if matched == 0:
-                log.warning(
-                    "ZERO market lines matched. Check event_id format. Market sample: %s | Pred sample: %s",
-                    market_latest["event_id"].head(3).tolist(),
-                    df["event_id"].head(3).tolist(),
-                )
-            else:
-                market_merged = True
-    else:
-        log.warning("No market lines available after fallback: %s", market_path)
+        log.warning("No market lines available after fallback rebuild path")
 
     sit_path = DATA_DIR / "team_situational.csv"
     if sit_path.exists():
@@ -995,16 +1089,38 @@ def build_predictions_with_context(
         ["total_line", "over_under", "total_current", "total_open", "total"],
     )
 
+    spread_line_numeric = pd.to_numeric(df.get("spread_line"), errors="coerce")
+    total_line_numeric = pd.to_numeric(df.get("total_line"), errors="coerce")
+    line_matched = df.get("line_source_used", pd.Series(pd.NA, index=df.index)).notna()
+
+    spread_raw = _pick_first_non_null_series(df, ["home_spread_current", "market_spread", "home_spread_open", "spread"])
+    total_raw = _pick_first_non_null_series(df, ["over_under", "total_current", "total_open", "total"])
+    spread_parse_error = line_matched & spread_raw.notna() & spread_line_numeric.isna()
+    total_parse_error = line_matched & total_raw.notna() & total_line_numeric.isna()
+
+    df["line_status"] = "MISSING"
+    both_present = spread_line_numeric.notna() & total_line_numeric.notna()
+    one_present = spread_line_numeric.notna() ^ total_line_numeric.notna()
+    df.loc[line_matched & both_present, "line_status"] = "OK"
+    df.loc[line_matched & one_present, "line_status"] = "PARTIAL"
+
+    line_reason = pd.Series(pd.NA, index=df.index, dtype="object")
+    line_reason.loc[~line_matched] = "NO_MATCHING_GAME_ID"
+    line_reason.loc[line_matched & ~both_present & ~one_present] = "NO_ODDS_RETURNED"
+    line_reason.loc[spread_parse_error | total_parse_error] = "PARSE_ERROR"
+    line_reason.loc[line_matched & one_present & ~(spread_parse_error | total_parse_error)] = "PARTIAL"
+    line_reason.loc[df["line_status"] == "OK"] = pd.NA
+    df["line_missing_reason"] = line_reason
+
     pred_col = (
         "pred_spread" if "pred_spread" in df.columns
         else "ens_ens_spread"
     )
 
     try:
-        _pred = pd.to_numeric(df[pred_col], errors="coerce") \
-            if pred_col in df.columns else pd.Series(dtype=float)
+        _pred = pd.to_numeric(df[pred_col], errors="coerce")             if pred_col in df.columns else pd.Series(dtype=float)
 
-        # Build _line using fillna chaining — never use `or` with Series
+        # Build _line using fillna chaining - never use `or` with Series
         _line = pd.Series(dtype=float)
         for _lcol in ["spread_line", "home_spread_current", "market_spread", "home_spread_open"]:
             if _lcol in df.columns:
@@ -1014,11 +1130,8 @@ def build_predictions_with_context(
                 else:
                     _line = _line.fillna(_s)
 
-        _open = pd.to_numeric(df["home_spread_open"], errors="coerce") \
-            if "home_spread_open" in df.columns \
-            else pd.Series(dtype=float)
+        _open = pd.to_numeric(df["home_spread_open"], errors="coerce")             if "home_spread_open" in df.columns             else pd.Series(dtype=float)
 
-        # Build _home_net and _away_net with same safe pattern
         _home_net = pd.Series(dtype=float)
         for _nc in ["home_net_eff", "home_adj_net_rtg", "home_net_rtg"]:
             if _nc in df.columns:
@@ -1031,86 +1144,67 @@ def build_predictions_with_context(
                 _away_net = pd.to_numeric(df[_nc], errors="coerce")
                 break
 
-        # 1. spread_diff_vs_line: how far model is from market
         if len(_line) > 0 and len(_pred) > 0:
             df["spread_diff_vs_line"] = (_line - _pred).round(2)
         else:
             df["spread_diff_vs_line"] = pd.NA
 
-        # 2. eff_edge: raw efficiency differential
         if len(_home_net) > 0 and len(_away_net) > 0:
             df["eff_edge"] = (_home_net - _away_net).round(2)
         else:
             df["eff_edge"] = pd.NA
 
-        _close = pd.to_numeric(df["home_spread_current"], errors="coerce") \
-            if "home_spread_current" in df.columns \
-            else pd.Series(dtype=float)
+        _close = pd.to_numeric(df["home_spread_current"], errors="coerce")             if "home_spread_current" in df.columns             else pd.Series(dtype=float)
 
-        # 3. clv_vs_open: model vs opening line
         if len(_open) > 0 and _open.notna().any() and len(_pred) > 0:
             df["clv_vs_open"] = (_open - _pred).round(3)
         else:
             df["clv_vs_open"] = pd.NA
 
-        # 4. clv_vs_close: model vs current/closing line
         if len(_close) > 0 and _close.notna().any() and len(_pred) > 0:
             df["clv_vs_close"] = (_close - _pred).round(3)
         else:
             df["clv_vs_close"] = pd.NA
 
-        # 5. predicted_spread alias (required by schema)
         if len(_pred) > 0 and _pred.notna().any():
             df["predicted_spread"] = _pred
 
-        # 6. pred_home_score / pred_away_score from spread + total
         if "pred_total" in df.columns and len(_pred) > 0:
             _total = pd.to_numeric(df["pred_total"], errors="coerce")
-            # spread = away - home; total = home + away
-            # home = (total - spread) / 2
-            # away = (total + spread) / 2
             if _pred.notna().any() and _total.notna().any():
                 df["pred_home_score"] = ((_total - _pred) / 2).round(1)
                 df["pred_away_score"] = ((_total + _pred) / 2).round(1)
 
         log.info(
-            "Computed context cols — "
-            "spread_diff_vs_line: %d/%d | eff_edge: %d/%d | "
-            "clv_vs_open: %d/%d | clv_vs_close: %d/%d | predicted_spread: %d/%d | "
-            "pred_home_score: %d/%d",
+            "Computed context cols - spread_diff_vs_line: %d/%d | eff_edge: %d/%d | clv_vs_open: %d/%d | clv_vs_close: %d/%d | predicted_spread: %d/%d | pred_home_score: %d/%d",
             int(df["spread_diff_vs_line"].notna().sum()), len(df),
             int(df["eff_edge"].notna().sum()), len(df),
             int(df["clv_vs_open"].notna().sum()), len(df),
             int(df["clv_vs_close"].notna().sum()), len(df),
-            int(df["predicted_spread"].notna().sum())
-                if "predicted_spread" in df.columns else 0, len(df),
-            int(df["pred_home_score"].notna().sum())
-                if "pred_home_score" in df.columns else 0, len(df),
+            int(df["predicted_spread"].notna().sum()) if "predicted_spread" in df.columns else 0, len(df),
+            int(df["pred_home_score"].notna().sum()) if "pred_home_score" in df.columns else 0, len(df),
         )
 
         clv_open_null_rate = float(df["clv_vs_open"].isna().mean()) if "clv_vs_open" in df.columns else 1.0
         clv_close_null_rate = float(df["clv_vs_close"].isna().mean()) if "clv_vs_close" in df.columns else 1.0
         log.info(
-            "CLV null rates — clv_vs_open: %.2f%% | clv_vs_close: %.2f%%",
+            "CLV null rates - clv_vs_open: %.2f%% | clv_vs_close: %.2f%%",
             clv_open_null_rate * 100.0,
             clv_close_null_rate * 100.0,
         )
 
     except Exception as _exc:
         log.error(
-            "Computed columns block failed: %s — "
-            "spread_diff_vs_line/eff_edge/predicted_spread will be null",
+            "Computed columns block failed: %s - spread_diff_vs_line/eff_edge/predicted_spread will be null",
             _exc,
             exc_info=True,
         )
 
-    # Integrity normalization for downstream consumers.
     df = _normalize_conference_names(df)
     df = _enrich_win_loss_records(df)
     df = _enrich_ats_records(df)
     df = _enrich_win_probabilities(df)
 
-    # Backward-compatible market aliases for downstream consumers.
     if "spread" not in df.columns:
         df["spread"] = pd.to_numeric(df.get("home_spread_current"), errors="coerce")
     else:
@@ -1125,7 +1219,6 @@ def build_predictions_with_context(
             pd.to_numeric(df.get("total_line"), errors="coerce")
         )
 
-    # Backward-compatible aggregate record aliases expected by some checks.
     if "wins" not in df.columns and "home_wins" in df.columns:
         df["wins"] = df["home_wins"]
     if "losses" not in df.columns and "home_losses" in df.columns:
@@ -1133,7 +1226,6 @@ def build_predictions_with_context(
 
     df = add_conference_name(df)
 
-    # Canonical single conference_name field for downstream DB/UI contracts.
     if "conference_name" not in df.columns:
         if "home_conference" in df.columns:
             df["conference_name"] = df["home_conference"]
@@ -1146,25 +1238,66 @@ def build_predictions_with_context(
         if df["pred_spread"].notna().any():
             if "market_spread" not in df.columns:
                 df = df.rename(columns={"spread": "market_spread"})
-        elif df["spread"].notna().any():
-            pass
+
+    required_line_cols = ["event_id", "line_status", "line_missing_reason", "line_source_used", "spread_line", "total_line"]
+    missing_line_cols = [col for col in required_line_cols if col not in df.columns]
+    if missing_line_cols:
+        raise ValueError(f"predictions_with_context missing required line columns: {missing_line_cols}")
+
+    pending_reason = df["line_status"].isin(["MISSING", "PARTIAL"]) & df["line_missing_reason"].isna()
+    if bool(pending_reason.any()):
+        df.loc[pending_reason, "line_missing_reason"] = "OTHER"
+
+    unmatched_mask = df["line_status"] != "OK"
+    if bool(unmatched_mask.any()):
+        debug_dir = DATA_DIR.parent / "debug"
+        debug_dir.mkdir(parents=True, exist_ok=True)
+        unmatched_path = debug_dir / "unmatched_predictions_keys.csv"
+        unmatched_df = df.loc[unmatched_mask, [
+            c for c in [
+                "event_id", "game_id", "home_team", "away_team", "game_datetime_utc",
+                "line_status", "line_missing_reason", "line_source_used"
+            ] if c in df.columns
+        ]].copy()
+        unmatched_df["exists_in_market_lines_latest"] = unmatched_df["event_id"].astype(str).isin(market_latest_ids)
+        unmatched_df["exists_in_odds_snapshot"] = unmatched_df["event_id"].astype(str).isin(market_snapshot_ids)
+        unmatched_df["exists_in_market_lines"] = unmatched_df["event_id"].astype(str).isin(market_history_ids)
+        unmatched_df.to_csv(unmatched_path, index=False)
+        top_reasons = unmatched_df["line_missing_reason"].fillna("<NA>").value_counts().head(10).to_dict()
+        log.info("Line attachment unmatched=%d/%d top_reasons=%s debug=%s", len(unmatched_df), len(df), top_reasons, unmatched_path)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    # Only write predictions for today (PST) and future dates — do not carry
-    # forward stale rows from previous pipeline runs that have different game_ids.
-    _ref = reference_date if reference_date is not None else pd.Timestamp.now(tz="America/Los_Angeles")
-    _today_pst = _ref.tz_convert("America/Los_Angeles").normalize().tz_localize(None)
+    tz_name = DEFAULT_PIPELINE_TIMEZONE
+    if reference_date is None:
+        _ref = pd.Timestamp.now(tz=tz_name)
+    else:
+        _ref = pd.Timestamp(reference_date)
+        if _ref.tzinfo is None:
+            _ref = _ref.tz_localize(ZoneInfo(tz_name))
+        else:
+            _ref = _ref.tz_convert(ZoneInfo(tz_name))
+
+    _today_local = _ref.tz_convert(ZoneInfo(tz_name)).normalize().tz_localize(None)
     if "game_datetime_utc" in df.columns:
         _dt = pd.to_datetime(df["game_datetime_utc"], utc=True, errors="coerce")
-        _dt_pst = _dt.dt.tz_convert("America/Los_Angeles").dt.normalize().dt.tz_localize(None)
-        _keep = _dt_pst.isna() | (_dt_pst >= _today_pst)
+        _dt_local = _dt.dt.tz_convert(ZoneInfo(tz_name)).dt.normalize().dt.tz_localize(None)
+        _keep = _dt_local.isna() | (_dt_local >= _today_local)
+        dropped = int((~_keep).sum())
+        if dropped:
+            log.info("Dropped %d stale rows outside today-window (%s)", dropped, _today_local.date())
         df = df[_keep]
         if df.empty:
             log.warning(
-                "[ENRICH] No games for today (%s PST) found in predictions — writing empty output",
-                _today_pst.date(),
+                "[ENRICH] No games for today (%s) found in predictions - writing empty output",
+                _today_local.date(),
             )
-    df.astype(str).to_csv(out_path, index=False)
+
+    df = _clean_string_nan_values(df)
+    if "line_timestamp_utc" in df.columns:
+        ts = pd.to_datetime(df["line_timestamp_utc"], utc=True, errors="coerce")
+        df["line_timestamp_utc"] = ts.dt.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+
+    df.to_csv(out_path, index=False)
     log.info("[ENRICH] Wrote %d rows to %s", len(df), out_path)
 
     # [DIAG] Final results logging

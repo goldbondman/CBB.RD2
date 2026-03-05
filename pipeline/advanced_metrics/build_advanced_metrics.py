@@ -469,6 +469,10 @@ def _log_metric_health(df: pd.DataFrame) -> None:
         log.info(f"metric={acronym} null_rate_pct={null_rate:.2f} status_counts={status_counts}")
 
 
+def _log_written_csv(path: Path, df: pd.DataFrame) -> None:
+    log.info(f"csv_write path={path.resolve()} rows={len(df)} cols={len(df.columns)}")
+
+
 def build_advanced_metrics(output_path: Path = DEFAULT_OUTPUT) -> pd.DataFrame:
     base = _prepare_base_table()
     if base.empty:
@@ -479,6 +483,7 @@ def build_advanced_metrics(output_path: Path = DEFAULT_OUTPUT) -> pd.DataFrame:
         out = pd.DataFrame(columns=empty_cols)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         out.to_csv(output_path, index=False)
+        _log_written_csv(output_path, out)
         return out
 
     df = _attach_optional_inputs(base)
@@ -641,6 +646,7 @@ def build_advanced_metrics(output_path: Path = DEFAULT_OUTPUT) -> pd.DataFrame:
     out = df[out_cols].copy().sort_values([c for c in ["game_datetime_utc", "event_id", "team_id"] if c in out_cols]).reset_index(drop=True)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(output_path, index=False)
+    _log_written_csv(output_path, out)
     _log_metric_health(out)
     log.info(f"advanced metrics output: {output_path} rows={len(out)} cols={len(out.columns)}")
     return out

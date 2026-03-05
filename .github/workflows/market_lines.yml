@@ -44,6 +44,11 @@ jobs:
       github.event_name != 'workflow_run' ||
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    env:
+      TZ: America/Los_Angeles
+      PIPELINE_TZ: America/Los_Angeles
+      ESPN_SCOREBOARD_GROUPS: "50"
+      PYTHONHASHSEED: "0"
     steps:
       # Standard checkout step
       - name: Checkout repo
@@ -170,6 +175,9 @@ jobs:
             echo "[ERROR] data/predictions_with_context.csv was not created"; exit 1
           fi
 
+      - name: Validate market/context integrity
+        run: python scripts/validate_market_context_integrity.py --data-dir data --debug-dir debug
+
       # Pattern 10: Upload artifacts even on failure
       - name: Upload market lines artifact
         if: always()
@@ -180,6 +188,9 @@ jobs:
             data/market_lines.csv
             data/market_lines_latest.csv
             data/odds_snapshot.csv
+            debug/merge_report.json
+            debug/market_lines_run_inventory.md
+            debug/unmatched_predictions_keys.csv
           retention-days: 7
 
       # Pattern 10: Upload predictions-with-context artifact
