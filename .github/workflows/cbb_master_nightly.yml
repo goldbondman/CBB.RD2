@@ -1,0 +1,53 @@
+name: CBB Master Nightly
+
+on:
+  schedule:
+    - cron: "30 10 * * *"
+  workflow_dispatch:
+    inputs:
+      run_ensemble:
+        description: "Run ensemble in predictions stage"
+        required: false
+        default: "true"
+        type: choice
+        options: ["true", "false"]
+      run_mode:
+        description: "Analytics run mode"
+        required: false
+        default: "both"
+        type: choice
+        options: ["tracker_only", "backtest_only", "both"]
+
+concurrency:
+  group: cbb-data-pipeline
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  TZ: UTC
+  PYTHONHASHSEED: "0"
+
+jobs:
+  predictions:
+    uses: ./.github/workflows/cbb_predictions_rolling.yml
+    with:
+      run_ensemble: ${{ github.event.inputs.run_ensemble || 'true' }}
+    secrets: inherit
+
+  analytics:
+    needs: predictions
+    uses: ./.github/workflows/cbb_analytics.yml
+    with:
+      run_mode: ${{ github.event.inputs.run_mode || 'both' }}
+    secrets: inherit
+
+  player_overlay:
+    needs: analytics
+    uses: ./.github/workflows/player_overlay.yml
+    with:
+      input_csv: data/player_overlay_input.csv
+      output_csv: data/player_overlay_predictions.csv
+    secrets: inherit
