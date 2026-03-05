@@ -2,10 +2,10 @@ name: CBB Analytics
 
 on:
   schedule:
-    - cron: "0 8 * * *"     # Results tracker — daily 8 AM UTC
-    - cron: "0 10 * * 1"    # Backtester — weekly Monday 10 AM UTC
+    - cron: "0 8 * * *"
+    - cron: "0 10 * * 1"
   workflow_run:
-    workflows: ["Market Lines Capture"]
+    workflows: ["Market Lines Capture", "CBB Predictions Rolling"]
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -22,42 +22,107 @@ on:
         description: "Optional end date filter (YYYYMMDD)"
         required: false
         type: string
+  workflow_call:
+    inputs:
+      run_mode:
+        required: false
+        default: "both"
+        type: string
+      start_date:
+        required: false
+        default: ""
+        type: string
+      end_date:
+        required: false
+        default: ""
+        type: string
 
-# Pattern 3: Standardized concurrency group to prevent race conditions across all pipeline workflows
 concurrency:
   group: cbb-data-pipeline
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
+  actions: read
+
+env:
+  TZ: UTC
+  PYTHONHASHSEED: "0"
 
 jobs:
   analytics:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+
     steps:
-      # Step 1: Standard checkout
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # Step 2: Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
-      # Step 3: Download all required artifacts. Standardized names used.
-      # Pattern: Use gh CLI to find latest successful run-id for cross-workflow downloads
-      - name: Get latest Market Lines run ID
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pip install -r requirements.txt
+          python -c "import pandas, numpy, requests, scipy, bs4, yaml"
+
+      - name: Resolve analytics run mode
+        id: resolve_mode
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
+          INPUT_RUN_MODE: ${{ github.event.inputs.run_mode || inputs.run_mode || '' }}
+          INPUT_START_DATE: ${{ github.event.inputs.start_date || inputs.start_date || '' }}
+          INPUT_END_DATE: ${{ github.event.inputs.end_date || inputs.end_date || '' }}
+        run: |
+          set -euo pipefail
+
+          RUN_MODE="${INPUT_RUN_MODE:-both}"
+          if [[ "$EVENT_NAME" == "schedule" ]]; then
+            if [[ "$EVENT_SCHEDULE" == "0 8 * * *" ]]; then
+              RUN_MODE="tracker_only"
+            elif [[ "$EVENT_SCHEDULE" == "0 10 * * 1" ]]; then
+              RUN_MODE="backtest_only"
+            fi
+          fi
+
+          case "$RUN_MODE" in
+            tracker_only|backtest_only|both) ;;
+            *) echo "[ERROR] invalid run_mode: $RUN_MODE"; exit 1 ;;
+          esac
+
+          START_DATE="${INPUT_START_DATE:-}"
+          END_DATE="${INPUT_END_DATE:-}"
+          if [[ -n "$START_DATE" && ! "$START_DATE" =~ ^[0-9]{8}$ ]]; then
+            echo "[ERROR] start_date must be YYYYMMDD"
+            exit 1
+          fi
+          if [[ -n "$END_DATE" && ! "$END_DATE" =~ ^[0-9]{8}$ ]]; then
+            echo "[ERROR] end_date must be YYYYMMDD"
+            exit 1
+          fi
+
+          echo "run_mode=$RUN_MODE" >> "$GITHUB_OUTPUT"
+          echo "start_date=$START_DATE" >> "$GITHUB_OUTPUT"
+          echo "end_date=$END_DATE" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve latest Market Lines run ID
         id: get_ml_run
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           run_id=$(gh run list \
             --workflow=market_lines.yml \
             --status=success \
-            --limit=5 \
+            --limit=20 \
             --json=databaseId \
             --jq='.[].databaseId' | while read rid; do
               count=$(gh api \
@@ -66,17 +131,22 @@ jobs:
                 2>/dev/null || echo 0)
               echo "$count $rid"
             done | sort -rn | head -1 | awk '{print $2}')
-          echo "run_id=$run_id" >> $GITHUB_OUTPUT
+          if [[ -z "$run_id" ]]; then
+            echo "[ERROR] No successful market_lines run with INFRA-market-lines artifact found"
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
-      - name: Get latest ESPN data run ID
+      - name: Resolve latest ESPN data run ID
         id: get_espn_run
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           run_id=$(gh run list \
             --workflow=update_espn_cbb.yml \
             --status=success \
-            --limit=5 \
+            --limit=20 \
             --json=databaseId \
             --jq='.[].databaseId' | while read rid; do
               count=$(gh api \
@@ -85,20 +155,37 @@ jobs:
                 2>/dev/null || echo 0)
               echo "$count $rid"
             done | sort -rn | head -1 | awk '{print $2}')
-          echo "run_id=$run_id" >> $GITHUB_OUTPUT
+          if [[ -z "$run_id" ]]; then
+            echo "[ERROR] No successful update_espn_cbb run with INFRA-espn-data artifact found"
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
-      - name: Validate artifact run IDs
+      - name: Resolve latest predictions rolling run ID
+        id: get_pred_run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -z "${{ steps.get_ml_run.outputs.run_id }}" ]; then
-            echo "[WARN] No successful market_lines run with INFRA-market-lines artifact found; skipping market artifact downloads"
+          set -euo pipefail
+          run_id=$(gh run list \
+            --workflow=cbb_predictions_rolling.yml \
+            --status=success \
+            --limit=20 \
+            --json=databaseId \
+            --jq='.[].databaseId' | while read rid; do
+              count=$(gh api \
+                /repos/${{ github.repository }}/actions/runs/${rid}/artifacts \
+                --jq '.artifacts[] | select(.name=="INFRA-predictions-rolling") | .size_in_bytes' \
+                2>/dev/null || echo 0)
+              echo "$count $rid"
+            done | sort -rn | head -1 | awk '{print $2}')
+          if [[ -z "$run_id" ]]; then
+            echo "[ERROR] No successful cbb_predictions_rolling run with INFRA-predictions-rolling artifact found"
+            exit 1
           fi
-          if [ -z "${{ steps.get_espn_run.outputs.run_id }}" ]; then
-            echo "[WARN] No successful update_espn_cbb run with INFRA-espn-data artifact found; skipping ESPN artifact download"
-          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
-      # Handoff from market_lines.yml
-      - name: Download market lines
-        if: ${{ steps.get_ml_run.outputs.run_id != '' }}
+      - name: Download market lines artifact
         uses: actions/download-artifact@v4
         with:
           name: INFRA-market-lines
@@ -106,9 +193,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
 
-
-      - name: Download predictions with context
-        if: ${{ steps.get_ml_run.outputs.run_id != '' }}
+      - name: Download predictions with context artifact
         uses: actions/download-artifact@v4
         with:
           name: INFRA-predictions-with-context
@@ -116,10 +201,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
 
-
-      # Handoff from update_espn_cbb.yml
-      - name: Download ESPN data
-        if: ${{ steps.get_espn_run.outputs.run_id != '' }}
+      - name: Download ESPN data artifact
         uses: actions/download-artifact@v4
         with:
           name: INFRA-espn-data
@@ -127,197 +209,203 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_espn_run.outputs.run_id }}
 
+      - name: Download predictions rolling artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: INFRA-predictions-rolling
+          path: data/staging/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.get_pred_run.outputs.run_id }}
 
-      # Verify required input files exist with real data rows
-      - name: Verify required input files
+      - name: Download predictions ready marker
+        uses: actions/download-artifact@v4
+        with:
+          name: INFRA-ready-cbb-predictions-rolling
+          path: data/staging/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.get_pred_run.outputs.run_id }}
+
+      - name: Validate dependency marker
         run: |
-          fail=0
-          for f in data/market_lines.csv data/team_game_weighted.csv; do
-            rows=$(( $(wc -l < "$f" 2>/dev/null || echo 0) - 1 ))
-            if [ "$rows" -lt 1 ]; then
-              echo "[ERROR] $f has $rows data rows — aborting"
-              fail=1
-            else
-              echo "[OK] $f: $rows rows"
-            fi
-          done
-          [ "$fail" -eq 0 ] || exit 1
+          if [[ ! -f data/staging/cbb_predictions_rolling_ready.json ]]; then
+            echo "[ERROR] Missing dependency marker: data/staging/cbb_predictions_rolling_ready.json"
+            exit 1
+          fi
+          echo "[OK] Found predictions ready marker"
 
-      - name: Install pandas for artifact merge
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install pandas
-          python -c "import pandas" || { echo "[ERROR] pandas install failed"; exit 1; }
-
-      - name: Merge staged artifacts into committed history
+      - name: Merge staged artifacts into working data
         run: |
           python - <<'PY'
+          from pathlib import Path
+
           import pandas as pd
           from pandas.errors import EmptyDataError
-          from pathlib import Path
 
           def safe_read_csv(path: Path) -> pd.DataFrame:
               try:
-                  return pd.read_csv(path, dtype=str)
+                  return pd.read_csv(path, dtype=str, low_memory=False)
               except EmptyDataError:
-                  print(f"[WARN] {path.name} is empty or headerless; treating as no rows")
                   return pd.DataFrame()
 
-          MERGE_SPECS = [
-              ("team_game_weighted.csv",  ["event_id", "team_id"]),
-              ("team_game_logs.csv",      ["event_id", "team_id"]),
-              ("games.csv",               ["game_id"]),
-              ("player_game_logs.csv",    ["event_id", "team_id", "athlete_id"]),
-              ("market_lines.csv",        ["game_id", "capture_type"]),
+          merge_specs = [
+              ("team_game_weighted.csv", ["event_id", "team_id"]),
+              ("team_game_logs.csv", ["event_id", "team_id"]),
+              ("games.csv", ["game_id"]),
+              ("player_game_logs.csv", ["event_id", "team_id", "athlete_id"]),
+              ("market_lines.csv", ["game_id", "capture_type"]),
               ("predictions_with_context.csv", ["game_id"]),
               ("predictions_history.csv", ["game_id"]),
+              ("predictions_combined_latest.csv", ["game_id"]),
+              ("predictions_latest.csv", ["game_id"]),
           ]
-          for fname, keys in MERGE_SPECS:
-              committed = Path(f"data/{fname}")
-              staged = Path(f"data/staging/{fname}")
+
+          for file_name, keys in merge_specs:
+              committed = Path(f"data/{file_name}")
+              staged = Path(f"data/staging/{file_name}")
               if not staged.exists() or staged.stat().st_size == 0:
-                  print(f"[SKIP] No staged {fname}")
+                  print(f"[SKIP] No staged {file_name}")
                   continue
+
               existing = safe_read_csv(committed) if committed.exists() else pd.DataFrame()
               new_rows = safe_read_csv(staged)
               if new_rows.empty:
-                  print(f"[SKIP] Staged {fname} has no parseable rows")
+                  print(f"[SKIP] Staged {file_name} is empty")
                   continue
+
               combined = pd.concat([existing, new_rows], ignore_index=True)
               if "game_id" in keys and "game_id" not in combined.columns and "event_id" in combined.columns:
                   combined["game_id"] = combined["event_id"]
               available = [k for k in keys if k in combined.columns]
-              if not available:
-                  print(f"[WARN] {fname}: none of merge keys present {keys}; writing concatenated rows")
-              else:
+              if available:
                   combined = combined.drop_duplicates(subset=available, keep="last")
+              else:
+                  print(f"[WARN] {file_name}: merge keys missing {keys}; writing concatenated rows")
+
               committed.parent.mkdir(parents=True, exist_ok=True)
               combined.to_csv(committed, index=False)
-              print(f"[OK] {fname}: {len(existing)} + {len(new_rows)} = {len(combined)} rows")
+              print(f"[OK] {file_name}: rows={len(combined)}")
           PY
 
-      - name: Backfill historical market lines (rolling 14 days)
+      - name: Validate required analytics inputs
         run: |
-          python ingestion/historical_backfill.py \
-            --days-back 14 \
-            --output data/market_lines.csv
-        continue-on-error: true
+          bash .github/scripts/check_csv.sh data/market_lines.csv 1 event_id
+          bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 team_id
+          if [[ -f data/predictions_with_context.csv ]]; then
+            bash .github/scripts/check_csv.sh data/predictions_with_context.csv 0 game_id
+          else
+            bash .github/scripts/check_csv.sh data/predictions_combined_latest.csv 0 game_id
+          fi
 
-      - name: Check market join coverage
-        continue-on-error: true
+      - name: Validate predictions freshness
         run: |
           python - <<'PY'
-          import pandas as pd
           from pathlib import Path
-          from datetime import date
+          import time
 
-          preds = Path("data/predictions_with_context.csv")
-          mkt   = Path("data/market_lines.csv")
-          if not preds.exists() or preds.stat().st_size == 0:
-              preds = Path("data/predictions_combined_latest.csv")
-          if not preds.exists() or not mkt.exists():
-              print("[MARKET-GATE] Missing input files — skipping coverage check")
-              raise SystemExit(0)
+          candidate = Path("data/predictions_with_context.csv")
+          if not candidate.exists():
+              candidate = Path("data/predictions_combined_latest.csv")
+          if not candidate.exists():
+              raise SystemExit("[ERROR] Missing predictions input for analytics freshness check")
 
-          df  = pd.read_csv(preds, dtype=str)
-          mdf = pd.read_csv(mkt,   dtype=str)
-
-          today = str(date.today())
-          if "game_date" in df.columns:
-              df = df[df["game_date"].str.startswith(today, na=False)]
-          if df.empty:
-              print(f"[MARKET-GATE] No predictions for {today} — skipping")
-              raise SystemExit(0)
-
-          df["_eid"]  = df.get("event_id", df.get("game_id", pd.Series(dtype=str))).astype(str).str.strip()
-          mdf["_eid"] = mdf["event_id"].astype(str).str.strip()
-
-          matched  = df["_eid"].isin(mdf["_eid"]).sum()
-          total    = len(df)
-          coverage = matched / total if total else 0
-
-          print(f"[MARKET-GATE] Today's market join coverage: {matched}/{total} ({coverage:.0%})")
-          if coverage < 0.80:
-              print(f"[MARKET-GATE] WARNING: coverage {coverage:.0%} is below 80% threshold")
+          age_hours = (time.time() - candidate.stat().st_mtime) / 3600.0
+          print(f"[INFO] {candidate} age_hours={age_hours:.2f}")
+          if age_hours > 36:
+              raise SystemExit(f"[ERROR] {candidate} is stale (>36h)")
           PY
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          python -c "import pandas, numpy, requests, scipy; import bs4" || \
-            { echo "[ERROR] Core dependency import failed"; exit 1; }
-
       - name: Data infrastructure health check
-        run: python scripts/validate_data_infrastructure.py
         continue-on-error: true
+        run: python scripts/validate_data_infrastructure.py
 
-      # Step 5: Run backtester (if requested or weekly)
+      - name: Backfill historical market lines (rolling 14 days)
+        continue-on-error: true
+        run: python ingestion/historical_backfill.py --days-back 14 --output data/market_lines.csv
+
       - name: Run backtester
-        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 10 * * 1' || github.event.inputs.run_mode == 'both' || github.event.inputs.run_mode == 'backtest_only'
+        if: steps.resolve_mode.outputs.run_mode == 'both' || steps.resolve_mode.outputs.run_mode == 'backtest_only'
         run: |
+          set -euo pipefail
           BACKFILL_ARGS=""
           BACKTEST_ARGS="--min-games 5"
-          if [ -n "${{ github.event.inputs.start_date }}" ]; then
-            BACKFILL_ARGS="$BACKFILL_ARGS --start-date ${{ github.event.inputs.start_date }}"
-            BACKTEST_ARGS="$BACKTEST_ARGS --start-date ${{ github.event.inputs.start_date }}"
+          if [[ -n "${{ steps.resolve_mode.outputs.start_date }}" ]]; then
+            BACKFILL_ARGS="$BACKFILL_ARGS --start-date ${{ steps.resolve_mode.outputs.start_date }}"
+            BACKTEST_ARGS="$BACKTEST_ARGS --start-date ${{ steps.resolve_mode.outputs.start_date }}"
           fi
-          if [ -n "${{ github.event.inputs.end_date }}" ]; then
-            BACKFILL_ARGS="$BACKFILL_ARGS --end-date ${{ github.event.inputs.end_date }}"
-            BACKTEST_ARGS="$BACKTEST_ARGS --end-date ${{ github.event.inputs.end_date }}"
+          if [[ -n "${{ steps.resolve_mode.outputs.end_date }}" ]]; then
+            BACKFILL_ARGS="$BACKFILL_ARGS --end-date ${{ steps.resolve_mode.outputs.end_date }}"
+            BACKTEST_ARGS="$BACKTEST_ARGS --end-date ${{ steps.resolve_mode.outputs.end_date }}"
           fi
 
-          echo "Running historical backfill with args: $BACKFILL_ARGS"
           python ingestion/historical_backfill.py $BACKFILL_ARGS
-
-          echo "Running backtester with args: $BACKTEST_ARGS"
           python cbb_backtester.py $BACKTEST_ARGS
 
-      # Step 6: Pattern 2: Validate backtester outputs
       - name: Validate backtester outputs
-        if: success()
+        if: steps.resolve_mode.outputs.run_mode == 'both' || steps.resolve_mode.outputs.run_mode == 'backtest_only'
         run: |
-          if [ -f data/backtest_results_latest.csv ]; then
-            rows=$(( $(wc -l < data/backtest_results_latest.csv) - 1 ))
-            echo "[OK] backtest_results_latest.csv: $rows rows"
-            python scripts/validate_backtest_market_data.py
-          else
-            echo "[WARN] No backtester output found"
-          fi
+          bash .github/scripts/check_csv.sh data/backtest_results_latest.csv 1
+          python scripts/validate_backtest_market_data.py
 
-      # Step 7: Grade predictions first so tracker can consume CLV fields
       - name: Grade predictions
         run: python evaluation/predictions_graded.py
-        continue-on-error: false
-
-      # Step 8: Run analytics/reporting scripts
 
       - name: Build training data
-        run: python build_training_data.py
         continue-on-error: true
+        run: python build_training_data.py
 
       - name: Run results tracker
-        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 8 * * *' || github.event.inputs.run_mode == 'both' || github.event.inputs.run_mode == 'tracker_only'
+        if: steps.resolve_mode.outputs.run_mode == 'both' || steps.resolve_mode.outputs.run_mode == 'tracker_only'
         run: |
-          if [ -n "${{ github.event.inputs.start_date }}" ]; then
-            echo "Running results tracker for specific date: ${{ github.event.inputs.start_date }}"
-            python cbb_results_tracker.py --date ${{ github.event.inputs.start_date }}
+          if [[ -n "${{ steps.resolve_mode.outputs.start_date }}" ]]; then
+            python cbb_results_tracker.py --date ${{ steps.resolve_mode.outputs.start_date }}
           else
-            echo "Running results tracker with reprocess-days 10 to catch up on missed dates"
             python cbb_results_tracker.py --reprocess-days 10
           fi
 
       - name: Run season summaries
-        run: python cbb_season_summaries.py || echo "Summaries failed (non-fatal)"
+        continue-on-error: true
+        run: python cbb_season_summaries.py
 
       - name: Accuracy report
         run: python cbb_accuracy_report.py
-        continue-on-error: false
 
-      - name: Upload analytics results
-        if: success()
+      - name: Create ready marker
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          marker = {
+              "workflow": "cbb_analytics",
+              "run_id": "${{ github.run_id }}",
+              "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+              "outputs": [
+                  "data/results_log.csv",
+                  "data/results_summary.csv"
+              ]
+          }
+          out = Path("data/ready_markers/cbb_analytics_ready.json")
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_text(json.dumps(marker, indent=2), encoding="utf-8")
+          print(f"[OK] wrote {out}")
+          PY
+
+      - name: Generate integrity report
+        if: always()
+        run: |
+          python .github/scripts/data_integrity_report.py \
+            --manifest .github/pipeline_contracts/cbb_analytics.contract.json \
+            --workflow-name cbb_analytics \
+            --run-id "${{ github.run_id }}-analytics"
+
+      - name: Upload analytics artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: INFRA-analytics-results
+          if-no-files-found: error
           path: |
             data/results_log.csv
             data/results_summary.csv
@@ -327,28 +415,64 @@ jobs:
             data/unresolved_games.csv
             data/market_line_backfill_audit.csv
             data/backtest_training_data.csv
+            data/ready_markers/cbb_analytics_ready.json
+            data/integrity_reports/cbb_analytics/**
           retention-days: 90
 
-      # Step 9: Pattern 9: Standardized commit step with retry logic
-      - name: Commit to repo
+      - name: Upload analytics ready marker
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-ready-cbb-analytics
+          if-no-files-found: error
+          path: data/ready_markers/cbb_analytics_ready.json
+          retention-days: 30
+
+      - name: Commit curated analytics outputs
         if: success()
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
-          git add data/backtest_training_data.csv
+          git add --ignore-missing \
+            data/results_log.csv \
+            data/results_summary.csv \
+            data/results_alerts.csv \
+            data/results_model_split.csv \
+            data/results_log_by_team.csv \
+            data/backtest_results_latest.csv \
+            data/backtest_model_report_latest.csv \
+            data/backtest_calibration_latest.csv \
+            data/backtest_training_data.csv \
+            data/team_season_summary.csv \
+            data/player_season_summary.csv \
+            data/market_lines_closing.csv
+
           if git diff --staged --quiet; then
-            echo "[SKIP] No changes to commit"
+            echo "[SKIP] No curated output changes to commit"
             exit 0
           fi
-          git commit -m "analytics: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
-          for i in 1 2 3 4 5; do
-            git fetch origin main
-            git rebase -X ours origin/main --no-stat 2>&1 || {
-              git rebase --abort 2>/dev/null || true
-              git merge origin/main -X ours --no-edit
-            }
-            git push origin HEAD:main && { echo "[OK] Push succeeded attempt $i"; exit 0; }
-            sleep $((i * 3))
+
+          STAGED_BYTES=$(git diff --cached --name-only -z | xargs -0 -r du -cb | tail -n 1 | cut -f1)
+          STAGED_BYTES=${STAGED_BYTES:-0}
+          MAX_BYTES=$((50 * 1024 * 1024))
+          if (( STAGED_BYTES > MAX_BYTES )); then
+            echo "[ERROR] staged payload ${STAGED_BYTES} exceeds ${MAX_BYTES} bytes"
+            exit 1
+          fi
+
+          git commit -m "analytics: $(date -u +'%Y-%m-%d %H:%M UTC') [skip ci]"
+          for i in 1 2 3; do
+            if ! git pull --rebase origin main; then
+              echo "[ERROR] rebase conflict while syncing main"
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo "[OK] Push succeeded attempt $i"
+              exit 0
+            fi
+            sleep $((i * 2))
           done
-          echo "[WARN] Push failed after 5 attempts"
+          echo "[ERROR] Push failed after 3 attempts"
+          exit 1
