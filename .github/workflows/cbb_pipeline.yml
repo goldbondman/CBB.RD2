@@ -98,7 +98,9 @@ jobs:
           SEASON_ACTIVE=$(python -c "from espn_config import SEASON_ACTIVE; print('true' if SEASON_ACTIVE else 'false')" 2>/dev/null || echo "true")
 
           run_step "daily" "espn_pipeline"         python espn_pipeline.py
+          run_step "daily" "advanced_metrics"      python -m pipeline.advanced_metrics.build_advanced_metrics
           run_step "daily" "market_lines_closing"  python -m ingestion.market_lines --mode closing
+          run_step "daily" "joint_model"           python -m model_lab.joint_models
 
           if [ "$SEASON_ACTIVE" = "true" ]; then
             run_step "daily" "prediction_runner"   python espn_prediction_runner.py

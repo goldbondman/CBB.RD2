@@ -64,6 +64,33 @@
       ]
     },
     {
+      "name": "advanced_metrics",
+      "job": "update",
+      "depends_on": ["espn_pipeline", "rotation_features", "situational_features"],
+      "command": "python -m pipeline.advanced_metrics.build_advanced_metrics",
+      "requires": [
+        {"path": "data/team_game_metrics.csv", "min_rows": 1, "required_columns": ["event_id", "team_id"]}
+      ],
+      "produces": [
+        {"path": "data/advanced_metrics.csv", "min_rows": 1, "required_columns": ["event_id", "team_id"]}
+      ]
+    },
+    {
+      "name": "joint_model_predictions",
+      "job": "update",
+      "depends_on": ["advanced_metrics"],
+      "command": "python -m model_lab.joint_models",
+      "requires": [
+        {"path": "data/games.csv", "min_rows": 1, "required_columns": ["game_id", "home_team_id", "away_team_id"]},
+        {"path": "data/team_game_weighted.csv", "min_rows": 1, "required_columns": ["event_id", "team_id"]},
+        {"path": "data/advanced_metrics.csv", "min_rows": 1, "required_columns": ["event_id", "team_id"]}
+      ],
+      "produces": [
+        {"path": "data/predictions_joint_latest.csv", "min_rows": 1, "required_columns": ["game_id", "pred_total", "pred_margin"]},
+        {"path": "data/predictions_joint_snapshots.csv", "min_rows": 1, "required_columns": ["game_id", "generated_at_utc"]}
+      ]
+    },
+    {
       "name": "player_availability_features",
       "job": "update",
       "depends_on": ["espn_pipeline"],

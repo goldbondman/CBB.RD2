@@ -177,6 +177,8 @@ jobs:
           bash .github/scripts/check_csv.sh data/games.csv 1 "game_id,game_datetime_utc"
           bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "game_id,team_id,game_datetime_utc"
           bash .github/scripts/check_csv.sh data/team_pretournament_snapshot.csv 1 "team_id"
+          bash .github/scripts/check_csv.sh data/advanced_metrics.csv 1 "event_id,team_id"
+          bash .github/scripts/check_csv.sh data/predictions_joint_latest.csv 1 "game_id,pred_total,pred_margin"
 
       - name: Print data integrity block
         shell: bash
@@ -200,6 +202,9 @@ jobs:
             data/games.csv
             data/team_game_weighted.csv
             data/team_pretournament_snapshot.csv
+            data/advanced_metrics.csv
+            data/predictions_joint_latest.csv
+            data/predictions_joint_snapshots.csv
             data/rotation_features.csv
             data/situational_features.csv
             data/luck_regression_features.csv
@@ -236,6 +241,9 @@ jobs:
             data/games.csv \
             data/team_game_weighted.csv \
             data/team_pretournament_snapshot.csv \
+            data/advanced_metrics.csv \
+            data/predictions_joint_latest.csv \
+            data/predictions_joint_snapshots.csv \
             data/rotation_features.csv \
             data/situational_features.csv \
             data/luck_regression_features.csv \
