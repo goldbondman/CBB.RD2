@@ -1,0 +1,40 @@
+﻿name: DAG Orchestrator CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  orchestrator-ci:
+    runs-on: ubuntu-latest
+    env:
+      RUN_ID: ci_${{ github.run_id }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run orchestrator (ci profile)
+        run: python -m model_lab.orchestrator run --run-id "$RUN_ID" --profile ci --limit 200
+
+      - name: Upload orchestrator artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: orchestrator-ci-${{ github.run_id }}
+          path: |
+            data/model_lab_runs/ci_${{ github.run_id }}/**
+            docs/audit/**
+          if-no-files-found: warn
