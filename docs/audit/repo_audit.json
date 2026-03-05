@@ -1,0 +1,1575 @@
+{
+  "generated_at_utc": "2026-03-05T05:56:04.569869+00:00",
+  "repo_root": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2",
+  "entrypoints": {
+    "workflows": [
+      {
+        "workflow": ".github\\workflows\\cbb_analytics.yml",
+        "python_commands": [
+          "python -m pip",
+          "python build_training_data.py",
+          "python cbb_accuracy_report.py",
+          "python cbb_backtester.py",
+          "python cbb_results_tracker.py",
+          "python cbb_season_summaries.py",
+          "python evaluation/predictions_graded.py",
+          "python ingestion/historical_backfill.py",
+          "python scripts/validate_backtest_market_data.py",
+          "python scripts/validate_data_infrastructure.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\cbb_backtest_tracker.yml",
+        "python_commands": [
+          "python -m evaluation.feature_audit",
+          "python -m evaluation.walk_forward",
+          "python -m pipeline",
+          "python build_backtest_csvs.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\cbb_pipeline.yml",
+        "python_commands": [
+          "python -m evaluation.predictions_graded",
+          "python -m ingestion.market_lines",
+          "python cbb_accuracy_report.py",
+          "python cbb_results_tracker.py",
+          "python cbb_season_summaries.py",
+          "python cbb_walk_forward.py",
+          "python espn_pipeline.py",
+          "python espn_prediction_runner.py",
+          "python optimize_weights.py",
+          "python weight_deployer.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\cbb_predictions_rolling.yml",
+        "python_commands": [
+          "python build_derived_csvs.py",
+          "python cbb_ensemble.py",
+          "python cbb_monte_carlo.py",
+          "python cbb_player_matchup.py",
+          "python cbb_travel_fatigue.py",
+          "python infra/ci/validate_predictions_freshness.py",
+          "python scripts/audit_csv_quality.py",
+          "python scripts/ci_data_quality_gate.py",
+          "python scripts/validate_data_infrastructure.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\cbb_user_deliverables.yml",
+        "python_commands": [
+          "python build_derived_csvs.py",
+          "python infra/ci/validate_predictions_freshness.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\market_lines.yml",
+        "python_commands": [
+          "python -m enrichment.predictions_with_context",
+          "python -m ingestion.market_lines",
+          "python scripts/assert_market_master_monotonic.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\player_overlay.yml",
+        "python_commands": [
+          "python -m pip",
+          "python -m pytest",
+          "python scripts/run_player_overlay.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\update_espn_cbb.yml",
+        "python_commands": [
+          "python .github/scripts/validate_workflows.py",
+          "python cbb_luck_regression_features.py",
+          "python cbb_rotation_features.py",
+          "python cbb_season_summaries.py",
+          "python cbb_situational_features.py",
+          "python espn_pipeline.py",
+          "python espn_rankings.py",
+          "python player_availability_features.py"
+        ]
+      }
+    ],
+    "scripts": [
+      "audit_grading_completeness.py",
+      "bias_detector.py",
+      "build_backtest_csvs.py",
+      "build_derived_csvs.py",
+      "build_lineage_map.py",
+      "build_training_data.py",
+      "calibrate_confidence.py",
+      "cbb_accuracy_report.py",
+      "cbb_backtester.py",
+      "cbb_line_movement_features.py",
+      "cbb_luck_regression_features.py",
+      "cbb_monte_carlo.py",
+      "cbb_player_matchup.py",
+      "cbb_prediction_model.py",
+      "cbb_results_tracker.py",
+      "cbb_rotation_features.py",
+      "cbb_season_summaries.py",
+      "cbb_situational_features.py",
+      "cbb_travel_fatigue.py",
+      "cbb_walk_forward.py",
+      "cbb_weight_optimizer.py",
+      "cron_check.py",
+      "espn_pipeline.py",
+      "espn_prediction_runner.py",
+      "espn_rankings.py",
+      "espn_tournament_integration.py",
+      "field_reconciler.py",
+      "fix_conferences.py",
+      "fix_duplicates_inplace.py",
+      "optimize_weights.py",
+      "player_availability_features.py",
+      "run_backtest.py",
+      "send_email.py",
+      "stat_ranker.py",
+      "verify_rolling_windows.py",
+      "weight_deployer.py"
+    ],
+    "modules": [
+      "audit_grading_completeness",
+      "backtesting.compute_metrics",
+      "bias_detector",
+      "build_backtest_csvs",
+      "build_derived_csvs",
+      "build_lineage_map",
+      "build_training_data",
+      "calibrate_confidence",
+      "cbb_accuracy_report",
+      "cbb_backtester",
+      "cbb_line_movement_features",
+      "cbb_luck_regression_features",
+      "cbb_monte_carlo",
+      "cbb_player_matchup",
+      "cbb_prediction_model",
+      "cbb_results_tracker",
+      "cbb_rotation_features",
+      "cbb_season_summaries",
+      "cbb_situational_features",
+      "cbb_travel_fatigue",
+      "cbb_walk_forward",
+      "cbb_weight_optimizer",
+      "cron_check",
+      "enrichment.predictions_with_context",
+      "espn_pipeline",
+      "espn_prediction_runner",
+      "espn_rankings",
+      "espn_tournament_integration",
+      "evaluation.feature_audit",
+      "evaluation.model_accuracy_weekly",
+      "evaluation.predictions_graded",
+      "evaluation.walk_forward",
+      "field_reconciler",
+      "fix_conferences",
+      "fix_duplicates_inplace",
+      "infra.ci.test_validate_predictions_freshness_smoke",
+      "infra.ci.validate_predictions_freshness",
+      "ingestion.historical_backfill",
+      "ingestion.market_lines",
+      "model_lab.cli",
+      "models.bias_detector",
+      "models.clv_analyzer",
+      "models.weight_optimizer",
+      "optimize_weights",
+      "pipeline.advanced_metrics.compute_runner",
+      "pipeline.repo_audit",
+      "pipeline.smoke",
+      "player_availability_features",
+      "run_backtest",
+      "scripts.assert_market_master_monotonic",
+      "scripts.audit_csv_quality",
+      "scripts.backfill_market_lines",
+      "scripts.build_market_line_views",
+      "scripts.build_team_splits",
+      "scripts.ci_data_quality_gate",
+      "scripts.run_player_overlay",
+      "scripts.smoke_argparse_market_lines",
+      "scripts.smoke_cli_market_lines",
+      "scripts.smoke_normalization_market_lines",
+      "scripts.test_market_lines_append_only",
+      "scripts.test_resolve_date_range",
+      "scripts.validate_backtest_market_data",
+      "scripts.validate_data_infrastructure",
+      "scripts.verify_pipeline_integrity",
+      "send_email",
+      "stat_ranker",
+      "verify_rolling_windows",
+      "weight_deployer"
+    ],
+    "notebooks": [],
+    "make_targets": []
+  },
+  "artifacts": {
+    "artifacts": [
+      {
+        "artifact": "data/games.csv",
+        "type": "csv",
+        "producers": [],
+        "consumers": [
+          "cbb_line_movement_features.py",
+          "tests\\test_pipeline_health.py"
+        ],
+        "usage": {
+          "write_count": 0,
+          "read_count": 2
+        }
+      },
+      {
+        "artifact": "data/line_movement_features.csv",
+        "type": "csv",
+        "producers": [],
+        "consumers": [
+          "cbb_line_movement_features.py"
+        ],
+        "usage": {
+          "write_count": 0,
+          "read_count": 1
+        }
+      },
+      {
+        "artifact": "data/predictions_combined_latest.csv",
+        "type": "csv",
+        "producers": [],
+        "consumers": [
+          "tests\\test_pipeline_health.py"
+        ],
+        "usage": {
+          "write_count": 0,
+          "read_count": 1
+        }
+      },
+      {
+        "artifact": "data/team_game_metrics.csv",
+        "type": "csv",
+        "producers": [],
+        "consumers": [
+          "tests\\test_pipeline_health.py"
+        ],
+        "usage": {
+          "write_count": 0,
+          "read_count": 1
+        }
+      }
+    ]
+  },
+  "dependencies": {
+    "hotspots": [
+      {
+        "module": "espn_config",
+        "file": "espn_config.py",
+        "inbound_references": 22
+      },
+      {
+        "module": "pipeline_csv_utils",
+        "file": "pipeline_csv_utils.py",
+        "inbound_references": 18
+      },
+      {
+        "module": "config.logging_config",
+        "file": "config\\logging_config.py",
+        "inbound_references": 10
+      },
+      {
+        "module": "model_lab.config",
+        "file": "model_lab\\config.py",
+        "inbound_references": 10
+      },
+      {
+        "module": "ingestion.market_lines",
+        "file": "ingestion\\market_lines.py",
+        "inbound_references": 8
+      },
+      {
+        "module": "pipeline.advanced_metrics.feature_registry",
+        "file": "pipeline\\advanced_metrics\\feature_registry.py",
+        "inbound_references": 7
+      },
+      {
+        "module": "model_lab.splits",
+        "file": "model_lab\\splits.py",
+        "inbound_references": 6
+      },
+      {
+        "module": "cbb_config",
+        "file": "cbb_config.py",
+        "inbound_references": 5
+      },
+      {
+        "module": "build_derived_csvs",
+        "file": "build_derived_csvs.py",
+        "inbound_references": 4
+      },
+      {
+        "module": "model_lab.evaluators",
+        "file": "model_lab\\evaluators.py",
+        "inbound_references": 4
+      },
+      {
+        "module": "pipeline.advanced_metrics.rolling_window_layer",
+        "file": "pipeline\\advanced_metrics\\rolling_window_layer.py",
+        "inbound_references": 4
+      },
+      {
+        "module": "backtesting.direction_map",
+        "file": "backtesting\\direction_map.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "cbb_backtester",
+        "file": "cbb_backtester.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "cbb_ensemble",
+        "file": "cbb_ensemble.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "cbb_output_schemas",
+        "file": "cbb_output_schemas.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "cbb_prediction_model",
+        "file": "cbb_prediction_model.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "espn_parsers",
+        "file": "espn_parsers.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "espn_player_metrics",
+        "file": "espn_player_metrics.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "model_lab.data_builder",
+        "file": "model_lab\\data_builder.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "model_lab.model_wrappers",
+        "file": "model_lab\\model_wrappers.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "models.alpha_evaluator",
+        "file": "models\\alpha_evaluator.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "team_splits",
+        "file": "team_splits.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "backtesting.thresholds",
+        "file": "backtesting\\thresholds.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "config.model_version",
+        "file": "config\\model_version.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "espn_client",
+        "file": "espn_client.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "espn_pipeline",
+        "file": "espn_pipeline.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "espn_tournament",
+        "file": "espn_tournament.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "evaluation.walk_forward",
+        "file": "evaluation\\walk_forward.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "model_lab.edge_analyzer",
+        "file": "model_lab\\edge_analyzer.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "model_lab.metrics",
+        "file": "model_lab\\metrics.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "models.player_matchup_overlay",
+        "file": "models\\player_matchup_overlay.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "pipeline.advanced_metrics.compute_runner",
+        "file": "pipeline\\advanced_metrics\\compute_runner.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "pipeline.advanced_metrics.integrity_gate",
+        "file": "pipeline\\advanced_metrics\\integrity_gate.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "pipeline.advanced_metrics.metric_registry",
+        "file": "pipeline\\advanced_metrics\\metric_registry.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "pipeline.advanced_metrics.shared_derivations",
+        "file": "pipeline\\advanced_metrics\\shared_derivations.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "pipeline.advanced_metrics.starter_bench_helper",
+        "file": "pipeline\\advanced_metrics\\starter_bench_helper.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "pipeline.artifacts",
+        "file": "pipeline\\artifacts.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "pipeline.backtest_outputs",
+        "file": "pipeline\\backtest_outputs.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "pipeline.cli",
+        "file": "pipeline\\cli.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "pipeline.id_utils",
+        "file": "pipeline\\id_utils.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "pipeline.integrity",
+        "file": "pipeline\\integrity.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "pipeline.update_policy",
+        "file": "pipeline\\update_policy.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "backtesting.combos",
+        "file": "backtesting\\combos.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "backtesting.compute_metrics",
+        "file": "backtesting\\compute_metrics.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "backtesting.engine",
+        "file": "backtesting\\engine.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "backtesting.git_ops",
+        "file": "backtesting\\git_ops.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "backtesting.reporting",
+        "file": "backtesting\\reporting.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "backtesting.stale",
+        "file": "backtesting\\stale.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "build_backtest_csvs",
+        "file": "build_backtest_csvs.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "cbb_accuracy_report",
+        "file": "cbb_accuracy_report.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "cbb_monte_carlo",
+        "file": "cbb_monte_carlo.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "cbb_pipeline_logger",
+        "file": "cbb_pipeline_logger.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "cbb_player_matchup",
+        "file": "cbb_player_matchup.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "cbb_rankings_schema",
+        "file": "cbb_rankings_schema.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "cbb_results_tracker",
+        "file": "cbb_results_tracker.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "cbb_situational",
+        "file": "cbb_situational.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "config.schemas",
+        "file": "config\\schemas.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "data_loader",
+        "file": "data_loader.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "enrichment.predictions_with_context",
+        "file": "enrichment\\predictions_with_context.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "espn_gap_fillers",
+        "file": "espn_gap_fillers.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "espn_injury_proxy",
+        "file": "espn_injury_proxy.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "espn_metrics",
+        "file": "espn_metrics.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "espn_prediction_runner",
+        "file": "espn_prediction_runner.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "espn_rankings",
+        "file": "espn_rankings.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "espn_sos",
+        "file": "espn_sos.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "espn_weighted_metrics",
+        "file": "espn_weighted_metrics.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "evaluation.feature_audit",
+        "file": "evaluation\\feature_audit.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "field_reconciler",
+        "file": "field_reconciler.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "infra.ci.validate_predictions_freshness",
+        "file": "infra\\ci\\validate_predictions_freshness.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "model_lab.ensemble",
+        "file": "model_lab\\ensemble.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "model_lab.executive_summary",
+        "file": "model_lab\\executive_summary.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "model_lab.feature_selector",
+        "file": "model_lab\\feature_selector.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "model_lab.feature_tests",
+        "file": "model_lab\\feature_tests.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "model_lab.window_grid",
+        "file": "model_lab\\window_grid.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "models.clv_analyzer",
+        "file": "models\\clv_analyzer.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "optimize_weights",
+        "file": "optimize_weights.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "pipeline.advanced_metrics.audit_logger",
+        "file": "pipeline\\advanced_metrics\\audit_logger.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "pipeline.advanced_metrics.cache_layer",
+        "file": "pipeline\\advanced_metrics\\cache_layer.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "pipeline.advanced_metrics.feature_dag",
+        "file": "pipeline\\advanced_metrics\\feature_dag.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "pipeline.advanced_metrics.matchup_metric_compute",
+        "file": "pipeline\\advanced_metrics\\matchup_metric_compute.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "pipeline.advanced_metrics.metric_library",
+        "file": "pipeline\\advanced_metrics\\metric_library.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "pipeline.context",
+        "file": "pipeline\\context.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "pipeline.evaluation",
+        "file": "pipeline\\evaluation.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "pipeline.team_utils",
+        "file": "pipeline\\team_utils.py",
+        "inbound_references": 1
+      }
+    ],
+    "edges": [
+      {
+        "module": "backtesting.engine",
+        "imports": [
+          "backtesting.combos",
+          "backtesting.direction_map",
+          "backtesting.thresholds"
+        ]
+      },
+      {
+        "module": "backtesting.stale",
+        "imports": [
+          "backtesting.direction_map"
+        ]
+      },
+      {
+        "module": "bias_detector",
+        "imports": [
+          "espn_config"
+        ]
+      },
+      {
+        "module": "build_backtest_csvs",
+        "imports": [
+          "evaluation.feature_audit",
+          "evaluation.walk_forward",
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "build_derived_csvs",
+        "imports": [
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "cbb_backtester",
+        "imports": [
+          "cbb_config",
+          "cbb_ensemble",
+          "config.logging_config",
+          "espn_config",
+          "pipeline.id_utils",
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "cbb_ensemble",
+        "imports": [
+          "cbb_config",
+          "espn_config",
+          "models.alpha_evaluator",
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "cbb_monte_carlo",
+        "imports": [
+          "cbb_backtester",
+          "cbb_config"
+        ]
+      },
+      {
+        "module": "cbb_player_matchup",
+        "imports": [
+          "espn_config"
+        ]
+      },
+      {
+        "module": "cbb_prediction_model",
+        "imports": [
+          "pipeline_csv_utils",
+          "team_splits"
+        ]
+      },
+      {
+        "module": "cbb_rankings_schema",
+        "imports": [
+          "espn_config"
+        ]
+      },
+      {
+        "module": "cbb_results_tracker",
+        "imports": [
+          "config.logging_config",
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "cbb_season_summaries",
+        "imports": [
+          "config.logging_config",
+          "espn_config",
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "cbb_travel_fatigue",
+        "imports": [
+          "config.logging_config",
+          "espn_config"
+        ]
+      },
+      {
+        "module": "cbb_walk_forward",
+        "imports": [
+          "evaluation.walk_forward"
+        ]
+      },
+      {
+        "module": "compare_teams",
+        "imports": [
+          "ingestion.market_lines"
+        ]
+      },
+      {
+        "module": "config.schemas",
+        "imports": [
+          "config.logging_config",
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "cron_check",
+        "imports": [
+          "espn_config"
+        ]
+      },
+      {
+        "module": "enrichment.predictions_with_context",
+        "imports": [
+          "espn_config",
+          "models.alpha_evaluator",
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "espn_client",
+        "imports": [
+          "espn_config"
+        ]
+      },
+      {
+        "module": "espn_metrics",
+        "imports": [
+          "espn_config",
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "espn_parsers",
+        "imports": [
+          "espn_config"
+        ]
+      },
+      {
+        "module": "espn_pipeline",
+        "imports": [
+          "cbb_output_schemas",
+          "cbb_pipeline_logger",
+          "config.logging_config",
+          "espn_client",
+          "espn_config",
+          "espn_injury_proxy",
+          "espn_metrics",
+          "espn_parsers",
+          "espn_player_metrics",
+          "espn_rankings",
+          "espn_sos",
+          "espn_tournament",
+          "espn_weighted_metrics",
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "espn_player_metrics",
+        "imports": [
+          "espn_config",
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "espn_prediction_runner",
+        "imports": [
+          "cbb_ensemble",
+          "cbb_output_schemas",
+          "cbb_prediction_model",
+          "cbb_situational",
+          "config.logging_config",
+          "config.model_version",
+          "espn_client",
+          "espn_config",
+          "espn_tournament",
+          "models.alpha_evaluator",
+          "pipeline_csv_utils",
+          "team_splits"
+        ]
+      },
+      {
+        "module": "espn_rankings",
+        "imports": [
+          "cbb_config",
+          "cbb_rankings_schema",
+          "config.logging_config",
+          "espn_config",
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "espn_tournament",
+        "imports": [
+          "cbb_config"
+        ]
+      },
+      {
+        "module": "espn_weighted_metrics",
+        "imports": [
+          "espn_config"
+        ]
+      },
+      {
+        "module": "evaluation.predictions_graded",
+        "imports": [
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "evaluation.walk_forward",
+        "imports": [
+          "cbb_prediction_model"
+        ]
+      },
+      {
+        "module": "fix_conferences",
+        "imports": [
+          "espn_config"
+        ]
+      },
+      {
+        "module": "fix_duplicates_inplace",
+        "imports": [
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "infra.ci.validate_predictions_freshness",
+        "imports": [
+          "build_derived_csvs"
+        ]
+      },
+      {
+        "module": "ingestion.historical_backfill",
+        "imports": [
+          "espn_config",
+          "pipeline.id_utils",
+          "pipeline.team_utils"
+        ]
+      },
+      {
+        "module": "ingestion.market_lines",
+        "imports": [
+          "espn_config",
+          "espn_gap_fillers",
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "model_lab.__init__",
+        "imports": [
+          "model_lab.config"
+        ]
+      },
+      {
+        "module": "model_lab.cli",
+        "imports": [
+          "model_lab.config",
+          "model_lab.data_builder",
+          "model_lab.edge_analyzer",
+          "model_lab.ensemble",
+          "model_lab.evaluators",
+          "model_lab.executive_summary",
+          "model_lab.feature_selector",
+          "model_lab.feature_tests",
+          "model_lab.model_wrappers",
+          "model_lab.splits",
+          "model_lab.window_grid"
+        ]
+      },
+      {
+        "module": "model_lab.data_builder",
+        "imports": [
+          "model_lab.config"
+        ]
+      },
+      {
+        "module": "model_lab.edge_analyzer",
+        "imports": [
+          "model_lab.config",
+          "model_lab.data_builder",
+          "model_lab.metrics",
+          "model_lab.model_wrappers",
+          "model_lab.splits"
+        ]
+      },
+      {
+        "module": "model_lab.ensemble",
+        "imports": [
+          "model_lab.config",
+          "model_lab.evaluators",
+          "model_lab.splits"
+        ]
+      },
+      {
+        "module": "model_lab.evaluators",
+        "imports": [
+          "model_lab.metrics"
+        ]
+      },
+      {
+        "module": "model_lab.feature_selector",
+        "imports": [
+          "model_lab.config",
+          "model_lab.splits"
+        ]
+      },
+      {
+        "module": "model_lab.feature_tests",
+        "imports": [
+          "model_lab.evaluators",
+          "model_lab.splits"
+        ]
+      },
+      {
+        "module": "model_lab.model_wrappers",
+        "imports": [
+          "model_lab.config"
+        ]
+      },
+      {
+        "module": "model_lab.splits",
+        "imports": [
+          "model_lab.config"
+        ]
+      },
+      {
+        "module": "model_lab.window_grid",
+        "imports": [
+          "model_lab.config",
+          "model_lab.evaluators",
+          "model_lab.splits"
+        ]
+      },
+      {
+        "module": "optimize_weights",
+        "imports": [
+          "cbb_prediction_model"
+        ]
+      },
+      {
+        "module": "pipeline.__init__",
+        "imports": [
+          "pipeline.cli"
+        ]
+      },
+      {
+        "module": "pipeline.__main__",
+        "imports": [
+          "pipeline.cli"
+        ]
+      },
+      {
+        "module": "pipeline.advanced_metrics.__init__",
+        "imports": [
+          "pipeline.advanced_metrics.compute_runner",
+          "pipeline.advanced_metrics.feature_registry"
+        ]
+      },
+      {
+        "module": "pipeline.advanced_metrics.compute_runner",
+        "imports": [
+          "pipeline.advanced_metrics.audit_logger",
+          "pipeline.advanced_metrics.cache_layer",
+          "pipeline.advanced_metrics.feature_dag",
+          "pipeline.advanced_metrics.feature_registry",
+          "pipeline.advanced_metrics.integrity_gate",
+          "pipeline.advanced_metrics.rolling_window_layer",
+          "pipeline.advanced_metrics.shared_derivations",
+          "pipeline.advanced_metrics.starter_bench_helper"
+        ]
+      },
+      {
+        "module": "pipeline.advanced_metrics.feature_dag",
+        "imports": [
+          "pipeline.advanced_metrics.feature_registry"
+        ]
+      },
+      {
+        "module": "pipeline.advanced_metrics.feature_registry",
+        "imports": [
+          "pipeline.advanced_metrics.metric_library"
+        ]
+      },
+      {
+        "module": "pipeline.advanced_metrics.feature_sets",
+        "imports": [
+          "pipeline.advanced_metrics.feature_registry"
+        ]
+      },
+      {
+        "module": "pipeline.advanced_metrics.integrity_gate",
+        "imports": [
+          "pipeline.advanced_metrics.feature_registry"
+        ]
+      },
+      {
+        "module": "pipeline.advanced_metrics.matchup_metric_compute",
+        "imports": [
+          "pipeline.advanced_metrics.metric_registry",
+          "pipeline.advanced_metrics.rolling_window_layer"
+        ]
+      },
+      {
+        "module": "pipeline.advanced_metrics.metric_library",
+        "imports": [
+          "pipeline.advanced_metrics.rolling_window_layer"
+        ]
+      },
+      {
+        "module": "pipeline.advanced_metrics.metric_registry",
+        "imports": [
+          "pipeline.advanced_metrics.feature_registry"
+        ]
+      },
+      {
+        "module": "pipeline.advanced_metrics.team_metric_compute",
+        "imports": [
+          "pipeline.advanced_metrics.matchup_metric_compute",
+          "pipeline.advanced_metrics.metric_registry",
+          "pipeline.advanced_metrics.rolling_window_layer",
+          "pipeline.advanced_metrics.shared_derivations",
+          "pipeline.advanced_metrics.starter_bench_helper"
+        ]
+      },
+      {
+        "module": "pipeline.advanced_metrics.validation_layer",
+        "imports": [
+          "pipeline.advanced_metrics.feature_registry",
+          "pipeline.advanced_metrics.integrity_gate"
+        ]
+      },
+      {
+        "module": "pipeline.backtest_outputs",
+        "imports": [
+          "pipeline.artifacts"
+        ]
+      },
+      {
+        "module": "pipeline.cli",
+        "imports": [
+          "config.model_version",
+          "pipeline.artifacts",
+          "pipeline.backtest_outputs",
+          "pipeline.context",
+          "pipeline.evaluation",
+          "pipeline.integrity",
+          "pipeline.update_policy"
+        ]
+      },
+      {
+        "module": "pipeline.smoke",
+        "imports": [
+          "model_lab.config",
+          "model_lab.data_builder",
+          "model_lab.edge_analyzer",
+          "model_lab.model_wrappers",
+          "pipeline.advanced_metrics.compute_runner"
+        ]
+      },
+      {
+        "module": "pipeline_csv_utils",
+        "imports": [
+          "config.logging_config",
+          "config.schemas",
+          "espn_config"
+        ]
+      },
+      {
+        "module": "run_backtest",
+        "imports": [
+          "backtesting.compute_metrics",
+          "backtesting.direction_map",
+          "backtesting.engine",
+          "backtesting.git_ops",
+          "backtesting.reporting",
+          "backtesting.stale",
+          "backtesting.thresholds"
+        ]
+      },
+      {
+        "module": "scripts.backfill_market_lines",
+        "imports": [
+          "ingestion.market_lines",
+          "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "scripts.build_market_line_views",
+        "imports": [
+          "ingestion.market_lines"
+        ]
+      },
+      {
+        "module": "scripts.run_player_overlay",
+        "imports": [
+          "models.player_matchup_overlay"
+        ]
+      },
+      {
+        "module": "scripts.smoke_argparse_market_lines",
+        "imports": [
+          "ingestion.market_lines"
+        ]
+      },
+      {
+        "module": "scripts.smoke_cli_market_lines",
+        "imports": [
+          "ingestion.market_lines"
+        ]
+      },
+      {
+        "module": "scripts.smoke_normalization_market_lines",
+        "imports": [
+          "ingestion.market_lines"
+        ]
+      },
+      {
+        "module": "scripts.test_market_lines_append_only",
+        "imports": [
+          "ingestion.market_lines"
+        ]
+      },
+      {
+        "module": "scripts.test_resolve_date_range",
+        "imports": [
+          "ingestion.market_lines"
+        ]
+      },
+      {
+        "module": "send_email",
+        "imports": [
+          "config.logging_config"
+        ]
+      },
+      {
+        "module": "tests.test_backtest_outputs",
+        "imports": [
+          "pipeline.backtest_outputs"
+        ]
+      },
+      {
+        "module": "tests.test_build_backtest_csvs",
+        "imports": [
+          "build_backtest_csvs"
+        ]
+      },
+      {
+        "module": "tests.test_build_derived_csvs",
+        "imports": [
+          "build_derived_csvs"
+        ]
+      },
+      {
+        "module": "tests.test_cbb_accuracy_report",
+        "imports": [
+          "cbb_accuracy_report"
+        ]
+      },
+      {
+        "module": "tests.test_cbb_backtester_market_lines",
+        "imports": [
+          "cbb_backtester"
+        ]
+      },
+      {
+        "module": "tests.test_cbb_backtester_model_selection",
+        "imports": [
+          "cbb_backtester"
+        ]
+      },
+      {
+        "module": "tests.test_clv_analyzer",
+        "imports": [
+          "models.clv_analyzer"
+        ]
+      },
+      {
+        "module": "tests.test_data_loader",
+        "imports": [
+          "data_loader"
+        ]
+      },
+      {
+        "module": "tests.test_ensemble",
+        "imports": [
+          "cbb_ensemble"
+        ]
+      },
+      {
+        "module": "tests.test_field_reconciler",
+        "imports": [
+          "field_reconciler"
+        ]
+      },
+      {
+        "module": "tests.test_market_lines_fallback",
+        "imports": [
+          "enrichment.predictions_with_context"
+        ]
+      },
+      {
+        "module": "tests.test_monte_carlo",
+        "imports": [
+          "cbb_monte_carlo"
+        ]
+      },
+      {
+        "module": "tests.test_odds_dedupe",
+        "imports": [
+          "espn_pipeline"
+        ]
+      },
+      {
+        "module": "tests.test_optimize_weights_robust_cv",
+        "imports": [
+          "optimize_weights"
+        ]
+      },
+      {
+        "module": "tests.test_output_schemas",
+        "imports": [
+          "cbb_output_schemas"
+        ]
+      },
+      {
+        "module": "tests.test_pipeline_governance",
+        "imports": [
+          "pipeline.integrity",
+          "pipeline.update_policy"
+        ]
+      },
+      {
+        "module": "tests.test_pipeline_health",
+        "imports": [
+          "espn_config"
+        ]
+      },
+      {
+        "module": "tests.test_player_game_metrics_enrichment",
+        "imports": [
+          "espn_parsers",
+          "espn_player_metrics"
+        ]
+      },
+      {
+        "module": "tests.test_player_matchup",
+        "imports": [
+          "build_derived_csvs",
+          "cbb_player_matchup"
+        ]
+      },
+      {
+        "module": "tests.test_player_matchup_overlay",
+        "imports": [
+          "models.player_matchup_overlay"
+        ]
+      },
+      {
+        "module": "tests.test_player_metrics_pipeline",
+        "imports": [
+          "espn_parsers",
+          "espn_player_metrics"
+        ]
+      },
+      {
+        "module": "tests.test_prediction_runner_spread_guard",
+        "imports": [
+          "espn_prediction_runner"
+        ]
+      },
+      {
+        "module": "tests.test_results_tracker",
+        "imports": [
+          "cbb_results_tracker"
+        ]
+      },
+      {
+        "module": "tests.test_team_logs_enrichment",
+        "imports": [
+          "espn_pipeline"
+        ]
+      },
+      {
+        "module": "tests.test_team_splits_helper",
+        "imports": [
+          "team_splits"
+        ]
+      },
+      {
+        "module": "tests.test_validate_predictions_freshness",
+        "imports": [
+          "build_derived_csvs",
+          "infra.ci.validate_predictions_freshness"
+        ]
+      }
+    ]
+  },
+  "candidates": {
+    "retire_candidates": [
+      {
+        "path": "audit_duplicates.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "audit_feature_leakage.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "audit_timezones.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "backtesting\\lx_days.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "build_schema_registry.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "check_artifact.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "check_schema_drift.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "compare_teams.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "pipeline\\__main__.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "pipeline\\advanced_metrics\\feature_sets.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "pipeline\\advanced_metrics\\team_metric_compute.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "pipeline\\advanced_metrics\\validation_layer.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "query_runs.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "scripts\\smoke_market_lines_run_capture.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "signals_library.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "tests\\test_backtest_outputs.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "tests\\test_build_backtest_csvs.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "tests\\test_build_derived_csvs.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "tests\\test_cbb_accuracy_report.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "tests\\test_cbb_backtester_market_lines.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      }
+    ],
+    "quarantine_candidates": [
+      {
+        "reason": "feature_builders_overlap",
+        "paths": [
+          "audit_feature_leakage.py",
+          "cbb_line_movement_features.py",
+          "cbb_luck_regression_features.py",
+          "cbb_rotation_features.py",
+          "cbb_situational_features.py",
+          "evaluation/feature_audit.py",
+          "model_lab/feature_selector.py",
+          "model_lab/feature_tests.py",
+          "pipeline/advanced_metrics/__init__.py",
+          "pipeline/advanced_metrics/audit_logger.py",
+          "pipeline/advanced_metrics/cache_layer.py",
+          "pipeline/advanced_metrics/compute_runner.py"
+        ],
+        "note": "Potential overlapping legacy paths; quarantine before deletion."
+      },
+      {
+        "reason": "model_runners_overlap",
+        "paths": [
+          "backtesting/__init__.py",
+          "backtesting/combos.py",
+          "backtesting/compute_metrics.py",
+          "backtesting/direction_map.py",
+          "backtesting/engine.py",
+          "backtesting/git_ops.py",
+          "backtesting/lx_days.py",
+          "backtesting/reporting.py",
+          "backtesting/stale.py",
+          "backtesting/thresholds.py",
+          "build_backtest_csvs.py",
+          "cbb_backtester.py"
+        ],
+        "note": "Potential overlapping legacy paths; quarantine before deletion."
+      },
+      {
+        "reason": "market_lines_overlap",
+        "paths": [
+          "ingestion/historical_backfill.py",
+          "ingestion/market_lines.py",
+          "scripts/backfill_market_lines.py",
+          "scripts/smoke_argparse_market_lines.py",
+          "scripts/smoke_cli_market_lines.py",
+          "scripts/smoke_market_lines_run_capture.py",
+          "scripts/smoke_normalization_market_lines.py",
+          "scripts/test_market_lines_append_only.py"
+        ],
+        "note": "Potential overlapping legacy paths; quarantine before deletion."
+      }
+    ]
+  }
+}

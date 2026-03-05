@@ -1,28 +1,130 @@
 {
   "selector_version": "AUTO_V2",
-  "run_id": "validate_selector_20260305",
   "market": "ml",
-  "tier": "balanced",
-  "generated_at_utc": "2026-03-05T01:00:00Z",
-  "selection_rules": {
-    "min_stability_score": 0.6,
-    "min_sign_consistency": 0.7,
-    "min_importance_delta": 0.001,
-    "correlation_threshold": 0.85,
+  "profile": "balanced",
+  "generated_at_utc": "2026-03-05T05:35:00Z",
+  "window_grid_best": "W_4_12",
+  "window_contract": {
+    "W_4_8": {
+      "window_ids": [
+        4,
+        8
+      ],
+      "window_identifiers": [
+        "L4",
+        "L8"
+      ],
+      "required_suffixes": [
+        "_L4",
+        "_L8"
+      ],
+      "missing_window_identifiers": [
+        "L8"
+      ]
+    },
+    "W_4_12": {
+      "window_ids": [
+        4,
+        12
+      ],
+      "window_identifiers": [
+        "L4",
+        "L12"
+      ],
+      "required_suffixes": [
+        "_L4",
+        "_L12"
+      ],
+      "missing_window_identifiers": []
+    },
+    "W_4_8_12": {
+      "window_ids": [
+        4,
+        8,
+        12
+      ],
+      "window_identifiers": [
+        "L4",
+        "L8",
+        "L12"
+      ],
+      "required_suffixes": [
+        "_L4",
+        "_L8",
+        "_L12"
+      ],
+      "missing_window_identifiers": [
+        "L8"
+      ]
+    },
+    "W_5_10": {
+      "window_ids": [
+        5,
+        10
+      ],
+      "window_identifiers": [
+        "L5",
+        "L10"
+      ],
+      "required_suffixes": [
+        "_L5",
+        "_L10"
+      ],
+      "missing_window_identifiers": [
+        "L5"
+      ]
+    },
+    "W_6_11": {
+      "window_ids": [
+        6,
+        11
+      ],
+      "window_identifiers": [
+        "L6",
+        "L11"
+      ],
+      "required_suffixes": [
+        "_L6",
+        "_L11"
+      ],
+      "missing_window_identifiers": [
+        "L6",
+        "L11"
+      ]
+    },
+    "W_7_12": {
+      "window_ids": [
+        7,
+        12
+      ],
+      "window_identifiers": [
+        "L7",
+        "L12"
+      ],
+      "required_suffixes": [
+        "_L7",
+        "_L12"
+      ],
+      "missing_window_identifiers": []
+    }
+  },
+  "selector_rules": {
+    "stability_min": 0.6,
+    "sign_consistency_min": 0.7,
+    "permutation_delta_min": 0.001,
+    "ablation_delta_min": 0.001,
+    "correlation_max": 0.85,
     "cap_conservative": 12,
     "cap_balanced": 18,
     "cap_aggressive": 25
   },
   "features": [],
   "feature_count": 0,
-  "location_aware": {
+  "location_aware_variant": {
     "status": "BLOCKED",
-    "reason": "no_selected_features",
+    "reason": "no_base_features_selected",
+    "base_features": [],
     "location_features": [],
-    "missing_columns": [],
-    "neutral_policy": ""
-  },
-  "blocked_reasons": [
-    "no_candidates_after_hard_filters"
-  ]
+    "missing_columns": []
+  }
 }

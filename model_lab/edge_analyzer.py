@@ -394,6 +394,10 @@ def _aggregate_group_metrics(group: pd.DataFrame, min_n: int) -> dict[str, Any]:
 
 
 def _missing_edge_columns(df: pd.DataFrame, market: str) -> list[str]:
+    if isinstance(df, pd.Series):
+        df = df.to_frame().T
+    if not isinstance(df, pd.DataFrame):
+        return ["edge_input_not_dataframe"]
     required = {
         "spread": ["spread_line"],
         "total": ["total_line"],
@@ -410,9 +414,16 @@ def _missing_edge_columns(df: pd.DataFrame, market: str) -> list[str]:
 
 
 def _edge_bucket_report(df: pd.DataFrame, run_id: str, market: str, model_name: str, min_n: int) -> tuple[pd.DataFrame, list[str]]:
+    if isinstance(df, pd.Series):
+        df = df.to_frame().T
+    if not isinstance(df, pd.DataFrame):
+        df = pd.DataFrame()
+
     blocked: list[str] = []
     rows: list[dict[str, Any]] = []
     edge = pd.to_numeric(df.get("edge_abs"), errors="coerce")
+    if not isinstance(edge, pd.Series):
+        edge = pd.Series([edge] * len(df), index=df.index, dtype=float)
     usable = df.loc[edge.notna()].copy()
     if usable.empty:
         missing = _missing_edge_columns(df, market)
