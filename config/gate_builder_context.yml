@@ -1,0 +1,27 @@
+enabled:
+  min_edge: true
+  volatility_block: true
+  low_total_block: true
+  sharp_confirmation: true
+  overconfidence_block: true
+
+min_edge_thresholds:
+  - 1.5
+  - 2.5
+  - 3.5
+  - 4.5
+
+volatility_block_tiers:
+  - high
+
+low_total_thresholds:
+  - 128
+  - 132
+  - 136
+
+sharp_score_thresholds:
+  - 50
+  - 60
+  - 70
+
+min_sample_after: 25
