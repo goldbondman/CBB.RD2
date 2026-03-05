@@ -1,0 +1,78 @@
+{
+  "workflow": "cbb_predictions_rolling",
+  "description": "Rolling prediction pipeline integrity contract",
+  "files": [
+    {
+      "path": "data/games.csv",
+      "required": true,
+      "min_rows": 1,
+      "required_columns": ["game_id"],
+      "key_columns": ["game_id"],
+      "date_columns": ["game_datetime_utc", "game_datetime", "date"],
+      "producer_step": "INFRA-espn-data artifact"
+    },
+    {
+      "path": "data/team_game_weighted.csv",
+      "required": true,
+      "min_rows": 1,
+      "required_columns": ["team_id"],
+      "key_columns": ["event_id", "team_id"],
+      "date_columns": ["game_datetime_utc", "date"],
+      "producer_step": "INFRA-espn-data artifact"
+    },
+    {
+      "path": "data/predictions_primary.csv",
+      "required": true,
+      "min_rows": 0,
+      "required_columns": ["game_id"],
+      "key_columns": ["game_id", "event_id"],
+      "date_columns": ["game_datetime_utc", "generated_at_utc"],
+      "producer_step": "Run primary model predictions"
+    },
+    {
+      "path": "data/predictions_latest.csv",
+      "required": true,
+      "min_rows": 0,
+      "required_columns": ["game_id"],
+      "key_columns": ["game_id", "event_id"],
+      "date_columns": ["game_datetime_utc", "generated_at_utc"],
+      "producer_step": "Run primary model predictions"
+    },
+    {
+      "path": "data/predictions_combined_latest.csv",
+      "required": true,
+      "min_rows": 0,
+      "required_columns": ["game_id"],
+      "key_columns": ["game_id", "event_id"],
+      "date_columns": ["game_datetime_utc", "generated_at_utc"],
+      "producer_step": "Merge runner + ensemble"
+    },
+    {
+      "path": "data/predictions_history.csv",
+      "required": true,
+      "min_rows": 0,
+      "required_columns": ["game_id"],
+      "key_columns": ["game_id", "event_id"],
+      "date_columns": ["game_datetime_utc", "generated_at_utc"],
+      "producer_step": "Append to predictions history"
+    },
+    {
+      "path": "data/ensemble_predictions_latest.csv",
+      "required": false,
+      "min_rows": 0,
+      "required_columns": ["game_id"],
+      "key_columns": ["game_id", "event_id"],
+      "date_columns": ["game_datetime_utc", "generated_at_utc"],
+      "producer_step": "Run ensemble model predictions"
+    },
+    {
+      "path": "data/predictions_mc_latest.csv",
+      "required": false,
+      "min_rows": 0,
+      "required_columns": ["game_id"],
+      "key_columns": ["game_id"],
+      "date_columns": ["game_datetime_utc", "generated_at_utc"],
+      "producer_step": "Run Monte Carlo"
+    }
+  ]
+}

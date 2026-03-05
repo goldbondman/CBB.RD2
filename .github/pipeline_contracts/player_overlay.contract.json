@@ -1,0 +1,24 @@
+{
+  "workflow": "player_overlay",
+  "description": "Player matchup overlay integrity contract",
+  "files": [
+    {
+      "path": "data/player_overlay_input.csv",
+      "required": true,
+      "min_rows": 1,
+      "required_columns": ["game_id", "team_id", "opp_team_id", "is_home"],
+      "key_columns": ["game_id", "team_id"],
+      "date_columns": ["game_date"],
+      "producer_step": "Upstream pipeline or manual input"
+    },
+    {
+      "path": "data/player_overlay_predictions.csv",
+      "required": true,
+      "min_rows": 1,
+      "required_columns": ["game_id", "predicted_total_adjustment_pts", "predicted_spread_adjustment_pts_home"],
+      "key_columns": ["game_id", "team_id"],
+      "date_columns": ["game_date"],
+      "producer_step": "run_player_overlay.py"
+    }
+  ]
+}
