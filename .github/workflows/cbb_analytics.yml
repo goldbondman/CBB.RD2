@@ -135,29 +135,31 @@ jobs:
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
-      - name: Resolve latest predictions rolling run ID
-        id: get_pred_run
+      - name: Diagnose recent rolling runs + artifact presence
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          run_id=$(gh run list \
+          echo "[INFO] Last successful cbb_predictions_rolling runs on main (artifact=INFRA-predictions-rolling)"
+          run_ids=$(gh run list \
             --workflow=cbb_predictions_rolling.yml \
+            --branch=main \
             --status=success \
-            --limit=20 \
+            --limit=15 \
             --json=databaseId \
-            --jq='.[].databaseId' | while read rid; do
-              count=$(gh api \
+            --jq='.[].databaseId')
+          if [[ -z "${run_ids}" ]]; then
+            echo "[WARN] No successful cbb_predictions_rolling runs found on main"
+          else
+            while read -r rid; do
+              [[ -z "$rid" ]] && continue
+              meta=$(gh run view "$rid" --json createdAt,headBranch,conclusion --jq '"created_at=\(.createdAt) branch=\(.headBranch) conclusion=\(.conclusion)"')
+              has_artifact=$(gh api \
                 /repos/${{ github.repository }}/actions/runs/${rid}/artifacts \
-                --jq '.artifacts[] | select(.name=="INFRA-predictions-rolling") | .size_in_bytes' \
-                2>/dev/null || echo 0)
-              echo "$count $rid"
-            done | sort -rn | head -1 | awk '{print $2}')
-          if [[ -z "$run_id" ]]; then
-            echo "[ERROR] No successful cbb_predictions_rolling run with INFRA-predictions-rolling artifact found"
-            exit 1
+                --jq '[.artifacts[] | select(.name=="INFRA-predictions-rolling" and (.expired|not) and .size_in_bytes>0)] | length')
+              echo "run_id=${rid} ${meta} artifact_present=${has_artifact}"
+            done <<< "${run_ids}"
           fi
-          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
       - name: Print current artifact dependency chain
         run: |
@@ -206,21 +208,41 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
 
-      - name: Download predictions rolling artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: INFRA-predictions-rolling
-          path: data/staging/
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ steps.get_pred_run.outputs.run_id }}
+      - name: Download latest rolling predictions artifact from main
+        id: download_pred_rolling
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "cbb_predictions_rolling.yml" \
+            --artifact-name "INFRA-predictions-rolling" \
+            --branch "main" \
+            --max-runs 100 \
+            --dest "data/staging" || {
+              echo "[ERROR] Artifact lookup failed: artifact=INFRA-predictions-rolling workflow=cbb_predictions_rolling.yml branch=main max_runs=100"
+              echo "[ERROR] Next steps: 1) run cbb_predictions_rolling on main successfully 2) verify upload of INFRA-predictions-rolling"
+              exit 1
+            }
 
-      - name: Download predictions ready marker
-        uses: actions/download-artifact@v4
-        with:
-          name: INFRA-ready-cbb-predictions-rolling
-          path: data/staging/
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ steps.get_pred_run.outputs.run_id }}
+      - name: Download latest rolling ready marker from main
+        id: download_pred_ready
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "cbb_predictions_rolling.yml" \
+            --artifact-name "INFRA-ready-cbb-predictions-rolling" \
+            --branch "main" \
+            --max-runs 100 \
+            --dest "data/staging" || {
+              echo "[ERROR] Artifact lookup failed: artifact=INFRA-ready-cbb-predictions-rolling workflow=cbb_predictions_rolling.yml branch=main max_runs=100"
+              echo "[ERROR] Next steps: 1) run cbb_predictions_rolling on main successfully 2) verify upload of INFRA-ready-cbb-predictions-rolling"
+              exit 1
+            }
 
       - name: Validate dependency marker
         run: |
@@ -530,6 +552,7 @@ jobs:
         run: |
           bash .github/scripts/check_csv.sh data/backtest_results_latest.csv 1
           python scripts/validate_backtest_market_data.py
+          python scripts/validate_backtest_context_outputs.py --results data/backtest_results_latest.csv --min-market-non-null 0.003 --min-pred-non-null 0.5
 
       - name: Grade predictions
         if: steps.gate_inputs.outputs.blocked != 'true'
@@ -537,8 +560,13 @@ jobs:
 
       - name: Build training data
         if: steps.gate_inputs.outputs.blocked != 'true'
-        continue-on-error: true
         run: python build_training_data.py
+
+      - name: Validate training context data
+        if: steps.gate_inputs.outputs.blocked != 'true'
+        run: |
+          bash .github/scripts/check_csv.sh data/backtest_training_data.csv 1 game_id,event_id
+          python scripts/validate_backtest_context_outputs.py --training data/backtest_training_data.csv --results data/backtest_results_latest.csv --min-market-non-null 0.003 --min-engineered-non-null 0.7 --min-pred-non-null 0.05
 
       - name: Run results tracker
         if: steps.gate_inputs.outputs.blocked != 'true' && (steps.resolve_mode.outputs.run_mode == 'both' || steps.resolve_mode.outputs.run_mode == 'tracker_only')
@@ -688,6 +716,10 @@ jobs:
           path: |
             data/debug/cbb_analytics_debug_state.txt
             data/integrity_reports/cbb_analytics/**
+            debug/backtest_data_audit.json
+            debug/backtest_context_validation.json
+            debug/rolling_artifact_debug.md
+            debug/market_merge_spec.md
           retention-days: 30
 
       - name: Upload analytics outputs

@@ -1,0 +1,241 @@
+{
+  "generated_at_utc": "2026-03-05T21:17:41.430923+00:00",
+  "stages": [
+    {
+      "stage": "base_table",
+      "rows": 5359,
+      "unique_games": 5359
+    },
+    {
+      "stage": "market_join",
+      "rows": 5359,
+      "matched_rows_any_market_or_espn": 404,
+      "matched_rows_market_only": 404
+    },
+    {
+      "stage": "prediction_join",
+      "rows": 5359,
+      "rows_with_pred_spread": 286,
+      "rows_with_pred_total": 288
+    }
+  ],
+  "market_sources": [
+    {
+      "file": "data\\market_lines_closing.csv",
+      "loaded": true,
+      "rows": 11,
+      "unique_games": 11,
+      "rows_with_any_line": 10
+    },
+    {
+      "file": "data\\market_lines_latest.csv",
+      "loaded": true,
+      "rows": 11,
+      "unique_games": 11,
+      "rows_with_any_line": 10
+    },
+    {
+      "file": "data\\market_lines.csv",
+      "loaded": true,
+      "rows": 30,
+      "unique_games": 28,
+      "rows_with_any_line": 27
+    },
+    {
+      "file": "data\\odds_snapshot.csv",
+      "loaded": true,
+      "rows": 30,
+      "unique_games": 28,
+      "rows_with_any_line": 27
+    }
+  ],
+  "prediction_sources": [
+    {
+      "file": "data\\predictions_history.csv",
+      "loaded": true,
+      "rows": 358,
+      "unique_games": 358,
+      "rows_with_spread": 356,
+      "rows_with_total": 358
+    },
+    {
+      "file": "data\\results_log.csv",
+      "loaded": true,
+      "rows": 286,
+      "unique_games": 286,
+      "rows_with_spread": 283,
+      "rows_with_total": 286
+    },
+    {
+      "file": "data\\predictions_with_context.csv",
+      "loaded": true,
+      "rows": 137,
+      "unique_games": 137,
+      "rows_with_spread": 135,
+      "rows_with_total": 137
+    },
+    {
+      "file": "data\\predictions_combined_latest.csv",
+      "loaded": true,
+      "rows": 101,
+      "unique_games": 101,
+      "rows_with_spread": 101,
+      "rows_with_total": 101
+    },
+    {
+      "file": "data\\predictions_latest.csv",
+      "loaded": true,
+      "rows": 102,
+      "unique_games": 102,
+      "rows_with_spread": 102,
+      "rows_with_total": 102
+    }
+  ],
+  "join_keys": {
+    "market": [
+      "game_id"
+    ],
+    "predictions": [
+      "game_id"
+    ]
+  },
+  "summary": {
+    "rows": 5359,
+    "rows_with_market_spread": 20,
+    "rows_with_any_spread": 404,
+    "rows_with_pred_spread": 286
+  },
+  "null_rates": {
+    "market_columns": {
+      "espn_spread": 0.9246128008956895,
+      "espn_total": 0.9246128008956895,
+      "opening_spread": 1.0,
+      "closing_spread": 0.9962679604403807,
+      "total_line": 0.9246128008956895,
+      "spread_line": 0.9246128008956895
+    },
+    "engineered_l5_l10_home": {
+      "home_net_rtg_l5": 0.03937301735398395,
+      "home_net_rtg_l10": 0.03937301735398395,
+      "home_adj_ortg": 0.0854637059152827,
+      "home_adj_drtg": 0.0854637059152827,
+      "home_adj_net_rtg": 0.0854637059152827,
+      "home_efg_pct_l5": 0.03937301735398395,
+      "home_efg_pct_l10": 0.03937301735398395,
+      "home_tov_pct_l5": 0.03937301735398395,
+      "home_orb_pct_l10": 0.03937301735398395,
+      "home_ftr_l5": 0.03937301735398395,
+      "home_pace_l5": 0.03937301735398395,
+      "home_ortg_l5": 0.03937301735398395,
+      "home_drtg_l5": 0.03937301735398395,
+      "home_margin_l5": 0.03937301735398395,
+      "home_margin_l10": 0.03937301735398395,
+      "home_cover_l10": 0.9593207688001493,
+      "home_cover_rate_l10": 1.0,
+      "home_cover_rate_season": 1.0,
+      "home_ats_margin_l10": 1.0,
+      "home_cover_margin": 0.9246128008956895
+    },
+    "engineered_l5_l10_away": {
+      "away_net_rtg_l5": 0.0826646762455682,
+      "away_net_rtg_l10": 0.0826646762455682,
+      "away_adj_ortg": 0.04273185295764135,
+      "away_adj_drtg": 0.04273185295764135,
+      "away_adj_net_rtg": 0.04273185295764135,
+      "away_efg_pct_l5": 0.0826646762455682,
+      "away_efg_pct_l10": 0.0826646762455682,
+      "away_tov_pct_l5": 0.0826646762455682,
+      "away_orb_pct_l10": 0.0826646762455682,
+      "away_ftr_l5": 0.0826646762455682,
+      "away_pace_l5": 0.0826646762455682,
+      "away_ortg_l5": 0.0826646762455682,
+      "away_drtg_l5": 0.0826646762455682,
+      "away_margin_l5": 0.08191826833364434,
+      "away_margin_l10": 0.08191826833364434,
+      "away_cover_l10": 0.9580145549542826,
+      "away_cover_rate_l10": 1.0,
+      "away_cover_rate_season": 1.0,
+      "away_ats_margin_l10": 1.0,
+      "away_cover_margin": 0.9246128008956895
+    },
+    "prediction_columns": {
+      "pred_spread": 0.9466318342974436,
+      "pred_total": 0.9462586303414816,
+      "clv_delta": 0.9985071841761523
+    }
+  },
+  "samples": {
+    "market_join_unmatched_top10": [
+      {
+        "game_id": "401811103",
+        "event_id": 401811103,
+        "home_team": "South Dakota Coyotes",
+        "away_team": "Ozark Christian Ambassadors",
+        "game_date": "20251109"
+      },
+      {
+        "game_id": "401812574",
+        "event_id": 401812574,
+        "home_team": "American University Eagles",
+        "away_team": "Pennsylvania Quakers",
+        "game_date": "20251109"
+      },
+      {
+        "game_id": "401812600",
+        "event_id": 401812600,
+        "home_team": "Harvard Crimson",
+        "away_team": "New Hampshire Wildcats",
+        "game_date": "20251109"
+      },
+      {
+        "game_id": "401813254",
+        "event_id": 401813254,
+        "home_team": "Illinois State Redbirds",
+        "away_team": "Cornell Big Red",
+        "game_date": "20251109"
+      },
+      {
+        "game_id": "401813287",
+        "event_id": 401813287,
+        "home_team": "Oklahoma State Cowboys",
+        "away_team": "Texas A&M Aggies",
+        "game_date": "20251109"
+      },
+      {
+        "game_id": "401813320",
+        "event_id": 401813320,
+        "home_team": "Dartmouth Big Green",
+        "away_team": "Marist Red Foxes",
+        "game_date": "20251109"
+      },
+      {
+        "game_id": "401818548",
+        "event_id": 401818548,
+        "home_team": "Brown Bears",
+        "away_team": "Vermont Catamounts",
+        "game_date": "20251109"
+      },
+      {
+        "game_id": "401819814",
+        "event_id": 401819814,
+        "home_team": "Arizona State Sun Devils",
+        "away_team": "Utah Tech Trailblazers",
+        "game_date": "20251109"
+      },
+      {
+        "game_id": "401819824",
+        "event_id": 401819824,
+        "home_team": "Baylor Bears",
+        "away_team": "Washington Huskies",
+        "game_date": "20251110"
+      },
+      {
+        "game_id": "401819916",
+        "event_id": 401819916,
+        "home_team": "West Virginia Mountaineers",
+        "away_team": "Lehigh Mountain Hawks",
+        "game_date": "20251109"
+      }
+    ]
+  }
+}

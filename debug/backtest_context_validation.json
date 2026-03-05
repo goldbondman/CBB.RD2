@@ -1,0 +1,103 @@
+{
+  "files": {
+    "training": "data/backtest_training_data.csv",
+    "results": "data/backtest_results_latest.csv"
+  },
+  "thresholds": {
+    "min_market_non_null": 0.003,
+    "min_engineered_non_null": 0.7,
+    "min_pred_non_null": 0.05
+  },
+  "rows": {
+    "training": 5359,
+    "results": 1492
+  },
+  "non_null_rates": {
+    "training_market": {
+      "espn_spread": 0.07538719910431047,
+      "espn_total": 0.07538719910431047,
+      "closing_spread": 0.0037320395596193157,
+      "spread_line": 0.07538719910431047,
+      "total_line": 0.07538719910431047
+    },
+    "training_market_optional": {
+      "opening_spread": 0.0
+    },
+    "training_engineered": {
+      "home_net_rtg_l5": 0.9606269826460161,
+      "home_net_rtg_l10": 0.9606269826460161,
+      "home_adj_ortg": 0.9145362940847173,
+      "home_adj_drtg": 0.9145362940847173,
+      "home_adj_net_rtg": 0.9145362940847173,
+      "home_efg_pct_l5": 0.9606269826460161,
+      "home_efg_pct_l10": 0.9606269826460161,
+      "home_tov_pct_l5": 0.9606269826460161,
+      "home_orb_pct_l10": 0.9606269826460161,
+      "home_ftr_l5": 0.9606269826460161,
+      "home_pace_l5": 0.9606269826460161,
+      "home_ortg_l5": 0.9606269826460161,
+      "home_drtg_l5": 0.9606269826460161,
+      "home_margin_l5": 0.9606269826460161,
+      "home_margin_l10": 0.9606269826460161,
+      "away_net_rtg_l5": 0.9173353237544318,
+      "away_net_rtg_l10": 0.9173353237544318,
+      "away_adj_ortg": 0.9572681470423586,
+      "away_adj_drtg": 0.9572681470423586,
+      "away_adj_net_rtg": 0.9572681470423586,
+      "away_efg_pct_l5": 0.9173353237544318,
+      "away_efg_pct_l10": 0.9173353237544318,
+      "away_tov_pct_l5": 0.9173353237544318,
+      "away_orb_pct_l10": 0.9173353237544318,
+      "away_ftr_l5": 0.9173353237544318,
+      "away_pace_l5": 0.9173353237544318,
+      "away_ortg_l5": 0.9173353237544318,
+      "away_drtg_l5": 0.9173353237544318,
+      "away_margin_l5": 0.9180817316663556,
+      "away_margin_l10": 0.9180817316663556
+    },
+    "training_pred": {
+      "pred_spread": 0.053368165702556425,
+      "pred_total": 0.05374136965851839
+    },
+    "results_market": {
+      "market_spread": 0.013404825737265424,
+      "market_total": 0.013404825737265424,
+      "closing_spread": 0.013404825737265424,
+      "spread_line": 0.013404825737265424,
+      "total_line": 0.013404825737265424
+    },
+    "results_market_optional": {
+      "opening_spread": 0.0
+    },
+    "results_pred": {
+      "pred_spread": 1.0,
+      "pred_total": 1.0
+    }
+  },
+  "top_missing": {
+    "training_top10_null": {
+      "away_cover_rate_season": 1.0,
+      "home_luck_score": 1.0,
+      "home_cover_rate_l10": 1.0,
+      "away_ats_margin_l10": 1.0,
+      "home_ats_margin_l10": 1.0,
+      "home_cover_rate_season": 1.0,
+      "away_cover_rate_l10": 1.0,
+      "home_ats_cover_rate_season": 1.0,
+      "home_ats_cover_rate_l10": 1.0,
+      "luck_score_delta": 1.0
+    },
+    "results_top10_null": {
+      "espn_spread": 1.0,
+      "espn_total": 1.0,
+      "opening_spread": 1.0,
+      "away_market_spread": 0.9866,
+      "home_market_spread": 0.9866,
+      "pred_margin_total": 0.9866,
+      "market_spread": 0.9866,
+      "clv_delta": 0.9866,
+      "closing_spread": 0.9866,
+      "total_line": 0.9866
+    }
+  }
+}

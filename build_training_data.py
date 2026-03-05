@@ -19,6 +19,7 @@ Pipeline:
 from __future__ import annotations
 
 import argparse
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
@@ -28,6 +29,7 @@ import pandas as pd
 
 DATA_DIR = Path("data")
 DEFAULT_OUTPUT = DATA_DIR / "backtest_training_data.csv"
+DEFAULT_AUDIT_PATH = Path("debug") / "backtest_data_audit.json"
 
 # ── Game-level columns (identical in both home/away rows for the same event) ─
 GAME_LEVEL_COLS = [
@@ -145,6 +147,162 @@ def resolve_col(frame: pd.DataFrame, preferred: str, fallback: Optional[str] = N
     if fallback and fallback in frame.columns:
         return frame[fallback]
     return pd.Series([pd.NA] * len(frame), index=frame.index)
+
+
+def resolve_first(frame: pd.DataFrame, candidates: list[str]) -> pd.Series:
+    out = pd.Series([pd.NA] * len(frame), index=frame.index)
+    for col in candidates:
+        if col in frame.columns:
+            out = out.where(out.notna(), frame[col])
+    return out
+
+
+def _canonical_timestamp(frame: pd.DataFrame) -> pd.Series:
+    for col in ["captured_at_utc", "pulled_at_utc", "snapshot_ts_utc", "predicted_at_utc", "created_at", "game_datetime_utc"]:
+        if col in frame.columns:
+            return pd.to_datetime(frame[col], errors="coerce", utc=True)
+    return pd.Series(pd.NaT, index=frame.index)
+
+
+def _canonical_market_frame(path: Path, source_rank: int) -> pd.DataFrame:
+    frame = pd.read_csv(path, low_memory=False)
+    if frame.empty:
+        return pd.DataFrame(columns=["game_id", "opening_spread", "closing_spread", "total_line", "_capture_ts", "_is_closing", "_source", "_source_rank"])
+
+    gid_col = "game_id" if "game_id" in frame.columns else "event_id"
+    frame["game_id"] = frame[gid_col].map(normalize_game_id)
+    frame["opening_spread"] = pd.to_numeric(
+        resolve_first(frame, ["opening_spread", "home_spread_open", "spread_open"]),
+        errors="coerce",
+    )
+    frame["closing_spread"] = pd.to_numeric(
+        resolve_first(frame, ["closing_spread", "home_spread_current", "home_spread", "spread_line", "market_spread", "close_home_spread"]),
+        errors="coerce",
+    )
+    frame["total_line"] = pd.to_numeric(
+        resolve_first(frame, ["total_line", "total_current", "market_total", "close_total", "over_under", "total"]),
+        errors="coerce",
+    )
+    frame["_capture_ts"] = _canonical_timestamp(frame)
+    capture_type = frame.get("capture_type", pd.Series("", index=frame.index)).astype(str).str.lower()
+    frame["_is_closing"] = (capture_type == "closing").astype(int)
+    frame["_source"] = path.name
+    frame["_source_rank"] = source_rank
+    return frame[["game_id", "opening_spread", "closing_spread", "total_line", "_capture_ts", "_is_closing", "_source", "_source_rank"]]
+
+
+def build_canonical_market_table(data_dir: Path) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
+    market_files = [
+        ("market_lines_closing.csv", 0),
+        ("market_lines_latest.csv", 1),
+        ("market_lines.csv", 2),
+        ("odds_snapshot.csv", 3),
+    ]
+    loaded: list[pd.DataFrame] = []
+    diagnostics: list[dict[str, Any]] = []
+    for name, rank in market_files:
+        path = data_dir / name
+        if not path.exists() or path.stat().st_size == 0:
+            diagnostics.append({"file": str(path), "loaded": False, "rows": 0, "unique_games": 0})
+            continue
+        frame = _canonical_market_frame(path, source_rank=rank)
+        diagnostics.append(
+            {
+                "file": str(path),
+                "loaded": True,
+                "rows": int(len(frame)),
+                "unique_games": int(frame["game_id"].nunique()),
+                "rows_with_any_line": int((frame[["opening_spread", "closing_spread", "total_line"]].notna().any(axis=1)).sum()),
+            }
+        )
+        loaded.append(frame)
+
+    if not loaded:
+        empty = pd.DataFrame(columns=["game_id", "opening_spread", "closing_spread", "total_line", "market_source", "captured_at_utc"])
+        return empty, diagnostics
+
+    all_market = pd.concat(loaded, ignore_index=True)
+    all_market = all_market[all_market["game_id"].astype(str).str.len() > 0].copy()
+    all_market = all_market.sort_values(
+        ["game_id", "_is_closing", "_source_rank", "_capture_ts"],
+        ascending=[True, False, True, False],
+    )
+    canonical = all_market.drop_duplicates("game_id", keep="first").copy()
+    canonical["captured_at_utc"] = canonical["_capture_ts"].dt.strftime("%Y-%m-%dT%H:%M:%S%z")
+    canonical = canonical.rename(columns={"_source": "market_source"})
+    return canonical[["game_id", "opening_spread", "closing_spread", "total_line", "captured_at_utc", "market_source"]], diagnostics
+
+
+def _canonical_prediction_frame(path: Path, source_rank: int) -> pd.DataFrame:
+    frame = pd.read_csv(path, low_memory=False)
+    if frame.empty:
+        return pd.DataFrame(columns=["game_id", "pred_spread", "pred_total", "_pred_ts", "_source", "_source_rank"])
+
+    gid_col = "game_id" if "game_id" in frame.columns else ("event_id" if "event_id" in frame.columns else None)
+    if gid_col is None:
+        return pd.DataFrame(columns=["game_id", "pred_spread", "pred_total", "_pred_ts", "_source", "_source_rank"])
+
+    frame["game_id"] = frame[gid_col].map(normalize_game_id)
+    frame["pred_spread"] = pd.to_numeric(resolve_first(frame, ["pred_spread", "ens_spread", "predicted_spread"]), errors="coerce")
+    frame["pred_total"] = pd.to_numeric(resolve_first(frame, ["pred_total", "ens_total", "predicted_total"]), errors="coerce")
+    frame["_pred_ts"] = _canonical_timestamp(frame)
+    frame["_source"] = path.name
+    frame["_source_rank"] = source_rank
+    frame = frame[["game_id", "pred_spread", "pred_total", "_pred_ts", "_source", "_source_rank"]].copy()
+    frame = frame[frame["game_id"].astype(str).str.len() > 0]
+    frame = frame[frame["pred_spread"].notna() | frame["pred_total"].notna()]
+    return frame
+
+
+def build_canonical_prediction_table(data_dir: Path) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
+    pred_files = [
+        ("predictions_history.csv", 0),
+        ("results_log.csv", 1),
+        ("predictions_with_context.csv", 2),
+        ("predictions_combined_latest.csv", 3),
+        ("predictions_latest.csv", 4),
+    ]
+    loaded: list[pd.DataFrame] = []
+    diagnostics: list[dict[str, Any]] = []
+    for name, rank in pred_files:
+        path = data_dir / name
+        if not path.exists() or path.stat().st_size == 0:
+            diagnostics.append({"file": str(path), "loaded": False, "rows": 0, "unique_games": 0})
+            continue
+        frame = _canonical_prediction_frame(path, source_rank=rank)
+        diagnostics.append(
+            {
+                "file": str(path),
+                "loaded": True,
+                "rows": int(len(frame)),
+                "unique_games": int(frame["game_id"].nunique()) if not frame.empty else 0,
+                "rows_with_spread": int(frame["pred_spread"].notna().sum()) if not frame.empty else 0,
+                "rows_with_total": int(frame["pred_total"].notna().sum()) if not frame.empty else 0,
+            }
+        )
+        if not frame.empty:
+            loaded.append(frame)
+
+    if not loaded:
+        empty = pd.DataFrame(columns=["game_id", "pred_spread", "pred_total", "pred_spread_source", "pred_total_source"])
+        return empty, diagnostics
+
+    joined = pd.concat(loaded, ignore_index=True)
+    spread_rows = joined[joined["pred_spread"].notna()].sort_values(
+        ["game_id", "_source_rank", "_pred_ts"], ascending=[True, True, False]
+    )
+    spread_best = spread_rows.drop_duplicates("game_id", keep="first")[["game_id", "pred_spread", "_source"]].rename(
+        columns={"_source": "pred_spread_source"}
+    )
+
+    total_rows = joined[joined["pred_total"].notna()].sort_values(
+        ["game_id", "_source_rank", "_pred_ts"], ascending=[True, True, False]
+    )
+    total_best = total_rows.drop_duplicates("game_id", keep="first")[["game_id", "pred_total", "_source"]].rename(
+        columns={"_source": "pred_total_source"}
+    )
+    merged = spread_best.merge(total_best, on="game_id", how="outer")
+    return merged, diagnostics
 
 
 def calc_delta(home_val: Any, away_val: Any) -> Optional[float]:
@@ -362,23 +520,38 @@ def main() -> None:
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT), help="Output CSV path")
     args = parser.parse_args()
 
-    weighted_path    = DATA_DIR / "team_game_weighted.csv"
-    player_path      = DATA_DIR / "player_game_logs.csv"
-    market_path      = DATA_DIR / "market_lines.csv"
-    rankings_path    = DATA_DIR / "cbb_rankings.csv"
-    rotation_path    = DATA_DIR / "rotation_features.csv"
-    avail_path       = DATA_DIR / "player_availability_features.csv"
+    weighted_path = DATA_DIR / "team_game_weighted.csv"
+    player_path = DATA_DIR / "player_game_logs.csv"
+    rankings_path = DATA_DIR / "cbb_rankings.csv"
+    rotation_path = DATA_DIR / "rotation_features.csv"
+    avail_path = DATA_DIR / "player_availability_features.csv"
     situational_path = DATA_DIR / "situational_features.csv"
-    luck_path        = DATA_DIR / "luck_regression_features.csv"
-    ats_path         = DATA_DIR / "team_ats_profile.csv"
-    snap_path        = DATA_DIR / "team_pretournament_snapshot.csv"
-    pred_path        = DATA_DIR / "predictions_history.csv"
-    results_path     = DATA_DIR / "results_log.csv"
+    luck_path = DATA_DIR / "luck_regression_features.csv"
+    ats_path = DATA_DIR / "team_ats_profile.csv"
+    snap_path = DATA_DIR / "team_pretournament_snapshot.csv"
+
+    audit: dict[str, Any] = {
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "stages": [],
+        "market_sources": [],
+        "prediction_sources": [],
+        "join_keys": {
+            "market": ["game_id"],
+            "predictions": ["game_id"],
+        },
+    }
 
     # ── 1. Build base table from team_game_weighted (~4,600 post-game rows) ──
     print(f"Loading base table from {weighted_path}...")
     merged = build_base_table(weighted_path)
     print(f"  Base table: {len(merged)} rows")
+    audit["stages"].append(
+        {
+            "stage": "base_table",
+            "rows": int(len(merged)),
+            "unique_games": int(merged["game_id"].nunique()) if "game_id" in merged.columns else 0,
+        }
+    )
 
     # ── 2. Compute actual outcomes ───────────────────────────────────────────
     to_numeric(merged, ["home_points_for", "away_points_for", "spread", "over_under",
@@ -422,43 +595,41 @@ def main() -> None:
             merged = merged.merge(away_pg, on=["game_id", "away_team_id"], how="left")
             print(f"  Player agg rows: {len(player_agg)}")
 
-    # ── 5. Join market lines (closing > opening > ESPN spread) ───────────────
-    if not market_path.exists() or market_path.stat().st_size == 0:
-        raise FileNotFoundError(f"Required input missing: {market_path}")
-    print(f"Joining market lines from {market_path}...")
-    market = pd.read_csv(market_path, low_memory=False)
-    mkt_id_col = "game_id" if "game_id" in market.columns else "event_id"
-    market["game_id"] = market[mkt_id_col].map(normalize_game_id)
-    market = choose_market_row(market)
-    to_numeric(market, ["home_spread_open", "home_spread_current", "total_current", "total_open"])
-    mkt_sub = market[
-        ["game_id"]
-        + [c for c in ["home_spread_open", "home_spread_current", "total_current", "total_open"] if c in market.columns]
-    ].rename(columns={
-        "home_spread_open":    "opening_spread",
-        "home_spread_current": "closing_spread",
-        "total_current":       "total_line",
-        "total_open":          "total_opening_line",
-    })
-    merged = merged.merge(mkt_sub, on="game_id", how="left")
-    # Fill total from opening if closing null
-    if "total_line" in merged.columns and "total_opening_line" in merged.columns:
-        merged["total_line"] = merged["total_line"].where(merged["total_line"].notna(), merged["total_opening_line"])
+    # ── 5. Join market lines (canonical source + ESPN fallback) ──────────────
+    canonical_market, market_diag = build_canonical_market_table(DATA_DIR)
+    audit["market_sources"] = market_diag
+    loaded_sources = [Path(d["file"]).name for d in market_diag if d.get("loaded")]
+    print(f"Joining market lines from canonical set: {', '.join(loaded_sources) if loaded_sources else '<none>'}")
+    if not canonical_market.empty:
+        merged = merged.merge(canonical_market, on="game_id", how="left")
 
-    # Best available spread: closing market → opening market → ESPN spread
+    # Best available spread: canonical market closing -> opening -> ESPN
     espn_spread = pd.to_numeric(merged.get("spread", pd.Series([pd.NA] * len(merged))), errors="coerce")
-    espn_total  = pd.to_numeric(merged.get("over_under", pd.Series([pd.NA] * len(merged))), errors="coerce")
+    espn_total = pd.to_numeric(merged.get("over_under", pd.Series([pd.NA] * len(merged))), errors="coerce")
     merged["espn_spread"] = espn_spread
-    merged["espn_total"]  = espn_total
+    merged["espn_total"] = espn_total
 
     to_numeric(merged, ["closing_spread", "opening_spread", "total_line"])
-    spread_line = resolve_col(merged, "closing_spread", "opening_spread")
-    spread_line = spread_line.where(spread_line.notna(), espn_spread)
-    merged["spread_line"] = spread_line
+    merged["spread_line"] = resolve_col(merged, "closing_spread", "opening_spread")
+    merged["spread_line"] = merged["spread_line"].where(merged["spread_line"].notna(), espn_spread)
+    merged["total_line"] = pd.to_numeric(merged.get("total_line"), errors="coerce")
+    merged["total_line"] = merged["total_line"].where(merged["total_line"].notna(), espn_total)
 
-    total_line = resolve_col(merged, "total_line")
-    total_line = total_line.where(total_line.notna(), espn_total)
-    merged["total_line"] = total_line
+    audit["stages"].append(
+        {
+            "stage": "market_join",
+            "rows": int(len(merged)),
+            "matched_rows_any_market_or_espn": int(
+                merged[["opening_spread", "closing_spread", "total_line", "espn_spread", "espn_total"]]
+                .notna()
+                .any(axis=1)
+                .sum()
+            ),
+            "matched_rows_market_only": int(
+                merged[["opening_spread", "closing_spread", "total_line"]].notna().any(axis=1).sum()
+            ),
+        }
+    )
 
     # Compute ATS / OU from best available line
     to_numeric(merged, ["actual_margin", "actual_total", "spread_line", "total_line"])
@@ -739,19 +910,25 @@ def main() -> None:
         merged = merged.merge(away_snap, left_on="away_team_id", right_on="team_id", how="left").drop(columns=["team_id"], errors="ignore")
 
     # ── 14. Predictions history (optional) ───────────────────────────────────
-    for phist_path in [pred_path, results_path]:
-        if phist_path.exists() and phist_path.stat().st_size > 0:
-            pred_df = pd.read_csv(phist_path, low_memory=False)
-            if "pred_spread" not in pred_df.columns and "pred_total" not in pred_df.columns:
-                continue
-            gid_col = "game_id" if "game_id" in pred_df.columns else "event_id"
-            pred_df["game_id"] = pred_df[gid_col].map(normalize_game_id)
-            pred_cols = [c for c in ["game_id", "pred_spread", "pred_total"] if c in pred_df.columns]
-            pred_sub = pred_df[pred_cols].drop_duplicates("game_id", keep="last")
-            merged = merged.merge(pred_sub, on="game_id", how="left", suffixes=("", "_predhist"))
-            merged["pred_spread"] = resolve_col(merged, "pred_spread", "pred_spread_predhist")
-            merged["pred_total"]  = resolve_col(merged, "pred_total",  "pred_total_predhist")
-            break  # use first available
+    canonical_preds, pred_diag = build_canonical_prediction_table(DATA_DIR)
+    audit["prediction_sources"] = pred_diag
+    if not canonical_preds.empty:
+        merged = merged.merge(canonical_preds, on="game_id", how="left", suffixes=("", "_predcanon"))
+        merged["pred_spread"] = resolve_col(merged, "pred_spread", "pred_spread_predcanon")
+        merged["pred_total"] = resolve_col(merged, "pred_total", "pred_total_predcanon")
+        if "pred_spread_source_predcanon" in merged.columns:
+            merged["pred_spread_source"] = resolve_col(merged, "pred_spread_source", "pred_spread_source_predcanon")
+        if "pred_total_source_predcanon" in merged.columns:
+            merged["pred_total_source"] = resolve_col(merged, "pred_total_source", "pred_total_source_predcanon")
+
+    audit["stages"].append(
+        {
+            "stage": "prediction_join",
+            "rows": int(len(merged)),
+            "rows_with_pred_spread": int(pd.to_numeric(merged.get("pred_spread"), errors="coerce").notna().sum()),
+            "rows_with_pred_total": int(pd.to_numeric(merged.get("pred_total"), errors="coerce").notna().sum()),
+        }
+    )
 
     # ── 15. CLV delta ─────────────────────────────────────────────────────────
     to_numeric(merged, ["closing_spread", "pred_spread"])
@@ -954,6 +1131,71 @@ def main() -> None:
     print(f"  Usable for full optimization:           {usable_full}")
     print(f"  Output columns:                         {len(out_cols)}")
 
+    null_rate_groups = {
+        "market_columns": [
+            "espn_spread",
+            "espn_total",
+            "opening_spread",
+            "closing_spread",
+            "total_line",
+            "spread_line",
+        ],
+        "engineered_l5_l10_home": [
+            "home_net_rtg_l5",
+            "home_net_rtg_l10",
+            "home_adj_ortg",
+            "home_adj_drtg",
+            "home_adj_net_rtg",
+            "home_efg_pct_l5",
+            "home_efg_pct_l10",
+            "home_tov_pct_l5",
+            "home_orb_pct_l10",
+            "home_ftr_l5",
+            "home_pace_l5",
+            "home_ortg_l5",
+            "home_drtg_l5",
+            "home_margin_l5",
+            "home_margin_l10",
+            "home_cover_l10",
+            "home_cover_rate_l10",
+            "home_cover_rate_season",
+            "home_ats_margin_l10",
+            "home_cover_margin",
+        ],
+        "engineered_l5_l10_away": [
+            "away_net_rtg_l5",
+            "away_net_rtg_l10",
+            "away_adj_ortg",
+            "away_adj_drtg",
+            "away_adj_net_rtg",
+            "away_efg_pct_l5",
+            "away_efg_pct_l10",
+            "away_tov_pct_l5",
+            "away_orb_pct_l10",
+            "away_ftr_l5",
+            "away_pace_l5",
+            "away_ortg_l5",
+            "away_drtg_l5",
+            "away_margin_l5",
+            "away_margin_l10",
+            "away_cover_l10",
+            "away_cover_rate_l10",
+            "away_cover_rate_season",
+            "away_ats_margin_l10",
+            "away_cover_margin",
+        ],
+        "prediction_columns": ["pred_spread", "pred_total", "clv_delta"],
+    }
+    group_null_rates: dict[str, dict[str, float | None]] = {}
+    for group, cols in null_rate_groups.items():
+        group_null_rates[group] = {}
+        for col in cols:
+            if col not in out_df.columns:
+                group_null_rates[group][col] = None
+                continue
+            group_null_rates[group][col] = float(out_df[col].isna().mean())
+            print(f"  Null rate {col}: {group_null_rates[group][col]:.3f}")
+
     if usable_tier1 < 50:
         print("[WARNING] Fewer than 50 graded rows with Tier 1 features.")
         print("          Optimizer will have limited training data.")
@@ -962,6 +1204,28 @@ def main() -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     out_df.to_csv(output_path, index=False)
     print(f"\nWrote training data to {output_path}")
+
+    market_miss_sample = out_df[
+        out_df[["opening_spread", "closing_spread", "spread_line", "total_line", "espn_spread", "espn_total"]]
+        .isna()
+        .all(axis=1)
+    ][["game_id", "event_id", "home_team", "away_team", "game_date"]].head(10)
+
+    audit["summary"] = {
+        "rows": int(total_rows),
+        "rows_with_market_spread": int(rows_market),
+        "rows_with_any_spread": int(rows_spread),
+        "rows_with_pred_spread": int(rows_pred),
+    }
+    audit["null_rates"] = group_null_rates
+    audit["samples"] = {
+        "market_join_unmatched_top10": market_miss_sample.fillna("").to_dict(orient="records")
+    }
+
+    audit_path = DEFAULT_AUDIT_PATH
+    audit_path.parent.mkdir(parents=True, exist_ok=True)
+    audit_path.write_text(json.dumps(audit, indent=2), encoding="utf-8")
+    print(f"Wrote audit JSON to {audit_path}")
 
 
 if __name__ == "__main__":
