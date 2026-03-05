@@ -1,0 +1,69 @@
+{
+  "workflow": "cbb_analytics",
+  "description": "Analytics and reporting integrity contract",
+  "files": [
+    {
+      "path": "data/market_lines.csv",
+      "required": true,
+      "min_rows": 1,
+      "required_columns": ["event_id"],
+      "key_columns": ["event_id"],
+      "date_columns": ["captured_at_utc", "game_datetime_utc", "game_date"],
+      "producer_step": "Download market lines artifact / historical backfill"
+    },
+    {
+      "path": "data/team_game_weighted.csv",
+      "required": true,
+      "min_rows": 1,
+      "required_columns": ["team_id"],
+      "key_columns": ["event_id", "team_id"],
+      "date_columns": ["game_datetime_utc", "date"],
+      "producer_step": "Download ESPN data artifact"
+    },
+    {
+      "path": "data/predictions_combined_latest.csv",
+      "required": true,
+      "min_rows": 0,
+      "required_columns": ["game_id"],
+      "key_columns": ["game_id", "event_id"],
+      "date_columns": ["game_datetime_utc", "generated_at_utc"],
+      "producer_step": "Download predictions rolling artifact"
+    },
+    {
+      "path": "data/results_log.csv",
+      "required": true,
+      "min_rows": 0,
+      "required_columns": ["event_id"],
+      "key_columns": ["event_id", "game_id"],
+      "date_columns": ["game_date", "game_datetime_utc"],
+      "producer_step": "Run results tracker"
+    },
+    {
+      "path": "data/results_summary.csv",
+      "required": true,
+      "min_rows": 0,
+      "required_columns": [],
+      "key_columns": [],
+      "date_columns": ["updated_at", "game_date"],
+      "producer_step": "Run results tracker"
+    },
+    {
+      "path": "data/backtest_results_latest.csv",
+      "required": false,
+      "min_rows": 0,
+      "required_columns": [],
+      "key_columns": ["event_id", "game_id"],
+      "date_columns": ["game_datetime_utc", "date"],
+      "producer_step": "Run backtester"
+    },
+    {
+      "path": "data/backtest_training_data.csv",
+      "required": false,
+      "min_rows": 0,
+      "required_columns": [],
+      "key_columns": ["event_id", "game_id"],
+      "date_columns": ["game_datetime_utc", "date"],
+      "producer_step": "Build training data"
+    }
+  ]
+}
