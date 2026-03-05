@@ -82,25 +82,16 @@ jobs:
           print("[OK] dependency import guard passed")
           PY
 
-      - name: Run minimal input pipeline stages
+      - name: Run dependency-aware perplexity stages via contract runner
         shell: bash
         run: |
           set -euo pipefail
-          python espn_pipeline.py --days-back "${{ steps.resolve_inputs.outputs.days_back }}"
-          python cbb_rotation_features.py
-          python cbb_situational_features.py
-
-      - name: Build advanced metrics
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m pipeline.advanced_metrics.build_advanced_metrics
-
-      - name: Run joint model predictions
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m model_lab.joint_models
+          python .github/scripts/run_pipeline_contract.py \
+            --contract .github/pipeline_contracts/espn_pipeline_contract.json \
+            --job update \
+            --days-back "${{ steps.resolve_inputs.outputs.days_back }}" \
+            --manifest data/perplexity_models_manifest.json \
+            --stages "espn_pipeline,rotation_features,situational_features,advanced_metrics_builder,joint_models_predictions"
 
       - name: Validate required outputs
         shell: bash

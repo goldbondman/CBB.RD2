@@ -32,6 +32,10 @@ class StageResult:
     outputs: list[dict[str, Any]]
 
 
+def _norm_rel_path(path: str) -> str:
+    return str(Path(path)).replace("\\", "/").strip()
+
+
 def _utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
@@ -81,7 +85,7 @@ def _validate_one_spec(repo_root: Path, spec: Any, stage_name: str, kind: str) -
     if not isinstance(spec, dict):
         return None, f"[{stage_name}] invalid {kind} spec: {spec!r}"
 
-    rel = str(spec.get("path", "")).strip()
+    rel = _norm_rel_path(str(spec.get("path", "")).strip())
     if not rel:
         return None, f"[{stage_name}] invalid {kind} spec missing path"
 
@@ -96,6 +100,25 @@ def _validate_one_spec(repo_root: Path, spec: Any, stage_name: str, kind: str) -
         min_rows = int(spec.get("min_rows", 1))
         if len(df) < min_rows:
             return None, f"[{stage_name}] {kind} {rel} has {len(df)} rows; expected >= {min_rows}"
+        allow_empty_when_no_games = bool(spec.get("allow_empty_when_no_games", False))
+        if kind == "output" and len(df) == 0:
+            if not allow_empty_when_no_games:
+                return None, (
+                    f"[{stage_name}] {kind} {rel} is empty (0 rows). "
+                    "This is blocked to avoid silent empty outputs."
+                )
+            games_path = repo_root / "data" / "games.csv"
+            if not games_path.exists():
+                return None, (
+                    f"[{stage_name}] {kind} {rel} is empty and allow_empty_when_no_games=true, "
+                    "but data/games.csv is missing so 'no games' cannot be verified."
+                )
+            games_df = pd.read_csv(games_path, dtype=str, low_memory=False)
+            if len(games_df) > 0:
+                return None, (
+                    f"[{stage_name}] {kind} {rel} is empty while data/games.csv has {len(games_df)} rows. "
+                    "Empty output is only allowed when there are truly no games."
+                )
         missing = [c for c in _required_cols(spec.get("required_columns")) if c not in df.columns]
         if missing:
             return None, f"[{stage_name}] {kind} {rel} missing required columns: {missing}"
@@ -109,16 +132,76 @@ def _validate_one_spec(repo_root: Path, spec: Any, stage_name: str, kind: str) -
     return {"path": rel, "size_bytes": path.stat().st_size}, None
 
 
-def _validate_specs(repo_root: Path, specs: list[Any], stage_name: str, kind: str) -> list[dict[str, Any]]:
-    errors: list[str] = []
+def _producer_stage_map(stages: list[dict[str, Any]]) -> dict[str, list[str]]:
+    out: dict[str, list[str]] = {}
+    for stage in stages:
+        sname = str(stage.get("name", "")).strip()
+        for spec in list(stage.get("produces", [])):
+            if isinstance(spec, str):
+                rel = _norm_rel_path(spec)
+            elif isinstance(spec, dict):
+                rel = _norm_rel_path(str(spec.get("path", "")).strip())
+            else:
+                continue
+            if not rel:
+                continue
+            out.setdefault(rel, [])
+            if sname and sname not in out[rel]:
+                out[rel].append(sname)
+    return out
+
+
+def _append_producer_hints(
+    *,
+    stage_name: str,
+    errors_with_specs: list[tuple[str, Any]],
+    producer_map: dict[str, list[str]] | None,
+) -> list[str]:
+    if not producer_map:
+        return [err for err, _ in errors_with_specs]
+    hinted: list[str] = []
+    for err, spec in errors_with_specs:
+        rel = None
+        if isinstance(spec, str):
+            rel = _norm_rel_path(spec)
+        elif isinstance(spec, dict):
+            rel = _norm_rel_path(str(spec.get("path", "")).strip())
+        producers = [p for p in producer_map.get(rel or "", []) if p != stage_name]
+        if producers:
+            hinted.append(
+                f"{err}\n  -> expected producer stage(s): {sorted(producers)} "
+                f"(ensure dependency order reaches {stage_name})"
+            )
+        else:
+            hinted.append(err)
+    return hinted
+
+
+def _validate_specs(
+    repo_root: Path,
+    specs: list[Any],
+    stage_name: str,
+    kind: str,
+    *,
+    producer_map: dict[str, list[str]] | None = None,
+) -> list[dict[str, Any]]:
+    errors_with_specs: list[tuple[str, Any]] = []
     ok_items: list[dict[str, Any]] = []
     for spec in specs:
         info, err = _validate_one_spec(repo_root, spec, stage_name, kind)
         if err:
-            errors.append(err)
+            errors_with_specs.append((err, spec))
         elif info:
             ok_items.append(info)
-    if errors:
+    if errors_with_specs:
+        if kind == "input":
+            errors = _append_producer_hints(
+                stage_name=stage_name,
+                errors_with_specs=errors_with_specs,
+                producer_map=producer_map,
+            )
+        else:
+            errors = [err for err, _ in errors_with_specs]
         joined = "\n".join(errors)
         raise RuntimeError(f"[{stage_name}] {kind} validation failed:\n{joined}")
     return ok_items
@@ -146,14 +229,55 @@ def _toposort(stages: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return ordered
 
 
-def _run_stage(repo_root: Path, stage: dict[str, Any], context: dict[str, str], dry_run: bool) -> StageResult:
+def _validate_dependency_outputs(
+    repo_root: Path,
+    stage: dict[str, Any],
+    stage_lookup: dict[str, dict[str, Any]],
+) -> None:
+    stage_name = str(stage.get("name", ""))
+    deps = [str(d) for d in stage.get("depends_on", [])]
+    for dep_name in deps:
+        dep = stage_lookup.get(dep_name)
+        if not dep:
+            continue
+        for produced_spec in list(dep.get("produces", [])):
+            _, err = _validate_one_spec(
+                repo_root=repo_root,
+                spec=produced_spec,
+                stage_name=stage_name,
+                kind=f"dependency_output:{dep_name}",
+            )
+            if err:
+                rel = produced_spec if isinstance(produced_spec, str) else produced_spec.get("path")
+                raise RuntimeError(
+                    f"[{stage_name}] missing dependency output '{rel}' from stage '{dep_name}'. "
+                    f"Expected stage order: {dep_name} -> {stage_name}. Detail: {err}"
+                )
+
+
+def _run_stage(
+    repo_root: Path,
+    stage: dict[str, Any],
+    context: dict[str, str],
+    dry_run: bool,
+    *,
+    producer_map: dict[str, list[str]],
+    stage_lookup: dict[str, dict[str, Any]],
+) -> StageResult:
     name = str(stage["name"])
     command_tpl = str(stage.get("command", "")).strip()
     if not command_tpl:
         raise RuntimeError(f"[{name}] missing command")
     command = command_tpl.format(**context)
 
-    _validate_specs(repo_root, list(stage.get("requires", [])), name, "input")
+    _validate_dependency_outputs(repo_root, stage, stage_lookup)
+    _validate_specs(
+        repo_root,
+        list(stage.get("requires", [])),
+        name,
+        "input",
+        producer_map=producer_map,
+    )
 
     started = _utc_now()
     if dry_run:
@@ -182,6 +306,35 @@ def _run_stage(repo_root: Path, stage: dict[str, Any], context: dict[str, str], 
     )
 
 
+def _select_stage_subset(job_stages: list[dict[str, Any]], raw_stage_names: str | None) -> list[dict[str, Any]]:
+    if not raw_stage_names:
+        return job_stages
+    requested = [s.strip() for s in str(raw_stage_names).split(",") if s.strip()]
+    if not requested:
+        return job_stages
+
+    by_name = {str(s.get("name", "")).strip(): s for s in job_stages}
+    unknown = [s for s in requested if s not in by_name]
+    if unknown:
+        raise RuntimeError(f"Unknown --stages values: {unknown}; available: {sorted(by_name)}")
+
+    selected: set[str] = set()
+
+    def add_with_deps(stage_name: str) -> None:
+        if stage_name in selected:
+            return
+        stage = by_name[stage_name]
+        for dep in [str(d) for d in stage.get("depends_on", [])]:
+            if dep not in by_name:
+                raise RuntimeError(f"[{stage_name}] dependency '{dep}' missing from selected job stages")
+            add_with_deps(dep)
+        selected.add(stage_name)
+
+    for name in requested:
+        add_with_deps(name)
+    return [s for s in job_stages if str(s.get("name", "")).strip() in selected]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--contract", type=Path, required=True)
@@ -189,6 +342,7 @@ def main() -> int:
     parser.add_argument("--days-back", type=str, default="3")
     parser.add_argument("--game-type", type=str, default="regular")
     parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--stages", type=str, default="", help="Optional comma-separated stage names to run with dependency closure")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -197,9 +351,12 @@ def main() -> int:
     manifest_path = args.manifest if args.manifest.is_absolute() else repo_root / args.manifest
 
     contract = _load_json(contract_path)
-    stages = [s for s in contract.get("stages", []) if str(s.get("job", "update")) == args.job]
-    if not stages:
+    job_stages = [s for s in contract.get("stages", []) if str(s.get("job", "update")) == args.job]
+    if not job_stages:
         raise RuntimeError(f"No contract stages found for job={args.job}")
+    stages = _select_stage_subset(job_stages, args.stages)
+    producer_map = _producer_stage_map(job_stages)
+    stage_lookup = {str(s.get("name", "")).strip(): s for s in stages}
 
     ordered = _toposort(stages)
     context = {
@@ -210,7 +367,14 @@ def main() -> int:
     results: list[StageResult] = []
     for stage in ordered:
         print(f"[STAGE] {stage['name']}")
-        result = _run_stage(repo_root, stage, context, args.dry_run)
+        result = _run_stage(
+            repo_root,
+            stage,
+            context,
+            args.dry_run,
+            producer_map=producer_map,
+            stage_lookup=stage_lookup,
+        )
         results.append(result)
         print(f"[OK] {result.name}")
 
