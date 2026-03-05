@@ -517,7 +517,10 @@ def select_features_from_run(
                 report_lines.append(
                     f"  - `{feature}` removed vs `{anchor}` (cluster `{cluster_id}`, corr `{corr_val:.3f}`)"
                 )
+        else:
+            report_lines.append("- pruned by correlation clusters: none")
 
+        missing_home_away_blocks = 0
         for tier in DEFAULT_TIERS:
             tier_features = list(tiers.get(tier, []))
             variant = _location_aware_variant(frame, tier_features) if not frame.empty else {
@@ -529,6 +532,7 @@ def select_features_from_run(
             }
             location_aware_variants[market][tier] = variant
             if variant.get("status") == "BLOCKED" and variant.get("reason") == "missing_home_away_split_columns":
+                missing_home_away_blocks += 1
                 market_blocked.append(
                     f"location_aware_blocked:{tier}:missing_columns={','.join(variant.get('missing_columns', []))}"
                 )
@@ -557,6 +561,10 @@ def select_features_from_run(
                     f"  location-aware BLOCKED ({variant.get('reason', 'unknown')}); "
                     f"missing: {', '.join(variant.get('missing_columns', []))}"
                 )
+        if missing_home_away_blocks == 0:
+            report_lines.append("- location-aware missing home/away column blocks: none")
+        else:
+            report_lines.append(f"- location-aware missing home/away column blocks: `{missing_home_away_blocks}`")
 
         if market_blocked:
             blocked.extend([f"{market}:{reason}" for reason in sorted(set(market_blocked))])
