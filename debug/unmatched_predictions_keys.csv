@@ -1,0 +1,97 @@
+event_id,game_id,home_team,away_team,game_datetime_utc,line_status,line_missing_reason,line_source_used,exists_in_market_lines_latest,exists_in_odds_snapshot,exists_in_market_lines
+401851485,401851485,Southern Illinois Salukis,Drake Bulldogs,2026-03-05T21:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401829290,401829290,North Carolina Central Eagles,South Carolina State Bulldogs,2026-03-05T22:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851454,401851454,Iona Gaels,Sacred Heart Pioneers,2026-03-05T23:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851546,401851546,Lehigh Mountain Hawks,Holy Cross Crusaders,2026-03-06T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851545,401851545,Colgate Raiders,Loyola Maryland Greyhounds,2026-03-06T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851544,401851544,Boston University Terriers,American University Eagles,2026-03-06T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851543,401851543,Navy Midshipmen,Bucknell Bison,2026-03-06T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851486,401851486,Valparaiso Beacons,Indiana State Sycamores,2026-03-06T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401828732,401828732,Norfolk State Spartans,Howard Bison,2026-03-06T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401828259,401828259,Temple Owls,Tulane Green Wave,2026-03-06T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401828257,401828257,East Carolina Pirates,Tulsa Golden Hurricane,2026-03-06T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401823056,401823056,Maryland Eastern Shore Hawks,Delaware State Hornets,2026-03-06T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401804962,401804962,Florida International Panthers,Middle Tennessee Blue Raiders,2026-03-06T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401804958,401804958,Liberty Flames,Louisiana Tech Bulldogs,2026-03-06T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401804957,401804957,Delaware Blue Hens,Sam Houston Bearkats,2026-03-06T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401827126,401827126,Florida A&M Rattlers,Bethune-Cookman Wildcats,2026-03-06T00:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401825560,401825560,Iowa Hawkeyes,Michigan Wolverines,2026-03-06T01:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401825561,401825561,Michigan State Spartans,Rutgers Scarlet Knights,2026-03-06T01:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401828670,401828670,Jackson State Tigers,Mississippi Valley State Delta Devils,2026-03-06T01:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401827106,401827106,Alabama State Hornets,Grambling Tigers,2026-03-06T01:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401827082,401827082,Texas Southern Tigers,Prairie View A&M Panthers,2026-03-06T01:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401822780,401822780,Morgan State Bears,Coppin State Eagles,2026-03-06T01:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401805212,401805212,Tarleton State Texans,UT Arlington Mavericks,2026-03-06T01:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401804961,401804961,Missouri State Bears,Western Kentucky Hilltoppers,2026-03-06T01:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851456,401851456,Fairfield Stags,Manhattan Jaspers,2026-03-06T01:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401827038,401827038,Alabama A&M Bulldogs,Southern Jaguars,2026-03-06T01:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401805213,401805213,Southern Utah Thunderbirds,Utah Valley Wolverines,2026-03-06T01:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851745,401851745,Portland Pilots,Pepperdine Waves,2026-03-06T02:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401828260,401828260,Memphis Tigers,South Florida Bulls,2026-03-06T02:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401827152,401827152,Alcorn State Braves,Arkansas-Pine Bluff Golden Lions,2026-03-06T02:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401804960,401804960,UTEP Miners,Kennesaw State Owls,2026-03-06T02:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401804959,401804959,New Mexico State Aggies,Jacksonville State Gamecocks,2026-03-06T02:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851622,401851622,St. Thomas-Minnesota Tommies,South Dakota State Jackrabbits,2026-03-06T02:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851487,401851487,Northern Iowa Panthers,Evansville Purple Aces,2026-03-06T02:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401823271,401823271,Cal State Bakersfield Roadrunners,Cal State Northridge Matadors,2026-03-06T02:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401809138,401809138,Long Beach State Beach,UC Davis Aggies,2026-03-06T03:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401809121,401809121,UC Irvine Anteaters,Cal Poly Mustangs,2026-03-06T03:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401809103,401809103,Cal State Fullerton Titans,UC San Diego Tritons,2026-03-06T03:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401805211,401805211,California Baptist Lancers,Abilene Christian Wildcats,2026-03-06T03:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851746,401851746,Loyola Marymount Lions,San Diego Toreros,2026-03-06T04:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401809151,401809151,Hawai'i Rainbow Warriors,UC Riverside Highlanders,2026-03-06T04:59:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851245,401851245,Central Arkansas Bears,Bellarmine Knights,2026-03-06T17:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401856422,401856422,North Carolina A&T Aggies,Northeastern Huskies,2026-03-06T19:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851348,401851348,Winthrop Eagles,Charleston Southern Buccaneers,2026-03-06T19:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851246,401851246,Lipscomb Bisons,Florida Gulf Coast Eagles,2026-03-06T19:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851489,401851489,Murray State Racers,UIC Flames,2026-03-06T20:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851579,401851579,Chattanooga Mocs,The Citadel Bulldogs,2026-03-06T22:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851349,401851349,UNC Asheville Bulldogs,Longwood Lancers,2026-03-06T23:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401814602,401814602,Akron Zips,Northern Illinois Huskies,2026-03-06T23:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401814598,401814598,Eastern Michigan Eagles,Bowling Green Falcons,2026-03-06T23:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851621,401851621,South Dakota Coyotes,Omaha Mavericks,2026-03-07T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401828462,401828462,Dayton Flyers,VCU Rams,2026-03-07T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401818565,401818565,Brown Bears,Pennsylvania Quakers,2026-03-07T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401814603,401814603,Kent State Golden Flashes,Western Michigan Broncos,2026-03-07T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401814600,401814600,Ball State Cardinals,Central Michigan Chippewas,2026-03-07T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401814599,401814599,Toledo Rockets,Buffalo Bulls,2026-03-07T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401812624,401812624,Harvard Crimson,Columbia Lions,2026-03-07T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851580,401851580,UNC Greensboro Spartans,VMI Keydets,2026-03-07T00:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401827722,401827722,West Virginia Mountaineers,UCF Knights,2026-03-07T01:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851350,401851350,Radford Highlanders,Presbyterian Blue Hose,2026-03-07T01:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401822972,401822972,Seton Hall Pirates,St. John's Red Storm,2026-03-07T02:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401814601,401814601,Ohio Bobcats,Miami (OH) RedHawks,2026-03-07T02:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851624,401851624,North Dakota Fighting Hawks,Denver Pioneers,2026-03-07T02:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401823787,401823787,San Diego State Aztecs,UNLV Rebels,2026-03-07T03:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851636,401851636,James Madison Dukes,Louisiana Ragin' Cajuns,2026-03-04T23:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401822969,401822969,Butler Bulldogs,Creighton Bluejays,2026-03-04T23:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401828459,401828459,La Salle Explorers,Fordham Rams,2026-03-04T23:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401825555,401825555,Indiana Hoosiers,Minnesota Golden Gophers,2026-03-04T23:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851523,401851523,SIU Edwardsville Cougars,Eastern Illinois Panthers,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851516,401851516,Le Moyne Dolphins,Stonehill Skyhawks,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851515,401851515,Mercyhurst Lakers,Fairleigh Dickinson Knights,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851514,401851514,Central Connecticut Blue Devils,Wagner Seahawks,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851513,401851513,Long Island University Sharks,Chicago State Cougars,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851428,401851428,Oakland Golden Grizzlies,Northern Kentucky Norse,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851426,401851426,Detroit Mercy Titans,Milwaukee Panthers,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851424,401851424,Robert Morris Colonials,Youngstown State Penguins,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851423,401851423,Wright State Raiders,Cleveland State Vikings,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401828460,401828460,George Washington Revolutionaries,St. Bonaventure Bonnies,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401828458,401828458,Rhode Island Rams,Duquesne Dukes,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401828457,401828457,Davidson Wildcats,Saint Joseph's Hawks,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401828256,401828256,Charlotte 49ers,UAB Blazers,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401822971,401822971,Providence Friars,Marquette Golden Eagles,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401820780,401820780,Georgia Tech Yellow Jackets,California Golden Bears,2026-03-05T00:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851346,401851346,South Carolina Upstate Spartans,Gardner-Webb Runnin' Bulldogs,2026-03-05T00:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851243,401851243,West Georgia Wolves,North Florida Ospreys,2026-03-05T00:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401825557,401825557,Penn State Nittany Lions,Ohio State Buckeyes,2026-03-05T00:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851619,401851619,Oral Roberts Golden Eagles,Kansas City Roos,2026-03-05T01:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401828258,401828258,North Texas Mean Green,Rice Owls,2026-03-05T01:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401825559,401825559,Wisconsin Badgers,Maryland Terrapins,2026-03-05T01:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401822970,401822970,DePaul Blue Demons,Villanova Wildcats,2026-03-05T01:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851637,401851637,Georgia Southern Eagles,Old Dominion Monarchs,2026-03-05T01:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401820783,401820783,Pittsburgh Panthers,Florida State Seminoles,2026-03-05T02:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401820782,401820782,Notre Dame Fighting Irish,Stanford Cardinal,2026-03-05T02:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401851524,401851524,Lindenwood Lions,Little Rock Trojans,2026-03-05T02:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401830832,401830832,New Mexico Lobos,Colorado State Rams,2026-03-05T03:00:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False
+401825558,401825558,Washington Huskies,USC Trojans,2026-03-05T03:30:00Z,MISSING,NO_MATCHING_GAME_ID,,False,False,False

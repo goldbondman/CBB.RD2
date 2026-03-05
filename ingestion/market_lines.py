@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import re
@@ -11,6 +12,7 @@ import uuid
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
@@ -38,6 +40,13 @@ HEADERS = {
 }
 REQUEST_DELAY = 2.0
 REQUEST_TIMEOUT = 15
+HTTP_RETRIES = 2
+HTTP_RETRY_BACKOFF_SECONDS = 0.75
+
+DEFAULT_PIPELINE_TIMEZONE = os.getenv("PIPELINE_TZ", "America/Los_Angeles")
+DEFAULT_ESPN_GROUPS = os.getenv("ESPN_SCOREBOARD_GROUPS", "50")
+MIN_ENUM_GAMES_FOR_GAP_GUARD = 10
+MAX_ENUM_TO_OUTPUT_DROP_RATIO = 0.40
 
 STEAM_MOVE_POINTS = 2.0
 STEAM_MOVE_HOURS = 2.0
@@ -95,6 +104,80 @@ MARKET_LINES_SCHEMA_COLUMNS = [
 ]
 
 SNAPSHOT_GROUP_KEYS = ["game_id", "book", "market_type"]
+
+
+def _safe_float(value: object) -> Optional[float]:
+    if value is None:
+        return None
+    if isinstance(value, str) and value.strip() == "":
+        return None
+    try:
+        casted = float(value)
+    except (TypeError, ValueError):
+        return None
+    if pd.isna(casted):
+        return None
+    return casted
+
+
+def _pipeline_now(tz_name: str = DEFAULT_PIPELINE_TIMEZONE) -> datetime:
+    try:
+        return datetime.now(ZoneInfo(tz_name))
+    except Exception:  # noqa: BLE001
+        log.warning("Invalid timezone %r; defaulting to UTC", tz_name)
+        return datetime.now(timezone.utc)
+
+
+def _pipeline_today(tz_name: str = DEFAULT_PIPELINE_TIMEZONE) -> date:
+    return _pipeline_now(tz_name).date()
+
+
+def _window_bounds_utc(window_date: date, tz_name: str) -> tuple[datetime, datetime]:
+    local_tz = ZoneInfo(tz_name)
+    start_local = datetime.combine(window_date, datetime.min.time(), tzinfo=local_tz)
+    end_local = start_local + timedelta(days=1)
+    return start_local.astimezone(timezone.utc), end_local.astimezone(timezone.utc)
+
+
+def _http_get_json(
+    url: str,
+    *,
+    params: Optional[dict[str, object]] = None,
+    headers: Optional[dict[str, str]] = None,
+    timeout: int = REQUEST_TIMEOUT,
+    retries: int = HTTP_RETRIES,
+    source: str = "http",
+) -> Optional[object]:
+    req_headers = headers or HEADERS
+    for attempt in range(1, retries + 2):
+        try:
+            resp = requests.get(url, params=params, headers=req_headers, timeout=timeout)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as exc:  # noqa: BLE001
+            if attempt > retries:
+                log.warning(
+                    "%s fetch failed after %s attempts: url=%s params=%s err=%s",
+                    source,
+                    attempt,
+                    url,
+                    params,
+                    exc,
+                )
+                return None
+            sleep_s = HTTP_RETRY_BACKOFF_SECONDS * attempt
+            log.warning(
+                "%s fetch retry %s/%s: url=%s params=%s sleep=%.2fs err=%s",
+                source,
+                attempt,
+                retries + 1,
+                url,
+                params,
+                sleep_s,
+                exc,
+            )
+            time.sleep(sleep_s)
+    return None
 
 
 def bootstrap_market_lines_schema(path: str | Path) -> Path:
@@ -218,30 +301,27 @@ def fetch_action_network(game_date: date) -> list[dict]:
         "https://api.actionnetwork.com/web/v1/scoreboard/ncaab"
         f"?period=game&bookIds=15,30,68,69,76,123&date={date_str}"
     )
-    try:
-        resp = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
-        resp.raise_for_status()
-        data = resp.json()
-        return data.get("games", [])
-    except Exception as exc:  # noqa: BLE001
-        log.warning("Action Network fetch failed: %s", exc)
+    data = _http_get_json(url, source="Action Network")
+    if not data:
         return []
+    return data.get("games", [])
 
 
-def fetch_espn_scoreboard(game_date: date) -> list[dict]:
+def fetch_espn_scoreboard(game_date: date, groups: str = DEFAULT_ESPN_GROUPS) -> list[dict]:
     """Primary market source: ESPN scoreboard odds (event IDs match pipeline IDs)."""
     date_str = game_date.strftime("%Y%m%d")
-    url = (
-        "https://site.api.espn.com/apis/site/v2/sports/basketball"
-        f"/mens-college-basketball/scoreboard?dates={date_str}&limit=200"
-    )
-    try:
-        resp = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
-        resp.raise_for_status()
-        return resp.json().get("events", [])
-    except Exception as exc:  # noqa: BLE001
-        log.warning("ESPN scoreboard fetch failed: %s", exc)
+    url = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard"
+    params: dict[str, object] = {"dates": date_str, "limit": 1000}
+    groups_clean = str(groups or "").strip()
+    if groups_clean:
+        params["groups"] = groups_clean
+    log.info("Fetching ESPN scoreboard endpoint=%s params=%s", url, params)
+    payload = _http_get_json(url, params=params, source="ESPN scoreboard")
+    if not payload:
         return []
+    events = payload.get("events", [])
+    log.info("ESPN scoreboard returned %s events for date=%s groups=%s", len(events), date_str, groups_clean or "<default>")
+    return events
 
 
 def fetch_pinnacle_lines() -> list[dict]:
@@ -250,14 +330,12 @@ def fetch_pinnacle_lines() -> list[dict]:
     base_url = "https://guest.api.arcadia.pinnacle.com/0.1/leagues"
     try:
         # 1. Fetch matchups to get team names
-        m_resp = requests.get(f"{base_url}/{league_id}/matchups", headers=HEADERS, timeout=REQUEST_TIMEOUT)
-        m_resp.raise_for_status()
-        matchups = m_resp.json()
+        m_payload = _http_get_json(f"{base_url}/{league_id}/matchups", source="Pinnacle matchups")
+        matchups = m_payload if isinstance(m_payload, list) else []
 
         # 2. Fetch markets to get the actual lines
-        l_resp = requests.get(f"{base_url}/{league_id}/markets/straight", headers=HEADERS, timeout=REQUEST_TIMEOUT)
-        l_resp.raise_for_status()
-        markets = l_resp.json()
+        l_payload = _http_get_json(f"{base_url}/{league_id}/markets/straight", source="Pinnacle markets")
+        markets = l_payload if isinstance(l_payload, list) else []
 
         matchup_map = {m["id"]: m for m in matchups if isinstance(m, dict) and "id" in m}
 
@@ -287,9 +365,7 @@ def fetch_draftkings_lines() -> list[dict]:
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
     }
     try:
-        resp = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
-        resp.raise_for_status()
-        payload = resp.json()
+        payload = _http_get_json(url, headers=headers, source="DraftKings eventgroup")
         if isinstance(payload, dict):
             return payload.get("eventGroup", {}).get("events", [])
         return []
@@ -453,15 +529,47 @@ def parse_espn_event(event: dict) -> Optional[dict]:
             home_spread_current = 0.0
         elif spread_raw:
             match = re.search(r"([+-]?\d+(?:\.\d+)?)", spread_raw)
-            favored_team = spread_raw.split(" ")[0] if " " in spread_raw else ""
+            favored_team = re.sub(r"([+-]?\d.*)$", "", spread_raw).strip()
+
+            def _norm_label(text: str) -> str:
+                return re.sub(r"[^A-Z0-9]+", " ", str(text or "").upper()).strip()
+
+            home_tokens = {
+                _norm_label(home_team.get("team", {}).get("abbreviation", "")),
+                _norm_label(home_team.get("team", {}).get("shortDisplayName", "")),
+                _norm_label(home_team.get("team", {}).get("displayName", "")),
+            }
+            away_tokens = {
+                _norm_label(away_team.get("team", {}).get("abbreviation", "")),
+                _norm_label(away_team.get("team", {}).get("shortDisplayName", "")),
+                _norm_label(away_team.get("team", {}).get("displayName", "")),
+            }
+            favored_token = _norm_label(favored_team)
+
+            def _matches(token: str, candidates: set[str]) -> bool:
+                token_clean = token.strip()
+                if not token_clean:
+                    return False
+                for cand in candidates:
+                    cand_clean = cand.strip()
+                    if not cand_clean:
+                        continue
+                    if token_clean == cand_clean or token_clean in cand_clean or cand_clean in token_clean:
+                        return True
+                return False
+
             if match:
                 try:
-                    home_spread_current = float(match.group(1))
-                    
-                    # ESPN assigns spread points to the favored team (e.g., DUKE -4.5).
-                    # If DUKE is away, the home team's spread is +4.5.
-                    if favored_team and favored_team == away_team.get("team", {}).get("abbreviation", "").upper():
-                        home_spread_current = -home_spread_current
+                    line_points = abs(float(match.group(1)))
+                    if _matches(favored_token, home_tokens):
+                        # Home favored -> negative home spread.
+                        home_spread_current = -line_points
+                    elif _matches(favored_token, away_tokens):
+                        # Away favored -> positive home spread.
+                        home_spread_current = line_points
+                    else:
+                        # Ambiguous label fallback.
+                        home_spread_current = float(match.group(1))
                 except ValueError:
                     home_spread_current = None
 
@@ -518,58 +626,73 @@ def match_to_pipeline_event(market_game: dict, pipeline_predictions: pd.DataFram
 
 
 def detect_steam_move(current_line: float, previous_line: float, hours_elapsed: float) -> bool:
-    if current_line is None or previous_line is None:
+    current_f = _safe_float(current_line)
+    previous_f = _safe_float(previous_line)
+    hours_f = _safe_float(hours_elapsed)
+    if current_f is None or previous_f is None or hours_f is None:
         return False
-    movement = abs(current_line - previous_line)
-    return movement >= STEAM_MOVE_POINTS and hours_elapsed <= STEAM_MOVE_HOURS
+    movement = abs(current_f - previous_f)
+    return movement >= STEAM_MOVE_POINTS and hours_f <= STEAM_MOVE_HOURS
 
 
 def detect_reverse_line_movement(home_tickets_pct: float, home_spread_open: float, home_spread_current: float) -> dict:
-    if any(v is None for v in [home_tickets_pct, home_spread_open, home_spread_current]):
+    home_tickets_f = _safe_float(home_tickets_pct)
+    spread_open_f = _safe_float(home_spread_open)
+    spread_current_f = _safe_float(home_spread_current)
+    if any(v is None for v in [home_tickets_f, spread_open_f, spread_current_f]):
         return {"rlm_flag": False}
 
-    public_on_home = home_tickets_pct >= PUBLIC_BET_THRESHOLD
-    public_on_away = home_tickets_pct <= (100 - PUBLIC_BET_THRESHOLD)
-    line_moved_away = home_spread_current < home_spread_open - RLM_LINE_MOVE_MIN
-    line_moved_home = home_spread_current > home_spread_open + RLM_LINE_MOVE_MIN
+    public_on_home = home_tickets_f >= PUBLIC_BET_THRESHOLD
+    public_on_away = home_tickets_f <= (100 - PUBLIC_BET_THRESHOLD)
+    line_delta = spread_current_f - spread_open_f
 
-    rlm = (public_on_home and line_moved_away) or (public_on_away and line_moved_home)
+    # Home-spread convention:
+    # More negative => movement toward HOME, more positive => movement toward AWAY.
+    line_moved_toward_home = line_delta <= -RLM_LINE_MOVE_MIN
+    line_moved_toward_away = line_delta >= RLM_LINE_MOVE_MIN
+
+    rlm = (public_on_home and line_moved_toward_away) or (public_on_away and line_moved_toward_home)
     if not rlm:
         return {"rlm_flag": False}
 
-    sharp_side = "away" if public_on_home and line_moved_away else "home"
+    sharp_side = "away" if public_on_home else "home"
     return {
         "rlm_flag": True,
         "rlm_sharp_side": sharp_side,
-        "rlm_public_pct": home_tickets_pct,
-        "rlm_line_move": round(home_spread_current - home_spread_open, 1),
+        "rlm_public_pct": home_tickets_f,
+        "rlm_line_move": round(line_delta, 1),
         "rlm_note": (
-            f"Public {home_tickets_pct:.0f}% on {'home' if public_on_home else 'away'} but "
-            f"line moved {abs(home_spread_current - home_spread_open):.1f}pt toward {sharp_side} "
-            f"— SHARP MONEY on {sharp_side.upper()}"
+            f"Public {home_tickets_f:.0f}% on {'home' if public_on_home else 'away'} but "
+            f"line moved {abs(line_delta):.1f}pt toward {sharp_side} - SHARP MONEY on {sharp_side.upper()}"
         ),
     }
 
 
 def detect_book_disagreement(pinnacle_spread: Optional[float], draftkings_spread: Optional[float]) -> dict:
-    if pinnacle_spread is None or draftkings_spread is None:
+    pinnacle_f = _safe_float(pinnacle_spread)
+    draftkings_f = _safe_float(draftkings_spread)
+    if pinnacle_f is None or draftkings_f is None:
         return {"book_disagreement_flag": False}
 
-    diff = abs(pinnacle_spread - draftkings_spread)
+    diff = abs(pinnacle_f - draftkings_f)
     if diff < BOOK_DISAGREE_POINTS:
         return {"book_disagreement_flag": False, "book_spread_diff": round(diff, 2)}
 
-    sharp_side = "home" if pinnacle_spread > draftkings_spread else "away"
+    sharp_side = "home" if pinnacle_f > draftkings_f else "away"
+    note = (
+        f"Pinnacle {pinnacle_f:+.1f} vs DraftKings {draftkings_f:+.1f} "
+        f"(diff {diff:.1f}pts) - sharp money on {sharp_side.upper()}"
+    )
     return {
         "book_disagreement_flag": True,
         "book_spread_diff": round(diff, 2),
-        "pinnacle_spread": pinnacle_spread,
-        "draftkings_spread": draftkings_spread,
+        "pinnacle_spread": pinnacle_f,
+        "draftkings_spread": draftkings_f,
+        "book_sharp_side": sharp_side,
+        "book_note": note,
+        # Backward-compatible aliases.
         "sharp_side": sharp_side,
-        "note": (
-            f"Pinnacle {pinnacle_spread:+.1f} vs DraftKings {draftkings_spread:+.1f} "
-            f"(diff {diff:.1f}pts) — sharp money on {sharp_side.upper()}"
-        ),
+        "note": note,
     }
 
 
@@ -580,8 +703,10 @@ def build_market_row(
     pinnacle_data: Optional[dict],
     dk_data: Optional[dict],
     existing_rows: pd.DataFrame,
+    pulled_at_utc: Optional[str] = None,
 ) -> dict:
-    now = datetime.now(timezone.utc).isoformat()
+    captured_now = datetime.now(timezone.utc).isoformat()
+    pulled_now = pulled_at_utc or captured_now
 
     home_spread = market_data.get("home_spread_current")
     spread_open = market_data.get("home_spread_open")
@@ -598,16 +723,11 @@ def build_market_row(
     elif home_spread is not None:
         last_row = prior.iloc[-1]
         last_spread = last_row.get("home_spread_current")
-        last_time = pd.Timestamp(last_row["captured_at_utc"])
-        hours_since = (pd.Timestamp.now("UTC") - last_time).total_seconds() / 3600
-        try:
-            move = abs(float(home_spread) - float(last_spread))
-            steam_flag = (
-                move >= STEAM_MOVE_POINTS and
-                hours_since <= STEAM_MOVE_HOURS and
-                float(home_spread) != float(last_spread)
-            )
-        except (TypeError, ValueError):
+        last_time = pd.to_datetime(last_row.get("captured_at_utc"), utc=True, errors="coerce")
+        if pd.notna(last_time):
+            hours_since = (pd.Timestamp.now("UTC") - last_time).total_seconds() / 3600
+            steam_flag = detect_steam_move(home_spread, last_spread, hours_since)
+        else:
             steam_flag = False
 
     rlm = detect_reverse_line_movement(home_tickets, spread_open, home_spread)
@@ -617,15 +737,18 @@ def build_market_row(
     book_dis = detect_book_disagreement(pinn_spread, dk_spread)
 
     line_movement = None
-    if home_spread is not None and spread_open is not None:
-        line_movement = round(float(home_spread) - float(spread_open), 2)
+    home_spread_f = _safe_float(home_spread)
+    spread_open_f = _safe_float(spread_open)
+    home_tickets_f = _safe_float(home_tickets)
+    if home_spread_f is not None and spread_open_f is not None:
+        line_movement = round(home_spread_f - spread_open_f, 2)
 
     return {
         "game_id": event_id,
         "event_id": event_id,
         "capture_type": capture_type,
-        "captured_at_utc": now,
-        "pulled_at_utc": now,
+        "captured_at_utc": captured_now,
+        "pulled_at_utc": pulled_now,
         "verification_status": "verified",
         "verification_notes": "matched_espn_event",
         "home_spread_open": spread_open,
@@ -645,10 +768,10 @@ def build_market_row(
         "rlm_note": rlm.get("rlm_note"),
         "book_disagreement_flag": book_dis.get("book_disagreement_flag", False),
         "book_spread_diff": book_dis.get("book_spread_diff"),
-        "book_sharp_side": book_dis.get("sharp_side"),
-        "book_note": book_dis.get("note"),
+        "book_sharp_side": book_dis.get("book_sharp_side") or book_dis.get("sharp_side"),
+        "book_note": book_dis.get("book_note") or book_dis.get("note"),
         "line_freeze_flag": (
-            abs(line_movement or 0) < 0.5 and home_tickets is not None and abs((home_tickets or 50) - 50) > 15
+            abs(line_movement or 0) < 0.5 and home_tickets_f is not None and abs(home_tickets_f - 50.0) > 15.0
         ),
         # Gap-fill targets
         "home_win_prob": market_data.get("home_win_prob"),
@@ -809,14 +932,14 @@ def resolve_date_range(
     start_date = _norm_str(start_date)
     end_date = _norm_str(end_date)
     normalized_days_back = _norm_int(days_back)
-    today_utc = today or datetime.now(timezone.utc).date()
+    today_ref = today or _pipeline_today(DEFAULT_PIPELINE_TIMEZONE)
 
     if normalized_days_back is not None:
         if normalized_days_back < 1:
             raise ValueError("--days-back must be >= 1")
         if start_date or end_date:
             log.info("Ignoring --start-date/--end-date because --days-back was provided")
-        return today_utc - timedelta(days=normalized_days_back - 1), today_utc
+        return today_ref - timedelta(days=normalized_days_back - 1), today_ref
 
     start = date.fromisoformat(start_date) if start_date else None
     end = date.fromisoformat(end_date) if end_date else None
@@ -828,7 +951,7 @@ def resolve_date_range(
         return end, end
     if start and end:
         return start, end
-    return today_utc, today_utc
+    return today_ref, today_ref
 
 
 def _add_date_range_args(parser: argparse.ArgumentParser, data_dir: Path) -> None:
@@ -845,6 +968,8 @@ def build_parser(data_dir: Path) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["morning", "pregame", "postgame", "all"], default="pregame")
     parser.add_argument("--backfill-days", type=int, default=0)
+    parser.add_argument("--timezone", type=str, default=DEFAULT_PIPELINE_TIMEZONE)
+    parser.add_argument("--espn-groups", type=str, default=DEFAULT_ESPN_GROUPS)
     _add_date_range_args(parser, data_dir)
     parser.add_argument("--build-views-only", action="store_true")
     return parser
@@ -918,6 +1043,55 @@ def write_latest_from_master(master_file: Path, latest_file: Path) -> int:
     return len(latest)
 
 
+def _write_merge_report(
+    data_dir: Path,
+    capture_diagnostics: list[dict],
+    rows_for_run: list[dict],
+    latest_rows_written: int,
+) -> None:
+    debug_dir = data_dir.parent / "debug"
+    debug_dir.mkdir(parents=True, exist_ok=True)
+    report_path = debug_dir / "merge_report.json"
+
+    enumerated_ids: set[str] = set()
+    for diag in capture_diagnostics:
+        for event_id in diag.get("event_ids_enumerated", []):
+            if str(event_id).strip():
+                enumerated_ids.add(str(event_id).strip())
+
+    merged_ids = {
+        str(row.get("event_id", "")).strip()
+        for row in rows_for_run
+        if str(row.get("event_id", "")).strip()
+    }
+    odds_ids = {
+        str(row.get("event_id", "")).strip()
+        for row in rows_for_run
+        if str(row.get("event_id", "")).strip()
+        and (
+            _safe_float(row.get("home_spread_current")) is not None
+            or _safe_float(row.get("total_current")) is not None
+        )
+    }
+    missing_odds_ids = sorted(merged_ids - odds_ids)
+    dropped_ids = sorted(enumerated_ids - merged_ids)
+
+    payload = {
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "slate_games": len(enumerated_ids),
+        "odds_games": len(odds_ids),
+        "merged_games": len(merged_ids),
+        "missing_odds_games": len(missing_odds_ids),
+        "dropped_games": len(dropped_ids),
+        "latest_rows_written": latest_rows_written,
+        "missing_odds_event_ids_sample": missing_odds_ids[:20],
+        "dropped_event_ids_sample": dropped_ids[:20],
+        "capture_diagnostics": capture_diagnostics,
+    }
+    report_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    log.info("Wrote merge report: %s", report_path)
+
+
 def _load_existing_market_rows(data_dir: Path, existing: Optional[pd.DataFrame]) -> pd.DataFrame:
     if existing is not None:
         loaded = existing.copy()
@@ -940,13 +1114,25 @@ def run_capture(
     data_dir: Path,
     existing: Optional[pd.DataFrame] = None,
     override_date: Optional[date] = None,
-) -> list[dict]:
-    today = override_date or date.today()
+    timezone_name: str = DEFAULT_PIPELINE_TIMEZONE,
+    espn_groups: str = DEFAULT_ESPN_GROUPS,
+    return_diagnostics: bool = False,
+) -> list[dict] | tuple[list[dict], dict]:
+    today = override_date or _pipeline_today(timezone_name)
     existing_rows = _load_existing_market_rows(data_dir, existing)
-    log.info("Market capture mode=%s date=%s", mode, today)
+    window_start_utc, window_end_utc = _window_bounds_utc(today, timezone_name)
+    log.info(
+        "Market capture mode=%s date=%s timezone=%s window_utc=[%s, %s)",
+        mode,
+        today,
+        timezone_name,
+        window_start_utc.isoformat(),
+        window_end_utc.isoformat(),
+    )
 
-    log.info("Fetching ESPN scoreboard...")
-    espn_events = fetch_espn_scoreboard(today)
+    pulled_at_utc = datetime.now(timezone.utc).isoformat()
+    log.info("Fetching ESPN scoreboard (groups=%s)...", espn_groups or "<default>")
+    espn_events = fetch_espn_scoreboard(today, groups=espn_groups)
     time.sleep(REQUEST_DELAY)
 
     log.info("Fetching Action Network...")
@@ -975,9 +1161,11 @@ def run_capture(
         action_by_team[key] = parsed
 
     new_rows: list[dict] = []
-    matched = 0
+    parsed_ok = 0
     an_matched = 0
-    unmatched = 0
+    missing_event_id = 0
+    filtered_final = 0
+    enumerated_event_ids: list[str] = []
 
     for event in espn_events:
         parsed = parse_espn_event(event)
@@ -986,9 +1174,10 @@ def run_capture(
 
         event_id = str(parsed.get("event_id", "")).strip()
         if not event_id:
-            unmatched += 1
+            missing_event_id += 1
             continue
 
+        enumerated_event_ids.append(event_id)
         espn_key = (
             normalize_team_name(parsed.get("home_team_name", "")),
             normalize_team_name(parsed.get("away_team_name", "")),
@@ -1005,7 +1194,7 @@ def run_capture(
             if parsed.get("total_open") is None:
                 parsed["total_open"] = an_enrichment.get("total_open")
 
-        matched += 1
+        parsed_ok += 1
         capture_type = {
             "morning": "opening",
             "pregame": "pregame",
@@ -1026,6 +1215,7 @@ def run_capture(
             if not status_upper:
                 log.warning("[MARKET] event_id=%s: game status unavailable, defaulting to pregame", event_id)
             elif "FINAL" in status_upper:
+                filtered_final += 1
                 continue
             elif "IN_PROGRESS" in status_upper:
                 capture_type = "live"
@@ -1041,7 +1231,6 @@ def run_capture(
         pinn_match = pinnacle_by_team.get(team_key) or pinnacle_by_team.get((team_key[1], team_key[0]))
         dk_match = dk_by_team.get(team_key) or dk_by_team.get((team_key[1], team_key[0]))
 
-        # Fallback to Action Network's version of these books if direct fetch failed
         if an_enrichment:
             if not pinn_match and an_enrichment.get("pinn_spread") is not None:
                 log.debug("Using Pinnacle fallback for %s: %s", event_id, an_enrichment["pinn_spread"])
@@ -1050,22 +1239,32 @@ def run_capture(
                 log.debug("Using DraftKings fallback for %s: %s", event_id, an_enrichment["dk_spread"])
                 dk_match = {"spread": an_enrichment["dk_spread"], "total": an_enrichment.get("dk_total")}
 
-        row = build_market_row(event_id, capture_type, parsed, pinn_match, dk_match, existing_rows)
+        row = build_market_row(
+            event_id,
+            capture_type,
+            parsed,
+            pinn_match,
+            dk_match,
+            existing_rows,
+            pulled_at_utc=pulled_at_utc,
+        )
         row["home_team_id"] = parsed.get("home_team_id")
         row["away_team_id"] = parsed.get("away_team_id")
         row["home_team_name"] = parsed.get("home_team_name")
         row["away_team_name"] = parsed.get("away_team_name")
 
-        # Attempt unofficial ESPN endpoints only for still-missing gap fields.
         row = fill_market_row_gaps(row)
         new_rows.append(row)
 
     inserted = len(new_rows)
-    rejected = max(len(espn_events) - matched, 0)
+    rejected = max(len(espn_events) - parsed_ok, 0)
 
     log.info(
-        "Market capture assertion passed: pulled=%s fetched=%s rejected=%s",
+        "Market capture stage counts: fetched=%s parsed_ok=%s missing_event_id=%s filtered_final=%s inserted=%s rejected=%s",
         len(espn_events),
+        parsed_ok,
+        missing_event_id,
+        filtered_final,
         inserted,
         rejected,
     )
@@ -1074,7 +1273,7 @@ def run_capture(
     log.info(
         "Market ingest summary: pulled=%s matched=%s an_matched=%s inserted=%s rejected=%s",
         len(espn_events),
-        matched,
+        parsed_ok,
         an_matched,
         inserted,
         rejected,
@@ -1098,12 +1297,29 @@ def run_capture(
 
     steam_games = [r for r in new_rows if r.get("steam_flag")]
     if steam_games:
-        log.warning("🔥 STEAM DETECTED on %s games: %s", len(steam_games), ", ".join(str(r["event_id"]) for r in steam_games))
+        log.warning("STEAM DETECTED on %s games: %s", len(steam_games), ", ".join(str(r["event_id"]) for r in steam_games))
 
     rlm_games = [r for r in new_rows if r.get("rlm_flag")]
     for row in rlm_games:
-        log.warning("↔️ REVERSE LINE MOVEMENT: event %s — %s", row["event_id"], row.get("rlm_note"))
+        log.warning("REVERSE LINE MOVEMENT: event %s - %s", row["event_id"], row.get("rlm_note"))
 
+    diagnostics = {
+        "mode": mode,
+        "date": today.isoformat(),
+        "timezone": timezone_name,
+        "espn_groups": str(espn_groups or ""),
+        "window_start_utc": window_start_utc.isoformat(),
+        "window_end_utc": window_end_utc.isoformat(),
+        "events_fetched": len(espn_events),
+        "events_parsed_ok": parsed_ok,
+        "events_missing_event_id": missing_event_id,
+        "events_filtered_final": filtered_final,
+        "rows_inserted": inserted,
+        "rows_rejected": rejected,
+        "event_ids_enumerated": sorted(set(enumerated_event_ids)),
+    }
+    if return_diagnostics:
+        return new_rows, diagnostics
     return new_rows
 
 
@@ -1118,6 +1334,8 @@ def main() -> None:
 
     args.start_date = _norm_str(args.start_date)
     args.end_date = _norm_str(args.end_date)
+    args.timezone = _norm_str(args.timezone) or DEFAULT_PIPELINE_TIMEZONE
+    args.espn_groups = _norm_str(args.espn_groups) or DEFAULT_ESPN_GROUPS
     env_days_back = _norm_int(os.getenv("DAYS_BACK"))
     args.days_back = _norm_int(args.days_back) if args.days_back is not None else env_days_back
     args.append = _norm_bool(args.append, default=True)
@@ -1132,8 +1350,19 @@ def main() -> None:
         type(args.days_back).__name__,
     )
 
-    start_date, end_date = resolve_date_range(args.start_date, args.end_date, args.days_back)
-    log.info("Resolved date range: start=%s end=%s", start_date, end_date)
+    start_date, end_date = resolve_date_range(
+        args.start_date,
+        args.end_date,
+        args.days_back,
+        today=_pipeline_today(args.timezone),
+    )
+    log.info(
+        "Resolved date range: start=%s end=%s timezone=%s espn_groups=%s",
+        start_date,
+        end_date,
+        args.timezone,
+        args.espn_groups,
+    )
 
     snapshots_path = DATA_DIR / "market_lines_snapshots.csv"
     legacy_path = DATA_DIR / "market_lines.csv"
@@ -1142,33 +1371,66 @@ def main() -> None:
 
     bootstrap_market_lines_schema(master_path)
     if args.build_views_only:
-        latest_rows = write_latest_from_master(master_path, DATA_DIR / "market_lines_latest.csv")
-        _atomic_write_csv(pd.read_csv(master_path, dtype={"event_id": str}, low_memory=False), snapshots_path)
-        _atomic_write_csv(pd.read_csv(master_path, dtype={"event_id": str}, low_memory=False), legacy_path)
-        _atomic_write_csv(pd.read_csv(master_path, dtype={"event_id": str}, low_memory=False), odds_path)
-        regenerate_market_views(DATA_DIR)
-        log.info("Rebuilt views from master: latest_rows=%s", latest_rows)
+        master_view_df = pd.read_csv(master_path, dtype={"event_id": str}, low_memory=False)
+        log.info("Build-views-only: writing snapshots/legacy/odds from master rows=%s", len(master_view_df))
+        _atomic_write_csv(master_view_df, snapshots_path)
+        _atomic_write_csv(master_view_df, legacy_path)
+        _atomic_write_csv(master_view_df, odds_path)
+        latest_rows, closing_rows = regenerate_market_views(DATA_DIR)
+        log.info("Rebuilt views from master: latest_rows=%s closing_rows=%s", latest_rows, closing_rows)
         return
 
     if args.backfill_days > 0 and args.days_back is None and not args.start_date and not args.end_date:
-        start_date = datetime.now(timezone.utc).date() - timedelta(days=args.backfill_days)
-        end_date = datetime.now(timezone.utc).date()
+        start_date = _pipeline_today(args.timezone) - timedelta(days=args.backfill_days)
+        end_date = _pipeline_today(args.timezone)
         log.info("Using --backfill-days fallback range: start=%s end=%s", start_date, end_date)
 
     existing_master = pd.read_csv(master_path, dtype={"event_id": str}, low_memory=False) if master_path.exists() else pd.DataFrame()
     existing_master = normalize_numeric_dtypes(existing_master)
 
     all_rows: list[dict] = []
+    capture_diagnostics: list[dict] = []
     span = (end_date - start_date).days
     for offset in range(span + 1):
         target = start_date + timedelta(days=offset)
         log.info("Capture date: %s", target)
         if args.mode == "all":
             for mode in ["morning", "pregame", "postgame"]:
-                all_rows.extend(run_capture(mode, DATA_DIR, existing_master, override_date=target))
+                rows, diag = run_capture(
+                    mode,
+                    DATA_DIR,
+                    existing_master,
+                    override_date=target,
+                    timezone_name=args.timezone,
+                    espn_groups=args.espn_groups,
+                    return_diagnostics=True,
+                )
+                all_rows.extend(rows)
+                capture_diagnostics.append(diag)
                 time.sleep(REQUEST_DELAY)
         else:
-            all_rows.extend(run_capture(args.mode, DATA_DIR, existing_master, override_date=target))
+            rows, diag = run_capture(
+                args.mode,
+                DATA_DIR,
+                existing_master,
+                override_date=target,
+                timezone_name=args.timezone,
+                espn_groups=args.espn_groups,
+                return_diagnostics=True,
+            )
+            all_rows.extend(rows)
+            capture_diagnostics.append(diag)
+
+    enumerated_total = sum(int(d.get("events_fetched", 0)) for d in capture_diagnostics)
+    inserted_total = len(all_rows)
+    if enumerated_total >= MIN_ENUM_GAMES_FOR_GAP_GUARD:
+        minimum_rows = int(round(enumerated_total * (1.0 - MAX_ENUM_TO_OUTPUT_DROP_RATIO)))
+        if inserted_total < minimum_rows:
+            raise RuntimeError(
+                "Market capture underfilled slate: "
+                f"enumerated={enumerated_total} inserted={inserted_total} "
+                f"(required >= {minimum_rows}). Check scoreboard filters and parsing."
+            )
 
     new_rows, prior_rows, rows_after_dedupe, rows_written = write_master_market_file(master_path, all_rows, args.append)
     if not master_path.exists():
@@ -1180,18 +1442,23 @@ def main() -> None:
     if missing_cols:
         raise RuntimeError(f"Market lines write failed: missing columns {missing_cols} in {master_path}")
 
-    latest_rows = write_latest_from_master(master_path, DATA_DIR / "market_lines_latest.csv")
+    log.info("Writing derived snapshots copy: rows=%s -> %s", len(master_df), snapshots_path)
     _atomic_write_csv(master_df, snapshots_path)
+    log.info("Writing legacy market_lines copy: rows=%s -> %s", len(master_df), legacy_path)
     _atomic_write_csv(master_df, legacy_path)
+    log.info("Writing odds snapshot copy: rows=%s -> %s", len(master_df), odds_path)
     _atomic_write_csv(master_df, odds_path)
-    regenerate_market_views(DATA_DIR)
+    latest_rows, closing_rows = regenerate_market_views(DATA_DIR)
+    _write_merge_report(DATA_DIR, capture_diagnostics, all_rows, latest_rows)
 
     log.info("Master merge: new rows fetched=%s", new_rows)
     log.info("Master merge: prior master rows=%s", prior_rows)
     log.info("Master merge: rows after dedupe=%s", rows_after_dedupe)
     log.info("Master merge: rows written=%s", rows_written)
-    log.info("Derived latest rows written=%s", latest_rows)
+    log.info("Derived latest rows written=%s closing_rows=%s", latest_rows, closing_rows)
 
 
 if __name__ == "__main__":
     main()
+
+

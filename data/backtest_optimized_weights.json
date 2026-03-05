@@ -1,29 +1,49 @@
 {
   "weights": {
-    "FourFactors": 0.3654,
-    "AdjEfficiency": 0.0765,
-    "Pythagorean": 0.0216,
-    "Situational": 0.365,
-    "CAGERankings": 0.0274,
-    "LuckRegression": 0.144,
-    "Variance": 0.0,
-    "HomeAwayForm": 0.0
+    "FourFactors": 0.0578,
+    "AdjEfficiency": 0.3707,
+    "Pythagorean": 0.1622,
+    "Situational": 0.1124,
+    "CAGERankings": 0.0209,
+    "LuckRegression": 0.0209,
+    "Variance": 0.0074,
+    "HomeAwayForm": 0.2477
+  },
+  "total_weights": {
+    "FourFactors": 0.125,
+    "AdjEfficiency": 0.125,
+    "Pythagorean": 0.125,
+    "Situational": 0.125,
+    "CAGERankings": 0.125,
+    "LuckRegression": 0.125,
+    "Variance": 0.125,
+    "HomeAwayForm": 0.125
   },
   "metric": "ats",
-  "value": 0.5227,
+  "value": 0.65,
   "default_weights": {
-    "FourFactors": 0.12,
-    "AdjEfficiency": 0.22,
-    "Pythagorean": 0.14,
-    "Situational": 0.26,
-    "CAGERankings": 0.18,
-    "LuckRegression": 0.08,
-    "Variance": 0.0,
-    "HomeAwayForm": 0.0
+    "FourFactors": 0.125,
+    "AdjEfficiency": 0.125,
+    "Pythagorean": 0.125,
+    "Situational": 0.125,
+    "CAGERankings": 0.125,
+    "LuckRegression": 0.125,
+    "Variance": 0.125,
+    "HomeAwayForm": 0.125
   },
-  "n_games_used": 88,
-  "generated_at": "2026-02-26T12:00:10.359951",
-  "pipeline_run_id": "22441096216",
+  "n_games_used": 20,
+  "generated_at": "2026-03-05T13:51:57.924450",
+  "selected_models": [
+    "FourFactors",
+    "AdjEfficiency",
+    "Pythagorean",
+    "Situational",
+    "CAGERankings",
+    "LuckRegression",
+    "Variance",
+    "HomeAwayForm"
+  ],
+  "pipeline_run_id": "20260305_215134",
   "seed": 42,
-  "saved_at_utc": "2026-02-26T12:00:10.609538+00:00"
+  "saved_at_utc": "2026-03-05T21:51:58.108654+00:00"
 }
