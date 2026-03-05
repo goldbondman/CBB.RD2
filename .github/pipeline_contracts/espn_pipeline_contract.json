@@ -1,0 +1,116 @@
+{
+  "version": "1.0",
+  "name": "update_espn_cbb",
+  "stages": [
+    {
+      "name": "espn_pipeline",
+      "job": "update",
+      "depends_on": [],
+      "command": "python espn_pipeline.py --days-back {days_back}",
+      "requires": [],
+      "produces": [
+        {
+          "path": "data/games.csv",
+          "min_rows": 1,
+          "required_columns": ["game_id", "game_datetime_utc"]
+        },
+        {
+          "path": "data/team_game_weighted.csv",
+          "min_rows": 1,
+          "required_columns": ["game_id", "team_id", "game_datetime_utc"]
+        },
+        {
+          "path": "data/team_pretournament_snapshot.csv",
+          "min_rows": 1,
+          "required_columns": ["team_id"]
+        }
+      ]
+    },
+    {
+      "name": "rotation_features",
+      "job": "update",
+      "depends_on": ["espn_pipeline"],
+      "command": "python cbb_rotation_features.py",
+      "requires": [
+        {"path": "data/player_game_logs.csv", "min_rows": 1},
+        {"path": "data/player_game_metrics.csv", "min_rows": 1}
+      ],
+      "produces": [
+        {"path": "data/rotation_features.csv", "min_rows": 1, "required_columns": ["game_id", "team_id"]}
+      ]
+    },
+    {
+      "name": "situational_features",
+      "job": "update",
+      "depends_on": ["espn_pipeline"],
+      "command": "python cbb_situational_features.py",
+      "requires": [
+        {"path": "data/team_game_weighted.csv", "min_rows": 1, "required_columns": ["game_id", "team_id"]}
+      ],
+      "produces": [
+        {"path": "data/situational_features.csv", "min_rows": 1}
+      ]
+    },
+    {
+      "name": "luck_regression_features",
+      "job": "update",
+      "depends_on": ["espn_pipeline"],
+      "command": "python cbb_luck_regression_features.py",
+      "requires": [
+        {"path": "data/team_game_weighted.csv", "min_rows": 1}
+      ],
+      "produces": [
+        {"path": "data/luck_regression_features.csv", "min_rows": 1}
+      ]
+    },
+    {
+      "name": "player_availability_features",
+      "job": "update",
+      "depends_on": ["espn_pipeline"],
+      "command": "python player_availability_features.py",
+      "requires": [
+        {"path": "data/player_game_logs.csv", "min_rows": 1}
+      ],
+      "produces": [
+        {"path": "data/player_availability_features.csv", "min_rows": 1}
+      ]
+    },
+    {
+      "name": "season_summaries",
+      "job": "update",
+      "depends_on": ["espn_pipeline"],
+      "command": "python cbb_season_summaries.py",
+      "requires": [
+        {"path": "data/team_game_weighted.csv", "min_rows": 1}
+      ],
+      "produces": [
+        {"path": "data/player_season_summary.csv", "min_rows": 1},
+        {"path": "data/team_season_summary.csv", "min_rows": 1}
+      ]
+    },
+    {
+      "name": "rankings",
+      "job": "rankings",
+      "depends_on": [],
+      "command": "python espn_rankings.py --top 25",
+      "requires": [
+        {
+          "path": "data/team_game_weighted.csv",
+          "min_rows": 1,
+          "required_columns": ["team_id", "game_id", "game_datetime_utc"],
+          "max_age_hours": 36
+        },
+        {
+          "path": "data/team_pretournament_snapshot.csv",
+          "min_rows": 1,
+          "required_columns": ["team_id"],
+          "max_age_hours": 36
+        }
+      ],
+      "produces": [
+        {"path": "data/cbb_rankings.csv", "min_rows": 1, "required_columns": ["team_id", "rank"]},
+        {"path": "data/cbb_rankings_by_conference.csv", "min_rows": 1}
+      ]
+    }
+  ]
+}
