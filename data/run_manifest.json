@@ -1,0 +1,72 @@
+{
+  "generated_at_utc": "2026-03-05T23:17:14+00:00",
+  "workflow": "cbb_perplexity_models",
+  "context": {
+    "days_back": "3",
+    "run_mode": "daily"
+  },
+  "pipeline_stage_status": {
+    "preflight": {
+      "allow_run": true,
+      "reason": "none"
+    },
+    "contract_runner": {
+      "status": "FAILED",
+      "exit_code": 1,
+      "contract_manifest_exists": false,
+      "contract_log_exists": false
+    },
+    "contract_stages": {}
+  },
+  "counts": {
+    "eligible_games": 101,
+    "predicted_games": 77,
+    "missing_predictions_count": 24,
+    "d1_filtered_out_count": 417
+  },
+  "produced_files": {},
+  "generated_files": {
+    "data/advanced_metrics.csv": {
+      "exists": true,
+      "absolute_path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\advanced_metrics.csv",
+      "size_bytes": 300787,
+      "rows": 400,
+      "cols": 42,
+      "read_error": null
+    },
+    "data/predictions_joint_latest.csv": {
+      "exists": true,
+      "absolute_path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\predictions_joint_latest.csv",
+      "size_bytes": 33932,
+      "rows": 101,
+      "cols": 27,
+      "read_error": null
+    },
+    "data/predictions_joint_snapshots.csv": {
+      "exists": true,
+      "absolute_path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\predictions_joint_snapshots.csv",
+      "size_bytes": 61437,
+      "rows": 211,
+      "cols": 27,
+      "read_error": null
+    }
+  },
+  "artifacts": {
+    "contract_manifest": {
+      "exists": false,
+      "absolute_path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\perplexity_models_manifest.json",
+      "size_bytes": 0,
+      "rows": null,
+      "cols": null,
+      "read_error": null
+    },
+    "contract_runner_log": {
+      "exists": false,
+      "absolute_path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\perplexity_contract_runner.log",
+      "size_bytes": 0,
+      "rows": null,
+      "cols": null,
+      "read_error": null
+    }
+  }
+}

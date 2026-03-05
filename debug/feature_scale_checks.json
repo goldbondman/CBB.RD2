@@ -1,0 +1,69 @@
+{
+  "warnings": [
+    "orb_pct: mixed percent scale detected (0-1 and 0-100)",
+    "tov_pct: mixed percent scale detected (0-1 and 0-100)",
+    "ftr: mixed percent scale detected (0-1 and 0-100)",
+    "net_rtg: 97 rows have |net_rtg| > 80"
+  ],
+  "columns": {
+    "efg_pct": {
+      "present": true,
+      "scale": "PCT_0_100",
+      "rows": 10766,
+      "min": 16.2,
+      "max": 91.0,
+      "mean": 51.639485417053685,
+      "violations": 0
+    },
+    "orb_pct": {
+      "present": true,
+      "scale": "MIXED_0_1_AND_0_100",
+      "rows": 10766,
+      "min": 0.0,
+      "max": 70.6,
+      "mean": 30.145903771131344,
+      "violations": 0
+    },
+    "drb_pct": {
+      "present": true,
+      "scale": "PCT_0_100",
+      "rows": 10766,
+      "min": 29.4,
+      "max": 100.0,
+      "mean": 69.85409622886866,
+      "violations": 0
+    },
+    "tov_pct": {
+      "present": true,
+      "scale": "MIXED_0_1_AND_0_100",
+      "rows": 10766,
+      "min": 0.0,
+      "max": 41.4,
+      "mean": 17.033029908972694,
+      "violations": 0
+    },
+    "ftr": {
+      "present": true,
+      "scale": "MIXED_0_1_AND_0_100",
+      "rows": 10766,
+      "min": 0.0,
+      "max": 121.7,
+      "mean": 35.08815716143414,
+      "violations": 0
+    },
+    "three_par": {
+      "present": true,
+      "scale": "PCT_0_100",
+      "rows": 10766,
+      "min": 7.8,
+      "max": 80.6,
+      "mean": 39.60785807170723,
+      "violations": 0
+    },
+    "net_rtg": {
+      "present": true,
+      "rows": 10766,
+      "abs_gt_80": 97
+    }
+  }
+}
