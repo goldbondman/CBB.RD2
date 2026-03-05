@@ -210,6 +210,8 @@ def _aggregate_fold_metrics(rows: list[dict[str, Any]], market: str) -> dict[str
             "n_games": 0.0,
             "hit_rate": float("nan"),
             "roi": float("nan"),
+            "roi_fold_var": float("nan"),
+            "hit_rate_fold_var": float("nan"),
             "mae": float("nan"),
             "brier": float("nan"),
             "score": float("nan"),
@@ -230,6 +232,12 @@ def _aggregate_fold_metrics(rows: list[dict[str, Any]], market: str) -> dict[str
         "n_games": float(games.sum()),
         "hit_rate": weighted("hit_rate"),
         "roi": weighted("roi"),
+        "roi_fold_var": float(pd.to_numeric(df.get("roi"), errors="coerce").dropna().var(ddof=0))
+        if pd.to_numeric(df.get("roi"), errors="coerce").notna().any()
+        else float("nan"),
+        "hit_rate_fold_var": float(pd.to_numeric(df.get("hit_rate"), errors="coerce").dropna().var(ddof=0))
+        if pd.to_numeric(df.get("hit_rate"), errors="coerce").notna().any()
+        else float("nan"),
         "mae": weighted("mae"),
         "brier": weighted("brier"),
     }
@@ -286,6 +294,8 @@ def evaluate_window_grid(
                     "n_games": 0.0,
                     "hit_rate": float("nan"),
                     "roi": float("nan"),
+                    "roi_fold_var": float("nan"),
+                    "hit_rate_fold_var": float("nan"),
                     "mae": float("nan"),
                     "brier": float("nan"),
                     "score": float("nan"),
@@ -310,6 +320,8 @@ def evaluate_window_grid(
                     "n_games": 0.0,
                     "hit_rate": float("nan"),
                     "roi": float("nan"),
+                    "roi_fold_var": float("nan"),
+                    "hit_rate_fold_var": float("nan"),
                     "mae": float("nan"),
                     "brier": float("nan"),
                     "score": float("nan"),
@@ -347,6 +359,8 @@ def evaluate_window_grid(
                 "n_games": agg["n_games"],
                 "hit_rate": agg["hit_rate"],
                 "roi": agg["roi"],
+                "roi_fold_var": agg["roi_fold_var"],
+                "hit_rate_fold_var": agg["hit_rate_fold_var"],
                 "mae": agg["mae"],
                 "brier": agg["brier"],
                 "score": agg["score"],
