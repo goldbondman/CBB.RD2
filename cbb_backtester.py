@@ -49,6 +49,7 @@ import argparse
 import random
 import json
 import hashlib
+import os
 import sys
 import warnings
 from dataclasses import dataclass, field, asdict
@@ -1240,6 +1241,8 @@ class BacktestEngine:
                 # Market lines (populated later if available)
                 "market_spread":    None,
                 "market_total":     None,
+                "espn_spread":      pd.to_numeric(row.get("spread"), errors="coerce"),
+                "espn_total":       pd.to_numeric(row.get("over_under"), errors="coerce"),
             }
             rec.update(pred)
             records.append(rec)
@@ -1271,135 +1274,140 @@ class BacktestEngine:
     ) -> pd.DataFrame:
         """
         Join market spread / over-under onto backtest records.
-        Prefers market_lines_closing.csv, falls back to market_lines.csv when needed.
+        Prefers closing snapshots when available, then latest/open snapshots.
         Also computes ATS and Total margins for actual and predicted.
         """
-        gdf: Optional[pd.DataFrame] = None
-        source_label = ""
+        def _pick_first(frame: pd.DataFrame, cols: List[str]) -> pd.Series:
+            out = pd.Series(np.nan, index=frame.index, dtype="float64")
+            for col in cols:
+                if col in frame.columns:
+                    out = out.fillna(pd.to_numeric(frame[col], errors="coerce"))
+            return out
 
-        if closing_lines_path.exists():
-            gdf = pd.read_csv(closing_lines_path, dtype={"espn_game_id": str})
-            gdf = gdf.rename(columns={
-                "close_home_spread": "home_market_spread",
-                "close_total": "market_total",
-            })
-            source_label = closing_lines_path.name
-        elif fallback_lines_path.exists():
-            gdf = pd.read_csv(fallback_lines_path, dtype={"event_id": str}, low_memory=False)
-            gdf = gdf.rename(columns={
-                "event_id": "espn_game_id",
-                "home_spread_current": "home_market_spread",
-                "spread": "home_market_spread_alt",
-                "total_current": "market_total",
-                "over_under": "market_total_alt",
-                "total": "market_total_alt2",
-            })
-            if "home_market_spread" not in gdf.columns:
-                gdf["home_market_spread"] = np.nan
-            if "home_market_spread_alt" in gdf.columns:
-                gdf["home_market_spread"] = pd.to_numeric(gdf["home_market_spread"], errors="coerce").fillna(
-                    pd.to_numeric(gdf["home_market_spread_alt"], errors="coerce")
-                )
-            if "market_total" not in gdf.columns:
-                gdf["market_total"] = np.nan
-            for alt_col in ["market_total_alt", "market_total_alt2"]:
-                if alt_col in gdf.columns:
-                    gdf["market_total"] = pd.to_numeric(gdf["market_total"], errors="coerce").fillna(
-                        pd.to_numeric(gdf[alt_col], errors="coerce")
-                    )
-
-            # Deterministic dedupe: keep the latest capture per game_id.
-            ts_col = next((c for c in ["captured_at_utc", "pulled_at_utc"] if c in gdf.columns), None)
-            if ts_col:
-                gdf[ts_col] = pd.to_datetime(gdf[ts_col], errors="coerce", utc=True)
-                gdf = gdf.sort_values(["espn_game_id", ts_col]).drop_duplicates("espn_game_id", keep="last")
-            else:
-                gdf = gdf.drop_duplicates("espn_game_id", keep="last")
-            source_label = fallback_lines_path.name
-        else:
-            log.warning(
-                "%s and %s not found — skipping market line attachment",
-                closing_lines_path,
-                fallback_lines_path,
+        frames: List[pd.DataFrame] = []
+        source_counts: List[str] = []
+        market_paths = [
+            ("market_lines_closing.csv", DATA_DIR / "market_lines_closing.csv", 0),
+            ("market_lines_latest.csv", DATA_DIR / "market_lines_latest.csv", 1),
+            ("market_lines.csv", fallback_lines_path, 2),
+            ("odds_snapshot.csv", DATA_DIR / "odds_snapshot.csv", 3),
+        ]
+        for label, path_obj, source_rank in market_paths:
+            if not path_obj.exists() or path_obj.stat().st_size == 0:
+                continue
+            raw = pd.read_csv(path_obj, low_memory=False)
+            if raw.empty:
+                continue
+            id_col = "espn_game_id" if "espn_game_id" in raw.columns else (
+                "game_id" if "game_id" in raw.columns else ("event_id" if "event_id" in raw.columns else None)
             )
+            if id_col is None:
+                continue
+
+            work = pd.DataFrame()
+            work["espn_game_id"] = raw[id_col].apply(canonicalize_espn_game_id)
+            work["opening_spread"] = _pick_first(raw, ["opening_spread", "home_spread_open"])
+            work["closing_spread"] = _pick_first(
+                raw,
+                ["closing_spread", "close_home_spread", "home_spread_current", "home_spread", "spread", "spread_line"],
+            )
+            work["market_total"] = _pick_first(
+                raw,
+                ["total_line", "market_total", "close_total", "total_current", "over_under", "total"],
+            )
+            ts_col = next((c for c in ["captured_at_utc", "pulled_at_utc", "snapshot_ts_utc"] if c in raw.columns), None)
+            if ts_col:
+                work["_capture_ts"] = pd.to_datetime(raw[ts_col], errors="coerce", utc=True)
+            else:
+                work["_capture_ts"] = pd.NaT
+            capture_type = raw.get("capture_type", pd.Series("", index=raw.index)).astype(str).str.lower()
+            work["_is_closing"] = (capture_type == "closing").astype(int)
+            work["_source_rank"] = source_rank
+            work["_source"] = label
+            work = work[work["espn_game_id"].notna()]
+            if work.empty:
+                continue
+            frames.append(work)
+            source_counts.append(f"{label}:{len(work)}")
+
+        if not frames:
+            log.warning("No market files found for attachment. Preserving records with ESPN fallback columns only.")
+            for col in ["opening_spread", "closing_spread", "spread_line", "total_line", "clv_delta", "line_source_used", "line_timestamp_utc"]:
+                if col not in records.columns:
+                    records[col] = np.nan
+            if "pred_spread" not in records.columns:
+                records["pred_spread"] = pd.to_numeric(records.get("ens_spread"), errors="coerce")
+            if "pred_total" not in records.columns:
+                records["pred_total"] = pd.to_numeric(records.get("ens_total"), errors="coerce")
             return records
 
-        if "espn_game_id" not in gdf.columns:
-            log.warning("Market line source %s missing game-id column — skipping attachment", source_label)
-            return records
+        gdf = pd.concat(frames, ignore_index=True)
+        gdf = gdf.sort_values(
+            ["espn_game_id", "_is_closing", "_source_rank", "_capture_ts"],
+            ascending=[True, False, True, False],
+        ).drop_duplicates("espn_game_id", keep="first")
+        gdf["home_market_spread"] = gdf["closing_spread"].fillna(gdf["opening_spread"])
 
-        gdf["espn_game_id"] = gdf["espn_game_id"].apply(canonicalize_espn_game_id)
-
-        merge_cols = ["espn_game_id", "home_market_spread", "market_total"]
-        gdf = gdf[[c for c in merge_cols if c in gdf.columns]].copy()
-
-        # Merge on canonical espn_game_id
         records["game_id"] = records["game_id"].apply(canonicalize_espn_game_id)
-
         records = records.merge(
-            gdf[["espn_game_id", "home_market_spread", "market_total"]],
+            gdf[["espn_game_id", "opening_spread", "closing_spread", "home_market_spread", "market_total", "_capture_ts", "_source"]],
             left_on="game_id",
             right_on="espn_game_id",
-            how="left"
+            how="left",
+            suffixes=("", "_line"),
         )
-
-        # Cleanup
         if "espn_game_id" in records.columns:
             records = records.drop(columns=["espn_game_id"])
+        if "market_total_line" in records.columns:
+            records["market_total"] = pd.to_numeric(records.get("market_total"), errors="coerce").fillna(
+                pd.to_numeric(records["market_total_line"], errors="coerce")
+            )
+            records = records.drop(columns=["market_total_line"])
 
-        # Compute extended schema
-        # A) away_market_spread
+        records["home_market_spread"] = pd.to_numeric(records["home_market_spread"], errors="coerce").fillna(
+            pd.to_numeric(records.get("espn_spread"), errors="coerce")
+        )
+        records["market_total"] = pd.to_numeric(records.get("market_total"), errors="coerce").fillna(
+            pd.to_numeric(records.get("espn_total"), errors="coerce")
+        )
+        records["opening_spread"] = pd.to_numeric(records.get("opening_spread"), errors="coerce")
+        records["closing_spread"] = pd.to_numeric(records.get("closing_spread"), errors="coerce").fillna(records["home_market_spread"])
+        records["spread_line"] = records["home_market_spread"]
+        records["total_line"] = records["market_total"]
+        records["line_timestamp_utc"] = pd.to_datetime(records.get("_capture_ts"), errors="coerce", utc=True).dt.strftime("%Y-%m-%dT%H:%M:%S%z")
+        records["line_source_used"] = records.get("_source")
+        records = records.drop(columns=[c for c in ["_capture_ts", "_source"] if c in records.columns], errors="ignore")
+
         records["away_market_spread"] = -records["home_market_spread"]
-
-        # B) Actual margins
-        # actual_margin_ATS = actual_home_margin + home_market_spread
-        # (Using + because home_market_spread is negative for home favorites)
         records["actual_margin_ATS"] = records["actual_margin"] + records["home_market_spread"]
         records["actual_margin_total"] = records["actual_total"] - records["market_total"]
-
-        # C) Predicted vs Market
-        # home_market_spread is from HOME perspective (negative = home favorite)
-        # ens_spread is ALSO from HOME perspective
         records["pred_home_spread"] = records["ens_spread"]
         records["pred_away_spread"] = -records["pred_home_spread"]
-        records["pred_total"] = records["ens_total"]
-
-        # pred_margin_ATS = pred_home_margin + home_market_spread
-        # (where pred_home_margin = -ens_spread)
+        records["pred_total"] = pd.to_numeric(records.get("ens_total"), errors="coerce")
+        records["pred_spread"] = pd.to_numeric(records.get("ens_spread"), errors="coerce")
         records["pred_margin_ATS"] = (-records["ens_spread"]) + records["home_market_spread"]
         records["pred_margin_total"] = records["pred_total"] - records["market_total"]
+        records["clv_delta"] = pd.to_numeric(records["closing_spread"], errors="coerce") - pd.to_numeric(records["pred_spread"], errors="coerce")
 
-        # Legacy field removal/bridging
         if "market_spread" in records.columns:
             records = records.drop(columns=["market_spread"])
-        # We'll use home_market_spread as the primary for metrics computation below
         records["market_spread"] = records["home_market_spread"]
 
-        # D) Column ordering
-        # Insert new headers immediately to the RIGHT of: cage_em_diff
         cols = records.columns.tolist()
         if "cage_em_diff" in cols:
-            idx = cols.index("cage_em_diff") + 1
             new_cols_ordered = [
                 "home_market_spread", "away_market_spread", "market_total",
                 "actual_margin_ATS", "actual_margin_total",
                 "pred_home_spread", "pred_away_spread", "pred_total",
-                "pred_margin_ATS", "pred_margin_total"
+                "pred_margin_ATS", "pred_margin_total",
             ]
-            # Remove them from their current positions first
             other_cols = [c for c in cols if c not in new_cols_ordered]
-            # Re-insert
             idx = other_cols.index("cage_em_diff") + 1
             final_cols = other_cols[:idx] + new_cols_ordered + other_cols[idx:]
             records = records[final_cols]
 
         lined = records["home_market_spread"].notna().sum()
-        log.info(
-            "Market lines attached (%s): %d/%d games have a spread",
-            source_label,
-            lined,
-            len(records),
-        )
+        log.info("Market lines attached (%s): %d/%d games have a spread", ",".join(source_counts), lined, len(records))
         return records
 
 
@@ -2184,6 +2192,39 @@ def verify_backtest_output(path: Path) -> bool:
     null_failures = [col for col in critical_cols if df[col].isna().mean() == 1.0]
     if null_failures:
         log.error("[VERIFY FAIL] %s has 100%% null critical columns: %s", path, null_failures)
+        return False
+
+    required_context_cols = [
+        "market_spread",
+        "market_total",
+        "opening_spread",
+        "closing_spread",
+        "spread_line",
+        "total_line",
+        "pred_spread",
+        "pred_total",
+        "clv_delta",
+    ]
+    missing_context_cols = [col for col in required_context_cols if col not in df.columns]
+    if missing_context_cols:
+        log.error("[VERIFY FAIL] %s missing required context columns: %s", path, missing_context_cols)
+        return False
+
+    max_null_rate_market = float(os.getenv("BACKTEST_MAX_NULL_RATE_MARKET", "0.95"))
+    max_null_rate_pred = float(os.getenv("BACKTEST_MAX_NULL_RATE_PRED", "0.5"))
+    market_cols = ["market_spread", "market_total", "spread_line", "total_line"]
+    pred_cols = ["pred_spread", "pred_total"]
+    market_fail = [col for col in market_cols if df[col].isna().mean() > max_null_rate_market]
+    pred_fail = [col for col in pred_cols if df[col].isna().mean() > max_null_rate_pred]
+    if market_fail or pred_fail:
+        rates = {c: float(df[c].isna().mean()) for c in [*market_fail, *pred_fail]}
+        log.error(
+            "[VERIFY FAIL] %s null-rate thresholds breached. market_max=%.2f pred_max=%.2f rates=%s",
+            path,
+            max_null_rate_market,
+            max_null_rate_pred,
+            rates,
+        )
         return False
 
     log.info("[VERIFY PASS] %s: %s rows, critical columns populated", path, len(df))
