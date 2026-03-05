@@ -27,6 +27,9 @@
 
 - `cbb_analytics`
   - Required: `data/market_lines.csv`, `data/team_game_weighted.csv`
+  - ESPN dependency resolution:
+    - Tier A: download `INFRA-espn-data` from latest successful `update_espn_cbb.yml` run on `main`.
+    - Tier B fallback: use committed `data/games.csv` + `data/team_game_weighted.csv` only if validation passes.
   - Required predictions dependency:
     - `data/predictions_with_context.csv` OR `data/predictions_combined_latest.csv`
   - Freshness gate: predictions input file must be <= 36 hours old.
@@ -67,6 +70,12 @@ Report includes:
 
 If a required file/column check fails, status is `BLOCKED` and the workflow fails.
 
+`cbb_analytics` blocked behavior:
+- Writes `data/integrity_reports/cbb_analytics/<run_id>/INTEGRITY_EXEC_SUMMARY.md` with missing artifact/files and required remediation.
+- `workflow_dispatch`: exits 0 after writing the BLOCKED report.
+- `schedule`/automated events: exits 1 after writing the BLOCKED report.
+- Remediation: run `Update ESPN CBB Data` successfully on `main` to publish `INFRA-espn-data`.
+
 ## Ordered Execution
 
 - Parent orchestrator: `.github/workflows/cbb_master_nightly.yml`
@@ -78,6 +87,10 @@ Existing standalone triggers remain for backward compatibility.
 ## Local Smoke Run
 
 Run:
+
+```bash
+python scripts/analytics_smoke.py
+```
 
 ```bash
 python scripts/workflow_smoke.py

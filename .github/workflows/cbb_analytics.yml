@@ -137,30 +137,6 @@ jobs:
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
-      - name: Resolve latest ESPN data run ID
-        id: get_espn_run
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          run_id=$(gh run list \
-            --workflow=update_espn_cbb.yml \
-            --status=success \
-            --limit=20 \
-            --json=databaseId \
-            --jq='.[].databaseId' | while read rid; do
-              count=$(gh api \
-                /repos/${{ github.repository }}/actions/runs/${rid}/artifacts \
-                --jq '.artifacts[] | select(.name=="INFRA-espn-data") | .size_in_bytes' \
-                2>/dev/null || echo 0)
-              echo "$count $rid"
-            done | sort -rn | head -1 | awk '{print $2}')
-          if [[ -z "$run_id" ]]; then
-            echo "[ERROR] No successful update_espn_cbb run with INFRA-espn-data artifact found"
-            exit 1
-          fi
-          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-
       - name: Resolve latest predictions rolling run ID
         id: get_pred_run
         env:
@@ -185,6 +161,21 @@ jobs:
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
+      - name: Download latest ESPN data artifact from main (Tier A)
+        id: download_espn_artifact
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "update_espn_cbb.yml" \
+            --artifact-name "INFRA-espn-data" \
+            --branch "main" \
+            --max-runs 50 \
+            --dest "data/staging"
+
       - name: Download market lines artifact
         uses: actions/download-artifact@v4
         with:
@@ -200,14 +191,6 @@ jobs:
           path: data/staging/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
-
-      - name: Download ESPN data artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: INFRA-espn-data
-          path: data/staging/
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ steps.get_espn_run.outputs.run_id }}
 
       - name: Download predictions rolling artifact
         uses: actions/download-artifact@v4
@@ -286,7 +269,97 @@ jobs:
               print(f"[OK] {file_name}: rows={len(combined)}")
           PY
 
+      - name: Evaluate analytics input availability
+        id: gate_inputs
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ESPN_TIER_A_OUTCOME: ${{ steps.download_espn_artifact.outcome }}
+        run: |
+          set -euo pipefail
+
+          REPORT_DIR="data/integrity_reports/cbb_analytics/${GITHUB_RUN_ID}"
+          SUMMARY_PATH="${REPORT_DIR}/INTEGRITY_EXEC_SUMMARY.md"
+          mkdir -p "$REPORT_DIR"
+
+          declare -a FILE_ERRORS=()
+
+          validate_required_csv() {
+            local path="$1"
+            local min_rows="$2"
+            local required_cols="$3"
+            local tmp_log
+            tmp_log="$(mktemp)"
+            if bash .github/scripts/check_csv.sh "$path" "$min_rows" "$required_cols" >"$tmp_log" 2>&1; then
+              cat "$tmp_log"
+              rm -f "$tmp_log"
+              return 0
+            fi
+            local msg
+            msg="$(tr '\n' ' ' <"$tmp_log" | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//')"
+            FILE_ERRORS+=("$msg")
+            rm -f "$tmp_log"
+            return 1
+          }
+
+          validate_required_csv "data/games.csv" 1 "game_id" || true
+          validate_required_csv "data/team_game_weighted.csv" 1 "team_id" || true
+
+          BLOCKED="false"
+          ALLOW_SKIP="false"
+          STATUS="READY"
+          INPUT_SOURCE="tier_a_artifact"
+
+          if [[ "$ESPN_TIER_A_OUTCOME" != "success" ]]; then
+            INPUT_SOURCE="tier_b_repo_data"
+          fi
+
+          if (( ${#FILE_ERRORS[@]} > 0 )); then
+            BLOCKED="true"
+            STATUS="BLOCKED"
+            INPUT_SOURCE="none"
+            if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+              ALLOW_SKIP="true"
+            fi
+          fi
+
+          {
+            echo "# CBB Analytics Integrity Execution Summary"
+            echo
+            echo "- status: ${STATUS}"
+            echo "- workflow: cbb_analytics"
+            echo "- event: ${EVENT_NAME}"
+            echo "- run_id: ${GITHUB_RUN_ID}"
+            echo "- input_source: ${INPUT_SOURCE}"
+            if [[ "$ESPN_TIER_A_OUTCOME" == "success" ]]; then
+              echo "- tier_a_artifact: downloaded `INFRA-espn-data` from `update_espn_cbb.yml` on branch `main`"
+            else
+              echo "- tier_a_artifact: missing `INFRA-espn-data` from latest successful `update_espn_cbb.yml` run on branch `main`"
+              echo "- tier_b_fallback: validating repo-committed `data/` ESPN CSVs"
+            fi
+            echo
+            if (( ${#FILE_ERRORS[@]} > 0 )); then
+              echo "## Missing/Invalid Required Files"
+              echo
+              for err in "${FILE_ERRORS[@]}"; do
+                echo "- ${err}"
+              done
+              echo
+              echo "## Next Action Required"
+              echo
+              echo "- Run `Update ESPN CBB Data` (`.github/workflows/update_espn_cbb.yml`) successfully on `main` at least once so `INFRA-espn-data` is published."
+            else
+              echo "## Result"
+              echo
+              echo "- Required ESPN inputs are valid; analytics may proceed."
+            fi
+          } > "$SUMMARY_PATH"
+
+          echo "blocked=${BLOCKED}" >> "$GITHUB_OUTPUT"
+          echo "allow_skip=${ALLOW_SKIP}" >> "$GITHUB_OUTPUT"
+          echo "summary_path=${SUMMARY_PATH}" >> "$GITHUB_OUTPUT"
+
       - name: Validate required analytics inputs
+        if: steps.gate_inputs.outputs.blocked != 'true'
         run: |
           bash .github/scripts/check_csv.sh data/market_lines.csv 1 event_id
           bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 team_id
@@ -297,6 +370,7 @@ jobs:
           fi
 
       - name: Validate predictions freshness
+        if: steps.gate_inputs.outputs.blocked != 'true'
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -315,15 +389,17 @@ jobs:
           PY
 
       - name: Data infrastructure health check
+        if: steps.gate_inputs.outputs.blocked != 'true'
         continue-on-error: true
         run: python scripts/validate_data_infrastructure.py
 
       - name: Backfill historical market lines (rolling 14 days)
+        if: steps.gate_inputs.outputs.blocked != 'true'
         continue-on-error: true
         run: python ingestion/historical_backfill.py --days-back 14 --output data/market_lines.csv
 
       - name: Run backtester
-        if: steps.resolve_mode.outputs.run_mode == 'both' || steps.resolve_mode.outputs.run_mode == 'backtest_only'
+        if: steps.gate_inputs.outputs.blocked != 'true' && (steps.resolve_mode.outputs.run_mode == 'both' || steps.resolve_mode.outputs.run_mode == 'backtest_only')
         run: |
           set -euo pipefail
           BACKFILL_ARGS=""
@@ -341,20 +417,22 @@ jobs:
           python cbb_backtester.py $BACKTEST_ARGS
 
       - name: Validate backtester outputs
-        if: steps.resolve_mode.outputs.run_mode == 'both' || steps.resolve_mode.outputs.run_mode == 'backtest_only'
+        if: steps.gate_inputs.outputs.blocked != 'true' && (steps.resolve_mode.outputs.run_mode == 'both' || steps.resolve_mode.outputs.run_mode == 'backtest_only')
         run: |
           bash .github/scripts/check_csv.sh data/backtest_results_latest.csv 1
           python scripts/validate_backtest_market_data.py
 
       - name: Grade predictions
+        if: steps.gate_inputs.outputs.blocked != 'true'
         run: python evaluation/predictions_graded.py
 
       - name: Build training data
+        if: steps.gate_inputs.outputs.blocked != 'true'
         continue-on-error: true
         run: python build_training_data.py
 
       - name: Run results tracker
-        if: steps.resolve_mode.outputs.run_mode == 'both' || steps.resolve_mode.outputs.run_mode == 'tracker_only'
+        if: steps.gate_inputs.outputs.blocked != 'true' && (steps.resolve_mode.outputs.run_mode == 'both' || steps.resolve_mode.outputs.run_mode == 'tracker_only')
         run: |
           if [[ -n "${{ steps.resolve_mode.outputs.start_date }}" ]]; then
             python cbb_results_tracker.py --date ${{ steps.resolve_mode.outputs.start_date }}
@@ -363,14 +441,16 @@ jobs:
           fi
 
       - name: Run season summaries
+        if: steps.gate_inputs.outputs.blocked != 'true'
         continue-on-error: true
         run: python cbb_season_summaries.py
 
       - name: Accuracy report
+        if: steps.gate_inputs.outputs.blocked != 'true'
         run: python cbb_accuracy_report.py
 
       - name: Create ready marker
-        if: always()
+        if: always() && steps.gate_inputs.outputs.blocked != 'true'
         run: |
           python - <<'PY'
           import json
@@ -393,19 +473,28 @@ jobs:
           PY
 
       - name: Generate integrity report
-        if: always()
+        if: always() && steps.gate_inputs.outputs.blocked != 'true'
         run: |
           python .github/scripts/data_integrity_report.py \
             --manifest .github/pipeline_contracts/cbb_analytics.contract.json \
             --workflow-name cbb_analytics \
-            --run-id "${{ github.run_id }}-analytics"
+            --run-id "${{ github.run_id }}"
 
-      - name: Upload analytics artifacts
+      - name: Upload analytics integrity reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-cbb-analytics-integrity
+          if-no-files-found: error
+          path: data/integrity_reports/cbb_analytics/**
+          retention-days: 90
+
+      - name: Upload analytics outputs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: INFRA-analytics-results
-          if-no-files-found: error
+          if-no-files-found: warn
           path: |
             data/results_log.csv
             data/results_summary.csv
@@ -416,11 +505,10 @@ jobs:
             data/market_line_backfill_audit.csv
             data/backtest_training_data.csv
             data/ready_markers/cbb_analytics_ready.json
-            data/integrity_reports/cbb_analytics/**
           retention-days: 90
 
       - name: Upload analytics ready marker
-        if: always()
+        if: always() && steps.gate_inputs.outputs.blocked != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: INFRA-ready-cbb-analytics
@@ -429,7 +517,7 @@ jobs:
           retention-days: 30
 
       - name: Commit curated analytics outputs
-        if: success()
+        if: success() && steps.gate_inputs.outputs.blocked != 'true'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -475,4 +563,16 @@ jobs:
             sleep $((i * 2))
           done
           echo "[ERROR] Push failed after 3 attempts"
+          exit 1
+
+      - name: Finalize blocked analytics status
+        if: always() && steps.gate_inputs.outputs.blocked == 'true'
+        run: |
+          set -euo pipefail
+          echo "[BLOCKED] Analytics inputs unavailable. See ${{ steps.gate_inputs.outputs.summary_path }}"
+          if [[ "${{ steps.gate_inputs.outputs.allow_skip }}" == "true" ]]; then
+            echo "[BLOCKED] workflow_dispatch run configured to allow skip; exiting 0."
+            exit 0
+          fi
+          echo "[ERROR] Scheduled/automated analytics run blocked due to missing required inputs."
           exit 1
