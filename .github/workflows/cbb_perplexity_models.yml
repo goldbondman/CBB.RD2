@@ -1,0 +1,201 @@
+name: CBB Perplexity Models
+
+on:
+  schedule:
+    # 14:00 UTC ~= 6:00 AM PST (America/Los_Angeles) outside DST.
+    # During PDT this runs at 7:00 AM local.
+    - cron: "0 14 * * *"
+  workflow_dispatch:
+    inputs:
+      days_back:
+        description: "Days back to fetch (default 3)"
+        required: false
+        default: "3"
+      run_mode:
+        description: "Execution mode label"
+        required: false
+        default: "daily"
+
+concurrency:
+  group: cbb-perplexity-models
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  TZ: UTC
+  PYTHONHASHSEED: "0"
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
+
+jobs:
+  perplexity_models:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Resolve inputs
+        id: resolve_inputs
+        shell: bash
+        env:
+          INPUT_DAYS_BACK: ${{ github.event.inputs.days_back }}
+          INPUT_RUN_MODE: ${{ github.event.inputs.run_mode }}
+        run: |
+          set -euo pipefail
+          DAYS_BACK="${INPUT_DAYS_BACK:-3}"
+          RUN_MODE="${INPUT_RUN_MODE:-daily}"
+          if [[ -z "$DAYS_BACK" ]]; then
+            DAYS_BACK="3"
+          fi
+          if ! [[ "$DAYS_BACK" =~ ^[0-9]+$ ]]; then
+            echo "[ERROR] days_back must be numeric; got '$DAYS_BACK'"
+            exit 1
+          fi
+          if (( DAYS_BACK < 1 )); then
+            echo "[ERROR] days_back must be >= 1"
+            exit 1
+          fi
+          echo "days_back=$DAYS_BACK" >> "$GITHUB_OUTPUT"
+          echo "run_mode=$RUN_MODE" >> "$GITHUB_OUTPUT"
+          echo "[INFO] run_mode=$RUN_MODE days_back=$DAYS_BACK"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies (with import guard)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f constraints.txt ]]; then
+            pip install -r requirements.txt -c constraints.txt
+          else
+            pip install -r requirements.txt
+          fi
+          python - <<'PY'
+          import pandas, numpy, requests, scipy  # noqa: F401
+          print("[OK] dependency import guard passed")
+          PY
+
+      - name: Run minimal input pipeline stages
+        shell: bash
+        run: |
+          set -euo pipefail
+          python espn_pipeline.py --days-back "${{ steps.resolve_inputs.outputs.days_back }}"
+          python cbb_rotation_features.py
+          python cbb_situational_features.py
+
+      - name: Build advanced metrics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pipeline.advanced_metrics.build_advanced_metrics
+
+      - name: Run joint model predictions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m model_lab.joint_models
+
+      - name: Validate required outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash .github/scripts/check_csv.sh data/advanced_metrics.csv 1 "event_id,team_id"
+          bash .github/scripts/check_csv.sh data/predictions_joint_latest.csv 1 "game_id,pred_total,pred_margin"
+          bash .github/scripts/check_csv.sh data/predictions_joint_snapshots.csv 1 "game_id,generated_at_utc"
+
+      - name: Health summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pandas as pd
+          from pathlib import Path
+
+          files = [
+              Path("data/advanced_metrics.csv"),
+              Path("data/predictions_joint_latest.csv"),
+              Path("data/predictions_joint_snapshots.csv"),
+          ]
+
+          lines = []
+          for p in files:
+              df = pd.read_csv(p, low_memory=False)
+              ts_col = next((c for c in ["generated_at_utc", "game_datetime_utc", "date"] if c in df.columns), None)
+              latest = None
+              if ts_col:
+                  latest = pd.to_datetime(df[ts_col], errors="coerce", utc=True).max()
+              lines.append(f"- {p}: rows={len(df)}, latest_ts={latest}")
+              print(f"[HEALTH] {p} rows={len(df)} latest_ts={latest}")
+
+          with open(Path(".").joinpath("health_summary.md"), "w", encoding="utf-8") as fh:
+              fh.write("## Perplexity Models Health Summary\n")
+              for line in lines:
+                  fh.write(line + "\n")
+          PY
+          cat health_summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifact bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-perplexity-models
+          if-no-files-found: error
+          retention-days: 21
+          path: |
+            data/advanced_metrics.csv
+            data/predictions_joint_latest.csv
+            data/predictions_joint_snapshots.csv
+
+      - name: Commit and push model outputs to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "[SKIP] Ref is ${GITHUB_REF}; only main is allowed for direct push."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add --ignore-missing -- \
+            data/advanced_metrics.csv \
+            data/predictions_joint_latest.csv \
+            data/predictions_joint_snapshots.csv
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No output changes to commit"
+            exit 0
+          fi
+
+          STAGED_BYTES=$(git diff --cached --name-only -z | xargs -0 -r du -cb | tail -n 1 | cut -f1)
+          STAGED_BYTES=${STAGED_BYTES:-0}
+          MAX_BYTES=$((50 * 1024 * 1024))
+          if (( STAGED_BYTES > MAX_BYTES )); then
+            echo "[ERROR] staged payload ${STAGED_BYTES} bytes exceeds ${MAX_BYTES} byte guard"
+            exit 1
+          fi
+
+          git commit -m "data: refresh perplexity model outputs [skip ci]"
+          for i in 1 2 3; do
+            if ! git pull --rebase origin main; then
+              echo "[ERROR] rebase conflict while syncing main on attempt ${i}"
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo "[OK] push succeeded on attempt ${i}"
+              exit 0
+            fi
+            echo "[WARN] push failed on attempt ${i}; retrying"
+            sleep $((i * 2))
+          done
+          echo "[ERROR] failed to push after retries"
+          exit 1
