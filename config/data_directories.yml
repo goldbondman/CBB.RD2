@@ -1,0 +1,12 @@
+version: 1
+data_root: data
+standard_directories:
+  quality: data/quality
+  analytics: data/analytics
+  analytics_exec_summaries: data/analytics/exec_summaries
+  market: data/market
+  teams: data/teams
+  matchups: data/matchups
+  gates: data/gates
+  predictions: data/predictions
+  betting: data/betting
