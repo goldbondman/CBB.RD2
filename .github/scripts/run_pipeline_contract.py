@@ -32,6 +32,44 @@ class StageResult:
     outputs: list[dict[str, Any]]
 
 
+def _spec_path(spec: Any) -> str:
+    if isinstance(spec, str):
+        return _norm_rel_path(spec)
+    if isinstance(spec, dict):
+        return _norm_rel_path(str(spec.get("path", "")).strip())
+    return ""
+
+
+def _stage_output_status(repo_root: Path, stage: dict[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    stage_name = str(stage.get("name", "")).strip()
+    for spec in list(stage.get("produces", [])):
+        rel = _spec_path(spec)
+        if not rel:
+            continue
+        path = repo_root / rel
+        exists = path.exists()
+        size_bytes = int(path.stat().st_size) if exists else 0
+        _, err = _validate_one_spec(repo_root, spec, stage_name, "output")
+        rows.append(
+            {
+                "path": rel,
+                "exists": bool(exists),
+                "size_bytes": size_bytes,
+                "valid": err is None,
+                "error": err,
+            }
+        )
+    return rows
+
+
+def _write_contract_missing_outputs(repo_root: Path, payload: dict[str, Any]) -> Path:
+    out_path = repo_root / "debug" / "contract_missing_outputs.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return out_path
+
+
 def _norm_rel_path(path: str) -> str:
     return str(Path(path)).replace("\\", "/").strip()
 
@@ -77,6 +115,45 @@ def _csv_summary(path: Path) -> dict[str, Any]:
     if key_rates:
         out["null_rates_pct"] = key_rates
     return out
+
+
+def _feature_coverage_summary(repo_root: Path) -> dict[str, Any]:
+    data_dir = repo_root / "data"
+    summary: dict[str, Any] = {"market": {}, "team_snapshot": {}}
+
+    market_path = data_dir / "market_lines_latest_by_game.csv"
+    if not market_path.exists():
+        market_path = data_dir / "market_lines_latest.csv"
+    if market_path.exists() and market_path.stat().st_size > 0:
+        mdf = pd.read_csv(market_path, dtype=str, low_memory=False)
+        spread_col = next((c for c in ["spread_line", "home_spread_current", "spread"] if c in mdf.columns), None)
+        total_col = next((c for c in ["total_line", "total_current", "over_under"] if c in mdf.columns), None)
+        spread_rate = float(pd.to_numeric(mdf[spread_col], errors="coerce").notna().mean()) if spread_col else 0.0
+        total_rate = float(pd.to_numeric(mdf[total_col], errors="coerce").notna().mean()) if total_col else 0.0
+        summary["market"] = {
+            "path": str(market_path.relative_to(repo_root)),
+            "rows": int(len(mdf)),
+            "spread_non_null_rate": round(spread_rate, 6),
+            "total_non_null_rate": round(total_rate, 6),
+        }
+    else:
+        summary["market"] = {"path": str(market_path.relative_to(repo_root)), "rows": 0, "missing": True}
+
+    snap_path = data_dir / "team_snapshot.csv"
+    if snap_path.exists() and snap_path.stat().st_size > 0:
+        sdf = pd.read_csv(snap_path, dtype=str, low_memory=False)
+        feat_cols = [c for c in ["efg_pct", "efg_pct_l10", "pace", "pace_l10", "form_rating", "net_rtg_std_l10"] if c in sdf.columns]
+        row_rate = float(sdf[feat_cols].notna().any(axis=1).mean()) if feat_cols else 0.0
+        summary["team_snapshot"] = {
+            "path": str(snap_path.relative_to(repo_root)),
+            "rows": int(len(sdf)),
+            "present_feature_columns": feat_cols,
+            "non_null_feature_row_rate": round(row_rate, 6),
+        }
+    else:
+        summary["team_snapshot"] = {"path": str(snap_path.relative_to(repo_root)), "rows": 0, "missing": True}
+
+    return summary
 
 
 def _validate_one_spec(repo_root: Path, spec: Any, stage_name: str, kind: str) -> tuple[dict[str, Any] | None, str | None]:
@@ -248,9 +325,13 @@ def _validate_dependency_outputs(
                 kind=f"dependency_output:{dep_name}",
             )
             if err:
-                rel = produced_spec if isinstance(produced_spec, str) else produced_spec.get("path")
+                rel = _spec_path(produced_spec)
+                target = repo_root / rel if rel else repo_root
+                exists = target.exists() if rel else False
+                size_bytes = int(target.stat().st_size) if exists and target.is_file() else 0
                 raise RuntimeError(
                     f"[{stage_name}] missing dependency output '{rel}' from stage '{dep_name}'. "
+                    f"exists={exists} size_bytes={size_bytes}. "
                     f"Expected stage order: {dep_name} -> {stage_name}. Detail: {err}"
                 )
 
@@ -285,7 +366,15 @@ def _run_stage(
     else:
         proc = subprocess.run(shlex.split(command), cwd=repo_root)
         if proc.returncode != 0:
-            raise RuntimeError(f"[{name}] command failed with exit code {proc.returncode}: {command}")
+            output_status = _stage_output_status(repo_root, stage)
+            formatted = "\n".join(
+                f"  - {row['path']}: exists={row['exists']} size_bytes={row['size_bytes']} valid={row['valid']}"
+                for row in output_status
+            ) or "  - (no declared outputs)"
+            raise RuntimeError(
+                f"[{name}] command failed with exit code {proc.returncode}: {command}\n"
+                f"Declared outputs status:\n{formatted}"
+            )
 
     outputs: list[dict[str, Any]] = []
     output_infos = _validate_specs(repo_root, list(stage.get("produces", [])), name, "output")
@@ -365,18 +454,78 @@ def main() -> int:
     }
 
     results: list[StageResult] = []
-    for stage in ordered:
-        print(f"[STAGE] {stage['name']}")
-        result = _run_stage(
-            repo_root,
-            stage,
-            context,
-            args.dry_run,
-            producer_map=producer_map,
-            stage_lookup=stage_lookup,
-        )
-        results.append(result)
-        print(f"[OK] {result.name}")
+    current_stage: dict[str, Any] | None = None
+    try:
+        for stage in ordered:
+            current_stage = stage
+            print(f"[STAGE] {stage['name']}")
+            result = _run_stage(
+                repo_root,
+                stage,
+                context,
+                args.dry_run,
+                producer_map=producer_map,
+                stage_lookup=stage_lookup,
+            )
+            results.append(result)
+            print(f"[OK] {result.name}")
+    except Exception as exc:
+        failed_name = str((current_stage or {}).get("name", "unknown"))
+        failed_stage = stage_lookup.get(failed_name, current_stage or {})
+        failed_outputs = _stage_output_status(repo_root, failed_stage) if failed_stage else []
+
+        per_stage_outputs: dict[str, Any] = {}
+        for s in ordered:
+            sname = str(s.get("name", "")).strip()
+            per_stage_outputs[sname] = _stage_output_status(repo_root, s)
+
+        payload = {
+            "generated_at_utc": _utc_now(),
+            "contract": str(contract_path),
+            "job": args.job,
+            "failed_stage": failed_name,
+            "error": str(exc),
+            "failed_stage_requires": list((failed_stage or {}).get("requires", [])),
+            "failed_stage_produces": list((failed_stage or {}).get("produces", [])),
+            "failed_stage_outputs": failed_outputs,
+            "all_stage_outputs": per_stage_outputs,
+            "feature_coverage_summary": _feature_coverage_summary(repo_root),
+        }
+        debug_path = _write_contract_missing_outputs(repo_root, payload)
+
+        print(f"[ERROR] stage failure: {failed_name}")
+        print(f"[ERROR] details: {exc}")
+        if failed_outputs:
+            print(f"[INFO] required outputs for stage '{failed_name}':")
+            for row in failed_outputs:
+                print(
+                    f"  - {row['path']}: exists={row['exists']} size_bytes={row['size_bytes']} valid={row['valid']}"
+                )
+                if not row["valid"]:
+                    print(f"Missing required output: {row['path']} (stage: {failed_name})")
+                    if row.get("error"):
+                        print(f"  reason: {row['error']}")
+        else:
+            print(f"[INFO] stage '{failed_name}' declares no outputs or stage metadata was unavailable.")
+
+        deps = [str(d) for d in (failed_stage.get("depends_on", []) if isinstance(failed_stage, dict) else [])]
+        for dep_name in deps:
+            dep_rows = per_stage_outputs.get(dep_name, [])
+            if not dep_rows:
+                continue
+            print(f"[INFO] dependency stage output status '{dep_name}':")
+            for row in dep_rows:
+                print(
+                    f"  - {row['path']}: exists={row['exists']} size_bytes={row['size_bytes']} valid={row['valid']}"
+                )
+                if not row["valid"]:
+                    print(f"Missing required output: {row['path']} (stage: {dep_name})")
+                    if row.get("error"):
+                        print(f"  reason: {row['error']}")
+
+        print("Look at: data/perplexity_contract_runner.log and debug/*")
+        print(f"[INFO] wrote failure map: {debug_path}")
+        return 1
 
     manifest = {
         "contract_name": contract.get("name", contract_path.name),
@@ -385,6 +534,7 @@ def main() -> int:
         "generated_at_utc": _utc_now(),
         "dry_run": bool(args.dry_run),
         "context": context,
+        "feature_coverage_summary": _feature_coverage_summary(repo_root),
         "stages": [
             {
                 "name": r.name,

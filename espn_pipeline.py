@@ -22,6 +22,7 @@ from espn_config import (
     OUT_TOURNAMENT_METRICS, OUT_TOURNAMENT_SNAPSHOT,
     OUT_RANKINGS, OUT_RANKINGS_CONF,
     DAYS_BACK, CHECKPOINT_FILE,
+    ESPN_CONFERENCE_MAP,
     SOURCE, PARSE_VERSION,
     FETCH_SLEEP, DRY_RUN,
 )
@@ -69,6 +70,9 @@ PLAYER_TARGET_NULL_GUARD_COLUMNS = [
 
 HALF_SCORE_FINAL_MIN_NON_NULL = float(os.getenv("HALF_SCORE_FINAL_MIN_NON_NULL", "0.80"))
 STANDINGS_MIN_NON_NULL = float(os.getenv("STANDINGS_MIN_NON_NULL", "0.80"))
+SOS_MAX_ROW_MULTIPLIER = float(os.getenv("SOS_MAX_ROW_MULTIPLIER", "1.25"))
+SOS_MAX_OUTPUT_BYTES = int(os.getenv("SOS_MAX_OUTPUT_BYTES", str(2 * 1024 * 1024 * 1024)))
+DEBUG_DIR = BASE_DIR / "debug"
 
 # Fields that ESPN frequently omits — validation failures for these are warnings, not errors.
 SOFT_VALIDATION_FIELDS = {
@@ -157,6 +161,140 @@ def _scoreboard_team_context(games_df: pd.DataFrame) -> pd.DataFrame:
     out["event_id"] = out["event_id"].astype(str)
     out["team_id"] = out["team_id"].astype(str)
     return out.drop_duplicates(["event_id", "team_id"], keep="last")
+
+
+def _canonical_id(value: Any) -> str:
+    """Normalize numeric-like IDs (e.g., '123.0' -> '123')."""
+    if value is None or pd.isna(value):
+        return ""
+    token = str(value).strip()
+    if token.lower() in {"", "nan", "none", "null", "<na>", "nat"}:
+        return ""
+    if token.endswith(".0"):
+        token = token[:-2]
+    return token
+
+
+def _normalized_conf_id(value: Any) -> str:
+    return _canonical_id(value)
+
+
+def _build_d1_team_reference(games_df: pd.DataFrame) -> pd.DataFrame:
+    """Build canonical team_id -> is_d1 from scoreboard conference IDs."""
+    if games_df.empty:
+        return pd.DataFrame(columns=["team_id", "is_d1", "conf_id", "conference", "team"])
+
+    d1_conf_ids = set(str(k).strip() for k in ESPN_CONFERENCE_MAP.keys())
+    team_parts: List[pd.DataFrame] = []
+    for prefix in ("home_", "away_"):
+        tid_col = f"{prefix}team_id"
+        conf_id_col = f"{prefix}conf_id"
+        conf_col = f"{prefix}conference"
+        team_col = f"{prefix}team"
+        if tid_col not in games_df.columns:
+            continue
+        part = pd.DataFrame(
+            {
+                "team_id": games_df.get(tid_col, pd.Series(dtype=str)),
+                "conf_id": games_df.get(conf_id_col, pd.Series(dtype=str)),
+                "conference": games_df.get(conf_col, pd.Series(dtype=str)),
+                "team": games_df.get(team_col, pd.Series(dtype=str)),
+            }
+        )
+        part["team_id"] = part["team_id"].map(_canonical_id)
+        part["conf_id"] = part["conf_id"].map(_normalized_conf_id)
+        part["is_d1"] = part["conf_id"].isin(d1_conf_ids)
+        team_parts.append(part)
+
+    if not team_parts:
+        return pd.DataFrame(columns=["team_id", "is_d1", "conf_id", "conference", "team"])
+
+    team_df = pd.concat(team_parts, ignore_index=True)
+    team_df = team_df[team_df["team_id"] != ""].copy()
+    if team_df.empty:
+        return pd.DataFrame(columns=["team_id", "is_d1", "conf_id", "conference", "team"])
+
+    grouped = (
+        team_df.groupby("team_id", as_index=False)
+        .agg(
+            {
+                "is_d1": "max",
+                "conf_id": lambda s: next((str(v) for v in s if str(v).strip()), ""),
+                "conference": lambda s: next((str(v) for v in s if str(v).strip()), ""),
+                "team": lambda s: next((str(v) for v in s if str(v).strip()), ""),
+            }
+        )
+    )
+    grouped["is_d1"] = grouped["is_d1"].astype(bool)
+    return grouped
+
+
+def filter_d1_vs_d1(games_df: pd.DataFrame, teams_ref_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Keep only games where both teams are Division I based on conference-id mapping.
+
+    Returns
+    -------
+    (filtered_games_df, report_df)
+    """
+    if games_df.empty:
+        report_cols = [
+            "event_id",
+            "game_id",
+            "home_team",
+            "away_team",
+            "home_team_id",
+            "away_team_id",
+            "home_is_d1",
+            "away_is_d1",
+            "filter_reason",
+        ]
+        return games_df.copy(), pd.DataFrame(columns=report_cols)
+
+    df = games_df.copy()
+    if "event_id" not in df.columns and "game_id" in df.columns:
+        df["event_id"] = df["game_id"]
+    if "game_id" not in df.columns and "event_id" in df.columns:
+        df["game_id"] = df["event_id"]
+    for col in ["event_id", "game_id", "home_team_id", "away_team_id"]:
+        if col in df.columns:
+            df[col] = df[col].map(_canonical_id)
+
+    lookup = {}
+    if not teams_ref_df.empty and {"team_id", "is_d1"}.issubset(teams_ref_df.columns):
+        tmp = teams_ref_df.copy()
+        tmp["team_id"] = tmp["team_id"].map(_canonical_id)
+        lookup = tmp.drop_duplicates("team_id", keep="last").set_index("team_id")["is_d1"].to_dict()
+
+    df["home_is_d1"] = df.get("home_team_id", "").map(lookup).fillna(False).astype(bool)
+    df["away_is_d1"] = df.get("away_team_id", "").map(lookup).fillna(False).astype(bool)
+
+    def _reason(row: pd.Series) -> str:
+        if bool(row.get("home_is_d1")) and bool(row.get("away_is_d1")):
+            return "KEEP_D1_VS_D1"
+        if not bool(row.get("home_is_d1")) and not bool(row.get("away_is_d1")):
+            return "EXCLUDED_BOTH_NON_D1_OR_UNKNOWN"
+        if not bool(row.get("home_is_d1")):
+            return "EXCLUDED_HOME_NON_D1_OR_UNKNOWN"
+        return "EXCLUDED_AWAY_NON_D1_OR_UNKNOWN"
+
+    df["filter_reason"] = df.apply(_reason, axis=1)
+
+    report_cols = [
+        "event_id",
+        "game_id",
+        "home_team",
+        "away_team",
+        "home_team_id",
+        "away_team_id",
+        "home_is_d1",
+        "away_is_d1",
+        "filter_reason",
+    ]
+    report_df = df[[c for c in report_cols if c in df.columns]].copy()
+    filtered = df[(df["home_is_d1"]) & (df["away_is_d1"])].copy()
+    filtered = filtered.drop(columns=["home_is_d1", "away_is_d1", "filter_reason"], errors="ignore")
+    return filtered, report_df
 
 
 def _log_stage_null_rates(stage: str, df: pd.DataFrame, columns: List[str]) -> None:
@@ -479,13 +617,36 @@ def build_games(days_back: int = DAYS_BACK) -> pd.DataFrame:
         return pd.DataFrame()
 
     df_new = pd.DataFrame(all_rows)
-    df_all = _append_dedupe_write(
+    df_all_unfiltered = _append_dedupe_write(
         OUT_GAMES,
         df_new,
         unique_keys=["game_id"],
         sort_cols=["date", "game_id"],
+        persist=False,
     )
-    log.info(f"games.csv: {len(df_all)} total rows")
+
+    teams_ref = _build_d1_team_reference(df_all_unfiltered)
+    df_all, d1_report = filter_d1_vs_d1(df_all_unfiltered, teams_ref)
+
+    fetched_games = len(df_all_unfiltered)
+    d1_games_kept = len(df_all)
+    removed_non_d1 = max(0, fetched_games - d1_games_kept)
+    log.info(
+        "D1 filter counts: fetched_games=%s d1_games_kept=%s removed_non_d1=%s",
+        fetched_games,
+        d1_games_kept,
+        removed_non_d1,
+    )
+
+    if not DRY_RUN:
+        DEBUG_DIR.mkdir(parents=True, exist_ok=True)
+        safe_write_csv(d1_report, DEBUG_DIR / "d1_filter_report.csv", label="d1_filter_report", allow_empty=True)
+        safe_write_csv(df_all, OUT_GAMES, label=str(OUT_GAMES), allow_empty=True)
+    else:
+        log.info(f"[DRY RUN] Would write d1_filter_report.csv rows={len(d1_report)}")
+        log.info(f"[DRY RUN] Would write games.csv rows={len(df_all)}")
+
+    log.info(f"games.csv: {len(df_all)} total rows (D1 vs D1 only)")
     return df_all
 
 
@@ -644,6 +805,19 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
             unique_keys=["event_id", "team_id"],
             sort_cols=["game_datetime_utc", "event_id", "team_id"],
         )
+        if len(df_sos_out) > int(len(df_metrics_out) * SOS_MAX_ROW_MULTIPLIER):
+            raise RuntimeError(
+                f"SOS row-count guard failed: input_rows={len(df_metrics_out)} output_rows={len(df_sos_out)} "
+                f"multiplier={len(df_sos_out) / max(len(df_metrics_out), 1):.4f} guard={SOS_MAX_ROW_MULTIPLIER:.2f}. "
+                "See debug/sos_size_audit.json for merge diagnostics."
+            )
+        if OUT_SOS.exists():
+            sos_bytes = OUT_SOS.stat().st_size
+            if sos_bytes > SOS_MAX_OUTPUT_BYTES:
+                raise RuntimeError(
+                    f"SOS output size guard failed: path={OUT_SOS} bytes={sos_bytes} max_bytes={SOS_MAX_OUTPUT_BYTES}. "
+                    "See debug/sos_size_audit.json for root-cause diagnostics."
+                )
         log.info(f"team_game_sos.csv: {len(df_sos_out)} total rows")
 
         # ── Opponent-weighted rolling metrics ──

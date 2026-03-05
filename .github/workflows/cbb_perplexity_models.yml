@@ -117,7 +117,7 @@ jobs:
             --job update \
             --days-back "${{ steps.resolve_inputs.outputs.days_back }}" \
             --manifest data/perplexity_models_manifest.json \
-            --stages "espn_pipeline,rotation_features,situational_features,advanced_metrics_builder,joint_models_predictions" \
+            --stages "espn_pipeline,rotation_features,situational_features,market_builder,advanced_metrics_builder,joint_models_predictions" \
             2>&1 | tee "${LOG_PATH}"
           CONTRACT_EXIT_CODE=${PIPESTATUS[0]}
           set -e
@@ -145,6 +145,8 @@ jobs:
 
           expected = [
               Path("data/advanced_metrics.csv"),
+              Path("data/team_snapshot.csv"),
+              Path("data/market_lines_latest_by_game.csv"),
               Path("data/predictions_joint_latest.csv"),
               Path("data/predictions_joint_snapshots.csv"),
           ]
@@ -176,7 +178,7 @@ jobs:
             --preflight-allow "${{ steps.preflight.outputs.allow_run }}" \
             --preflight-reason "${{ steps.preflight.outputs.reason }}" \
             --contract-exit-code "${{ steps.contract_runner.outputs.exit_code }}" \
-            --files data/advanced_metrics.csv data/predictions_joint_latest.csv data/predictions_joint_snapshots.csv
+            --files data/advanced_metrics.csv data/team_snapshot.csv data/market_lines_latest_by_game.csv data/predictions_joint_latest.csv data/predictions_joint_snapshots.csv
 
       - name: Validate required outputs
         if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
@@ -184,6 +186,86 @@ jobs:
         run: |
           set -euo pipefail
           bash .github/scripts/validate_perplexity_outputs.sh data/perplexity_contract_runner.log
+
+      - name: Guard required outputs, oversize files, and build artifact payload
+        if: always()
+        shell: bash
+        env:
+          PREFLIGHT_ALLOW: ${{ steps.preflight.outputs.allow_run }}
+          CONTRACT_EXIT: ${{ steps.contract_runner.outputs.exit_code }}
+        run: |
+          set -euo pipefail
+          mkdir -p debug debug/artifact_payload
+          python - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+          import pandas as pd
+          import os
+
+          preflight_allow = os.environ.get("PREFLIGHT_ALLOW", "")
+          contract_exit = os.environ.get("CONTRACT_EXIT", "")
+          enforce_required = (preflight_allow == "true" and contract_exit == "0")
+
+          required_files = [
+              Path("data/advanced_metrics.csv"),
+              Path("data/team_snapshot.csv"),
+              Path("data/market_lines_latest_by_game.csv"),
+              Path("data/predictions_joint_latest.csv"),
+              Path("data/predictions_joint_snapshots.csv"),
+          ]
+          max_size_bytes = 500 * 1024 * 1024
+          raw_upload_max_bytes = 100 * 1024 * 1024
+          oversize = []
+          missing_required = []
+          stats = {}
+          payload_dir = Path("debug/artifact_payload")
+          payload_dir.mkdir(parents=True, exist_ok=True)
+
+          for path in required_files:
+              entry = {"exists": path.exists(), "size_bytes": 0, "rows": None}
+              if path.exists():
+                  entry["size_bytes"] = int(path.stat().st_size)
+                  if entry["size_bytes"] > max_size_bytes:
+                      oversize.append({"path": str(path), "size_bytes": entry["size_bytes"], "max_size_bytes": max_size_bytes})
+                  if path.suffix.lower() == ".csv" and entry["size_bytes"] > 0:
+                      try:
+                          df = pd.read_csv(path, dtype=str, low_memory=False)
+                          entry["rows"] = int(len(df))
+                          sample = df.head(500)
+                          sample_path = Path("debug") / f"sample_{path.name}"
+                          sample.to_csv(sample_path, index=False)
+                      except Exception as exc:
+                          entry["read_error"] = str(exc)
+                  if entry["size_bytes"] <= raw_upload_max_bytes:
+                      shutil.copy2(path, payload_dir / path.name)
+              if enforce_required and (not path.exists() or path.stat().st_size == 0):
+                  missing_required.append(str(path))
+              stats[str(path)] = entry
+
+          Path("debug/output_file_stats.json").write_text(json.dumps(stats, indent=2), encoding="utf-8")
+
+          artifact_manifest = {
+              "enforce_required": enforce_required,
+              "oversize_count": len(oversize),
+              "missing_required_count": len(missing_required),
+              "required_files": [str(p) for p in required_files],
+              "raw_upload_max_bytes": raw_upload_max_bytes,
+          }
+          Path("debug/artifact_upload_manifest.json").write_text(json.dumps(artifact_manifest, indent=2), encoding="utf-8")
+
+          if oversize:
+              Path("debug/oversize_outputs.json").write_text(json.dumps(oversize, indent=2), encoding="utf-8")
+              print("[ERROR] Oversize output files detected (>500MB). See debug/oversize_outputs.json")
+              raise SystemExit(1)
+
+          if missing_required:
+              print("[ERROR] Missing required outputs:")
+              for item in missing_required:
+                  print(f"  - {item}")
+              print("Action: inspect data/run_manifest.json and data/perplexity_contract_runner.log for failing stage.")
+              raise SystemExit(1)
+          PY
 
       - name: Health summary
         if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
@@ -196,6 +278,8 @@ jobs:
 
           files = [
               Path("data/advanced_metrics.csv"),
+              Path("data/team_snapshot.csv"),
+              Path("data/market_lines_latest_by_game.csv"),
               Path("data/predictions_joint_latest.csv"),
               Path("data/predictions_joint_snapshots.csv"),
           ]
@@ -223,8 +307,8 @@ jobs:
         run: |
           set -euo pipefail
           echo "[ERROR] Required producer output chain did not complete."
-          echo "[INFO] producer stages: espn_pipeline -> advanced_metrics_builder -> joint_models_predictions"
-          echo "[INFO] producer command: python .github/scripts/run_pipeline_contract.py --contract .github/pipeline_contracts/espn_pipeline_contract.json --job update --days-back '${{ steps.resolve_inputs.outputs.days_back }}' --manifest data/perplexity_models_manifest.json --stages 'espn_pipeline,rotation_features,situational_features,advanced_metrics_builder,joint_models_predictions'"
+          echo "[INFO] producer stages: espn_pipeline -> market_builder -> advanced_metrics_builder -> joint_models_predictions"
+          echo "[INFO] producer command: python .github/scripts/run_pipeline_contract.py --contract .github/pipeline_contracts/espn_pipeline_contract.json --job update --days-back '${{ steps.resolve_inputs.outputs.days_back }}' --manifest data/perplexity_models_manifest.json --stages 'espn_pipeline,rotation_features,situational_features,market_builder,advanced_metrics_builder,joint_models_predictions'"
           echo "[INFO] preflight_allow_run='${{ steps.preflight.outputs.allow_run }}' reason='${{ steps.preflight.outputs.reason }}'"
           echo "[INFO] contract_runner_exit_code='${{ steps.contract_runner.outputs.exit_code }}'"
           if [[ -f data/perplexity_contract_runner.log ]]; then
@@ -248,6 +332,16 @@ jobs:
             data/perplexity_contract_runner.log
             health_summary.md
 
+      - name: Upload debug bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-perplexity-debug
+          if-no-files-found: warn
+          retention-days: 21
+          path: |
+            debug/
+
       - name: Upload model-output artifact bundle
         if: always()
         uses: actions/upload-artifact@v4
@@ -256,9 +350,10 @@ jobs:
           if-no-files-found: warn
           retention-days: 21
           path: |
-            data/advanced_metrics.csv
-            data/predictions_joint_latest.csv
-            data/predictions_joint_snapshots.csv
+            debug/artifact_payload/
+            debug/sample_*.csv
+            debug/output_file_stats.json
+            debug/artifact_upload_manifest.json
 
       - name: Commit and push model outputs to main
         if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
@@ -275,6 +370,9 @@ jobs:
 
           git add --ignore-missing -- \
             data/advanced_metrics.csv \
+            data/team_snapshot.csv \
+            data/market_lines_canonical.csv \
+            data/market_lines_latest_by_game.csv \
             data/predictions_joint_latest.csv \
             data/predictions_joint_snapshots.csv
 
