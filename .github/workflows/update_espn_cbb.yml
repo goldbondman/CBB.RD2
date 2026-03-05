@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       days_back:
-        description: "Days back to fetch (default 3, use 120 for full season backfill)"
+        description: "Days back to fetch (default 3, use >180 only for manual backfill)"
         required: false
         default: "3"
       run_rankings:
@@ -14,7 +14,7 @@ on:
         type: choice
         options: ["true", "false"]
       game_type:
-        description: "Game type context for predictions (affects totals multiplier)"
+        description: "Game type context for predictions"
         required: false
         default: "regular"
         type: choice
@@ -23,137 +23,261 @@ on:
           - conf_tournament
           - ncaa_r1
           - ncaa_r2
+      commit_data:
+        description: "Commit curated data outputs to main (manual runs only)"
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
   schedule:
-    - cron: "0 10 * * *"   # 10:00 AM UTC daily (2 AM PST / 3 AM PDT)
+    - cron: "0 10 * * *"
 
-# Standardized concurrency group to prevent race conditions across all pipeline workflows
 concurrency:
   group: cbb-data-pipeline
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
+
+env:
+  TZ: UTC
+  PYTHONHASHSEED: "0"
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
 
 jobs:
-  # ════════════════════════════════════════════════════════════════════════════
-  # JOB 1 — DATA PIPELINE
-  # ════════════════════════════════════════════════════════════════════════════
   update:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      actions: write
     outputs:
-      pipeline_success: ${{ steps.run_pipeline.outputs.success }}
+      days_back: ${{ steps.resolve_inputs.outputs.days_back }}
+      game_type: ${{ steps.resolve_inputs.outputs.game_type }}
+      run_rankings: ${{ steps.resolve_inputs.outputs.run_rankings }}
+      commit_data: ${{ steps.resolve_inputs.outputs.commit_data }}
+      artifact_name: ${{ steps.resolve_inputs.outputs.artifact_name }}
 
     steps:
-      # Standard checkout step
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # Ensure directories exist
-      - name: Ensure data directories exist
+      - name: Resolve and validate inputs
+        id: resolve_inputs
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_DAYS_BACK: ${{ github.event.inputs.days_back }}
+          INPUT_RUN_RANKINGS: ${{ github.event.inputs.run_rankings }}
+          INPUT_GAME_TYPE: ${{ github.event.inputs.game_type }}
+          INPUT_COMMIT_DATA: ${{ github.event.inputs.commit_data }}
         run: |
-          mkdir -p data/csv
-          mkdir -p data/raw_json
-          touch data/csv/.gitkeep
+          set -euo pipefail
 
-      # Set up Python
+          DAYS_BACK="${INPUT_DAYS_BACK:-3}"
+          if [[ -z "$DAYS_BACK" ]]; then
+            DAYS_BACK="3"
+          fi
+          if ! [[ "$DAYS_BACK" =~ ^[0-9]+$ ]]; then
+            echo "[ERROR] days_back must be numeric; got '$DAYS_BACK'"
+            exit 1
+          fi
+          DAYS_BACK_INT=$((DAYS_BACK))
+          if (( DAYS_BACK_INT < 1 )); then
+            echo "[ERROR] days_back must be >= 1"
+            exit 1
+          fi
+          if (( DAYS_BACK_INT > 180 )); then
+            if [[ "$EVENT_NAME" != "workflow_dispatch" ]]; then
+              echo "[ERROR] days_back > 180 is only allowed on manual workflow_dispatch runs"
+              exit 1
+            fi
+            echo "[WARN] manual backfill requested with days_back=$DAYS_BACK_INT"
+          fi
+
+          RUN_RANKINGS="${INPUT_RUN_RANKINGS:-true}"
+          if [[ -z "$RUN_RANKINGS" ]]; then
+            RUN_RANKINGS="true"
+          fi
+          case "$RUN_RANKINGS" in
+            true|false) ;;
+            *) echo "[ERROR] run_rankings must be true or false"; exit 1 ;;
+          esac
+
+          COMMIT_DATA="${INPUT_COMMIT_DATA:-false}"
+          if [[ "$EVENT_NAME" != "workflow_dispatch" ]]; then
+            COMMIT_DATA="false"
+          fi
+          case "$COMMIT_DATA" in
+            true|false) ;;
+            *) echo "[ERROR] commit_data must be true or false"; exit 1 ;;
+          esac
+
+          GAME_TYPE="${INPUT_GAME_TYPE:-regular}"
+          if [[ -z "$GAME_TYPE" ]]; then
+            GAME_TYPE="regular"
+          fi
+          case "$GAME_TYPE" in
+            regular|conf_tournament|ncaa_r1|ncaa_r2) ;;
+            *) echo "[ERROR] invalid game_type '$GAME_TYPE'"; exit 1 ;;
+          esac
+
+          echo "days_back=$DAYS_BACK" >> "$GITHUB_OUTPUT"
+          echo "run_rankings=$RUN_RANKINGS" >> "$GITHUB_OUTPUT"
+          echo "commit_data=$COMMIT_DATA" >> "$GITHUB_OUTPUT"
+          echo "game_type=$GAME_TYPE" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=INFRA-espn-data" >> "$GITHUB_OUTPUT"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
-      # Pattern 5: Install dependencies with import guards
       - name: Install dependencies
+        shell: bash
         run: |
-          pip install -r requirements.txt
-          python -c "import pandas, numpy, requests, scipy" || \
-            { echo "[ERROR] Core dependency import failed"; exit 1; }
+          set -euo pipefail
+          if [[ -f constraints.txt ]]; then
+            pip install -r requirements.txt -c constraints.txt
+          else
+            pip install -r requirements.txt
+          fi
+          python -c "import pandas, numpy, requests, scipy"
 
-      # Execute the main data collection pipeline
-      - name: Run ESPN pipeline
-        id: run_pipeline
+      - name: Self-test pipeline contract tooling
+        shell: bash
         run: |
-          python espn_pipeline.py --days-back ${{ github.event.inputs.days_back || '3' }}
-          echo "success=true" >> $GITHUB_OUTPUT
-        env:
-          DAYS_BACK: ${{ github.event.inputs.days_back || '3' }}
+          set -euo pipefail
+          python -m py_compile .github/scripts/run_pipeline_contract.py .github/scripts/print_data_integrity.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('.github/pipeline_contracts/espn_pipeline_contract.json')
+          contract = json.loads(p.read_text(encoding='utf-8'))
+          assert contract.get('stages'), 'Contract missing stages'
+          print('[OK] contract loaded:', p)
+          PY
 
-      # Run feature builders that depend on team_game_weighted.csv
-      - name: Run feature builders
+      - name: Run dependency-aware update stages
+        shell: bash
         run: |
-          python cbb_rotation_features.py
-          python cbb_situational_features.py
-          python cbb_luck_regression_features.py
-          python player_availability_features.py
-          python cbb_season_summaries.py
+          set -euo pipefail
+          python .github/scripts/run_pipeline_contract.py \
+            --contract .github/pipeline_contracts/espn_pipeline_contract.json \
+            --job update \
+            --days-back "${{ steps.resolve_inputs.outputs.days_back }}" \
+            --game-type "${{ steps.resolve_inputs.outputs.game_type }}" \
+            --manifest data/update_manifest.json
 
-      # Pattern 2: Validate team_game_weighted.csv
-      - name: Validate team_game_weighted.csv
+      - name: Validate required core outputs
+        shell: bash
         run: |
-          check_csv() {
-            local f="$1" min_rows="${2:-1}"
-            if [ ! -f "$f" ]; then
-              echo "[ERROR] $f was not created"; exit 1
-            fi
-            local rows=$(( $(wc -l < "$f") - 1 ))
-            if [ "$rows" -lt "$min_rows" ]; then
-              echo "[ERROR] $f has $rows data rows (minimum: $min_rows)"; exit 1
-            fi
-            echo "[OK] $f: $rows rows"
-          }
-          check_csv data/team_game_weighted.csv 1
+          set -euo pipefail
+          bash .github/scripts/check_csv.sh data/games.csv 1 "game_id,game_datetime_utc"
+          bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "game_id,team_id,game_datetime_utc"
+          bash .github/scripts/check_csv.sh data/team_pretournament_snapshot.csv 1 "team_id"
 
-      # Pattern 10: Upload artifacts even on failure
-      # Standardized name: INFRA-espn-data (matches contract table)
-      - name: Upload ESPN CSVs
+      - name: Print data integrity block
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/print_data_integrity.py \
+            --label update \
+            --output data/update_data_integrity.json \
+            data/games.csv \
+            data/team_game_weighted.csv \
+            data/team_pretournament_snapshot.csv
+
+      - name: Upload update artifact bundle
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: INFRA-espn-data
-          path: data/
-          retention-days: 90
+          if-no-files-found: error
+          retention-days: 21
+          path: |
+            data/games.csv
+            data/team_game_weighted.csv
+            data/team_pretournament_snapshot.csv
+            data/rotation_features.csv
+            data/situational_features.csv
+            data/luck_regression_features.csv
+            data/player_availability_features.csv
+            data/player_season_summary.csv
+            data/team_season_summary.csv
+            data/update_manifest.json
+            data/update_data_integrity.json
 
-      # Pattern 9: Standardized commit step with retry logic
-      - name: Commit to repo
-        if: always()
+      - name: Validate workflow health
+        shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
-          if git diff --staged --quiet; then
-            echo "[SKIP] No changes to commit"
+          set -euo pipefail
+          if [[ -f .github/scripts/validate_workflows.py ]]; then
+            python .github/scripts/validate_workflows.py
+          else
+            echo "[SKIP] .github/scripts/validate_workflows.py not found"
+          fi
+
+      - name: Commit curated update outputs to main
+        if: ${{ github.event_name == 'workflow_dispatch' && steps.resolve_inputs.outputs.commit_data == 'true' && steps.resolve_inputs.outputs.run_rankings != 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "[SKIP] commit_data requested but ref is ${GITHUB_REF}; only main is allowed"
             exit 0
           fi
-          git commit -m "pipeline: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
-          for i in 1 2 3 4 5; do
-            git fetch origin main
-            git rebase origin/main --no-stat 2>&1 || {
-              git rebase --abort 2>/dev/null || true
-              git merge origin/main -X ours --no-edit 2>&1 || {
-                git merge --abort 2>/dev/null || true
-                git reset --hard HEAD
-              }
-            }
-            git push origin HEAD:main && { echo "[OK] Push succeeded attempt $i"; exit 0; }
-            sleep $((i * 3))
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add --ignore-missing -- \
+            data/games.csv \
+            data/team_game_weighted.csv \
+            data/team_pretournament_snapshot.csv \
+            data/rotation_features.csv \
+            data/situational_features.csv \
+            data/luck_regression_features.csv \
+            data/player_availability_features.csv \
+            data/player_season_summary.csv \
+            data/team_season_summary.csv
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No curated update output changes to commit"
+            exit 0
+          fi
+
+          STAGED_BYTES=$(git diff --cached --name-only -z | xargs -0 -r du -cb | tail -n 1 | cut -f1)
+          STAGED_BYTES=${STAGED_BYTES:-0}
+          MAX_BYTES=$((50 * 1024 * 1024))
+          if (( STAGED_BYTES > MAX_BYTES )); then
+            echo "[ERROR] staged payload ${STAGED_BYTES} bytes exceeds ${MAX_BYTES} byte guard"
+            exit 1
+          fi
+
+          git commit -m "data: update ESPN CBB artifacts [skip ci]"
+          for i in 1 2 3; do
+            if ! git pull --rebase origin main; then
+              echo "[ERROR] rebase conflict while syncing main on attempt ${i}"
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo "[OK] push succeeded on attempt ${i}"
+              exit 0
+            fi
+            echo "[WARN] push failed on attempt ${i}; retrying"
+            sleep $((i * 2))
           done
-          echo "[WARN] Push failed after 5 attempts"
+          echo "[ERROR] failed to push after retries"
           exit 1
 
-  # ════════════════════════════════════════════════════════════════════════════
-  # JOB 2 — CAGE RANKINGS
-  # ════════════════════════════════════════════════════════════════════════════
   rankings:
     runs-on: ubuntu-latest
+    needs: update
+    if: ${{ needs.update.result == 'success' && needs.update.outputs.run_rankings == 'true' }}
     permissions:
       contents: write
-      actions: write
-    needs: update
-    if: always() && needs.update.result == 'success' && (github.event.inputs.run_rankings != 'false')
 
     steps:
       - name: Checkout repo
@@ -165,96 +289,139 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
-      # Download data from previous job. Standardized name: INFRA-espn-data.
-      - name: Download ESPN CSVs
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f constraints.txt ]]; then
+            pip install -r requirements.txt -c constraints.txt
+          else
+            pip install -r requirements.txt
+          fi
+          python -c "import pandas, numpy, requests, scipy"
+
+      - name: Download update artifact bundle
         uses: actions/download-artifact@v4
         with:
           name: INFRA-espn-data
-          path: data/
-        continue-on-error: true
+          path: .
 
-      # Verify required input files exist with real data rows
-      - name: Verify required input files
+      - name: Validate update manifest and ranking inputs
+        shell: bash
         run: |
-          fail=0
-          for f in data/team_game_weighted.csv data/team_pretournament_snapshot.csv; do
-            rows=$(( $(wc -l < "$f" 2>/dev/null || echo 0) - 1 ))
-            if [ "$rows" -lt 1 ]; then
-              echo "[ERROR] $f has $rows data rows — aborting"
-              fail=1
-            else
-              echo "[OK] $f: $rows rows"
-            fi
-          done
-          [ "$fail" -eq 0 ] || exit 1
-
-      # Pattern 5: Install dependencies with import guards
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          python -c "import pandas, numpy, requests, scipy" || \
-            { echo "[ERROR] Core dependency import failed"; exit 1; }
-
-      # Build CAGE rankings
-      - name: Build CAGE rankings
-        run: |
-          python espn_rankings.py --top 25
-          # Backward-compatible fallback if rankings are emitted under data/csv/
-          if [ ! -f data/cbb_rankings.csv ] && [ -f data/csv/cbb_rankings.csv ]; then
-            cp data/csv/cbb_rankings.csv data/cbb_rankings.csv
-            echo "[OK] Copied data/csv/cbb_rankings.csv -> data/cbb_rankings.csv"
+          set -euo pipefail
+          if [[ ! -f data/update_manifest.json ]]; then
+            echo "[ERROR] Missing required data/update_manifest.json from update artifact"
+            exit 1
           fi
+          python - <<'PY'
+          import json
+          from pathlib import Path
 
-      # Pattern 2: Validate rankings output
-      - name: Validate rankings output
+          manifest = json.loads(Path('data/update_manifest.json').read_text(encoding='utf-8'))
+          stage_names = [s.get('name') for s in manifest.get('stages', [])]
+          required = {'espn_pipeline'}
+          missing = sorted(required - set(stage_names))
+          if missing:
+              raise SystemExit(f"[ERROR] update_manifest missing required stages: {missing}")
+          print('[OK] update_manifest stage list:', stage_names)
+          PY
+          bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "team_id,game_id,game_datetime_utc" 36
+          bash .github/scripts/check_csv.sh data/team_pretournament_snapshot.csv 1 "team_id" 36
+
+      - name: Run dependency-aware rankings stage
+        shell: bash
         run: |
-          if [ -f data/cbb_rankings.csv ]; then
-            rows=$(( $(wc -l < data/cbb_rankings.csv) - 1 ))
-            if [ "$rows" -lt 1 ]; then
-              echo "[ERROR] data/cbb_rankings.csv exists but has no data rows"; exit 1
-            fi
-            echo "[OK] cbb_rankings.csv: $rows rows"
-          else
-            echo "[ERROR] data/cbb_rankings.csv was not created"; exit 1
-          fi
+          set -euo pipefail
+          python .github/scripts/run_pipeline_contract.py \
+            --contract .github/pipeline_contracts/espn_pipeline_contract.json \
+            --job rankings \
+            --days-back "${{ needs.update.outputs.days_back }}" \
+            --game-type "${{ needs.update.outputs.game_type }}" \
+            --manifest data/rankings_manifest.json
 
-      # Pattern 10: Upload artifacts even on failure
+      - name: Validate rankings outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash .github/scripts/check_csv.sh data/cbb_rankings.csv 1 "team_id,rank"
+          bash .github/scripts/check_csv.sh data/cbb_rankings_by_conference.csv 1
+
+      - name: Print rankings integrity block
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/print_data_integrity.py \
+            --label rankings \
+            --output data/rankings_data_integrity.json \
+            data/cbb_rankings.csv \
+            data/cbb_rankings_by_conference.csv
+
       - name: Upload rankings artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: INFRA-rankings
-          path: data/cbb_rankings.csv
-          retention-days: 30
+          name: INFRA-rankings-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 21
+          path: |
+            data/cbb_rankings.csv
+            data/cbb_rankings_by_conference.csv
+            data/rankings_manifest.json
+            data/rankings_data_integrity.json
 
-      # Pattern 9: Standardized commit step with retry logic
-      - name: Commit to repo
-        if: always()
+      - name: Commit curated update+rankings outputs to main
+        if: ${{ github.event_name == 'workflow_dispatch' && needs.update.outputs.commit_data == 'true' }}
+        shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
-          if git diff --staged --quiet; then
-            echo "[SKIP] No changes to commit"
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "[SKIP] commit_data requested but ref is ${GITHUB_REF}; only main is allowed"
             exit 0
           fi
-          git commit -m "rankings: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
-          for i in 1 2 3 4 5; do
-            git fetch origin main
-            git rebase origin/main --no-stat 2>&1 || {
-              git rebase --abort 2>/dev/null || true
-              git merge origin/main -X ours --no-edit 2>&1 || {
-                git merge --abort 2>/dev/null || true
-                git reset --hard HEAD
-              }
-            }
-            git push origin HEAD:main && { echo "[OK] Push succeeded attempt $i"; exit 0; }
-            sleep $((i * 3))
-          done
-          echo "[WARN] Push failed after 5 attempts"
-          exit 1
 
-      # Final health check to verify all workflows meet standards
-      - name: Validate workflow health
-        if: always()
-        run: python .github/scripts/validate_workflows.py
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add --ignore-missing -- \
+            data/games.csv \
+            data/team_game_weighted.csv \
+            data/team_pretournament_snapshot.csv \
+            data/rotation_features.csv \
+            data/situational_features.csv \
+            data/luck_regression_features.csv \
+            data/player_availability_features.csv \
+            data/player_season_summary.csv \
+            data/team_season_summary.csv \
+            data/cbb_rankings.csv \
+            data/cbb_rankings_by_conference.csv
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No curated output changes to commit"
+            exit 0
+          fi
+
+          STAGED_BYTES=$(git diff --cached --name-only -z | xargs -0 -r du -cb | tail -n 1 | cut -f1)
+          STAGED_BYTES=${STAGED_BYTES:-0}
+          MAX_BYTES=$((50 * 1024 * 1024))
+          if (( STAGED_BYTES > MAX_BYTES )); then
+            echo "[ERROR] staged payload ${STAGED_BYTES} bytes exceeds ${MAX_BYTES} byte guard"
+            exit 1
+          fi
+
+          git commit -m "data: update ESPN CBB artifacts + rankings [skip ci]"
+          for i in 1 2 3; do
+            if ! git pull --rebase origin main; then
+              echo "[ERROR] rebase conflict while syncing main on attempt ${i}"
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo "[OK] push succeeded on attempt ${i}"
+              exit 0
+            fi
+            echo "[WARN] push failed on attempt ${i}; retrying"
+            sleep $((i * 2))
+          done
+          echo "[ERROR] failed to push after retries"
+          exit 1
