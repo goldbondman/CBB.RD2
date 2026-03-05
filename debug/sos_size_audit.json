@@ -1,0 +1,263 @@
+{
+  "generated_at_utc": "2026-03-05T23:20:34+00:00",
+  "status": "success",
+  "input_rows": 10888,
+  "input_columns": 971,
+  "join_key_columns_present": {
+    "event_id": true,
+    "game_id": false,
+    "game_datetime_utc": true
+  },
+  "join_key_dtypes": {
+    "team_id": "object",
+    "opponent_id": "object",
+    "event_id": "object",
+    "game_datetime_utc": "object"
+  },
+  "game_datetime_utc_null_rate": 0.9632623071271125,
+  "input_unique_keys": {
+    "team_id+game_datetime_utc": {
+      "label": "compute_sos_metrics:key team_id+game_datetime_utc",
+      "keys": [
+        "team_id",
+        "game_datetime_utc"
+      ],
+      "rows": 10888,
+      "unique_rows": 1027,
+      "duplicate_keys": 433,
+      "duplication_factor": 10.601752677702045,
+      "top_duplicates": [
+        {
+          "team_id": "79",
+          "game_datetime_utc": null,
+          "_count": "31"
+        },
+        {
+          "team_id": "290",
+          "game_datetime_utc": null,
+          "_count": "31"
+        },
+        {
+          "team_id": "2837",
+          "game_datetime_utc": null,
+          "_count": "31"
+        },
+        {
+          "team_id": "2197",
+          "game_datetime_utc": null,
+          "_count": "31"
+        },
+        {
+          "team_id": "2363",
+          "game_datetime_utc": null,
+          "_count": "30"
+        }
+      ]
+    },
+    "team_id+opponent_id+game_datetime_utc": {
+      "label": "compute_sos_metrics:key team_id+opponent_id+game_datetime_utc",
+      "keys": [
+        "team_id",
+        "opponent_id",
+        "game_datetime_utc"
+      ],
+      "rows": 10888,
+      "unique_rows": 8286,
+      "duplicate_keys": 2478,
+      "duplication_factor": 1.3140236543567463,
+      "top_duplicates": [
+        {
+          "team_id": "2000",
+          "opponent_id": "2627",
+          "game_datetime_utc": null,
+          "_count": "4"
+        },
+        {
+          "team_id": "2627",
+          "opponent_id": "2000",
+          "game_datetime_utc": null,
+          "_count": "4"
+        },
+        {
+          "team_id": "2627",
+          "opponent_id": "3101",
+          "game_datetime_utc": null,
+          "_count": "3"
+        },
+        {
+          "team_id": "295",
+          "opponent_id": "290",
+          "game_datetime_utc": null,
+          "_count": "3"
+        },
+        {
+          "team_id": "270",
+          "opponent_id": "2174",
+          "game_datetime_utc": null,
+          "_count": "3"
+        }
+      ]
+    },
+    "team_id+event_id": {
+      "label": "compute_sos_metrics:key team_id+event_id",
+      "keys": [
+        "team_id",
+        "event_id"
+      ],
+      "rows": 10888,
+      "unique_rows": 10888,
+      "duplicate_keys": 0,
+      "duplication_factor": 1.0,
+      "top_duplicates": []
+    },
+    "team_id+opponent_id+event_id": {
+      "label": "compute_sos_metrics:key team_id+opponent_id+event_id",
+      "keys": [
+        "team_id",
+        "opponent_id",
+        "event_id"
+      ],
+      "rows": 10888,
+      "unique_rows": 10888,
+      "duplicate_keys": 0,
+      "duplication_factor": 1.0,
+      "top_duplicates": []
+    }
+  },
+  "input_dedup": {
+    "label": "compute_sos_metrics:input_key_audit",
+    "keys": [
+      "team_id",
+      "event_id"
+    ],
+    "rows": 10888,
+    "unique_rows": 10888,
+    "duplicate_keys": 0,
+    "duplication_factor": 1.0,
+    "top_duplicates": []
+  },
+  "opponent_lookup_sort_dt_null_rate": 0.9632623071271125,
+  "opponent_lookup_event_id_null_rate": 0.0,
+  "opponent_lookup_join_key": "event_id",
+  "row_guards": [
+    {
+      "stage": "_build_opponent_lookup",
+      "pre_rows": 10888,
+      "post_rows": 10888,
+      "multiplier": 1.0
+    },
+    {
+      "stage": "_build_allowed_forced_lookup",
+      "pre_rows": 10888,
+      "post_rows": 10888,
+      "multiplier": 1.0
+    },
+    {
+      "stage": "compute_sos_metrics:final",
+      "pre_rows": 10888,
+      "post_rows": 10888,
+      "multiplier": 1.0
+    }
+  ],
+  "joins": [
+    {
+      "stage": "_build_opponent_lookup",
+      "left_on": [
+        "opponent_id",
+        "event_id"
+      ],
+      "right_on": [
+        "opponent_id",
+        "event_id"
+      ],
+      "left_dup_report": {
+        "label": "_build_opponent_lookup:left_keys",
+        "keys": [
+          "opponent_id",
+          "event_id"
+        ],
+        "rows": 10888,
+        "unique_rows": 10888,
+        "duplicate_keys": 0,
+        "duplication_factor": 1.0,
+        "top_duplicates": []
+      },
+      "right_dup_report": {
+        "label": "_build_opponent_lookup:right_keys",
+        "keys": [
+          "opponent_id",
+          "event_id"
+        ],
+        "rows": 10888,
+        "unique_rows": 10888,
+        "duplicate_keys": 0,
+        "duplication_factor": 1.0,
+        "top_duplicates": []
+      },
+      "left_dtypes": {
+        "opponent_id": "object",
+        "event_id": "object"
+      },
+      "right_dtypes": {
+        "opponent_id": "object",
+        "event_id": "object"
+      },
+      "pre_rows": 10888,
+      "post_rows": 10888,
+      "multiplier": 1.0,
+      "join_hit_rate": 0.9054922850844966
+    },
+    {
+      "stage": "_build_allowed_forced_lookup",
+      "left_on": [
+        "opponent_id",
+        "event_id"
+      ],
+      "right_on": [
+        "opponent_id",
+        "event_id"
+      ],
+      "left_dup_report": {
+        "label": "_build_allowed_forced_lookup:left_keys",
+        "keys": [
+          "opponent_id",
+          "event_id"
+        ],
+        "rows": 10888,
+        "unique_rows": 10888,
+        "duplicate_keys": 0,
+        "duplication_factor": 1.0,
+        "top_duplicates": []
+      },
+      "right_dup_report": {
+        "label": "_build_allowed_forced_lookup:right_keys",
+        "keys": [
+          "opponent_id",
+          "event_id"
+        ],
+        "rows": 10888,
+        "unique_rows": 10888,
+        "duplicate_keys": 0,
+        "duplication_factor": 1.0,
+        "top_duplicates": []
+      },
+      "left_dtypes": {
+        "opponent_id": "object",
+        "event_id": "object"
+      },
+      "right_dtypes": {
+        "opponent_id": "object",
+        "event_id": "object"
+      },
+      "pre_rows": 10888,
+      "post_rows": 10888,
+      "multiplier": 1.0,
+      "join_hit_rate": 0.9380969875091845
+    }
+  ],
+  "allowed_lookup_sort_dt_null_rate": 0.9632623071271125,
+  "allowed_lookup_event_id_null_rate": 0.0,
+  "allowed_lookup_join_key": "event_id",
+  "output_rows": 10888,
+  "output_columns": 1001
+}

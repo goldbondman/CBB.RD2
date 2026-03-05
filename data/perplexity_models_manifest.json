@@ -1,0 +1,224 @@
+{
+  "contract_name": "update_espn_cbb",
+  "contract_version": "1.0",
+  "job": "update",
+  "generated_at_utc": "2026-03-05T23:31:49+00:00",
+  "dry_run": true,
+  "context": {
+    "days_back": "1",
+    "game_type": "regular"
+  },
+  "feature_coverage_summary": {
+    "market": {
+      "path": "data\\market_lines_latest_by_game.csv",
+      "rows": 5481,
+      "spread_non_null_rate": 0.093231,
+      "total_non_null_rate": 0.093414
+    },
+    "team_snapshot": {
+      "path": "data\\team_snapshot.csv",
+      "rows": 650,
+      "present_feature_columns": [
+        "efg_pct",
+        "efg_pct_l10",
+        "pace",
+        "pace_l10",
+        "form_rating",
+        "net_rtg_std_l10"
+      ],
+      "non_null_feature_row_rate": 0.998462
+    }
+  },
+  "stages": [
+    {
+      "name": "espn_pipeline",
+      "command": "python espn_pipeline.py --days-back 1",
+      "started_at_utc": "2026-03-05T23:31:27+00:00",
+      "finished_at_utc": "2026-03-05T23:31:31+00:00",
+      "outputs": [
+        {
+          "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\games.csv",
+          "size_bytes": 1863628,
+          "rows": 5481,
+          "columns": 57,
+          "min_date_utc": "2025-11-09T17:00:00+00:00",
+          "max_date_utc": "2026-03-07T04:30:00+00:00",
+          "null_rates_pct": {
+            "game_id": 0.0,
+            "game_datetime_utc": 0.0
+          }
+        },
+        {
+          "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\team_game_weighted.csv",
+          "size_bytes": 27875564,
+          "rows": 10888,
+          "columns": 1085,
+          "min_date_utc": "2025-11-09T17:00:00+00:00",
+          "max_date_utc": "2026-02-04T04:00:00+00:00",
+          "null_rates_pct": {
+            "event_id": 0.0,
+            "team_id": 0.0,
+            "game_datetime_utc": 27.13
+          }
+        },
+        {
+          "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\team_pretournament_snapshot.csv",
+          "size_bytes": 1677595,
+          "rows": 650,
+          "columns": 1116,
+          "min_date_utc": "2025-11-09T19:00:00+00:00",
+          "max_date_utc": "2026-02-04T04:00:00+00:00",
+          "null_rates_pct": {
+            "event_id": 0.0,
+            "team_id": 0.0,
+            "game_datetime_utc": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "market_builder",
+      "command": "python -m pipeline.market_canonical --data-dir data --debug-dir debug",
+      "started_at_utc": "2026-03-05T23:31:32+00:00",
+      "finished_at_utc": "2026-03-05T23:31:32+00:00",
+      "outputs": [
+        {
+          "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\market_lines_canonical.csv",
+          "size_bytes": 14553,
+          "rows": 82,
+          "columns": 21,
+          "min_date_utc": "2026-02-24T23:30:00+00:00",
+          "max_date_utc": "2026-02-27T01:00:00+00:00",
+          "null_rates_pct": {
+            "event_id": 0.0,
+            "game_datetime_utc": 86.59
+          }
+        },
+        {
+          "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\market_lines_latest_by_game.csv",
+          "size_bytes": 789223,
+          "rows": 5481,
+          "columns": 22,
+          "min_date_utc": "2025-11-09T17:00:00+00:00",
+          "max_date_utc": "2026-03-07T04:30:00+00:00",
+          "null_rates_pct": {
+            "event_id": 0.0,
+            "game_datetime_utc": 0.31
+          }
+        }
+      ]
+    },
+    {
+      "name": "rotation_features",
+      "command": "python cbb_rotation_features.py",
+      "started_at_utc": "2026-03-05T23:31:38+00:00",
+      "finished_at_utc": "2026-03-05T23:31:38+00:00",
+      "outputs": [
+        {
+          "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\rotation_features.csv",
+          "size_bytes": 4745716,
+          "rows": 10684,
+          "columns": 34,
+          "min_date_utc": "2025-11-09T17:00:00+00:00",
+          "max_date_utc": "2026-03-04T19:30:00+00:00",
+          "null_rates_pct": {
+            "game_id": 0.0,
+            "team_id": 0.0,
+            "game_datetime_utc": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "situational_features",
+      "command": "python cbb_situational_features.py",
+      "started_at_utc": "2026-03-05T23:31:42+00:00",
+      "finished_at_utc": "2026-03-05T23:31:42+00:00",
+      "outputs": [
+        {
+          "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\situational_features.csv",
+          "size_bytes": 1899849,
+          "rows": 10888,
+          "columns": 45,
+          "min_date_utc": "2025-11-09T17:00:00+00:00",
+          "max_date_utc": "2026-03-06T04:59:00+00:00",
+          "null_rates_pct": {
+            "game_id": 0.0,
+            "team_id": 0.0,
+            "game_datetime_utc": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "advanced_metrics_builder",
+      "command": "python -m pipeline.advanced_metrics.build_advanced_metrics",
+      "started_at_utc": "2026-03-05T23:31:45+00:00",
+      "finished_at_utc": "2026-03-05T23:31:45+00:00",
+      "outputs": [
+        {
+          "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\advanced_metrics.csv",
+          "size_bytes": 300787,
+          "rows": 400,
+          "columns": 42,
+          "min_date_utc": "2025-11-09T17:00:00+00:00",
+          "max_date_utc": "2025-11-13T02:00:00+00:00",
+          "null_rates_pct": {
+            "game_id": 0.0,
+            "event_id": 0.0,
+            "team_id": 0.0,
+            "game_datetime_utc": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "joint_models_predictions",
+      "command": "python -m model_lab.joint_models",
+      "started_at_utc": "2026-03-05T23:31:48+00:00",
+      "finished_at_utc": "2026-03-05T23:31:49+00:00",
+      "outputs": [
+        {
+          "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\team_snapshot.csv",
+          "size_bytes": 2085245,
+          "rows": 650,
+          "columns": 1166,
+          "min_date_utc": "2025-11-09T19:00:00+00:00",
+          "max_date_utc": "2026-01-20T23:30:00+00:00",
+          "null_rates_pct": {
+            "game_id": 0.0,
+            "event_id": 0.0,
+            "team_id": 0.0,
+            "game_datetime_utc": 56.31
+          }
+        },
+        {
+          "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\predictions_joint_latest.csv",
+          "size_bytes": 44847,
+          "rows": 101,
+          "columns": 43,
+          "min_date_utc": "2025-11-29T20:00:00+00:00",
+          "max_date_utc": "2026-03-07T04:30:00+00:00",
+          "null_rates_pct": {
+            "game_id": 0.0,
+            "event_id": 0.0,
+            "game_datetime_utc": 0.0
+          }
+        },
+        {
+          "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\predictions_joint_snapshots.csv",
+          "size_bytes": 109722,
+          "rows": 312,
+          "columns": 43,
+          "min_date_utc": "2025-11-29T20:00:00+00:00",
+          "max_date_utc": "2026-03-07T04:30:00+00:00",
+          "null_rates_pct": {
+            "game_id": 0.0,
+            "event_id": 35.26,
+            "game_datetime_utc": 0.0
+          }
+        }
+      ]
+    }
+  ]
+}
