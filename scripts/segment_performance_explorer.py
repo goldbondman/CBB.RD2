@@ -276,6 +276,61 @@ def _load_similarity_table(data_dir: Path) -> tuple[pd.DataFrame, str]:
     return df, "ok"
 
 
+def _load_context_overlay_table(data_dir: Path) -> tuple[pd.DataFrame, str]:
+    path = data_dir / "context" / "context_overlay_latest.csv"
+    if not path.exists():
+        return pd.DataFrame(columns=["event_id", "game_id"]), "missing_file"
+    try:
+        header = list(pd.read_csv(path, nrows=0, low_memory=False).columns)
+    except Exception:
+        return pd.DataFrame(columns=["event_id", "game_id"]), "unreadable"
+
+    event_col = _pick_first(header, ["event_id", "game_id"])
+    game_col = _pick_first(header, ["game_id", "event_id"])
+    if event_col is None or game_col is None:
+        return pd.DataFrame(columns=["event_id", "game_id"]), "missing_id_columns"
+
+    wanted_targets = {
+        "game_type": ["game_type"],
+        "ncaa_round": ["ncaa_round"],
+        "fatigue_tier": ["fatigue_tier"],
+        "neutral_tier": ["neutral_tier", "neutral_flag"],
+        "fh_fast_start_tier": ["fh_fast_start_tier"],
+        "sh_total_bias_tier": ["sh_total_bias_tier"],
+    }
+    col_map: dict[str, str] = {}
+    for target, options in wanted_targets.items():
+        found = _pick_first(header, options)
+        if found:
+            col_map[target] = found
+
+    usecols = sorted(set([event_col, game_col] + list(col_map.values())))
+    df = pd.read_csv(path, usecols=usecols, low_memory=False)
+    out = pd.DataFrame()
+    out["event_id"] = df[event_col].astype(str)
+    out["game_id"] = df[game_col].astype(str)
+    for target, src in col_map.items():
+        out[target] = df[src]
+    out = out.drop_duplicates(subset=["event_id", "game_id"], keep="last")
+    return out, "ok"
+
+
+def _season_phase(game_type: pd.Series) -> pd.Series:
+    s = game_type.fillna("").astype(str).str.strip().str.lower()
+    phase = pd.Series("regular", index=s.index, dtype="object")
+    phase.loc[s.str.startswith("conf_tournament")] = "conf_tournament"
+    phase.loc[s.str.startswith("ncaa_")] = "ncaa"
+    return phase
+
+
+def _neutral_scope(series: pd.Series) -> pd.Series:
+    s = series.fillna("").astype(str).str.strip().str.lower()
+    out = pd.Series(np.nan, index=s.index, dtype="object")
+    out.loc[s.isin({"1", "true", "yes", "y", "neutral"})] = "neutral"
+    out.loc[s.isin({"0", "false", "no", "n", "non_neutral", "non-neutral"})] = "non_neutral"
+    return out
+
+
 def _compute_conference_scope(df: pd.DataFrame) -> pd.Series:
     if "home_conference" not in df.columns or "away_conference" not in df.columns:
         return pd.Series(np.nan, index=df.index, dtype="object")
@@ -455,6 +510,7 @@ def _build_summary(
     total_rows: int,
     unavailable_segments: list[str],
     inspected: list[str],
+    context_status: str,
 ) -> None:
     included = result_df[~result_df["excluded_by_min_sample"]]
     excluded = result_df[result_df["excluded_by_min_sample"]]
@@ -471,6 +527,7 @@ def _build_summary(
         f"- included_segments: `{len(included)}`",
         f"- excluded_segments: `{len(excluded)}`",
         f"- roi_assumption: `{WIN_PROFIT_UNITS:.6f} units on win, -1 on loss, 0 on push`",
+        f"- context_overlay_status: `{context_status}`",
     ]
     if unavailable_segments:
         lines.append("- unavailable segment groups:")
@@ -541,9 +598,23 @@ def run_segment_performance_explorer(
 
     vol_df, vol_status = _load_volatility_table(data_dir)
     sim_df, sim_status = _load_similarity_table(data_dir)
+    context_df, context_status = _load_context_overlay_table(data_dir)
 
     spread = _spread_pick_rows(base, meta, vol_df, sim_df)
     total = _total_pick_rows(base, meta)
+    if not context_df.empty:
+        spread = spread.merge(context_df, on=["event_id", "game_id"], how="left")
+        total = total.merge(context_df, on=["event_id", "game_id"], how="left")
+        spread["season_phase"] = _season_phase(spread.get("game_type", pd.Series("", index=spread.index)))
+        total["season_phase"] = _season_phase(total.get("game_type", pd.Series("", index=total.index)))
+        spread["neutral_scope"] = _neutral_scope(spread.get("neutral_tier", pd.Series("", index=spread.index)))
+        total["neutral_scope"] = _neutral_scope(total.get("neutral_tier", pd.Series("", index=total.index)))
+    else:
+        spread["season_phase"] = np.nan
+        total["season_phase"] = np.nan
+        spread["neutral_scope"] = np.nan
+        total["neutral_scope"] = np.nan
+
     if spread.empty and total.empty:
         pd.DataFrame(columns=OUTPUT_COLUMNS).to_csv(output_csv, index=False)
         _write_blocked_summary(
@@ -635,6 +706,29 @@ def run_segment_performance_explorer(
     else:
         unavailable_segments.append("conference_scope (missing_home_or_away_conference)")
 
+    context_segment_cols = [
+        ("season_phase", "season_phase"),
+        ("ncaa_round", "ncaa_round"),
+        ("fatigue_tier", "fatigue_tier"),
+        ("neutral_scope", "neutral_scope"),
+        ("fh_fast_start_tier", "fh_fast_start_tier"),
+        ("sh_total_bias_tier", "sh_total_bias_tier"),
+    ]
+    for seg_name, col in context_segment_cols:
+        if col in both.columns and both[col].notna().any():
+            segment_frames.append(
+                _aggregate_segment(
+                    both,
+                    segment_name=seg_name,
+                    value_col=col,
+                    min_sample=min_sample,
+                    source_file=str(source_file),
+                    by_market_type=True,
+                )
+            )
+        else:
+            unavailable_segments.append(f"{seg_name} (missing_context_column_or_values)")
+
     out = pd.concat([f for f in segment_frames if not f.empty], ignore_index=True) if segment_frames else pd.DataFrame(columns=OUTPUT_COLUMNS)
     if out.empty:
         out = pd.DataFrame(columns=OUTPUT_COLUMNS)
@@ -651,6 +745,7 @@ def run_segment_performance_explorer(
         total_rows=int(len(total)),
         unavailable_segments=unavailable_segments,
         inspected=inspected,
+        context_status=context_status,
     )
     return 0
 

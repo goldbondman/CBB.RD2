@@ -219,6 +219,17 @@ jobs:
         continue-on-error: true
         run: python scripts/validate_data_infrastructure.py
 
+      - name: Build context overlay
+        run: |
+          python context_layers/run_all.py \
+            --data-dir data \
+            --output-csv data/context/context_overlay_latest.csv \
+            --output-md data/context/context_overlay_exec_summary.md
+
+      - name: Validate context overlay output
+        run: |
+          bash .github/scripts/check_csv.sh data/context/context_overlay_latest.csv 0 event_id
+
       - name: Run primary model predictions (rolling 40h)
         env:
           INPUT_DATE: ${{ steps.resolve_inputs.outputs.date_input }}
@@ -467,7 +478,8 @@ jobs:
                   "data/predictions_primary.csv",
                   "data/predictions_latest.csv",
                   "data/predictions_combined_latest.csv",
-                  "data/predictions_history.csv"
+                  "data/predictions_history.csv",
+                  "data/context/context_overlay_latest.csv"
               ]
           }
           out = Path("data/ready_markers/cbb_predictions_rolling_ready.json")
@@ -497,6 +509,8 @@ jobs:
             data/predictions_history.csv
             data/ensemble_predictions_latest.csv
             data/predictions_mc_latest.csv
+            data/context/context_overlay_latest.csv
+            data/context/context_overlay_exec_summary.md
             data/ready_markers/cbb_predictions_rolling_ready.json
             data/integrity_reports/cbb_predictions_rolling/**
           retention-days: 90

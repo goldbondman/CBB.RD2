@@ -465,6 +465,19 @@ jobs:
             bash .github/scripts/check_csv.sh data/predictions_combined_latest.csv 0 game_id
           fi
 
+      - name: Build context overlay
+        if: steps.gate_inputs.outputs.blocked != 'true'
+        run: |
+          python context_layers/run_all.py \
+            --data-dir data \
+            --output-csv data/context/context_overlay_latest.csv \
+            --output-md data/context/context_overlay_exec_summary.md
+
+      - name: Validate context overlay
+        if: steps.gate_inputs.outputs.blocked != 'true'
+        run: |
+          bash .github/scripts/check_csv.sh data/context/context_overlay_latest.csv 0 event_id
+
       - name: Validate predictions freshness
         if: steps.gate_inputs.outputs.blocked != 'true'
         run: |
@@ -545,6 +558,26 @@ jobs:
         if: steps.gate_inputs.outputs.blocked != 'true'
         run: python cbb_accuracy_report.py
 
+      - name: Run gate builder
+        if: steps.gate_inputs.outputs.blocked != 'true'
+        continue-on-error: true
+        run: |
+          python scripts/gate_builder.py \
+            --data-dir data \
+            --output-results-csv data/gates/gate_results.csv \
+            --output-best-csv data/gates/gate_rules_best.csv \
+            --output-md data/gates/gate_exec_summary.md
+
+      - name: Run segment performance explorer
+        if: steps.gate_inputs.outputs.blocked != 'true'
+        continue-on-error: true
+        run: |
+          python scripts/segment_performance_explorer.py \
+            --data-dir data \
+            --output-csv data/analytics/segment_performance.csv \
+            --output-md data/analytics/segment_exec_summary.md \
+            --min-sample 25
+
       - name: Create ready marker
         if: always() && steps.gate_inputs.outputs.blocked != 'true'
         run: |
@@ -559,7 +592,10 @@ jobs:
               "generated_at_utc": datetime.now(timezone.utc).isoformat(),
               "outputs": [
                   "data/results_log.csv",
-                  "data/results_summary.csv"
+                  "data/results_summary.csv",
+                  "data/context/context_overlay_latest.csv",
+                  "data/gates/gate_results.csv",
+                  "data/analytics/segment_performance.csv"
               ]
           }
           out = Path("data/ready_markers/cbb_analytics_ready.json")
@@ -669,6 +705,13 @@ jobs:
             data/unresolved_games.csv
             data/market_line_backfill_audit.csv
             data/backtest_training_data.csv
+            data/context/context_overlay_latest.csv
+            data/context/context_overlay_exec_summary.md
+            data/gates/gate_results.csv
+            data/gates/gate_rules_best.csv
+            data/gates/gate_exec_summary.md
+            data/analytics/segment_performance.csv
+            data/analytics/segment_exec_summary.md
             data/ready_markers/cbb_analytics_ready.json
           retention-days: 90
 
