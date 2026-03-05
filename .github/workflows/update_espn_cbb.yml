@@ -121,6 +121,7 @@ jobs:
             *) echo "[ERROR] invalid game_type '$GAME_TYPE'"; exit 1 ;;
           esac
 
+          echo "[INFO] Resolved update inputs: event=$EVENT_NAME days_back=$DAYS_BACK run_rankings=$RUN_RANKINGS game_type=$GAME_TYPE commit_data=$COMMIT_DATA"
           echo "days_back=$DAYS_BACK" >> "$GITHUB_OUTPUT"
           echo "run_rankings=$RUN_RANKINGS" >> "$GITHUB_OUTPUT"
           echo "commit_data=$COMMIT_DATA" >> "$GITHUB_OUTPUT"

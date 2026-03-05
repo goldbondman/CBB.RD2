@@ -48,6 +48,7 @@ permissions:
 env:
   TZ: UTC
   PYTHONHASHSEED: "0"
+  ESPN_FALLBACK_DAYS_BACK: "3"
 
 jobs:
   analytics:
@@ -100,15 +101,12 @@ jobs:
 
           START_DATE="${INPUT_START_DATE:-}"
           END_DATE="${INPUT_END_DATE:-}"
-          if [[ -n "$START_DATE" && ! "$START_DATE" =~ ^[0-9]{8}$ ]]; then
-            echo "[ERROR] start_date must be YYYYMMDD"
-            exit 1
-          fi
-          if [[ -n "$END_DATE" && ! "$END_DATE" =~ ^[0-9]{8}$ ]]; then
-            echo "[ERROR] end_date must be YYYYMMDD"
+          if [[ (-n "$START_DATE" && ! "$START_DATE" =~ ^[0-9]{8}$) || (-n "$END_DATE" && ! "$END_DATE" =~ ^[0-9]{8}$) ]]; then
+            echo "[ERROR] Invalid date input(s). start_date='$START_DATE' end_date='$END_DATE'. Required format: YYYYMMDD."
             exit 1
           fi
 
+          echo "[INFO] Resolved analytics inputs: event=$EVENT_NAME schedule='${EVENT_SCHEDULE:-}' run_mode=$RUN_MODE start_date='${START_DATE:-<none>}' end_date='${END_DATE:-<none>}'"
           echo "run_mode=$RUN_MODE" >> "$GITHUB_OUTPUT"
           echo "start_date=$START_DATE" >> "$GITHUB_OUTPUT"
           echo "end_date=$END_DATE" >> "$GITHUB_OUTPUT"
@@ -160,6 +158,22 @@ jobs:
             exit 1
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Print current artifact dependency chain
+        run: |
+          set -euo pipefail
+          {
+            echo "Current artifact dependency chain:"
+            echo "1) update_espn_cbb.yml -> INFRA-espn-data (best effort download from main)"
+            echo "2) market_lines.yml -> INFRA-market-lines + INFRA-predictions-with-context"
+            echo "3) cbb_predictions_rolling.yml -> INFRA-predictions-rolling + INFRA-ready-cbb-predictions-rolling"
+            echo "4) cbb_analytics.yml -> merges staged artifacts; runs ESPN fallback pipeline if Tier A missing/invalid"
+          } | tee /tmp/cbb_artifact_chain.log
+          {
+            echo "## Current Artifact Dependency Chain"
+            echo
+            sed 's/^/- /' /tmp/cbb_artifact_chain.log
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Download latest ESPN data artifact from main (Tier A)
         id: download_espn_artifact
@@ -234,6 +248,7 @@ jobs:
               ("team_game_weighted.csv", ["event_id", "team_id"]),
               ("team_game_logs.csv", ["event_id", "team_id"]),
               ("games.csv", ["game_id"]),
+              ("team_pretournament_snapshot.csv", ["team_id"]),
               ("player_game_logs.csv", ["event_id", "team_id", "athlete_id"]),
               ("market_lines.csv", ["game_id", "capture_type"]),
               ("predictions_with_context.csv", ["game_id"]),
@@ -269,11 +284,87 @@ jobs:
               print(f"[OK] {file_name}: rows={len(combined)}")
           PY
 
+      - name: Determine ESPN fallback requirement
+        id: ensure_espn_inputs
+        env:
+          ESPN_TIER_A_OUTCOME: ${{ steps.download_espn_artifact.outcome }}
+        run: |
+          set -euo pipefail
+
+          declare -a REASONS=()
+
+          validate_required_csv() {
+            local path="$1"
+            local min_rows="$2"
+            local required_cols="$3"
+            local tmp_log
+            tmp_log="$(mktemp)"
+            if bash .github/scripts/check_csv.sh "$path" "$min_rows" "$required_cols" >"$tmp_log" 2>&1; then
+              cat "$tmp_log"
+              rm -f "$tmp_log"
+              return 0
+            fi
+            local msg
+            msg="$(tr '\n' ' ' <"$tmp_log" | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//')"
+            REASONS+=("$msg")
+            rm -f "$tmp_log"
+            return 1
+          }
+
+          if [[ "$ESPN_TIER_A_OUTCOME" != "success" ]]; then
+            REASONS+=("Tier A artifact download outcome: ${ESPN_TIER_A_OUTCOME}")
+          fi
+
+          validate_required_csv "data/games.csv" 1 "game_id" || true
+          validate_required_csv "data/team_game_weighted.csv" 1 "team_id" || true
+          validate_required_csv "data/team_pretournament_snapshot.csv" 1 "team_id" || true
+          validate_required_csv "data/team_pretournament_snapshot.csv" 1 "team_id" || true
+
+          USED_FALLBACK="false"
+          FALLBACK_REASON="none"
+          if (( ${#REASONS[@]} > 0 )); then
+            USED_FALLBACK="true"
+            FALLBACK_REASON="$(printf '%s | ' "${REASONS[@]}")"
+            FALLBACK_REASON="${FALLBACK_REASON% | }"
+            echo "[WARN] ESPN fallback required: ${FALLBACK_REASON}"
+          else
+            echo "[OK] ESPN inputs available without fallback"
+          fi
+
+          echo "used_fallback=${USED_FALLBACK}" >> "$GITHUB_OUTPUT"
+          echo "fallback_reason=${FALLBACK_REASON}" >> "$GITHUB_OUTPUT"
+
+      - name: Run ESPN fallback pipeline
+        if: steps.ensure_espn_inputs.outputs.used_fallback == 'true'
+        run: |
+          set -euo pipefail
+          echo "[INFO] Running fallback: python espn_pipeline.py --days-back ${ESPN_FALLBACK_DAYS_BACK}"
+          python espn_pipeline.py --days-back "${ESPN_FALLBACK_DAYS_BACK}"
+          bash .github/scripts/check_csv.sh data/games.csv 1 "game_id"
+          bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "team_id"
+          bash .github/scripts/check_csv.sh data/team_pretournament_snapshot.csv 1 "team_id"
+
+      - name: Upload fallback ESPN artifact bundle
+        if: always() && steps.ensure_espn_inputs.outputs.used_fallback == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-espn-data
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            data/games.csv
+            data/team_game_weighted.csv
+            data/team_pretournament_snapshot.csv
+            data/team_game_logs.csv
+            data/player_game_logs.csv
+
       - name: Evaluate analytics input availability
         id: gate_inputs
         env:
           EVENT_NAME: ${{ github.event_name }}
           ESPN_TIER_A_OUTCOME: ${{ steps.download_espn_artifact.outcome }}
+          ESPN_FALLBACK_USED: ${{ steps.ensure_espn_inputs.outputs.used_fallback }}
+          ESPN_FALLBACK_REASON: ${{ steps.ensure_espn_inputs.outputs.fallback_reason }}
         run: |
           set -euo pipefail
 
@@ -309,7 +400,9 @@ jobs:
           STATUS="READY"
           INPUT_SOURCE="tier_a_artifact"
 
-          if [[ "$ESPN_TIER_A_OUTCOME" != "success" ]]; then
+          if [[ "$ESPN_FALLBACK_USED" == "true" ]]; then
+            INPUT_SOURCE="fallback_pipeline"
+          elif [[ "$ESPN_TIER_A_OUTCOME" != "success" ]]; then
             INPUT_SOURCE="tier_b_repo_data"
           fi
 
@@ -332,6 +425,9 @@ jobs:
             echo "- input_source: ${INPUT_SOURCE}"
             if [[ "$ESPN_TIER_A_OUTCOME" == "success" ]]; then
               echo "- tier_a_artifact: downloaded `INFRA-espn-data` from `update_espn_cbb.yml` on branch `main`"
+            elif [[ "$ESPN_FALLBACK_USED" == "true" ]]; then
+              echo "- tier_a_artifact: unavailable (`${ESPN_TIER_A_OUTCOME}`); fallback pipeline executed in this run"
+              echo "- fallback_reason: ${ESPN_FALLBACK_REASON}"
             else
               echo "- tier_a_artifact: missing `INFRA-espn-data` from latest successful `update_espn_cbb.yml` run on branch `main`"
               echo "- tier_b_fallback: validating repo-committed `data/` ESPN CSVs"
@@ -346,7 +442,7 @@ jobs:
               echo
               echo "## Next Action Required"
               echo
-              echo "- Run `Update ESPN CBB Data` (`.github/workflows/update_espn_cbb.yml`) successfully on `main` at least once so `INFRA-espn-data` is published."
+              echo "- Required ESPN CSVs were still invalid after fallback handling. Inspect debug bundle + integrity summary."
             else
               echo "## Result"
               echo
@@ -480,6 +576,64 @@ jobs:
             --workflow-name cbb_analytics \
             --run-id "${{ github.run_id }}"
 
+      - name: Debug data state (always)
+        if: always()
+        env:
+          ESPN_TIER_A_OUTCOME: ${{ steps.download_espn_artifact.outcome }}
+          ESPN_FALLBACK_USED: ${{ steps.ensure_espn_inputs.outputs.used_fallback }}
+          ESPN_FALLBACK_REASON: ${{ steps.ensure_espn_inputs.outputs.fallback_reason }}
+        run: |
+          set +e
+          mkdir -p data/debug
+          DEBUG_PATH="data/debug/cbb_analytics_debug_state.txt"
+          {
+            echo "# CBB Analytics Debug State"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "event=${GITHUB_EVENT_NAME}"
+            echo "espn_tier_a_outcome=${ESPN_TIER_A_OUTCOME}"
+            echo "espn_fallback_used=${ESPN_FALLBACK_USED}"
+            echo "espn_fallback_reason=${ESPN_FALLBACK_REASON}"
+            echo
+            echo "## data/ tree (depth 2)"
+            if [[ -d data ]]; then
+              find data -maxdepth 2 -print | sort
+            else
+              echo "[MISSING] data directory"
+            fi
+            echo
+            echo "## key csv row counts"
+          } > "$DEBUG_PATH"
+          python - <<'PY' >> "$DEBUG_PATH"
+          from pathlib import Path
+
+          import pandas as pd
+          from pandas.errors import EmptyDataError
+
+          files = [
+              "data/games.csv",
+              "data/team_game_weighted.csv",
+              "data/team_pretournament_snapshot.csv",
+              "data/market_lines.csv",
+              "data/predictions_with_context.csv",
+              "data/predictions_combined_latest.csv",
+              "data/predictions_latest.csv",
+          ]
+
+          for rel in files:
+              path = Path(rel)
+              if not path.exists():
+                  print(f"[MISSING] {rel}")
+                  continue
+              try:
+                  df = pd.read_csv(path, low_memory=False)
+                  print(f"[OK] {rel}: rows={len(df)} cols={len(df.columns)}")
+              except EmptyDataError:
+                  print(f"[OK] {rel}: rows=0 cols=0 (empty)")
+              except Exception as exc:
+                  print(f"[ERROR] {rel}: {exc}")
+          PY
+          cat "$DEBUG_PATH"
+
       - name: Upload analytics integrity reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -488,6 +642,17 @@ jobs:
           if-no-files-found: error
           path: data/integrity_reports/cbb_analytics/**
           retention-days: 90
+
+      - name: Upload analytics debug bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-cbb-analytics-debug
+          if-no-files-found: error
+          path: |
+            data/debug/cbb_analytics_debug_state.txt
+            data/integrity_reports/cbb_analytics/**
+          retention-days: 30
 
       - name: Upload analytics outputs
         if: always()

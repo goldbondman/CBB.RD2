@@ -1,0 +1,30 @@
+# Workflow Artifact Contracts
+
+## INFRA-espn-data producer
+
+- Producer workflow: `.github/workflows/update_espn_cbb.yml`
+- Producing job: `update`
+- Artifact name: `INFRA-espn-data`
+- Core contract files (validated before upload):
+  - `data/games.csv` (>= 1 row)
+  - `data/team_game_weighted.csv` (>= 1 row)
+  - `data/team_pretournament_snapshot.csv` (>= 1 row)
+
+## INFRA-espn-data consumers
+
+- `.github/workflows/cbb_predictions_rolling.yml`
+  - Downloads `INFRA-espn-data` for prediction inputs.
+- `.github/workflows/cbb_analytics.yml`
+  - Best-effort download of `INFRA-espn-data` from `main`, then merges with other upstream artifacts.
+  - If the artifact is missing or required ESPN CSVs are missing/invalid, analytics runs a local fallback:
+    - `python espn_pipeline.py --days-back 3`
+    - Re-validates required ESPN CSVs.
+    - Re-uploads an `INFRA-espn-data` artifact from the analytics run.
+
+## Analytics fallback behavior
+
+- `cbb_analytics.yml` now self-heals when prior `update_espn_cbb` artifacts are unavailable.
+- The workflow writes an integrity summary and a debug bundle artifact (`INFRA-cbb-analytics-debug`) with:
+  - `data/` tree output (depth 2)
+  - Key CSV row counts
+  - Integrity report outputs
