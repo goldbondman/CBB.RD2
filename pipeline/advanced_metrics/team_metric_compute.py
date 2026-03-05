@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from .metric_registry import TEAM_METRIC_REGISTRY, team_metric_names
-from .rolling_window_layer import add_metric_rollups
+from .rolling_window_layer import add_location_split_windows, add_metric_rollups
 from .shared_derivations import add_shared_derivations
 from .starter_bench_helper import compute_starter_bench_features
 
@@ -125,13 +125,6 @@ def compute_team_game_metrics(
             continue
         out[metric_name] = definition.compute_fn(out)
 
-    out = add_metric_rollups(
-        out,
-        metric_columns=team_metric_names(),
-        group_columns=("team_id", "season"),
-        date_column="game_datetime_utc",
-    )
-
     base_cols = [
         "event_id",
         "game_datetime_utc",
@@ -163,6 +156,25 @@ def compute_team_game_metrics(
     ]
 
     metric_cols = team_metric_names()
+    location_metric_cols = [c for c in derivation_cols + metric_cols if c in out.columns]
+    out = add_metric_rollups(
+        out,
+        metric_columns=location_metric_cols,
+        group_columns=("team_id", "season"),
+        date_column="game_datetime_utc",
+    )
+    out = add_location_split_windows(
+        out,
+        metric_columns=location_metric_cols,
+        group_columns=("team_id",),
+        location_column="home_away",
+        season_column="season",
+        date_column="game_datetime_utc",
+        event_column="event_id",
+        home_value="home",
+        away_value="away",
+    )
+
     roll_cols: list[str] = []
     for metric in metric_cols:
         roll_cols.extend(
@@ -177,8 +189,23 @@ def compute_team_game_metrics(
                 f"{metric}_trend_L10_season",
             ]
         )
+    location_roll_cols: list[str] = []
+    for metric in location_metric_cols:
+        for prefix in ("home", "away"):
+            location_roll_cols.extend(
+                [
+                    f"{prefix}_{metric}_season",
+                    f"{prefix}_{metric}_L4",
+                    f"{prefix}_{metric}_L7",
+                    f"{prefix}_{metric}_L10",
+                    f"{prefix}_{metric}_L12",
+                    f"{prefix}_{metric}_L10_std",
+                    f"{prefix}_{metric}_trend_L4_L10",
+                    f"{prefix}_{metric}_trend_L10_season",
+                ]
+            )
 
-    selected = [c for c in base_cols + derivation_cols + metric_cols + roll_cols if c in out.columns]
+    selected = [c for c in base_cols + derivation_cols + metric_cols + roll_cols + location_roll_cols if c in out.columns]
     return out[selected].sort_values(["game_datetime_utc", "event_id", "team_id"]).reset_index(drop=True)
 
 

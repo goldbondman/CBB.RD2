@@ -53,6 +53,16 @@ class ModelLabConfig:
 
     max_weight: float = 0.5
 
+    # Feature selector guardrails.
+    selector_stability_min: float = 0.60
+    selector_sign_consistency_min: float = 0.70
+    selector_permutation_delta_min: float = 0.001
+    selector_ablation_delta_min: float = 0.001
+    selector_correlation_max: float = 0.85
+    feature_cap_conservative: int = 12
+    feature_cap_balanced: int = 18
+    feature_cap_aggressive: int = 25
+
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()

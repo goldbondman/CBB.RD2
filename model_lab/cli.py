@@ -20,10 +20,13 @@ from .config import (
 )
 from .data_builder import FrameBuildResult, build_frames, write_frames
 from .ensemble import build_market_dataset, evaluate_ensemble
+from .executive_summary import generate_exec_summary
 from .evaluators import evaluate_predictions
-from .feature_tests import run_feature_tests
+from .feature_selector import select_features_from_run
+from .feature_tests import build_generated_feature_set_payloads, run_feature_tests
 from .model_wrappers import load_all_available_predictions
 from .splits import Fold, build_rolling_folds
+from .window_grid import evaluate_window_grid
 
 
 def _merge_blocked(existing: list[str] | None, incoming: list[str]) -> list[str]:
@@ -256,22 +259,58 @@ def cmd_feature_signal(args: argparse.Namespace, config: ModelLabConfig) -> int:
         market=market,
         random_seed=args.random_seed,
         max_features=args.max_features,
+        stability_min=config.selector_stability_min,
+        sign_consistency_min=config.selector_sign_consistency_min,
+        permutation_delta_min=config.selector_permutation_delta_min,
+        ablation_delta_min=config.selector_ablation_delta_min,
+        correlation_max=config.selector_correlation_max,
+        cap_conservative=config.feature_cap_conservative,
+        cap_balanced=config.feature_cap_balanced,
+        cap_aggressive=config.feature_cap_aggressive,
     )
 
     scorecard_path = run_dir / "feature_scorecard.csv"
     stability_path = run_dir / "feature_stability.csv"
+    window_grid_path = run_dir / "window_grid_scorecard.csv"
+    feature_set_report_path = run_dir / "feature_set_report.md"
     result.feature_scorecard.to_csv(scorecard_path, index=False)
     result.feature_stability.to_csv(stability_path, index=False)
+    result.window_grid_scorecard.to_csv(window_grid_path, index=False)
+    feature_set_report_path.write_text(result.feature_set_report, encoding="utf-8")
+
+    feature_set_dir = (config.repo_root / "feature_sets" / "generated").resolve()
+    feature_set_dir.mkdir(parents=True, exist_ok=True)
+    payloads = build_generated_feature_set_payloads(
+        market=market,
+        selected_sets=result.selected_feature_sets,
+        selector_config=result.selector_config,
+        window_contract=result.window_contract,
+        window_grid_scorecard=result.window_grid_scorecard,
+        location_aware_variants=result.location_aware_variants,
+    )
+    generated_paths: dict[str, str] = {}
+    for profile, payload in payloads.items():
+        out_path = feature_set_dir / f"{market}_AUTO_V2_{profile}.json"
+        out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        generated_paths[f"feature_set_{market}_{profile}"] = str(out_path.resolve())
+
+    summary_path, summary_blocked = generate_exec_summary(run_dir)
 
     manifest = load_manifest(run_dir)
     manifest["updated_at_utc"] = utc_now_iso()
     manifest.setdefault("folds", {})[market] = [f.to_manifest() for f in folds]
-    all_blocked = split_blocked + result.blocked_reasons
+    all_blocked = split_blocked + result.blocked_reasons + summary_blocked
+    manifest["feature_selector_config"] = result.selector_config
+    manifest["feature_sets"] = result.selected_feature_sets
     manifest["blocked_reasons"] = _merge_blocked(manifest.get("blocked_reasons"), all_blocked)
     manifest.setdefault("artifacts", {}).update(
         {
             "feature_scorecard": str(scorecard_path.resolve()),
             "feature_stability": str(stability_path.resolve()),
+            "window_grid_scorecard": str(window_grid_path.resolve()),
+            "feature_set_report": str(feature_set_report_path.resolve()),
+            "exec_summary": str(summary_path.resolve()),
+            **generated_paths,
         }
     )
     write_manifest(run_dir, manifest)
@@ -279,6 +318,107 @@ def cmd_feature_signal(args: argparse.Namespace, config: ModelLabConfig) -> int:
     print(f"run_id={run_id}")
     print(f"feature_scorecard={scorecard_path}")
     print(f"feature_stability={stability_path}")
+    print(f"window_grid_scorecard={window_grid_path}")
+    print(f"feature_set_report={feature_set_report_path}")
+    for key in sorted(generated_paths):
+        print(f"{key}={generated_paths[key]}")
+    print(f"exec_summary={summary_path}")
+    return 0
+
+
+def cmd_window_grid(args: argparse.Namespace, config: ModelLabConfig) -> int:
+    run_id = args.run_id or default_run_id()
+    run_dir = ensure_run_dir(config, run_id)
+    _ensure_manifest(config, run_dir, run_id)
+
+    frames = build_frames(config)
+    frame_artifacts = write_frames(frames, run_dir)
+    _record_frame_build(run_dir, frames, frame_artifacts)
+
+    markets = args.markets if args.markets else ["spread", "total", "ml"]
+    blocked: list[str] = []
+    fold_manifest: dict[str, list[dict[str, Any]]] = {}
+    rows: list[pd.DataFrame] = []
+    contract_by_market: dict[str, dict[str, Any]] = {}
+
+    for market in markets:
+        frame = _frame_for_market(frames, market)
+        if frame.empty:
+            blocked.append(f"window_grid_empty_frame:{market}")
+            continue
+
+        folds, split_blocked = build_rolling_folds(frame, config)
+        blocked.extend(split_blocked)
+        fold_manifest[market] = [f.to_manifest() for f in folds]
+        if not folds:
+            blocked.append(f"window_grid_no_folds:{market}")
+            continue
+
+        result = evaluate_window_grid(frame, folds, market=market, config=config)
+        blocked.extend(result.blocked_reasons)
+        contract_by_market[market] = result.window_contract
+        rows.append(result.window_grid_scorecard.copy())
+
+    scorecard = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
+    out_path = run_dir / "window_grid_scorecard.csv"
+    scorecard.to_csv(out_path, index=False)
+
+    manifest = load_manifest(run_dir)
+    manifest["updated_at_utc"] = utc_now_iso()
+    manifest["folds"] = {**manifest.get("folds", {}), **fold_manifest}
+    manifest["window_grid_contract"] = contract_by_market
+    manifest["blocked_reasons"] = _merge_blocked(manifest.get("blocked_reasons"), blocked)
+    manifest.setdefault("artifacts", {})["window_grid_scorecard"] = str(out_path.resolve())
+    write_manifest(run_dir, manifest)
+
+    print(f"run_id={run_id}")
+    print(f"window_grid_scorecard={out_path}")
+    return 0
+
+
+def cmd_select_features(args: argparse.Namespace, config: ModelLabConfig) -> int:
+    run_id = args.run_id or default_run_id()
+    run_dir = ensure_run_dir(config, run_id)
+    _ensure_manifest(config, run_dir, run_id)
+
+    markets = args.markets if args.markets else ["spread", "total", "ml"]
+    result = select_features_from_run(run_dir, config, markets=markets)
+
+    manifest = load_manifest(run_dir)
+    manifest["updated_at_utc"] = utc_now_iso()
+    manifest["feature_sets"] = result.selected_feature_sets
+    manifest["location_aware_variants"] = result.location_aware_variants
+    manifest["blocked_reasons"] = _merge_blocked(manifest.get("blocked_reasons"), result.blocked_reasons)
+    manifest.setdefault("artifacts", {}).update(
+        {
+            "feature_set_report": str(result.feature_set_report_path.resolve()),
+            **result.generated_paths,
+        }
+    )
+    write_manifest(run_dir, manifest)
+
+    print(f"run_id={run_id}")
+    print(f"feature_set_report={result.feature_set_report_path}")
+    for key in sorted(result.generated_paths):
+        print(f"{key}={result.generated_paths[key]}")
+    return 0
+
+
+def cmd_exec_summary(args: argparse.Namespace, config: ModelLabConfig) -> int:
+    run_id = args.run_id or default_run_id()
+    run_dir = ensure_run_dir(config, run_id)
+    _ensure_manifest(config, run_dir, run_id)
+
+    summary_path, summary_blocked = generate_exec_summary(run_dir)
+
+    manifest = load_manifest(run_dir)
+    manifest["updated_at_utc"] = utc_now_iso()
+    manifest["blocked_reasons"] = _merge_blocked(manifest.get("blocked_reasons"), summary_blocked)
+    manifest.setdefault("artifacts", {})["exec_summary"] = str(summary_path.resolve())
+    write_manifest(run_dir, manifest)
+
+    print(f"run_id={run_id}")
+    print(f"exec_summary={summary_path}")
     return 0
 
 
@@ -368,9 +508,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_feature.add_argument("--random-seed", type=int, default=42)
     p_feature.add_argument("--max-features", type=int, default=None)
 
+    p_window = sub.add_parser("window-grid", help="Evaluate fixed rolling-window feature combos on rolling folds")
+    p_window.add_argument("--run-id", default=None, help="Run identifier. Defaults to UTC timestamp.")
+    p_window.add_argument("--markets", nargs="*", choices=["spread", "total", "ml"], default=None)
+
+    p_select = sub.add_parser("select-features", help="Generate AUTO_V2 feature sets from run scorecards")
+    p_select.add_argument("--run-id", default=None, help="Run identifier. Defaults to UTC timestamp.")
+    p_select.add_argument("--markets", nargs="*", choices=["spread", "total", "ml"], default=None)
+
     p_ens = sub.add_parser("ensemble", help="Optimize and evaluate weighted ensemble on rolling folds")
     p_ens.add_argument("--markets", nargs="*", choices=["spread", "total", "ml"], default=None)
     p_ens.add_argument("--max-weight", type=float, default=0.5)
+
+    sub.add_parser("exec-summary", help="Write EXEC_SUMMARY.md from current run artifacts")
 
     return parser
 
@@ -394,8 +544,14 @@ def main() -> int:
         return cmd_score_models(args, config)
     if args.command == "feature-signal":
         return cmd_feature_signal(args, config)
+    if args.command == "window-grid":
+        return cmd_window_grid(args, config)
+    if args.command == "select-features":
+        return cmd_select_features(args, config)
     if args.command == "ensemble":
         return cmd_ensemble(args, config)
+    if args.command == "exec-summary":
+        return cmd_exec_summary(args, config)
 
     raise ValueError(f"Unknown command: {args.command}")
 

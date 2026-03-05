@@ -2,11 +2,32 @@
 
 from __future__ import annotations
 
+import re
 import numpy as np
 import pandas as pd
 
 from .metric_registry import MATCHUP_METRIC_REGISTRY, matchup_metric_names
 from .rolling_window_layer import add_metric_rollups
+
+_SIDE_COL_PATTERN = re.compile(r"^(?P<base>.+)_(?P<side>A|B)(?P<suffix>(?:_.+)?)$")
+
+
+def _add_location_aliases(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    for col in list(out.columns):
+        match = _SIDE_COL_PATTERN.match(col)
+        if not match:
+            continue
+        base = match.group("base")
+        if base in {"team_id"}:
+            continue
+        side = match.group("side")
+        suffix = match.group("suffix") or ""
+        prefix = "home" if side == "A" else "away"
+        alias = f"{prefix}_{base}{suffix}"
+        if alias not in out.columns:
+            out[alias] = out[col]
+    return out
 
 
 def compute_matchup_metrics(team_game_metrics_df: pd.DataFrame) -> pd.DataFrame:
@@ -103,5 +124,6 @@ def compute_matchup_metrics(team_game_metrics_df: pd.DataFrame) -> pd.DataFrame:
         )
 
     selected = [c for c in base_cols + metric_cols + roll_cols if c in merged.columns]
-    return merged[selected].sort_values(["game_datetime_utc", "event_id"]).reset_index(drop=True)
+    result = merged[selected].sort_values(["game_datetime_utc", "event_id"]).reset_index(drop=True)
+    return _add_location_aliases(result)
 

@@ -79,11 +79,36 @@ Runs `model_lab/feature_tests.py`:
 3. Drop-one ablation:
 - single feature removal
 - feature-group removal (group by prefix)
-4. Feature Stability Score across folds.
+4. Feature Stability Score (Option B `AUTO_V2`) across folds.
+5. Feature selection guardrails are enforced before feature sets are emitted:
+- `stability_score >= 0.60`
+- `sign_consistency >= 0.70`
+- `permutation_delta_mean >= 0.001` OR `ablation_impact_mean >= 0.001`
+- correlation pruning and cluster anchor selection at `abs(corr) > 0.85`
+- feature set caps:
+  - Conservative: 12
+  - Balanced: 18
+  - Aggressive: 25
+6. Window-grid evaluation is run on forward folds only for:
+- `W_4_8`
+- `W_4_12`
+- `W_4_8_12`
+- `W_5_10`
+- `W_6_11`
+- `W_7_12`
+7. Home/away location-aware variant behavior:
+- use split features when `home_*` and `away_*` pairs exist
+- otherwise mark the location-aware variant `BLOCKED` and list exact missing columns
 
 Outputs:
 - `feature_scorecard.csv`
 - `feature_stability.csv`
+- `window_grid_scorecard.csv`
+- `feature_set_report.md`
+- `feature_sets/generated/<market>_AUTO_V2_conservative.json`
+- `feature_sets/generated/<market>_AUTO_V2_balanced.json`
+- `feature_sets/generated/<market>_AUTO_V2_aggressive.json`
+- `EXEC_SUMMARY.md` (executive interpretation of scoring + feature signal)
 
 ## Ensemble Optimization
 `python -m model_lab.cli ensemble --run-id <run_id> --markets spread total ml --max-weight 0.5`
@@ -104,6 +129,9 @@ Output:
 All command runs update:
 - `run_manifest.json`
 
+Optional summary-only command:
+- `python -m model_lab.cli exec-summary --run-id <run_id>`
+
 Key fields in the manifest:
 - `git_sha`
 - timestamps (`created_at_utc`, `updated_at_utc`)
@@ -118,4 +146,5 @@ Primary artifacts in each run directory:
 - `feature_scorecard.csv`
 - `feature_stability.csv`
 - `ensemble_weights.json`
+- `EXEC_SUMMARY.md`
 - `run_manifest.json`

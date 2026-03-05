@@ -86,6 +86,12 @@ Invalidation:
 
 All windows use pregame-only history (`shift(1)`).
 
+Location-aware rollups are also emitted when `home_away` is present:
+- `home_{metric}_season`, `home_{metric}_L4`, `home_{metric}_L7`, `home_{metric}_L10`, `home_{metric}_L12`, `home_{metric}_L10_std`, `home_{metric}_trend_L4_L10`, `home_{metric}_trend_L10_season`
+- `away_{metric}_season`, `away_{metric}_L4`, `away_{metric}_L7`, `away_{metric}_L10`, `away_{metric}_L12`, `away_{metric}_L10_std`, `away_{metric}_trend_L4_L10`, `away_{metric}_trend_L10_season`
+
+If `home_away` is missing, location-split rollups are marked as `BLOCKED` in the run manifest.
+
 ## Running Compute
 Python API:
 ```python

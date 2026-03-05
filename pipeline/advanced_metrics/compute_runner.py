@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 from typing import Any
+import re
 
 import numpy as np
 import pandas as pd
@@ -14,7 +15,7 @@ from .cache_layer import load_cached_feature, save_cached_feature
 from .feature_dag import resolve_execution_order
 from .feature_registry import FeatureSpec, get_registry
 from .integrity_gate import validate_feature_inputs
-from .rolling_window_layer import add_leak_free_windows
+from .rolling_window_layer import add_leak_free_windows, add_location_split_windows
 from .shared_derivations import add_shared_derivations
 from .starter_bench_helper import compute_starter_bench_features
 
@@ -286,6 +287,49 @@ def _build_matchup_base(team_metrics: pd.DataFrame, team_feature_order: list[str
     return matchup
 
 
+def _location_metric_columns(df: pd.DataFrame, team_metric_cols: list[str]) -> list[str]:
+    base_candidates = [
+        "poss",
+        "OffEff",
+        "DefEff",
+        "NetRtg",
+        "eFG",
+        "3PA_rate",
+        "FTr",
+        "FT_pts_per_FGA",
+        "FT_pts_per_poss",
+        "ORB%",
+        "DRB%",
+        "TOV%",
+    ]
+    cols: list[str] = []
+    for col in base_candidates + list(team_metric_cols):
+        if col in df.columns and col not in cols:
+            cols.append(col)
+    return cols
+
+
+_SIDE_COL_PATTERN = re.compile(r"^(?P<base>.+)_(?P<side>A|B)(?P<suffix>(?:_.+)?)$")
+
+
+def _add_matchup_location_aliases(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    for col in list(out.columns):
+        match = _SIDE_COL_PATTERN.match(col)
+        if not match:
+            continue
+        base = match.group("base")
+        side = match.group("side")
+        suffix = match.group("suffix") or ""
+        if base in {"team_id"}:
+            continue
+        prefix = "home" if side == "A" else "away"
+        alias = f"{prefix}_{base}{suffix}"
+        if alias not in out.columns:
+            out[alias] = out[col]
+    return out
+
+
 def _prepare_inputs(
     *,
     season_id: int | None,
@@ -404,14 +448,35 @@ def compute_features(
         cache_stats=cache_stats,
     )
     team_metric_cols = _feature_output_columns("team_game", team_feature_order)
+    team_roll_metrics = _location_metric_columns(team_with_features, team_metric_cols)
     team_with_windows = add_leak_free_windows(
         team_with_features,
-        metric_columns=team_metric_cols,
+        metric_columns=team_roll_metrics,
         group_columns=("team_id",),
         season_column="season",
         date_column="game_datetime_utc",
         event_column="event_id",
     )
+    if "home_away" in team_with_windows.columns:
+        team_with_windows = add_location_split_windows(
+            team_with_windows,
+            metric_columns=team_roll_metrics,
+            group_columns=("team_id",),
+            location_column="home_away",
+            season_column="season",
+            date_column="game_datetime_utc",
+            event_column="event_id",
+            home_value="home",
+            away_value="away",
+        )
+    else:
+        blocked.append(
+            {
+                "grain": "team_game",
+                "feature_name": "location_split_windows",
+                "missing_columns": ["home_away"],
+            }
+        )
 
     matchup_base = _build_matchup_base(team_with_windows, team_feature_order)
     matchup_with_features, matchup_feature_order = _execute_registry_features(
@@ -431,6 +496,7 @@ def compute_features(
         date_column="game_datetime_utc",
         event_column="event_id",
     )
+    matchup_with_windows = _add_matchup_location_aliases(matchup_with_windows)
 
     TEAM_GAME_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     MATCHUP_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
