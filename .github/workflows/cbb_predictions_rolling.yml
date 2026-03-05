@@ -4,7 +4,6 @@ on:
   workflow_run:
     workflows: ["Update ESPN CBB Data"]
     types: [completed]
-
   workflow_dispatch:
     inputs:
       date:
@@ -36,50 +35,104 @@ on:
         default: "true"
         type: choice
         options: ["true", "false"]
+  workflow_call:
+    inputs:
+      date:
+        required: false
+        default: ""
+        type: string
+      game_type:
+        required: false
+        default: "regular"
+        type: string
+      decay:
+        required: false
+        default: "smooth"
+        type: string
+      run_ensemble:
+        required: false
+        default: "true"
+        type: string
 
-# Standardized concurrency group to prevent race conditions across all pipeline workflows
 concurrency:
   group: cbb-data-pipeline
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
+  actions: read
+
+env:
+  TZ: UTC
+  PYTHONHASHSEED: "0"
 
 jobs:
   predict:
     if: >
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'workflow_call' ||
       github.event.workflow_run.conclusion == 'success'
-
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
     env:
       PREDICTIONS_FRESHNESS_MAX_HOURS: "6"
       TIMEZONE_LOCAL: "America/Los_Angeles"
-    permissions:
-      contents: write
-      actions: write
 
     steps:
-      # Standard checkout step
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # Ensure directories exist so downstream steps don't fail on missing paths
       - name: Ensure data directories exist
         run: |
-          mkdir -p data/csv
-          mkdir -p data/raw_json
+          mkdir -p data/csv data/raw_json data/ready_markers
           touch data/csv/.gitkeep
 
-      # Set up Python before downloading artifacts to ensure environment is ready for any validation scripts
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
-      # Download primary data from the triggering ESPN pipeline run.
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pip install -r requirements.txt
+          python -c "import pandas, numpy, requests, scipy, yaml"
+
+      - name: Resolve run inputs
+        id: resolve_inputs
+        env:
+          INPUT_DATE: ${{ github.event.inputs.date || inputs.date || '' }}
+          INPUT_GAME_TYPE: ${{ github.event.inputs.game_type || inputs.game_type || 'regular' }}
+          INPUT_DECAY: ${{ github.event.inputs.decay || inputs.decay || 'smooth' }}
+          INPUT_RUN_ENSEMBLE: ${{ github.event.inputs.run_ensemble || inputs.run_ensemble || 'true' }}
+        run: |
+          set -euo pipefail
+          GAME_TYPE="${INPUT_GAME_TYPE:-regular}"
+          DECAY="${INPUT_DECAY:-smooth}"
+          RUN_ENSEMBLE="${INPUT_RUN_ENSEMBLE:-true}"
+          DATE_INPUT="${INPUT_DATE:-}"
+
+          case "$GAME_TYPE" in
+            regular|conf_tournament|ncaa_r1|ncaa_r2) ;;
+            *) echo "[ERROR] invalid game_type: $GAME_TYPE"; exit 1 ;;
+          esac
+          case "$DECAY" in
+            smooth|plateau|simple) ;;
+            *) echo "[ERROR] invalid decay: $DECAY"; exit 1 ;;
+          esac
+          case "$RUN_ENSEMBLE" in
+            true|false) ;;
+            *) echo "[ERROR] run_ensemble must be true|false"; exit 1 ;;
+          esac
+
+          echo "date_input=$DATE_INPUT" >> "$GITHUB_OUTPUT"
+          echo "game_type=$GAME_TYPE" >> "$GITHUB_OUTPUT"
+          echo "decay=$DECAY" >> "$GITHUB_OUTPUT"
+          echo "run_ensemble=$RUN_ENSEMBLE" >> "$GITHUB_OUTPUT"
+
       - name: Download ESPN CSVs (workflow_run trigger)
         if: github.event_name == 'workflow_run'
         uses: actions/download-artifact@v4
@@ -89,8 +142,7 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # For manual dispatch, fetch the latest successful ESPN data artifact run id.
-      - name: Resolve latest ESPN data run (workflow_dispatch)
+      - name: Resolve latest ESPN data run (workflow_dispatch/workflow_call)
         if: github.event_name != 'workflow_run'
         id: resolve_espn_run
         env:
@@ -99,8 +151,8 @@ jobs:
           python - <<'PY'
           import json
           import os
-          import urllib.request
           import urllib.error
+          import urllib.request
 
           repo = os.environ["GITHUB_REPOSITORY"]
           token = os.environ["GH_TOKEN"]
@@ -133,7 +185,7 @@ jobs:
           print(f"[INFO] Resolved latest ESPN run id: {run_id}")
           PY
 
-      - name: Download ESPN CSVs (workflow_dispatch latest successful run)
+      - name: Download ESPN CSVs (workflow_dispatch/workflow_call)
         if: github.event_name != 'workflow_run'
         uses: actions/download-artifact@v4
         with:
@@ -142,27 +194,10 @@ jobs:
           run-id: ${{ steps.resolve_espn_run.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Verify required input files exist with real data rows
-      - name: Verify required input files
+      - name: Validate required upstream inputs
         run: |
-          fail=0
-          for f in data/games.csv data/team_game_weighted.csv; do
-            rows=$(( $(wc -l < "$f" 2>/dev/null || echo 0) - 1 ))
-            if [ "$rows" -lt 1 ]; then
-              echo "[ERROR] $f has $rows data rows — aborting"
-              fail=1
-            else
-              echo "[OK] $f: $rows rows"
-            fi
-          done
-          [ "$fail" -eq 0 ] || exit 1
-
-      # Pattern 5: Install dependencies with import guards to catch environment issues early
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          python -c "import pandas, numpy, requests, scipy, yaml" || \
-            { echo "[ERROR] Core dependency import failed"; exit 1; }
+          bash .github/scripts/check_csv.sh data/games.csv 1 game_id
+          bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 team_id
 
       - name: Data quality CI gate
         continue-on-error: true
@@ -170,90 +205,107 @@ jobs:
           python scripts/audit_csv_quality.py
           python scripts/ci_data_quality_gate.py
 
-      # Compute travel fatigue before running the model
       - name: Compute travel fatigue features
-        run: python cbb_travel_fatigue.py || echo "Travel fatigue computation failed (non-fatal)"
+        run: |
+          if [[ -f data/team_game_logs.csv && -f data/venue_geocodes.csv ]]; then
+            bash .github/scripts/check_csv.sh data/team_game_logs.csv 1 event_id,team_id
+            bash .github/scripts/check_csv.sh data/venue_geocodes.csv 1
+            python cbb_travel_fatigue.py
+          else
+            echo "[BLOCKED] travel fatigue skipped: missing data/team_game_logs.csv or data/venue_geocodes.csv"
+          fi
 
       - name: Data infrastructure health check
-        run: python scripts/validate_data_infrastructure.py
         continue-on-error: true
+        run: python scripts/validate_data_infrastructure.py
 
-      # Execute primary prediction model
       - name: Run primary model predictions (rolling 40h)
         env:
-          TZ: "America/Los_Angeles"
-          INPUT_DATE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.date || '' }}
-          GAME_TYPE:  ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.game_type || 'regular' }}
-          DECAY:      ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.decay || 'smooth' }}
+          INPUT_DATE: ${{ steps.resolve_inputs.outputs.date_input }}
+          GAME_TYPE: ${{ steps.resolve_inputs.outputs.game_type }}
+          DECAY: ${{ steps.resolve_inputs.outputs.decay }}
         run: |
           python - <<'PY'
-          import os, sys, subprocess, pathlib
-          import pandas as pd
+          import os
+          import pathlib
+          import subprocess
+          import sys
           from datetime import datetime, timedelta
           from zoneinfo import ZoneInfo
 
-          tz         = ZoneInfo("America/Los_Angeles")
+          import pandas as pd
+
+          tz = ZoneInfo("America/Los_Angeles")
           input_date = (os.getenv("INPUT_DATE") or "").strip()
-          game_type  = (os.getenv("GAME_TYPE")  or "regular").strip()
-          decay      = (os.getenv("DECAY")       or "smooth").strip()
-          data_dir   = pathlib.Path("data")
+          game_type = (os.getenv("GAME_TYPE") or "regular").strip()
+          decay = (os.getenv("DECAY") or "smooth").strip()
+          data_dir = pathlib.Path("data")
 
           def run_for_date(yyyymmdd: str) -> None:
               cmd = [
-                  sys.executable, "espn_prediction_runner.py",
-                  "--date",      yyyymmdd,
-                  "--game-type", game_type,
-                  "--decay",     decay,
+                  sys.executable,
+                  "espn_prediction_runner.py",
+                  "--date",
+                  yyyymmdd,
+                  "--game-type",
+                  game_type,
+                  "--decay",
+                  decay,
               ]
-              print(f"\n[RUN] {' '.join(cmd)}")
+              print(f"[RUN] {' '.join(cmd)}")
               subprocess.run(cmd, check=True)
 
           if input_date:
               run_for_date(input_date)
           else:
               start_pst = datetime.now(tz=tz)
-              end_pst   = start_pst + timedelta(hours=40)
-              dates = []
-              d = start_pst.date()
-              while d <= end_pst.date():
-                  dates.append(d.strftime("%Y%m%d"))
-                  d += timedelta(days=1)
-              for yyyymmdd in dates:
-                  run_for_date(yyyymmdd)
+              end_pst = start_pst + timedelta(hours=40)
+              cur = start_pst.date()
+              while cur <= end_pst.date():
+                  run_for_date(cur.strftime("%Y%m%d"))
+                  cur += timedelta(days=1)
 
           dfs = []
-          for p in data_dir.glob("predictions_*.csv"):
-              if p.name == "predictions_latest.csv" or p.name == "predictions_primary.csv": continue
+          for path in data_dir.glob("predictions_*.csv"):
+              if path.name in {"predictions_latest.csv", "predictions_primary.csv"}:
+                  continue
               try:
-                  df = pd.read_csv(p)
-                  if not df.empty: dfs.append(df)
-              except: pass
+                  df = pd.read_csv(path)
+              except Exception:
+                  continue
+              if not df.empty:
+                  dfs.append(df)
 
           if not dfs:
-              print("[WARN] No predictions generated")
               empty = pd.DataFrame()
               empty.to_csv(data_dir / "predictions_primary.csv", index=False)
               empty.to_csv(data_dir / "predictions_latest.csv", index=False)
+              print("[WARN] No predictions generated for current window")
           else:
-              merged = pd.concat(dfs, ignore_index=True).drop_duplicates(subset=["game_id"], keep="last")
-              # Filter out games that have already started (keep only future games)
+              merged = pd.concat(dfs, ignore_index=True)
+              key = "game_id" if "game_id" in merged.columns else None
+              if key:
+                  merged = merged.drop_duplicates(subset=[key], keep="last")
               now_utc = pd.Timestamp.now(tz="UTC")
               dt_col = next((c for c in ["game_datetime_utc", "game_datetime"] if c in merged.columns), None)
               if dt_col:
-                  _dt = pd.to_datetime(merged[dt_col], errors="coerce", utc=True)
-                  merged = merged[_dt.isna() | (_dt >= now_utc)]
-                  print(f"[INFO] Filtered to {len(merged)} future games (cutoff {now_utc.isoformat()})")
-              generated_at_utc = pd.Timestamp.now(tz="UTC").isoformat()
-              merged["generated_at_utc"] = generated_at_utc
+                  dt = pd.to_datetime(merged[dt_col], errors="coerce", utc=True)
+                  merged = merged[dt.isna() | (dt >= now_utc)]
+              merged["generated_at_utc"] = pd.Timestamp.now(tz="UTC").isoformat()
               merged.to_csv(data_dir / "predictions_primary.csv", index=False)
               merged.to_csv(data_dir / "predictions_latest.csv", index=False)
           PY
 
-      # Pattern 2: Validate that the primary model produced non-empty output
-      - name: Validate predictions output
+      - name: Validate primary outputs
+        run: |
+          bash .github/scripts/check_csv.sh data/predictions_primary.csv 0 game_id
+          bash .github/scripts/check_csv.sh data/predictions_latest.csv 0 game_id
+
+      - name: Validate predictions non-empty when games are upcoming
         run: |
           python - <<'PY'
           from pathlib import Path
+
           import pandas as pd
           from pandas.errors import EmptyDataError
 
@@ -265,207 +317,241 @@ jobs:
               pred_df = pd.read_csv(pred_path, low_memory=False)
           except EmptyDataError:
               pred_df = pd.DataFrame()
-          rows = len(pred_df.index)
 
-          if rows >= 1:
-              print(f"[OK] {pred_path}: {rows} rows")
+          if len(pred_df.index) >= 1:
+              print(f"[OK] {pred_path}: {len(pred_df.index)} rows")
               raise SystemExit(0)
 
-          games = Path("data/games.csv")
-          if not games.exists():
-              print("[WARN] games.csv missing; allowing empty predictions output.")
-              raise SystemExit(0)
+          games_path = Path("data/games.csv")
+          if not games_path.exists():
+              raise SystemExit("[BLOCKED] games.csv missing; cannot validate empty predictions")
 
-          df = pd.read_csv(games, low_memory=False)
-          dt_col = next((c for c in ["game_datetime_utc", "game_datetime", "date"] if c in df.columns), None)
+          games = pd.read_csv(games_path, low_memory=False)
+          dt_col = next((c for c in ["game_datetime_utc", "game_datetime", "date"] if c in games.columns), None)
           if not dt_col:
-              print("[WARN] games.csv missing datetime column; allowing empty predictions output.")
-              raise SystemExit(0)
+              raise SystemExit("[BLOCKED] games.csv missing datetime column; cannot validate empty predictions")
 
-          dt = pd.to_datetime(df[dt_col], errors="coerce", utc=True)
+          dt = pd.to_datetime(games[dt_col], errors="coerce", utc=True)
           now = pd.Timestamp.now(tz="UTC")
           window_end = now + pd.Timedelta(hours=48)
           upcoming = int(((dt >= now) & (dt <= window_end)).sum())
-          print(f"[INFO] Upcoming games in next 48h from games.csv: {upcoming}")
+          print(f"[INFO] Upcoming games in next 48h: {upcoming}")
           if upcoming > 0:
-              raise SystemExit("[ERROR] predictions_latest.csv is empty despite upcoming games in schedule.")
-
-          print("[WARN] No upcoming games in next 48h; allowing empty predictions output.")
+              raise SystemExit("[ERROR] predictions_latest.csv is empty despite upcoming games")
+          print("[OK] Empty predictions allowed: no upcoming games")
           PY
 
-      # Run ensemble model if enabled
       - name: Run ensemble model predictions
-        if: github.event_name == 'workflow_run' || github.event.inputs.run_ensemble == 'true'
-        env:
-          TZ: "America/Los_Angeles"
-        run: python cbb_ensemble.py || echo "Ensemble failed (non-fatal)"
+        if: steps.resolve_inputs.outputs.run_ensemble == 'true'
+        run: python cbb_ensemble.py
 
-      # Pattern 2: Validate ensemble output if it was supposed to run
       - name: Validate ensemble output
-        if: github.event_name == 'workflow_run' || github.event.inputs.run_ensemble == 'true'
+        if: steps.resolve_inputs.outputs.run_ensemble == 'true'
         run: |
-          if [ -f data/ensemble_predictions_latest.csv ]; then
-            rows=$(( $(wc -l < data/ensemble_predictions_latest.csv) - 1 ))
-            echo "[OK] ensemble_predictions_latest.csv: $rows rows"
+          if [[ -f data/ensemble_predictions_latest.csv ]]; then
+            bash .github/scripts/check_csv.sh data/ensemble_predictions_latest.csv 0 game_id
           else
-            echo "[WARN] ensemble_predictions_latest.csv not found"
+            echo "[BLOCKED] ensemble output missing: data/ensemble_predictions_latest.csv"
+            exit 1
           fi
 
-      # Merge primary and ensemble for a complete view
       - name: Merge runner + ensemble
-        if: always()
         run: |
           python - <<'PY'
-          import pathlib, pandas as pd, sys
+          import pathlib
+          import pandas as pd
+
           data_dir = pathlib.Path("data")
           primary = data_dir / "predictions_primary.csv"
           ensemble = data_dir / "ensemble_predictions_latest.csv"
-          out = data_dir / "predictions_combined_latest.csv"
+          output = data_dir / "predictions_combined_latest.csv"
+
           if not primary.exists():
-              print("No primary predictions")
-              sys.exit(0)
-          p_df = pd.read_csv(primary)
+              raise SystemExit("[ERROR] data/predictions_primary.csv missing")
+
+          p_df = pd.read_csv(primary, low_memory=False)
           if ensemble.exists():
-              e_df = pd.read_csv(ensemble)
-              # Simple merge logic
-              combined = p_df.merge(e_df, on="game_id", how="left", suffixes=("", "_ens"))
+              e_df = pd.read_csv(ensemble, low_memory=False)
+              if "game_id" in p_df.columns and "game_id" in e_df.columns:
+                  combined = p_df.merge(e_df, on="game_id", how="left", suffixes=("", "_ens"))
+              else:
+                  print("[BLOCKED] Missing game_id for merge; using primary only")
+                  combined = p_df.copy()
           else:
-              combined = p_df
-          # Filter out games that have already started (keep only future games)
+              combined = p_df.copy()
+
           now_utc = pd.Timestamp.now(tz="UTC")
           dt_col = next((c for c in ["game_datetime_utc", "game_datetime"] if c in combined.columns), None)
           if dt_col:
-              _dt = pd.to_datetime(combined[dt_col], errors="coerce", utc=True)
-              combined = combined[_dt.isna() | (_dt >= now_utc)]
-              print(f"[INFO] Filtered combined to {len(combined)} future games (cutoff {now_utc.isoformat()})")
+              dt = pd.to_datetime(combined[dt_col], errors="coerce", utc=True)
+              combined = combined[dt.isna() | (dt >= now_utc)]
+
           combined["generated_at_utc"] = pd.Timestamp.now(tz="UTC").isoformat()
-          combined.to_csv(out, index=False)
+          combined.to_csv(output, index=False)
+          print(f"[OK] wrote {output} rows={len(combined)}")
           PY
 
-      # Pattern 2: Validate the final merged output
       - name: Validate merged output
-        if: always()
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import pandas as pd
-          from pandas.errors import EmptyDataError
-
-          combined_path = Path("data/predictions_combined_latest.csv")
-          if not combined_path.exists():
-              raise SystemExit("[ERROR] data/predictions_combined_latest.csv was not created")
-
-          try:
-              combined_df = pd.read_csv(combined_path, low_memory=False)
-          except EmptyDataError:
-              combined_df = pd.DataFrame()
-          rows = len(combined_df.index)
-
-          if rows >= 1:
-              print(f"[OK] {combined_path}: {rows} rows")
-              raise SystemExit(0)
-
-          games = Path("data/games.csv")
-          if not games.exists():
-              print("[WARN] games.csv missing; allowing empty combined output.")
-              raise SystemExit(0)
-
-          df = pd.read_csv(games, low_memory=False)
-          dt_col = next((c for c in ["game_datetime_utc", "game_datetime", "date"] if c in df.columns), None)
-          if not dt_col:
-              print("[WARN] games.csv missing datetime column; allowing empty combined output.")
-              raise SystemExit(0)
-
-          dt = pd.to_datetime(df[dt_col], errors="coerce", utc=True)
-          now = pd.Timestamp.now(tz="UTC")
-          window_end = now + pd.Timedelta(hours=48)
-          upcoming = int(((dt >= now) & (dt <= window_end)).sum())
-          print(f"[INFO] Upcoming games in next 48h from games.csv: {upcoming}")
-          if upcoming > 0:
-              raise SystemExit("[ERROR] predictions_combined_latest.csv is empty despite upcoming games in schedule.")
-
-          print("[WARN] No upcoming games in next 48h; allowing empty combined output.")
-          PY
-
+        run: bash .github/scripts/check_csv.sh data/predictions_combined_latest.csv 0 game_id
 
       - name: Append to predictions history
-        if: always()
         run: |
           python - <<'PY'
-          import pandas as pd
           from pathlib import Path
+
+          import pandas as pd
 
           latest = Path("data/predictions_combined_latest.csv")
           history = Path("data/predictions_history.csv")
-
           if not latest.exists() or latest.stat().st_size == 0:
-              print("[SKIP] No predictions to append")
-              raise SystemExit(0)
+              raise SystemExit("[BLOCKED] no combined predictions to append")
 
-          new_rows = pd.read_csv(latest, dtype=str)
-          existing = pd.read_csv(history, dtype=str) if history.exists() else pd.DataFrame()
+          new_rows = pd.read_csv(latest, dtype=str, low_memory=False)
+          existing = pd.read_csv(history, dtype=str, low_memory=False) if history.exists() and history.stat().st_size > 0 else pd.DataFrame()
           combined = pd.concat([existing, new_rows], ignore_index=True)
-          combined = combined.drop_duplicates(subset=["game_id"], keep="last")
+          key = "game_id" if "game_id" in combined.columns else None
+          if key:
+              combined = combined.drop_duplicates(subset=[key], keep="last")
           combined.to_csv(history, index=False)
-          print(f"[OK] predictions_history.csv: {len(combined)} total rows "
-                f"({len(existing)} existing + {len(new_rows)} new)")
+          print(f"[OK] predictions_history.csv rows={len(combined)}")
           PY
 
-      # Run additional simulations and enrichment
       - name: Run Monte Carlo
         continue-on-error: true
-        run: python cbb_monte_carlo.py --input data/predictions_combined_latest.csv --n-sims 5000
+        run: |
+          if [[ -f data/predictions_combined_latest.csv ]]; then
+            bash .github/scripts/check_csv.sh data/predictions_combined_latest.csv 1 game_id
+            python cbb_monte_carlo.py --input data/predictions_combined_latest.csv --n-sims 5000
+          else
+            echo "[BLOCKED] monte carlo skipped: missing data/predictions_combined_latest.csv"
+          fi
 
       - name: Run player matchup enrichment
         continue-on-error: true
-        run: python cbb_player_matchup.py --games data/predictions_combined_latest.csv
+        run: |
+          if [[ -f data/predictions_combined_latest.csv && -f data/player_game_metrics.csv ]]; then
+            bash .github/scripts/check_csv.sh data/predictions_combined_latest.csv 1 game_id
+            bash .github/scripts/check_csv.sh data/player_game_metrics.csv 1
+            python cbb_player_matchup.py --games data/predictions_combined_latest.csv
+          else
+            echo "[BLOCKED] player matchup skipped: missing required inputs"
+          fi
 
-      - name: Validate predictions freshness (fail-fast gate)
+      - name: Validate predictions freshness (soft gate)
         continue-on-error: true
         run: python infra/ci/validate_predictions_freshness.py --data-dir data --max-age-hours "$PREDICTIONS_FRESHNESS_MAX_HOURS"
 
       - name: Build derived CSVs (bet_recs, matchup preview, upset watch)
         continue-on-error: true
-        run: python build_derived_csvs.py
+        run: |
+          if [[ -f data/predictions_latest.csv ]]; then
+            python build_derived_csvs.py
+          else
+            echo "[BLOCKED] derived CSV build skipped: missing predictions_latest.csv"
+          fi
 
-      # Pattern 10: Upload artifacts even on failure to aid debugging
+      - name: Create ready marker
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          marker = {
+              "workflow": "cbb_predictions_rolling",
+              "run_id": "${{ github.run_id }}",
+              "job": "predict",
+              "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+              "outputs": [
+                  "data/predictions_primary.csv",
+                  "data/predictions_latest.csv",
+                  "data/predictions_combined_latest.csv",
+                  "data/predictions_history.csv"
+              ]
+          }
+          out = Path("data/ready_markers/cbb_predictions_rolling_ready.json")
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_text(json.dumps(marker, indent=2), encoding="utf-8")
+          print(f"[OK] wrote {out}")
+          PY
+
+      - name: Generate integrity report
+        if: always()
+        run: |
+          python .github/scripts/data_integrity_report.py \
+            --manifest .github/pipeline_contracts/cbb_predictions_rolling.contract.json \
+            --workflow-name cbb_predictions_rolling \
+            --run-id "${{ github.run_id }}-predict"
+
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: INFRA-predictions-rolling
+          if-no-files-found: error
           path: |
             data/predictions_latest.csv
-            data/predictions_mc_latest.csv
-            data/predictions_combined_latest.csv
             data/predictions_primary.csv
-            data/predictions_*.csv
-            data/ensemble_predictions_latest.csv
+            data/predictions_combined_latest.csv
             data/predictions_history.csv
-            data/dq_skipped_games.csv
+            data/ensemble_predictions_latest.csv
+            data/predictions_mc_latest.csv
+            data/ready_markers/cbb_predictions_rolling_ready.json
+            data/integrity_reports/cbb_predictions_rolling/**
           retention-days: 90
 
-      # Pattern 9: Standardized commit step with retry logic and "nothing to commit" handling
-      - name: Commit to repo
+      - name: Upload ready marker artifact
         if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-ready-cbb-predictions-rolling
+          if-no-files-found: error
+          path: data/ready_markers/cbb_predictions_rolling_ready.json
+          retention-days: 30
+
+      - name: Commit curated outputs
+        if: success()
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/predictions_history.csv
-          git add data/predictions_combined_latest.csv
-          git add data/
+          git add --ignore-missing \
+            data/predictions_latest.csv \
+            data/predictions_primary.csv \
+            data/predictions_combined_latest.csv \
+            data/predictions_history.csv \
+            data/ensemble_predictions_latest.csv \
+            data/predictions_mc_latest.csv \
+            data/bet_recs.csv \
+            data/matchup_preview.csv \
+            data/upset_watch.csv
+
           if git diff --staged --quiet; then
-            echo "[SKIP] No changes to commit"
+            echo "[SKIP] No curated output changes to commit"
             exit 0
           fi
-          git commit -m "pipeline: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
-          for i in 1 2 3 4 5; do
-            git fetch origin main
-            git rebase -X ours origin/main --no-stat 2>&1 || {
-              git rebase --abort 2>/dev/null || true
-              git merge origin/main -X ours --no-edit
-            }
-            git push origin HEAD:main && { echo "[OK] Push succeeded attempt $i"; exit 0; }
-            sleep $((i * 3))
+
+          STAGED_BYTES=$(git diff --cached --name-only -z | xargs -0 -r du -cb | tail -n 1 | cut -f1)
+          STAGED_BYTES=${STAGED_BYTES:-0}
+          MAX_BYTES=$((50 * 1024 * 1024))
+          if (( STAGED_BYTES > MAX_BYTES )); then
+            echo "[ERROR] staged payload ${STAGED_BYTES} exceeds ${MAX_BYTES} bytes"
+            exit 1
+          fi
+
+          git commit -m "pipeline: predictions rolling $(date -u +'%Y-%m-%d %H:%M UTC') [skip ci]"
+          for i in 1 2 3; do
+            if ! git pull --rebase origin main; then
+              echo "[ERROR] rebase conflict while syncing main"
+              git rebase --abort || true
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo "[OK] Push succeeded attempt $i"
+              exit 0
+            fi
+            sleep $((i * 2))
           done
-          echo "[WARN] Push failed after 5 attempts"
+          echo "[ERROR] Push failed after 3 attempts"
+          exit 1
