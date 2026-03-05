@@ -17,7 +17,7 @@ on:
         default: "daily"
 
 concurrency:
-  group: cbb-perplexity-models
+  group: cbb-data-pipeline
   cancel-in-progress: true
 
 permissions:
@@ -316,6 +316,10 @@ jobs:
             tail -n 50 data/perplexity_contract_runner.log || true
           else
             echo "[WARN] data/perplexity_contract_runner.log not found"
+          fi
+          if [[ -f debug/contract_missing_outputs.json ]]; then
+            echo "[INFO] contract_missing_outputs summary:"
+            cat debug/contract_missing_outputs.json
           fi
           exit 1
 

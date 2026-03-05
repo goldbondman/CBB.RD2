@@ -5,6 +5,8 @@ LOG_PATH="${1:-data/perplexity_contract_runner.log}"
 
 declare -a OUTPUT_SPECS=(
   "data/advanced_metrics.csv|advanced_metrics_builder|python -m pipeline.advanced_metrics.build_advanced_metrics|event_id,team_id|0"
+  "data/market_lines_latest_by_game.csv|market_builder|python -m pipeline.market_canonical --data-dir data --debug-dir debug|event_id,spread_line,total_line|0"
+  "data/team_snapshot.csv|joint_models_predictions|python -m model_lab.joint_models|team_id|1"
   "data/predictions_joint_latest.csv|joint_models_predictions|python -m model_lab.joint_models|game_id,pred_total,pred_margin|0"
   "data/predictions_joint_snapshots.csv|joint_models_predictions|python -m model_lab.joint_models|game_id,generated_at_utc|0"
 )

@@ -1,0 +1,6 @@
+output_name,rows,market_matched_rows,match_rate,missing_columns,timestamp_utc
+predictions_joint_latest.csv,101,70,0.693069,,2026-03-05T23:26:10.254108+00:00
+predictions_with_context.csv,101,99,0.980198,,2026-03-05T23:27:13.641090+00:00
+predictions_with_context.csv,101,99,0.980198,,2026-03-05T23:28:13.006122+00:00
+predictions_with_context.csv,101,99,0.980198,,2026-03-05T23:28:25.523140+00:00
+backtest_training_data.csv,5398,442,0.081882,,2026-03-05T23:28:47.389797+00:00

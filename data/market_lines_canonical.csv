@@ -1,0 +1,83 @@
+event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_name,book,opening_spread,closing_spread,spread_line,opening_total,closing_total,total_line,moneyline_home,moneyline_away,source,source_file,source_priority,captured_at_utc,line_timestamp_utc,market_status
+401808257,,142,2633,,,consensus,,-2.5,-2.5,,144.5,144.5,,,odds_snapshot,odds_snapshot.csv,1,2026-02-24 23:50:25.692204+00:00,2026-02-24 23:50:25.692204+00:00,OK
+401808257,,142,2633,,,consensus,,-2.5,-2.5,,144.5,144.5,,,market_lines,market_lines.csv,2,2026-02-24 23:50:25.692204+00:00,2026-02-24 23:50:25.692204+00:00,OK
+401808257,,142,2633,,,consensus,,-2.5,-2.5,,144.5,144.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:25+00:00,2026-02-24 23:50:25+00:00,OK
+401808257,2026-02-25 02:00:00+00:00,142,2633,,,consensus,,-2.5,-2.5,,144.5,144.5,,,ESPN,market_lines_closing.csv,3,2026-02-24 23:50:25+00:00,2026-02-24 23:50:25+00:00,OK
+401808273,,8,251,Arkansas Razorbacks,Texas Longhorns,consensus,,-6.5,-6.5,,164.5,164.5,,,ESPN,odds_snapshot.csv,1,2026-03-04 23:38:45.277914+00:00,2026-03-04 23:38:45.277914+00:00,OK
+401808273,,8,251,Arkansas Razorbacks,Texas Longhorns,consensus,,-6.5,-6.5,,164.5,164.5,,,ESPN,market_lines.csv,2,2026-03-04 23:38:45.277914+00:00,2026-03-04 23:38:45.277914+00:00,OK
+401808274,,57,344,Florida Gators,Mississippi State Bulldogs,consensus,,-20.5,-20.5,,160.5,160.5,,,ESPN,odds_snapshot.csv,1,2026-03-03 23:35:55.700461+00:00,2026-03-03 23:35:55.700461+00:00,OK
+401808274,,57,344,Florida Gators,Mississippi State Bulldogs,consensus,,-20.5,-20.5,,160.5,160.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:55.700461+00:00,2026-03-03 23:35:55.700461+00:00,OK
+401808277,,61,333,Georgia Bulldogs,Alabama Crimson Tide,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-03 23:35:49.257273+00:00,2026-03-03 23:35:49.257273+00:00,MISSING
+401808277,,61,333,Georgia Bulldogs,Alabama Crimson Tide,consensus,,,,,,,,,ESPN,market_lines.csv,2,2026-03-03 23:35:49.257273+00:00,2026-03-03 23:35:49.257273+00:00,MISSING
+401808277,,61,333,Georgia Bulldogs,Alabama Crimson Tide,consensus,,1.5,1.5,,180.5,180.5,,,ESPN,odds_snapshot.csv,1,2026-03-03 22:39:16.940185+00:00,2026-03-03 22:39:16.940185+00:00,OK
+401808277,,61,333,Georgia Bulldogs,Alabama Crimson Tide,consensus,,1.5,1.5,,180.5,180.5,,,ESPN,market_lines.csv,2,2026-03-03 22:39:16.940185+00:00,2026-03-03 22:39:16.940185+00:00,OK
+401808278,,2579,2633,South Carolina Gamecocks,Tennessee Volunteers,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-03 23:35:48.119883+00:00,2026-03-03 23:35:48.119883+00:00,MISSING
+401808278,,2579,2633,South Carolina Gamecocks,Tennessee Volunteers,consensus,,,,,,,,,ESPN,market_lines.csv,2,2026-03-03 23:35:48.119883+00:00,2026-03-03 23:35:48.119883+00:00,MISSING
+401808278,,2579,2633,South Carolina Gamecocks,Tennessee Volunteers,consensus,,10.5,10.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-03 22:39:16.357938+00:00,2026-03-03 22:39:16.357938+00:00,OK
+401808278,,2579,2633,South Carolina Gamecocks,Tennessee Volunteers,consensus,,10.5,10.5,,141.5,141.5,,,ESPN,market_lines.csv,2,2026-03-03 22:39:16.357938+00:00,2026-03-03 22:39:16.357938+00:00,OK
+401808279,,145,238,Ole Miss Rebels,Vanderbilt Commodores,consensus,,6.5,6.5,,155.5,155.5,,,ESPN,odds_snapshot.csv,1,2026-03-03 23:35:58.928171+00:00,2026-03-03 23:35:58.928171+00:00,OK
+401808279,,145,238,Ole Miss Rebels,Vanderbilt Commodores,consensus,,6.5,6.5,,155.5,155.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:58.928171+00:00,2026-03-03 23:35:58.928171+00:00,OK
+401814583,,2199,193,,,consensus,,,,,,,,,odds_snapshot,odds_snapshot.csv,1,2026-02-24 23:50:18.562791+00:00,2026-02-24 23:50:18.562791+00:00,MISSING
+401814583,,2199,193,,,consensus,,,,,,,,,market_lines,market_lines.csv,2,2026-02-24 23:50:18.562791+00:00,2026-02-24 23:50:18.562791+00:00,MISSING
+401814583,,2199,193,,,consensus,,,,,,,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:18+00:00,2026-02-24 23:50:18+00:00,MISSING
+401814583,2026-02-24 23:30:00+00:00,2199,193,,,consensus,,,,,,,,,ESPN,market_lines_closing.csv,3,2026-02-24 23:50:18+00:00,2026-02-24 23:50:18+00:00,MISSING
+401814597,,193,2649,Miami (OH) RedHawks,Toledo Rockets,consensus,,-7.5,-7.5,,162.5,162.5,,,ESPN,odds_snapshot.csv,1,2026-03-03 23:35:54.654442+00:00,2026-03-03 23:35:54.654442+00:00,OK
+401814597,,193,2649,Miami (OH) RedHawks,Toledo Rockets,consensus,,-7.5,-7.5,,162.5,162.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:54.654442+00:00,2026-03-03 23:35:54.654442+00:00,OK
+401820763,,258,152,,,consensus,,-5.5,-5.5,,151.5,151.5,,,odds_snapshot,odds_snapshot.csv,1,2026-02-24 23:50:20.378452+00:00,2026-02-24 23:50:20.378452+00:00,OK
+401820763,,258,152,,,consensus,,-5.5,-5.5,,151.5,151.5,,,market_lines,market_lines.csv,2,2026-02-24 23:50:20.378452+00:00,2026-02-24 23:50:20.378452+00:00,OK
+401820763,,258,152,,,consensus,,-5.5,-5.5,,151.5,151.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:20+00:00,2026-02-24 23:50:20+00:00,OK
+401820763,2026-02-25 00:00:00+00:00,258,152,,,consensus,,-5.5,-5.5,,151.5,151.5,,,ESPN,market_lines_closing.csv,3,2026-02-24 23:50:20+00:00,2026-02-24 23:50:20+00:00,OK
+401820767,,87,150,,,consensus,,-17.5,-17.5,,142.5,142.5,,,odds_snapshot,odds_snapshot.csv,1,2026-02-24 23:50:19.445856+00:00,2026-02-24 23:50:19.445856+00:00,OK
+401820767,,87,150,,,consensus,,-17.5,-17.5,,142.5,142.5,,,market_lines,market_lines.csv,2,2026-02-24 23:50:19.445856+00:00,2026-02-24 23:50:19.445856+00:00,OK
+401820767,,87,150,,,consensus,,-17.5,-17.5,,142.5,142.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:19+00:00,2026-02-24 23:50:19+00:00,OK
+401820767,2026-02-25 00:00:00+00:00,87,150,,,consensus,,-17.5,-17.5,,142.5,142.5,,,ESPN,market_lines_closing.csv,3,2026-02-24 23:50:19+00:00,2026-02-24 23:50:19+00:00,OK
+401820779,,153,228,North Carolina Tar Heels,Clemson Tigers,consensus,,-2.5,-2.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-03 23:35:52.476546+00:00,2026-03-03 23:35:52.476546+00:00,OK
+401820779,,153,228,North Carolina Tar Heels,Clemson Tigers,consensus,,-2.5,-2.5,,141.5,141.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:52.476546+00:00,2026-03-03 23:35:52.476546+00:00,OK
+401820784,,2567,2390,SMU Mustangs,Miami Hurricanes,consensus,,-1.5,-1.5,,156.5,156.5,,,ESPN,odds_snapshot.csv,1,2026-03-04 23:38:46.447647+00:00,2026-03-04 23:38:46.447647+00:00,OK
+401820784,,2567,2390,SMU Mustangs,Miami Hurricanes,consensus,,-1.5,-1.5,,156.5,156.5,,,ESPN,market_lines.csv,2,2026-03-04 23:38:46.447647+00:00,2026-03-04 23:38:46.447647+00:00,OK
+401820785,,258,154,Virginia Cavaliers,Wake Forest Demon Deacons,consensus,,-13.5,-13.5,,149.5,149.5,,,ESPN,odds_snapshot.csv,1,2026-03-03 23:35:51.413818+00:00,2026-03-03 23:35:51.413818+00:00,OK
+401820785,,258,154,Virginia Cavaliers,Wake Forest Demon Deacons,consensus,,-13.5,-13.5,,149.5,149.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:51.413818+00:00,2026-03-03 23:35:51.413818+00:00,OK
+401822967,,2599,46,St. John's Red Storm,Georgetown Hoyas,consensus,,-15.5,-15.5,,148.5,148.5,,,ESPN,odds_snapshot.csv,1,2026-03-03 23:35:53.586966+00:00,2026-03-03 23:35:53.586966+00:00,OK
+401822967,,2599,46,St. John's Red Storm,Georgetown Hoyas,consensus,,-15.5,-15.5,,148.5,148.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:53.586966+00:00,2026-03-03 23:35:53.586966+00:00,OK
+401825537,,130,135,,,consensus,,-21.5,-21.5,,145.5,145.5,,,odds_snapshot,odds_snapshot.csv,1,2026-02-24 23:50:23.076220+00:00,2026-02-24 23:50:23.076220+00:00,OK
+401825537,,130,135,,,consensus,,-21.5,-21.5,,145.5,145.5,,,market_lines,market_lines.csv,2,2026-02-24 23:50:23.076220+00:00,2026-02-24 23:50:23.076220+00:00,OK
+401825537,,130,135,,,consensus,,-21.5,-21.5,,145.5,145.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:23+00:00,2026-02-24 23:50:23+00:00,OK
+401825537,2026-02-25 01:30:00+00:00,130,135,,,consensus,,-21.5,-21.5,,145.5,145.5,,,ESPN,market_lines_closing.csv,3,2026-02-24 23:50:23+00:00,2026-02-24 23:50:23+00:00,OK
+401825543,,2509,127,Purdue Boilermakers,Michigan State Spartans,consensus,,-6.5,-6.5,,141.5,141.5,,,odds_snapshot,odds_snapshot.csv,1,2026-02-26 22:42:14.733621+00:00,2026-02-26 22:42:14.733621+00:00,OK
+401825543,,2509,127,Purdue Boilermakers,Michigan State Spartans,consensus,,-6.5,-6.5,,141.5,141.5,,,market_lines,market_lines.csv,2,2026-02-26 22:42:14.733621+00:00,2026-02-26 22:42:14.733621+00:00,OK
+401825543,,2509,127,Purdue Boilermakers,Michigan State Spartans,consensus,,-6.5,-6.5,,141.5,141.5,,,ESPN,market_lines_latest.csv,0,2026-02-26 22:42:14+00:00,2026-02-26 22:42:14+00:00,OK
+401825543,2026-02-27 01:00:00+00:00,2509,127,Purdue Boilermakers,Michigan State Spartans,consensus,,-6.5,-6.5,,141.5,141.5,,,ESPN,market_lines_closing.csv,3,2026-02-26 22:42:14+00:00,2026-02-26 22:42:14+00:00,OK
+401825553,,356,2483,Illinois Fighting Illini,Oregon Ducks,consensus,,-18.5,-18.5,,145.5,145.5,,,ESPN,odds_snapshot.csv,1,2026-03-03 23:35:56.846805+00:00,2026-03-03 23:35:56.846805+00:00,OK
+401825553,,356,2483,Illinois Fighting Illini,Oregon Ducks,consensus,,-18.5,-18.5,,145.5,145.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:56.846805+00:00,2026-03-03 23:35:56.846805+00:00,OK
+401825554,,26,158,UCLA Bruins,Nebraska Cornhuskers,consensus,,-1.5,-1.5,,144.5,144.5,,,ESPN,odds_snapshot.csv,1,2026-03-03 23:35:59.980094+00:00,2026-03-03 23:35:59.980094+00:00,OK
+401825554,,26,158,UCLA Bruins,Nebraska Cornhuskers,consensus,,-1.5,-1.5,,144.5,144.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:59.980094+00:00,2026-03-03 23:35:59.980094+00:00,OK
+401825556,,77,2509,Northwestern Wildcats,Purdue Boilermakers,consensus,,12.5,12.5,,145.5,145.5,,,ESPN,odds_snapshot.csv,1,2026-03-04 23:38:47.942321+00:00,2026-03-04 23:38:47.942321+00:00,OK
+401825556,,77,2509,Northwestern Wildcats,Purdue Boilermakers,consensus,,12.5,12.5,,145.5,145.5,,,ESPN,market_lines.csv,2,2026-03-04 23:38:47.942321+00:00,2026-03-04 23:38:47.942321+00:00,OK
+401827700,,239,12,,,consensus,,-8.5,-8.5,,154.5,154.5,,,odds_snapshot,odds_snapshot.csv,1,2026-02-24 23:50:23.958377+00:00,2026-02-24 23:50:23.958377+00:00,OK
+401827700,,239,12,,,consensus,,-8.5,-8.5,,154.5,154.5,,,market_lines,market_lines.csv,2,2026-02-24 23:50:23.958377+00:00,2026-02-24 23:50:23.958377+00:00,OK
+401827700,,239,12,,,consensus,,-8.5,-8.5,,154.5,154.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:23+00:00,2026-02-24 23:50:23+00:00,OK
+401827700,2026-02-25 02:00:00+00:00,239,12,,,consensus,,-8.5,-8.5,,154.5,154.5,,,ESPN,market_lines_closing.csv,3,2026-02-24 23:50:23+00:00,2026-02-24 23:50:23+00:00,OK
+401827701,,252,2116,,,consensus,,-12.5,-12.5,,162.5,162.5,,,odds_snapshot,odds_snapshot.csv,1,2026-02-24 23:50:26.587172+00:00,2026-02-24 23:50:26.587172+00:00,OK
+401827701,,252,2116,,,consensus,,-12.5,-12.5,,162.5,162.5,,,market_lines,market_lines.csv,2,2026-02-24 23:50:26.587172+00:00,2026-02-24 23:50:26.587172+00:00,OK
+401827701,,252,2116,,,consensus,,-12.5,-12.5,,162.5,162.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:26+00:00,2026-02-24 23:50:26+00:00,OK
+401827701,2026-02-25 04:00:00+00:00,252,2116,,,consensus,,-12.5,-12.5,,162.5,162.5,,,ESPN,market_lines_closing.csv,3,2026-02-24 23:50:26+00:00,2026-02-24 23:50:26+00:00,OK
+401827704,,2641,2132,,,consensus,,-6.5,-6.5,,142.5,142.5,,,odds_snapshot,odds_snapshot.csv,1,2026-02-24 23:50:21.284319+00:00,2026-02-24 23:50:21.284319+00:00,OK
+401827704,,2641,2132,,,consensus,,-6.5,-6.5,,142.5,142.5,,,market_lines,market_lines.csv,2,2026-02-24 23:50:21.284319+00:00,2026-02-24 23:50:21.284319+00:00,OK
+401827704,,2641,2132,,,consensus,,-6.5,-6.5,,142.5,142.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:21+00:00,2026-02-24 23:50:21+00:00,OK
+401827704,2026-02-25 00:00:00+00:00,2641,2132,,,consensus,,-6.5,-6.5,,142.5,142.5,,,ESPN,market_lines_closing.csv,3,2026-02-24 23:50:21+00:00,2026-02-24 23:50:21+00:00,OK
+401827705,,254,66,,,consensus,,-14.5,-14.5,,144.5,144.5,,,odds_snapshot,odds_snapshot.csv,1,2026-02-24 23:50:24.813252+00:00,2026-02-24 23:50:24.813252+00:00,OK
+401827705,,254,66,,,consensus,,-14.5,-14.5,,144.5,144.5,,,market_lines,market_lines.csv,2,2026-02-24 23:50:24.813252+00:00,2026-02-24 23:50:24.813252+00:00,OK
+401827705,,254,66,,,consensus,,-14.5,-14.5,,144.5,144.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:24+00:00,2026-02-24 23:50:24+00:00,OK
+401827705,2026-02-25 02:00:00+00:00,254,66,,,consensus,,-14.5,-14.5,,144.5,144.5,,,ESPN,market_lines_closing.csv,3,2026-02-24 23:50:24+00:00,2026-02-24 23:50:24+00:00,OK
+401827715,,9,2305,Arizona State Sun Devils,Kansas Jayhawks,consensus,,5.5,5.5,,150.5,150.5,,,ESPN,odds_snapshot.csv,1,2026-03-03 23:35:57.901453+00:00,2026-03-03 23:35:57.901453+00:00,OK
+401827715,,9,2305,Arizona State Sun Devils,Kansas Jayhawks,consensus,,5.5,5.5,,150.5,150.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:57.901453+00:00,2026-03-03 23:35:57.901453+00:00,OK
+401827719,,2641,2628,Texas Tech Red Raiders,TCU Horned Frogs,consensus,,-8.5,-8.5,,147.5,147.5,,,ESPN,odds_snapshot.csv,1,2026-03-03 23:35:50.360601+00:00,2026-03-03 23:35:50.360601+00:00,OK
+401827719,,2641,2628,Texas Tech Red Raiders,TCU Horned Frogs,consensus,,-8.5,-8.5,,147.5,147.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:50.360601+00:00,2026-03-03 23:35:50.360601+00:00,OK
+401827721,,248,239,Houston Cougars,Baylor Bears,consensus,,-13.5,-13.5,,143.5,143.5,,,ESPN,odds_snapshot.csv,1,2026-03-04 23:38:48.852933+00:00,2026-03-04 23:38:48.852933+00:00,OK
+401827721,,248,239,Houston Cougars,Baylor Bears,consensus,,-13.5,-13.5,,143.5,143.5,,,ESPN,market_lines.csv,2,2026-03-04 23:38:48.852933+00:00,2026-03-04 23:38:48.852933+00:00,OK
+401828443,,2168,139,,,consensus,,-4.5,-4.5,,156.5,156.5,,,odds_snapshot,odds_snapshot.csv,1,2026-02-24 23:50:22.176273+00:00,2026-02-24 23:50:22.176273+00:00,OK
+401828443,,2168,139,,,consensus,,-4.5,-4.5,,156.5,156.5,,,market_lines,market_lines.csv,2,2026-02-24 23:50:22.176273+00:00,2026-02-24 23:50:22.176273+00:00,OK
+401828443,,2168,139,,,consensus,,-4.5,-4.5,,156.5,156.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:22+00:00,2026-02-24 23:50:22+00:00,OK
+401828443,2026-02-25 00:00:00+00:00,2168,139,,,consensus,,-4.5,-4.5,,156.5,156.5,,,ESPN,market_lines_closing.csv,3,2026-02-24 23:50:22+00:00,2026-02-24 23:50:22+00:00,OK
+401828461,,139,2350,Saint Louis Billikens,Loyola Chicago Ramblers,consensus,,-21.5,-21.5,,154.5,154.5,,,ESPN,odds_snapshot.csv,1,2026-03-04 23:38:47.260114+00:00,2026-03-04 23:38:47.260114+00:00,OK
+401828461,,139,2350,Saint Louis Billikens,Loyola Chicago Ramblers,consensus,,-21.5,-21.5,,154.5,154.5,,,ESPN,market_lines.csv,2,2026-03-04 23:38:47.260114+00:00,2026-03-04 23:38:47.260114+00:00,OK

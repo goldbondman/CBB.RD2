@@ -17,6 +17,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 import requests
 
+from pipeline.market_canonical import write_market_canonical_outputs
 from pipeline_csv_utils import normalize_numeric_dtypes
 
 try:
@@ -1377,7 +1378,13 @@ def main() -> None:
         _atomic_write_csv(master_view_df, legacy_path)
         _atomic_write_csv(master_view_df, odds_path)
         latest_rows, closing_rows = regenerate_market_views(DATA_DIR)
+        canonical_paths = write_market_canonical_outputs(DATA_DIR)
         log.info("Rebuilt views from master: latest_rows=%s closing_rows=%s", latest_rows, closing_rows)
+        log.info(
+            "Canonical market outputs refreshed: latest_by_game=%s canonical=%s",
+            canonical_paths.get("latest_by_game_path"),
+            canonical_paths.get("canonical_path"),
+        )
         return
 
     if args.backfill_days > 0 and args.days_back is None and not args.start_date and not args.end_date:
@@ -1449,6 +1456,7 @@ def main() -> None:
     log.info("Writing odds snapshot copy: rows=%s -> %s", len(master_df), odds_path)
     _atomic_write_csv(master_df, odds_path)
     latest_rows, closing_rows = regenerate_market_views(DATA_DIR)
+    canonical_paths = write_market_canonical_outputs(DATA_DIR)
     _write_merge_report(DATA_DIR, capture_diagnostics, all_rows, latest_rows)
 
     log.info("Master merge: new rows fetched=%s", new_rows)
@@ -1456,6 +1464,11 @@ def main() -> None:
     log.info("Master merge: rows after dedupe=%s", rows_after_dedupe)
     log.info("Master merge: rows written=%s", rows_written)
     log.info("Derived latest rows written=%s closing_rows=%s", latest_rows, closing_rows)
+    log.info(
+        "Canonical market outputs refreshed: latest_by_game=%s canonical=%s",
+        canonical_paths.get("latest_by_game_path"),
+        canonical_paths.get("canonical_path"),
+    )
 
 
 if __name__ == "__main__":

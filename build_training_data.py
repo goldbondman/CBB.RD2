@@ -27,6 +27,8 @@ from typing import Any, Optional
 import numpy as np
 import pandas as pd
 
+from pipeline.market_canonical import build_market_canonical_tables, merge_market_lines
+
 DATA_DIR = Path("data")
 DEFAULT_OUTPUT = DATA_DIR / "backtest_training_data.csv"
 DEFAULT_AUDIT_PATH = Path("debug") / "backtest_data_audit.json"
@@ -192,45 +194,36 @@ def _canonical_market_frame(path: Path, source_rank: int) -> pd.DataFrame:
 
 
 def build_canonical_market_table(data_dir: Path) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
-    market_files = [
-        ("market_lines_closing.csv", 0),
-        ("market_lines_latest.csv", 1),
-        ("market_lines.csv", 2),
-        ("odds_snapshot.csv", 3),
-    ]
-    loaded: list[pd.DataFrame] = []
-    diagnostics: list[dict[str, Any]] = []
-    for name, rank in market_files:
-        path = data_dir / name
-        if not path.exists() or path.stat().st_size == 0:
-            diagnostics.append({"file": str(path), "loaded": False, "rows": 0, "unique_games": 0})
-            continue
-        frame = _canonical_market_frame(path, source_rank=rank)
-        diagnostics.append(
-            {
-                "file": str(path),
-                "loaded": True,
-                "rows": int(len(frame)),
-                "unique_games": int(frame["game_id"].nunique()),
-                "rows_with_any_line": int((frame[["opening_spread", "closing_spread", "total_line"]].notna().any(axis=1)).sum()),
-            }
-        )
-        loaded.append(frame)
+    _, _, latest_by_game, audit, _ = build_market_canonical_tables(data_dir)
+    sources = audit.get("sources", []) if isinstance(audit, dict) else []
 
-    if not loaded:
+    # Keep legacy diagnostics shape for downstream consumers/tests.
+    legacy_files = ["market_lines_closing.csv", "market_lines_latest.csv", "market_lines.csv", "odds_snapshot.csv"]
+    diagnostics: list[dict[str, Any]] = []
+    for file_name in legacy_files:
+        found = next((s for s in sources if str(s.get("path", "")).endswith(file_name)), None)
+        if found:
+            diagnostics.append(
+                {
+                    "file": str(data_dir / file_name),
+                    "loaded": bool(found.get("loaded")),
+                    "rows": int(found.get("rows", 0) or 0),
+                    "unique_games": int(found.get("unique_event_ids", 0) or 0),
+                    "rows_with_any_line": int(found.get("rows_with_any_line", 0) or 0),
+                }
+            )
+        else:
+            diagnostics.append({"file": str(data_dir / file_name), "loaded": False, "rows": 0, "unique_games": 0})
+
+    if latest_by_game.empty:
         empty = pd.DataFrame(columns=["game_id", "opening_spread", "closing_spread", "total_line", "market_source", "captured_at_utc"])
         return empty, diagnostics
 
-    all_market = pd.concat(loaded, ignore_index=True)
-    all_market = all_market[all_market["game_id"].astype(str).str.len() > 0].copy()
-    all_market = all_market.sort_values(
-        ["game_id", "_is_closing", "_source_rank", "_capture_ts"],
-        ascending=[True, False, True, False],
-    )
-    canonical = all_market.drop_duplicates("game_id", keep="first").copy()
-    canonical["captured_at_utc"] = canonical["_capture_ts"].dt.strftime("%Y-%m-%dT%H:%M:%S%z")
-    canonical = canonical.rename(columns={"_source": "market_source"})
-    return canonical[["game_id", "opening_spread", "closing_spread", "total_line", "captured_at_utc", "market_source"]], diagnostics
+    out = latest_by_game.copy()
+    out["game_id"] = out.get("event_id", pd.Series(dtype=str)).map(normalize_game_id)
+    out["captured_at_utc"] = pd.to_datetime(out.get("line_timestamp_utc"), errors="coerce", utc=True).dt.strftime("%Y-%m-%dT%H:%M:%S%z")
+    out["market_source"] = out.get("line_source_used", out.get("source"))
+    return out[["game_id", "opening_spread", "closing_spread", "total_line", "captured_at_utc", "market_source"]], diagnostics
 
 
 def _canonical_prediction_frame(path: Path, source_rank: int) -> pd.DataFrame:
@@ -602,6 +595,15 @@ def main() -> None:
     print(f"Joining market lines from canonical set: {', '.join(loaded_sources) if loaded_sources else '<none>'}")
     if not canonical_market.empty:
         merged = merged.merge(canonical_market, on="game_id", how="left")
+    merged = merge_market_lines(
+        merged,
+        data_dir=DATA_DIR,
+        output_name="backtest_training_data.csv",
+        required_columns=["opening_spread", "closing_spread", "spread_line", "total_line"],
+        debug_dir=Path("debug"),
+    )
+    if "market_source" not in merged.columns:
+        merged["market_source"] = merged.get("line_source_used")
 
     # Best available spread: canonical market closing -> opening -> ESPN
     espn_spread = pd.to_numeric(merged.get("spread", pd.Series([pd.NA] * len(merged))), errors="coerce")
