@@ -1,0 +1,157 @@
+﻿version: "1.0"
+
+profiles:
+  ci:
+    stages: ["AUDIT", "BUILD", "EVAL", "DECISION", "REPORT"]
+    runtime_classes: ["FAST"]
+    include: []
+    exclude: []
+  nightly:
+    stages: ["AUDIT", "BUILD", "EVAL", "DECISION", "REPORT"]
+    runtime_classes: ["FAST", "MED"]
+    include: []
+    exclude: []
+  weekly:
+    stages: ["AUDIT", "BUILD", "EVAL", "DECISION", "REPORT"]
+    runtime_classes: ["FAST", "MED", "SLOW"]
+    include: []
+    exclude: []
+
+modules:
+  - name: repo_audit
+    entrypoint: "python -m pipeline.repo_audit"
+    requires: []
+    produces:
+      - "docs/audit/repo_audit.json"
+      - "docs/audit/repo_audit.md"
+    runtime_class: "FAST"
+    stage: "AUDIT"
+    enabled: true
+    timeout_sec: 300
+
+  - name: model_lab_build_frames
+    entrypoint: "python -m model_lab.cli --run-id {run_id} build-frames"
+    requires:
+      - "data/matchup_metrics.csv"
+      - "data/team_game_metrics.csv"
+    produces:
+      - "data/model_lab_runs/{run_id}/spread_frame.csv"
+      - "data/model_lab_runs/{run_id}/total_frame.csv"
+      - "data/model_lab_runs/{run_id}/ml_frame.csv"
+      - "data/model_lab_runs/{run_id}/run_manifest.json"
+    runtime_class: "FAST"
+    stage: "BUILD"
+    enabled: true
+    timeout_sec: 900
+
+  - name: model_lab_score_models
+    entrypoint: "python -m model_lab.cli --run-id {run_id} score-models"
+    requires:
+      - "data/model_lab_runs/{run_id}/spread_frame.csv"
+      - "data/model_lab_runs/{run_id}/total_frame.csv"
+      - "data/model_lab_runs/{run_id}/ml_frame.csv"
+      - "data/predictions_combined_latest.csv"
+    produces:
+      - "data/model_lab_runs/{run_id}/model_scorecard.csv"
+      - "data/model_lab_runs/{run_id}/run_manifest.json"
+    runtime_class: "MED"
+    stage: "EVAL"
+    enabled: true
+    timeout_sec: 1200
+
+  - name: model_lab_feature_signal
+    entrypoint: "python -m model_lab.cli --run-id {run_id} feature-signal --market spread --max-features {limit}"
+    requires:
+      - "data/model_lab_runs/{run_id}/spread_frame.csv"
+    produces:
+      - "data/model_lab_runs/{run_id}/feature_scorecard.csv"
+      - "data/model_lab_runs/{run_id}/feature_stability.csv"
+      - "data/model_lab_runs/{run_id}/window_grid_scorecard.csv"
+      - "data/model_lab_runs/{run_id}/feature_set_report.md"
+      - "data/model_lab_runs/{run_id}/run_manifest.json"
+    runtime_class: "MED"
+    stage: "EVAL"
+    enabled: true
+    timeout_sec: 1800
+
+  - name: model_lab_select_features
+    entrypoint: "python -m model_lab.cli --run-id {run_id} select-features --markets spread total ml"
+    requires:
+      - "data/model_lab_runs/{run_id}/feature_scorecard.csv"
+      - "data/model_lab_runs/{run_id}/feature_stability.csv"
+    produces:
+      - "data/model_lab_runs/{run_id}/feature_set_report.md"
+      - "feature_sets/generated/*_AUTO_V2_conservative.json"
+      - "feature_sets/generated/*_AUTO_V2_balanced.json"
+      - "feature_sets/generated/*_AUTO_V2_aggressive.json"
+      - "data/model_lab_runs/{run_id}/run_manifest.json"
+    runtime_class: "FAST"
+    stage: "DECISION"
+    enabled: true
+    timeout_sec: 900
+
+  - name: model_lab_window_grid
+    entrypoint: "python -m model_lab.cli --run-id {run_id} window-grid --markets spread total ml"
+    requires:
+      - "data/model_lab_runs/{run_id}/spread_frame.csv"
+      - "data/model_lab_runs/{run_id}/total_frame.csv"
+      - "data/model_lab_runs/{run_id}/ml_frame.csv"
+    produces:
+      - "data/model_lab_runs/{run_id}/window_grid_scorecard.csv"
+      - "data/model_lab_runs/{run_id}/run_manifest.json"
+    runtime_class: "MED"
+    stage: "EVAL"
+    enabled: true
+    timeout_sec: 1200
+
+  - name: model_lab_edge_analyze
+    entrypoint: "python -m model_lab.cli --run-id {run_id} edge-analyze --market spread --model FourFactors --limit {limit}"
+    requires:
+      - "data/model_lab_runs/{run_id}/spread_frame.csv"
+      - "data/predictions_combined_latest.csv"
+    produces:
+      - "data/model_lab_runs/{run_id}/edge_analyzer/**/edge_bucket_report.csv"
+      - "data/model_lab_runs/{run_id}/edge_analyzer/**/segment_report.csv"
+      - "data/model_lab_runs/{run_id}/edge_analyzer/**/worst_misses.csv"
+      - "data/model_lab_runs/{run_id}/edge_analyzer/run_manifest.json"
+    runtime_class: "FAST"
+    stage: "EVAL"
+    enabled: true
+    timeout_sec: 1200
+
+  - name: model_lab_ensemble
+    entrypoint: "python -m model_lab.cli --run-id {run_id} ensemble --markets spread total ml --max-weight 0.55"
+    requires:
+      - "data/predictions_combined_latest.csv"
+    produces:
+      - "data/model_lab_runs/{run_id}/ensemble_weights.json"
+      - "data/model_lab_runs/{run_id}/run_manifest.json"
+    runtime_class: "MED"
+    stage: "DECISION"
+    enabled: true
+    timeout_sec: 1200
+
+  - name: model_lab_exec_summary
+    entrypoint: "python -m model_lab.cli --run-id {run_id} exec-summary"
+    requires:
+      - "data/model_lab_runs/{run_id}/model_scorecard.csv"
+      - "data/model_lab_runs/{run_id}/feature_scorecard.csv"
+    produces:
+      - "data/model_lab_runs/{run_id}/EXEC_SUMMARY.md"
+      - "data/model_lab_runs/{run_id}/run_manifest.json"
+    runtime_class: "FAST"
+    stage: "REPORT"
+    enabled: true
+    timeout_sec: 300
+
+  - name: pipeline_smoke
+    entrypoint: "python -m pipeline.smoke --limit {limit}"
+    requires:
+      - "data/matchup_metrics.csv"
+      - "data/team_game_metrics.csv"
+    produces:
+      - "data/smoke_runs/**"
+    runtime_class: "MED"
+    stage: "AUDIT"
+    enabled: true
+    timeout_sec: 1800
