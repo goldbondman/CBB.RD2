@@ -40,7 +40,7 @@ def _to_num(series: pd.Series) -> pd.Series:
     return pd.to_numeric(series, errors="coerce")
 
 
-def _candidate_table(
+def _score_candidates(
     scorecard: pd.DataFrame,
     stability: pd.DataFrame,
     *,
@@ -102,19 +102,47 @@ def _candidate_table(
     ).max(axis=1, skipna=True)
 
     min_importance = float(max(config.selector_permutation_delta_min, config.selector_ablation_delta_min))
-    pass_mask = (
-        (scored["stability_score"] >= float(config.selector_stability_min))
-        & (scored["sign_consistency"] >= float(config.selector_sign_consistency_min))
-        & (scored["importance_delta"] >= min_importance)
+    fail_stability = scored["stability_score"] < float(config.selector_stability_min)
+    fail_sign = scored["sign_consistency"] < float(config.selector_sign_consistency_min)
+    fail_importance = scored["importance_delta"] < min_importance
+    pass_mask = ~(fail_stability.fillna(True) | fail_sign.fillna(True) | fail_importance.fillna(True))
+    scored["passes_hard_filters"] = pass_mask
+    scored["exclusion_reason"] = ""
+    scored.loc[fail_stability.fillna(True), "exclusion_reason"] = (
+        scored.loc[fail_stability.fillna(True), "exclusion_reason"] + "stability_below_min;"
     )
-    scored["passes_hard_filters"] = pass_mask.fillna(False)
+    scored.loc[fail_sign.fillna(True), "exclusion_reason"] = (
+        scored.loc[fail_sign.fillna(True), "exclusion_reason"] + "sign_consistency_below_min;"
+    )
+    scored.loc[fail_importance.fillna(True), "exclusion_reason"] = (
+        scored.loc[fail_importance.fillna(True), "exclusion_reason"] + "importance_delta_below_min;"
+    )
+    scored["exclusion_reason"] = scored["exclusion_reason"].astype(str).str.strip(";")
+
+    scored = scored.sort_values(
+        ["passes_hard_filters", "stability_score", "roi_impact_mean", "importance_delta", "univariate_mean", "feature_name"],
+        ascending=[False, False, False, False, False, True],
+    ).reset_index(drop=True)
+    return scored
+
+
+def _candidate_table(
+    scorecard: pd.DataFrame,
+    stability: pd.DataFrame,
+    *,
+    market: str,
+    config: ModelLabConfig,
+) -> pd.DataFrame:
+    scored = _score_candidates(scorecard, stability, market=market, config=config)
+    if scored.empty:
+        return scored
     filtered = scored.loc[scored["passes_hard_filters"]].copy()
     if filtered.empty:
         return filtered
 
     filtered = filtered.sort_values(
-        ["stability_score", "roi_impact_mean", "importance_delta", "univariate_mean"],
-        ascending=[False, False, False, False],
+        ["stability_score", "roi_impact_mean", "importance_delta", "univariate_mean", "feature_name"],
+        ascending=[False, False, False, False, True],
     ).reset_index(drop=True)
     return filtered
 
@@ -158,8 +186,17 @@ def _training_indices(frame: pd.DataFrame, config: ModelLabConfig) -> tuple[list
     if not folds:
         return [], blocked
     train_idx: set[int] = set()
+    test_idx: set[int] = set()
     for fold in folds:
         train_idx.update([idx for idx in fold.train_index if idx in frame.index])
+        test_idx.update([idx for idx in fold.test_index if idx in frame.index])
+
+    # Leakage guardrail: correlation uses rows that appear in training folds and never in any test fold.
+    train_only_idx = sorted(train_idx - test_idx)
+    if train_only_idx:
+        return train_only_idx, blocked
+
+    blocked.append("correlation_train_only_rows_unavailable_fallback_train_union")
     return sorted(train_idx), blocked
 
 
@@ -191,8 +228,8 @@ def _prune_correlated(
         cluster_id = f"C{idx:03d}"
         subset = candidates[candidates["feature_name"].isin(component)].copy()
         subset = subset.sort_values(
-            ["stability_score", "roi_impact_mean", "importance_delta"],
-            ascending=[False, False, False],
+            ["stability_score", "roi_impact_mean", "importance_delta", "feature_name"],
+            ascending=[False, False, False, True],
         )
         if subset.empty:
             continue
@@ -207,15 +244,13 @@ def _prune_correlated(
             else:
                 removed_corr[feature] = float("nan")
 
-    selected = sorted(
-        selected,
-        key=lambda feature: (
-            float(candidates.loc[candidates["feature_name"] == feature, "stability_score"].iloc[0]),
-            float(candidates.loc[candidates["feature_name"] == feature, "roi_impact_mean"].iloc[0]),
-            float(candidates.loc[candidates["feature_name"] == feature, "importance_delta"].iloc[0]),
-        ),
-        reverse=True,
-    )
+    if selected:
+        selected_df = candidates[candidates["feature_name"].isin(selected)].copy()
+        selected_df = selected_df.sort_values(
+            ["stability_score", "roi_impact_mean", "importance_delta", "feature_name"],
+            ascending=[False, False, False, True],
+        )
+        selected = selected_df["feature_name"].astype(str).tolist()
     return selected, removed_with, removed_corr, cluster_by_feature
 
 
@@ -414,7 +449,9 @@ def select_features_from_run(
 
         if scorecard.empty:
             market_blocked.append("scorecard_empty")
-        candidates = _candidate_table(scorecard, stability, market=market, config=config) if not scorecard.empty else pd.DataFrame()
+        screened = _score_candidates(scorecard, stability, market=market, config=config) if not scorecard.empty else pd.DataFrame()
+        candidates = screened.loc[screened["passes_hard_filters"]].copy() if not screened.empty else pd.DataFrame()
+        excluded_by_rule = screened.loc[~screened["passes_hard_filters"]].copy() if not screened.empty else pd.DataFrame()
         if candidates.empty:
             market_blocked.append("no_candidates_after_hard_filters")
 
@@ -428,12 +465,14 @@ def select_features_from_run(
         removed_with: dict[str, str] = {}
         removed_corr: dict[str, float] = {}
         cluster_by_feature: dict[str, str] = {}
+        train_row_count = 0
         if not frame.empty and not candidates.empty:
             train_idx, fold_blocked = _training_indices(frame, config)
             market_blocked.extend(fold_blocked)
             if not train_idx:
                 market_blocked.append("no_training_rows_from_rolling_folds")
             else:
+                train_row_count = len(train_idx)
                 candidate_features = [feature for feature in candidates["feature_name"].astype(str).tolist() if feature in frame.columns]
                 missing_candidate_cols = sorted(set(candidates["feature_name"].astype(str).tolist()) - set(candidate_features))
                 if missing_candidate_cols:
@@ -452,7 +491,22 @@ def select_features_from_run(
         tiers = _tiered_feature_sets(selected_anchor_features, config)
         selected_feature_sets[market] = tiers
 
+        report_lines.append(f"- candidate rows before hard filters: `{len(screened)}`")
         report_lines.append(f"- candidate rows after hard filters: `{len(candidates)}`")
+        report_lines.append(f"- excluded by hard filters: `{len(excluded_by_rule)}`")
+        if not excluded_by_rule.empty:
+            reason_counts = (
+                excluded_by_rule["exclusion_reason"]
+                .fillna("unknown")
+                .astype(str)
+                .replace("", "unknown")
+                .value_counts()
+            )
+            report_lines.append("- excluded features by rule:")
+            for reason, count in reason_counts.items():
+                report_lines.append(f"  - `{reason}`: `{int(count)}`")
+        if train_row_count:
+            report_lines.append(f"- correlation train-only rows used: `{train_row_count}`")
         report_lines.append(f"- selected anchors after correlation pruning: `{len(selected_anchor_features)}`")
         if removed_with:
             report_lines.append("- pruned by correlation clusters:")
