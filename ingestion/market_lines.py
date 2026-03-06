@@ -1120,6 +1120,7 @@ def run_capture(
     return_diagnostics: bool = False,
 ) -> list[dict] | tuple[list[dict], dict]:
     today = override_date or _pipeline_today(timezone_name)
+    is_backfill = override_date is not None and override_date < _pipeline_today(timezone_name)
     existing_rows = _load_existing_market_rows(data_dir, existing)
     window_start_utc, window_end_utc = _window_bounds_utc(today, timezone_name)
     log.info(
@@ -1213,7 +1214,6 @@ def run_capture(
             ]
             status_upper = " ".join(str(token).upper() for token in status_tokens if token)
 
-            is_backfill = override_date is not None and override_date < _pipeline_today(timezone_name)
             if not status_upper:
                 log.warning("[MARKET] event_id=%s: game status unavailable, defaulting to pregame", event_id)
             elif "FINAL" in status_upper:
