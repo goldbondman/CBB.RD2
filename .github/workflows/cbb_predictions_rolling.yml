@@ -102,6 +102,27 @@ jobs:
           pip install -r requirements.txt
           python -c "import pandas, numpy, requests, scipy, yaml"
 
+      - name: Hydrate upstream artifacts (manual run safety)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "update_espn_cbb.yml" \
+            --artifact-name "INFRA-espn-data" \
+            --branch "main" \
+            --max-runs 20 \
+            --dest "data" || echo "[WARN] No INFRA-espn-data found"
+
+      - name: Sanity-check hydrated data
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ ! -f data/team_game_weighted.csv ]; then
+            echo "[ERROR] data/team_game_weighted.csv missing after hydration; run 'Update ESPN CBB Data' first."
+            exit 1
+          fi
+
       - name: Resolve run inputs
         id: resolve_inputs
         env:

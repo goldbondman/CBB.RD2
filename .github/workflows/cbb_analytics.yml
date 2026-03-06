@@ -75,6 +75,55 @@ jobs:
           pip install -r requirements.txt
           python -c "import pandas, numpy, requests, scipy, bs4, yaml"
 
+      - name: Hydrate upstream artifacts (manual run safety)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "update_espn_cbb.yml" \
+            --artifact-name "INFRA-espn-data" \
+            --branch "main" \
+            --max-runs 20 \
+            --dest "data" || echo "[WARN] No INFRA-espn-data found"
+
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "cbb_predictions_rolling.yml" \
+            --artifact-name "INFRA-predictions-rolling" \
+            --branch "main" \
+            --max-runs 20 \
+            --dest "data" || echo "[WARN] No INFRA-predictions-rolling found"
+
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "market_lines.yml" \
+            --artifact-name "INFRA-market-lines" \
+            --branch "main" \
+            --max-runs 20 \
+            --dest "data" || echo "[WARN] No INFRA-market-lines found"
+
+      - name: Sanity-check hydrated data
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          missing=""
+          if [ ! -f data/team_game_weighted.csv ]; then
+            missing="${missing} data/team_game_weighted.csv"
+            echo "[ERROR] data/team_game_weighted.csv missing — run 'Update ESPN CBB Data' first."
+          fi
+          if [ ! -f data/market_lines.csv ] && [ ! -f data/market_lines_latest.csv ]; then
+            missing="${missing} data/market_lines.csv"
+            echo "[ERROR] data/market_lines.csv missing — run 'Market Lines Capture' first."
+          fi
+          if [ ! -f data/predictions_latest.csv ] && [ ! -f data/predictions_combined_latest.csv ]; then
+            missing="${missing} data/predictions_latest.csv"
+            echo "[ERROR] Predictions CSV missing — run 'CBB Predictions Rolling' first."
+          fi
+          if [ -n "$missing" ]; then
+            exit 1
+          fi
+
       - name: Resolve analytics run mode
         id: resolve_mode
         env:

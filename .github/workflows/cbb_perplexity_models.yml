@@ -117,6 +117,28 @@ jobs:
             --max-runs 20 \
             --dest "data"
 
+      - name: Hydrate predictions and market artifacts (manual run safety)
+        if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "cbb_predictions_rolling.yml" \
+            --artifact-name "INFRA-predictions-rolling" \
+            --branch "main" \
+            --max-runs 20 \
+            --dest "data" || echo "[WARN] No INFRA-predictions-rolling found"
+
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "market_lines.yml" \
+            --artifact-name "INFRA-market-lines" \
+            --branch "main" \
+            --max-runs 20 \
+            --dest "data" || echo "[WARN] No INFRA-market-lines found"
+
       - name: Run dependency-aware perplexity stages via contract runner
         id: contract_runner
         if: ${{ steps.preflight.outputs.allow_run == 'true' }}
