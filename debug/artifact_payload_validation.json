@@ -1,0 +1,17 @@
+{
+  "repo": "goldbondman/CBB.RD2",
+  "workflow_file": "cbb_predictions_rolling.yml",
+  "artifact_name": "INFRA-predictions-rolling",
+  "branch": "main",
+  "max_runs": 100,
+  "status": "SUCCESS",
+  "run_id": 22692149656,
+  "artifact_id": 5769185722,
+  "searched_runs": 18,
+  "artifact_size_bytes": 352094,
+  "artifact_created_at": "2026-03-04T22:22:34Z",
+  "archive_download_url": "https://api.github.com/repos/goldbondman/CBB.RD2/actions/artifacts/5769185722/zip",
+  "download_accept_header": "application/vnd.github+json",
+  "extracted_to": "CBB.RD2\\debug\\tmp_artifact_extract_validation2",
+  "downloaded_bytes": 352094
+}

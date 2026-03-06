@@ -1,0 +1,17 @@
+{
+  "repo": "goldbondman/CBB.RD2",
+  "workflow_file": "update_espn_cbb.yml",
+  "artifact_name": "INFRA-espn-data",
+  "branch": "main",
+  "max_runs": 50,
+  "status": "SUCCESS",
+  "run_id": 22687754683,
+  "artifact_id": 5767590135,
+  "searched_runs": 43,
+  "artifact_size_bytes": 81648635,
+  "artifact_created_at": "2026-03-04T20:39:42Z",
+  "archive_download_url": "https://api.github.com/repos/goldbondman/CBB.RD2/actions/artifacts/5767590135/zip",
+  "download_accept_header": "application/vnd.github+json",
+  "extracted_to": "CBB.RD2\\debug\\tmp_artifact_extract_espn",
+  "downloaded_bytes": 81648635
+}

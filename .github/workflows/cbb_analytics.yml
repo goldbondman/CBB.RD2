@@ -220,8 +220,10 @@ jobs:
             --artifact-name "INFRA-predictions-rolling" \
             --branch "main" \
             --max-runs 100 \
-            --dest "data/staging" || {
-              echo "[ERROR] Artifact lookup failed: artifact=INFRA-predictions-rolling workflow=cbb_predictions_rolling.yml branch=main max_runs=100"
+            --dest "data/staging" \
+            --debug-json "debug/artifact_payload_validation.json" || {
+              echo "[ERROR] Artifact download failed: artifact=INFRA-predictions-rolling workflow=cbb_predictions_rolling.yml branch=main max_runs=100"
+              echo "[ERROR] See helper stage above (LOOKUP_FAILED|METADATA_FAILED|DOWNLOAD_FAILED|EXTRACT_FAILED|VALIDATION_FAILED)."
               echo "[ERROR] Next steps: 1) run cbb_predictions_rolling on main successfully 2) verify upload of INFRA-predictions-rolling"
               exit 1
             }
@@ -238,8 +240,10 @@ jobs:
             --artifact-name "INFRA-ready-cbb-predictions-rolling" \
             --branch "main" \
             --max-runs 100 \
-            --dest "data/staging" || {
-              echo "[ERROR] Artifact lookup failed: artifact=INFRA-ready-cbb-predictions-rolling workflow=cbb_predictions_rolling.yml branch=main max_runs=100"
+            --dest "data/staging" \
+            --debug-json "debug/artifact_payload_validation_ready.json" || {
+              echo "[ERROR] Artifact download failed: artifact=INFRA-ready-cbb-predictions-rolling workflow=cbb_predictions_rolling.yml branch=main max_runs=100"
+              echo "[ERROR] See helper stage above (LOOKUP_FAILED|METADATA_FAILED|DOWNLOAD_FAILED|EXTRACT_FAILED|VALIDATION_FAILED)."
               echo "[ERROR] Next steps: 1) run cbb_predictions_rolling on main successfully 2) verify upload of INFRA-ready-cbb-predictions-rolling"
               exit 1
             }
