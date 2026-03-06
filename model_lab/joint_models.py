@@ -11,6 +11,7 @@ import pandas as pd
 from config.logging_config import get_logger
 from pipeline.advanced_metrics import advanced_metrics_formulas as fm
 from pipeline.market_canonical import load_latest_by_game, merge_market_lines
+from model_lab.bet_recs import generate_bet_recs
 
 log = get_logger(__name__)
 
@@ -68,9 +69,9 @@ SPREAD_WEIGHTS = {
 }
 
 TOTALS_WEIGHTS = {
-    "posw": 0.25,
+    "posw_sum": 0.25,
     "sch": 0.20,
-    "wl": 0.20,
+    "wl_sum": 0.20,
     "svi_avg": 0.20,
     "tc_diff": 0.15,
 }
@@ -140,6 +141,35 @@ def _to_rate(value: Any) -> float:
     if x > 1.5:
         return x / 100.0
     return x
+
+
+def _ml_implied_prob(ml_odds: float) -> float:
+    """Convert American moneyline odds to implied win probability.
+
+    Handles both positive (underdog) and negative (favorite) formats.
+    Returns nan if input is non-finite or zero.
+    """
+    if not np.isfinite(ml_odds) or ml_odds == 0:
+        return np.nan
+    if ml_odds > 0:
+        return 100.0 / (ml_odds + 100.0)
+    return abs(ml_odds) / (abs(ml_odds) + 100.0)
+
+
+def _poisson_win_prob(pred_home_score: float, pred_away_score: float) -> float:
+    """Estimate home win probability using a normal approximation of score difference.
+
+    Uses the standard deviation of CBB final score differences (~11 points)
+    to convert predicted margin into a win probability. Returns nan if
+    either score input is non-finite.
+    """
+    from scipy.stats import norm  # scipy already in requirements.txt
+    if not np.isfinite(pred_home_score) or not np.isfinite(pred_away_score):
+        return np.nan
+    margin = pred_home_score - pred_away_score
+    # CBB margin std dev ~11 pts (empirically validated for college basketball)
+    CBB_MARGIN_STD = 11.0
+    return float(norm.cdf(margin / CBB_MARGIN_STD))
 
 
 def _canonical_id(value: Any) -> str:
@@ -418,6 +448,11 @@ def compute_totals_features(game_row: dict[str, Any], team_rows: dict[str, dict[
     sch = fm.sch(h["pace"], a["pace"], h["three_par"], a["three_par"], h["ftr"], a["ftr"], h["size"], a["size"])
 
     rfd_sum = fm.rfd(h["rest_days"], a["rest_days"], a["b2b"] - h["b2b"]) if np.isfinite(h["rest_days"]) and np.isfinite(a["rest_days"]) else np.nan
+    # NOTE: elevation_home and elevation_away are passed as nan because venue elevation
+    # data is not yet available in the team snapshot. When venue_geocodes.csv is enriched
+    # with elevation columns and surfaced through the ESPN pipeline, replace np.nan args
+    # with actual home/away elevation values. Until then, alt_diff captures only travel
+    # distance and the elevation component is zero.
     alt_diff = fm.alt(np.nan, np.nan, a["travel_miles"]) if np.isfinite(a["travel_miles"]) else np.nan
     return {
         "posw": posw_sum,
@@ -637,6 +672,10 @@ def predict_game_joint(
                     "hca_points": SPREAD_HCA_POINTS,
                 },
             ),
+            "win_prob_home": np.nan,
+            "ml_edge_home": np.nan,
+            "market_win_prob_home": np.nan,
+            "bet_rec": "PASS",
         }
 
     base_total = _base_total(team_rows)
@@ -697,6 +736,10 @@ def predict_game_joint(
     market_status = "MISSING_LINES"
     spread_edge = np.nan
     total_edge = np.nan
+    win_prob_home = np.nan
+    ml_edge_home = np.nan
+    market_win_prob_home = np.nan
+
     if market_row:
         spread_line = _to_num(market_row.get("spread_line"))
         total_line = _to_num(market_row.get("total_line"))
@@ -706,6 +749,23 @@ def predict_game_joint(
                 spread_edge = pred_margin_final - spread_line
             if np.isfinite(total_line):
                 total_edge = pred_total - total_line
+
+        # Win probability: model estimate vs market estimate
+        win_prob_home = _poisson_win_prob(pred_home_score, pred_away_score)
+
+        # Market-implied win prob: prefer direct home_win_prob, fall back to home_ml conversion
+        mwp = _to_num(market_row.get("market_win_prob_home"))
+        if not np.isfinite(mwp):
+            home_ml = _to_num(market_row.get("home_ml"))
+            mwp = _ml_implied_prob(home_ml)
+        market_win_prob_home = mwp
+
+        # ML edge: model win prob minus market win prob (probability units)
+        if np.isfinite(win_prob_home) and np.isfinite(market_win_prob_home):
+            ml_edge_home = win_prob_home - market_win_prob_home
+
+    # Bet recommendations — single source of truth via bet_recs module
+    bet_rec = generate_bet_recs(spread_edge, total_edge, ml_edge_home)
 
     calc_row = {
         "event_id": _canonical_id(game_row.get("event_id") or game_row.get("game_id")),
@@ -771,6 +831,10 @@ def predict_game_joint(
         "totals_features": totals_features,
         "spread_features": spread_features,
         "spread_calc_trace": spread_calc_trace,
+        "win_prob_home": win_prob_home,
+        "ml_edge_home": ml_edge_home,
+        "market_win_prob_home": market_win_prob_home,
+        "bet_rec": bet_rec,
     }
 
 
@@ -789,6 +853,10 @@ def _build_market_lookup() -> dict[str, dict[str, Any]]:
             "line_source_used": row.get("line_source_used", row.get("source")),
             "line_timestamp_utc": row.get("line_timestamp_utc"),
             "market_status": row.get("market_status"),
+            "home_ml": row.get("home_ml"),
+            "away_ml": row.get("away_ml"),
+            "market_win_prob_home": row.get("home_win_prob"),
+            "market_win_prob_away": row.get("away_win_prob"),
         }
     return out
 
@@ -1258,6 +1326,10 @@ def run_joint_predictions(
                 "total_clipped": False,
                 "totals_features": {},
                 "spread_features": {},
+                "win_prob_home": np.nan,
+                "ml_edge_home": np.nan,
+                "market_win_prob_home": np.nan,
+                "bet_rec": "PASS",
             }
             pred["spread_calc_trace"] = build_spread_calc_trace(
                 {
@@ -1413,6 +1485,10 @@ def run_joint_predictions(
                 "line_timestamp_utc": market_row.get("line_timestamp_utc"),
                 "spread_edge": pred.get("spread_edge"),
                 "total_edge": pred.get("total_edge"),
+                "win_prob_home": pred.get("win_prob_home"),
+                "ml_edge_home": pred.get("ml_edge_home"),
+                "market_win_prob_home": pred.get("market_win_prob_home"),
+                "bet_rec": pred.get("bet_rec", "PASS"),
                 "pred_total_ultimate": pred.get("pred_total_ultimate"),
                 "pred_margin_ultimate": pred.get("pred_margin_ultimate"),
                 "adjustments_applied": "|".join(pred.get("adjustments_applied", [])) if pred.get("adjustments_applied") else "",
