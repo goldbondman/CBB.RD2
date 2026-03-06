@@ -947,7 +947,7 @@ def resolve_date_range(
     if start and end and start > end:
         raise ValueError("--start-date cannot be after --end-date")
     if start and not end:
-        return start, start
+        return start, today_ref
     if end and not start:
         return end, end
     if start and end:
@@ -1213,11 +1213,15 @@ def run_capture(
             ]
             status_upper = " ".join(str(token).upper() for token in status_tokens if token)
 
+            is_backfill = override_date is not None and override_date < _pipeline_today(timezone_name)
             if not status_upper:
                 log.warning("[MARKET] event_id=%s: game status unavailable, defaulting to pregame", event_id)
             elif "FINAL" in status_upper:
-                filtered_final += 1
-                continue
+                if is_backfill:
+                    capture_type = "closing"
+                else:
+                    filtered_final += 1
+                    continue
             elif "IN_PROGRESS" in status_upper:
                 capture_type = "live"
             elif "STATUS_SCHEDULED" in status_upper or "STATUS_DELAYED" in status_upper:

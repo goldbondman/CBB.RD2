@@ -1,3 +1,4 @@
+from datetime import date
 from pathlib import Path
 import sys
 
@@ -7,6 +8,7 @@ from ingestion.market_lines import (
     detect_book_disagreement,
     detect_reverse_line_movement,
     parse_espn_event,
+    resolve_date_range,
 )
 
 
@@ -79,3 +81,50 @@ def test_detect_book_disagreement_sets_schema_keys():
     assert out["book_disagreement_flag"] is True
     assert out["book_sharp_side"] in {"home", "away"}
     assert isinstance(out.get("book_note"), str)
+
+
+# --- resolve_date_range tests ---
+
+
+def test_resolve_date_range_start_only_defaults_end_to_today():
+    """start_date without end_date should span from start to today, not just one day."""
+    today = date(2026, 3, 6)
+    start, end = resolve_date_range("2025-11-01", None, None, today=today)
+    assert start == date(2025, 11, 1)
+    assert end == today
+
+
+def test_resolve_date_range_start_and_end_explicit():
+    today = date(2026, 3, 6)
+    start, end = resolve_date_range("2025-12-01", "2026-01-15", None, today=today)
+    assert start == date(2025, 12, 1)
+    assert end == date(2026, 1, 15)
+
+
+def test_resolve_date_range_days_back():
+    today = date(2026, 3, 6)
+    start, end = resolve_date_range(None, None, 7, today=today)
+    assert start == date(2026, 2, 28)
+    assert end == today
+
+
+def test_resolve_date_range_no_args_defaults_to_today():
+    today = date(2026, 3, 6)
+    start, end = resolve_date_range(None, None, None, today=today)
+    assert start == today
+    assert end == today
+
+
+def test_resolve_date_range_empty_strings_treated_as_none():
+    today = date(2026, 3, 6)
+    start, end = resolve_date_range("", "", "", today=today)
+    assert start == today
+    assert end == today
+
+
+def test_resolve_date_range_compact_date_format():
+    """YYYYMMDD format (no dashes) should also work."""
+    today = date(2026, 3, 6)
+    start, end = resolve_date_range("20251101", None, None, today=today)
+    assert start == date(2025, 11, 1)
+    assert end == today
