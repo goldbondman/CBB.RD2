@@ -530,7 +530,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add --ignore-missing \
+          for _f in \
             data/predictions_latest.csv \
             data/predictions_primary.csv \
             data/predictions_combined_latest.csv \
@@ -539,7 +539,14 @@ jobs:
             data/predictions_mc_latest.csv \
             data/bet_recs.csv \
             data/matchup_preview.csv \
-            data/upset_watch.csv
+            data/upset_watch.csv; do
+            if [[ -e "$_f" ]]; then
+              echo "[INFO] staging: $_f"
+              git add -- "$_f"
+            else
+              echo "[SKIP] missing, not staging: $_f"
+            fi
+          done
 
           if git diff --staged --quiet; then
             echo "[SKIP] No curated output changes to commit"

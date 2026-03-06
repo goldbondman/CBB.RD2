@@ -240,7 +240,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add --ignore-missing -- \
+          for _f in \
             data/games.csv \
             data/team_game_weighted.csv \
             data/team_pretournament_snapshot.csv \
@@ -252,7 +252,14 @@ jobs:
             data/luck_regression_features.csv \
             data/player_availability_features.csv \
             data/player_season_summary.csv \
-            data/team_season_summary.csv
+            data/team_season_summary.csv; do
+            if [[ -e "$_f" ]]; then
+              echo "[INFO] staging: $_f"
+              git add -- "$_f"
+            else
+              echo "[SKIP] missing, not staging: $_f"
+            fi
+          done
 
           if git diff --staged --quiet; then
             echo "[SKIP] No curated update output changes to commit"
@@ -395,7 +402,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add --ignore-missing -- \
+          for _f in \
             data/games.csv \
             data/team_game_weighted.csv \
             data/team_pretournament_snapshot.csv \
@@ -406,7 +413,14 @@ jobs:
             data/player_season_summary.csv \
             data/team_season_summary.csv \
             data/cbb_rankings.csv \
-            data/cbb_rankings_by_conference.csv
+            data/cbb_rankings_by_conference.csv; do
+            if [[ -e "$_f" ]]; then
+              echo "[INFO] staging: $_f"
+              git add -- "$_f"
+            else
+              echo "[SKIP] missing, not staging: $_f"
+            fi
+          done
 
           if git diff --staged --quiet; then
             echo "[SKIP] No curated output changes to commit"
