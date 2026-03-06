@@ -39,15 +39,15 @@ warnings.filterwarnings("ignore")
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
-MIN_SAMPLE       = 30      # minimum fires to be valid
-MIN_FIRE_RATE    = 0.05    # must fire on >= 5% of total games
-PVALUE_THRESH    = 0.05    # max p-value for binomtest
-MERGE_SU_INSAMPLE = 0.59   # minimum in-sample SU hit rate
-MERGE_SU_HOLDOUT  = 0.54   # minimum holdout SU hit rate
-SEASON_PASS_THRESH = 0.59  # season-level rate for consistency gate
-SEASON_PASS_MIN    = 1     # must pass in ≥ N seasons (1 of 1 — single season flag)
-PAIR_PASS1_THRESH  = 0.55  # pair must reach this to proceed to Pass 2
-TRIO_SOURCE_THRESH = 0.55  # pairs must hit this to donate signals to trio pool
+MIN_SAMPLE       = 100     # minimum fires to be valid
+MIN_FIRE_RATE    = 0.10    # must fire on >= 10% of total games
+PVALUE_THRESH    = 0.05    # max p-value for binomtest vs actual home-win baseline
+MERGE_SU_INSAMPLE = 0.72   # minimum in-sample SU hit rate (7pp above ~65% baseline)
+MERGE_SU_HOLDOUT  = 0.65   # minimum holdout SU hit rate (at/above baseline)
+SEASON_PASS_THRESH = 0.65  # season-level rate for consistency gate
+SEASON_PASS_MIN    = 1     # must pass in >= N seasons (1 of 1 — single season flag)
+PAIR_PASS1_THRESH  = 0.65  # pair must reach this to proceed to Pass 2
+TRIO_SOURCE_THRESH = 0.65  # pairs must hit this to donate signals to trio pool
 TIMEOUT_SECS       = 90 * 60  # 90 minutes
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -152,15 +152,17 @@ def validate_result(
     result: dict[str, Any],
     df_insample: pd.DataFrame,
     df_holdout: pd.DataFrame,
+    baseline_rate: float = 0.651,
 ) -> dict[str, Any]:
     """
     Add p_value, holdout metrics, per-season rates, and consistency flag.
+    baseline_rate: unconditional home-win rate from in-sample data (used as binomtest null).
     """
-    # Binomial test vs 50% baseline
+    # Binomial test vs actual home-win baseline (not vs 50%)
     pval = binomtest(
         int(result["n"] * result["hit_rate_su"]),
         result["n"],
-        p=0.50,
+        p=baseline_rate,
         alternative="greater",
     ).pvalue
     result["p_value"] = round(float(pval), 6)
@@ -369,7 +371,7 @@ def run_trio_backtest(
     n_total = len(df)
 
     trios = list(generate_trios_from_pairs(qualifying, list(df.columns)))
-    print(f"\n[trio] {len(qualifying)} qualifying pairs → {len(trios):,} trios to test...")
+    print(f"\n[trio] {len(qualifying)} qualifying pairs -> {len(trios):,} trios to test...")
 
     def _eval(combo):
         if time.time() - start_time > TIMEOUT_SECS:
@@ -457,7 +459,9 @@ def run_backtest(df: pd.DataFrame) -> dict[str, Any]:
     df_holdout  = df.iloc[-n_holdout:].copy()
 
     n_total = len(df_insample)
+    baseline_rate = float(df_insample["home_win"].mean())
     print(f"\n[split] In-sample: {len(df_insample):,} | Holdout: {len(df_holdout):,}")
+    print(f"[split] Baseline home-win rate (in-sample): {baseline_rate:.3f}")
 
     # Median thresholds on in-sample only (no leakage)
     median_thresholds = build_median_thresholds(df_insample)
@@ -506,7 +510,7 @@ def run_backtest(df: pd.DataFrame) -> dict[str, Any]:
 
     validated = []
     for r in all_candidates:
-        r = validate_result(r, df_insample, df_holdout)
+        r = validate_result(r, df_insample, df_holdout, baseline_rate=baseline_rate)
         validated.append(r)
 
     # ── Phase 7: Apply merge gates

@@ -208,15 +208,15 @@ def compute_rolling_windows(df: pd.DataFrame) -> pd.DataFrame:
 
         series = grp[base_col]
 
-        # Season (expanding mean)
+        # Season (expanding mean) — shift(1) to exclude current game (avoid look-ahead)
         col_season = f"{metric_name}_season"
-        df[col_season] = series.transform(lambda s: s.expanding(min_periods=1).mean())
+        df[col_season] = series.transform(lambda s: s.shift(1).expanding(min_periods=1).mean())
 
-        # Rolling Lx windows
+        # Rolling Lx windows — shift(1) to exclude current game (avoid look-ahead)
         for L in LX_WINDOWS:
             col_lx = f"{metric_name}_L{L}"
             df[col_lx] = series.transform(
-                lambda s, _L=L: s.rolling(_L, min_periods=max(1, _L // 2)).mean()
+                lambda s, _L=L: s.shift(1).rolling(_L, min_periods=max(1, _L // 2)).mean()
             )
 
     # ── ANE trend signals
@@ -229,7 +229,7 @@ def compute_rolling_windows(df: pd.DataFrame) -> pd.DataFrame:
     if "dpc_g" in df.columns:
         dpc_grp = df.groupby("team_id", sort=False)["dpc_g"]
         df["DPC_L10_std"] = dpc_grp.transform(
-            lambda s: s.rolling(10, min_periods=5).std()
+            lambda s: s.shift(1).rolling(10, min_periods=5).std()
         )
         if "DPC_L4" in df.columns and "DPC_L10" in df.columns:
             df["DPC_trend"] = df["DPC_L4"] - df["DPC_L10"]
