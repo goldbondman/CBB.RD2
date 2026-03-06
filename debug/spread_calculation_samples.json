@@ -1,0 +1,2948 @@
+{
+  "generated_at_utc": "2026-03-06T06:50:06.643001+00:00",
+  "model_version": "joint_v1.0",
+  "selection_rules": {
+    "normal": "status=OK and abs(pred_margin_final)<=35, first 10 by abs margin",
+    "extreme": "abs(pred_margin_raw)>35 or abs(pred_margin_final)>35 or abs(legacy_pred_margin_raw)>35, top 10 by max abs margin",
+    "blocked": "status starts with BLOCKED, first 10"
+  },
+  "counts": {
+    "total_traces": 101,
+    "normal_candidates": 89,
+    "extreme_candidates": 86,
+    "blocked_candidates": 12
+  },
+  "samples": {
+    "normal": [
+      {
+        "event_id": "401851248",
+        "game_id": "401851248",
+        "home_team": "Queens University Royals",
+        "away_team": "West Georgia Wolves",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": -0.00680308658180717,
+        "legacy_unscaled_signal_raw": 1.570575195969353,
+        "legacy_allocation_pct": 0.2,
+        "legacy_pred_margin_raw": 60.02086913838424,
+        "signal_tanh": -0.006802981630295113,
+        "allocation_raw": -0.0005442385304236091,
+        "allocation_final": -0.0005442385304236091,
+        "pred_total": 150.0521728459606,
+        "pred_margin_raw": -0.16332834807310995,
+        "pred_margin_pre_guardrail": -0.16332834807310995,
+        "pred_margin_final": -0.16332834807310995,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.019539999999999943,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.13026666666666628,
+            "term": -0.03256666666666657
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": -0.13329846,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.3808527428571429,
+            "term": -0.05712791142857143
+          },
+          {
+            "name": "pxp_diff",
+            "value": 0.0030330997956855565,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 0.015165498978427783,
+            "term": 0.0022748248467641674
+          },
+          {
+            "name": "lns_diff",
+            "value": 10.46,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.523,
+            "term": 0.07845
+          },
+          {
+            "name": "vol_diff",
+            "value": 0.2599999999999998,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.02166666666666665,
+            "term": 0.0021666666666666653
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "lns_diff",
+            "value": 10.46,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.523,
+            "term": 0.07845
+          },
+          {
+            "name": "posw",
+            "value": -0.13329846,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.3808527428571429,
+            "term": -0.05712791142857143
+          },
+          {
+            "name": "odi_star_diff",
+            "value": -0.019539999999999943,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.13026666666666628,
+            "term": -0.03256666666666657
+          },
+          {
+            "name": "pxp_diff",
+            "value": 0.0030330997956855565,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 0.015165498978427783,
+            "term": 0.0022748248467641674
+          },
+          {
+            "name": "vol_diff",
+            "value": 0.2599999999999998,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.02166666666666665,
+            "term": 0.0021666666666666653
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401851456",
+        "game_id": "401851456",
+        "home_team": "Fairfield Stags",
+        "away_team": "Manhattan Jaspers",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": 0.008993707543237781,
+        "legacy_unscaled_signal_raw": 0.7732851819848379,
+        "legacy_allocation_pct": 0.2,
+        "legacy_pred_margin_raw": 48.35687943744869,
+        "signal_tanh": 0.008993465060415966,
+        "allocation_raw": 0.0007194772048332773,
+        "allocation_final": 0.0007194772048332773,
+        "pred_total": 120.89219859362171,
+        "pred_margin_raw": 0.17395836226057682,
+        "pred_margin_pre_guardrail": 0.17395836226057682,
+        "pred_margin_final": 0.17395836226057682,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.030199999999999963,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.2013333333333331,
+            "term": -0.05033333333333327
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": 0.05161500000000005,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.14747142857142873,
+            "term": 0.02212071428571431
+          },
+          {
+            "name": "pxp_diff",
+            "value": 0.01061954656558678,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 0.0530977328279339,
+            "term": 0.007964659924190085
+          },
+          {
+            "name": "lns_diff",
+            "value": 7.01,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.3505,
+            "term": 0.052575
+          },
+          {
+            "name": "vol_diff",
+            "value": -2.8000000000000007,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.2333333333333334,
+            "term": -0.02333333333333334
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "lns_diff",
+            "value": 7.01,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.3505,
+            "term": 0.052575
+          },
+          {
+            "name": "odi_star_diff",
+            "value": -0.030199999999999963,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.2013333333333331,
+            "term": -0.05033333333333327
+          },
+          {
+            "name": "vol_diff",
+            "value": -2.8000000000000007,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.2333333333333334,
+            "term": -0.02333333333333334
+          },
+          {
+            "name": "posw",
+            "value": 0.05161500000000005,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.14747142857142873,
+            "term": 0.02212071428571431
+          },
+          {
+            "name": "pxp_diff",
+            "value": 0.01061954656558678,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 0.0530977328279339,
+            "term": 0.007964659924190085
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401823271",
+        "game_id": "401823271",
+        "home_team": "Cal State Bakersfield Roadrunners",
+        "away_team": "Cal State Northridge Matadors",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": 0.011970571208371902,
+        "legacy_unscaled_signal_raw": -5.919923521842319,
+        "legacy_allocation_pct": -0.2,
+        "legacy_pred_margin_raw": -67.51870594173245,
+        "signal_tanh": 0.011969999468504614,
+        "allocation_raw": 0.0009575999574803691,
+        "allocation_final": 0.0009575999574803691,
+        "pred_total": 168.79676485433112,
+        "pred_margin_raw": 0.3232795496946627,
+        "pred_margin_pre_guardrail": 0.3232795496946627,
+        "pred_margin_final": 0.3232795496946627,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": 0.2273,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": 1.5153333333333334,
+            "term": 0.37883333333333336
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": -0.07015000000000002,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.20042857142857148,
+            "term": -0.03006428571428572
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.01235657571590848,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.0617828785795424,
+            "term": -0.00926743178693136
+          },
+          {
+            "name": "lns_diff",
+            "value": -33.9,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": -1.6949999999999998,
+            "term": -0.25425
+          },
+          {
+            "name": "vol_diff",
+            "value": -8.79372535484933,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.7328104462374442,
+            "term": -0.07328104462374442
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": 0.2273,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": 1.5153333333333334,
+            "term": 0.37883333333333336
+          },
+          {
+            "name": "lns_diff",
+            "value": -33.9,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": -1.6949999999999998,
+            "term": -0.25425
+          },
+          {
+            "name": "vol_diff",
+            "value": -8.79372535484933,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.7328104462374442,
+            "term": -0.07328104462374442
+          },
+          {
+            "name": "posw",
+            "value": -0.07015000000000002,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.20042857142857148,
+            "term": -0.03006428571428572
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.01235657571590848,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.0617828785795424,
+            "term": -0.00926743178693136
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401804958",
+        "game_id": "401804958",
+        "home_team": "Liberty Flames",
+        "away_team": "Louisiana Tech Bulldogs",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": -0.01280314088266107,
+        "legacy_unscaled_signal_raw": -0.06792650912891302,
+        "legacy_allocation_pct": -0.06792650912891302,
+        "legacy_pred_margin_raw": -21.871657476123403,
+        "signal_tanh": -0.012802441363132081,
+        "allocation_raw": -0.0010241953090505665,
+        "allocation_final": -0.0010241953090505665,
+        "pred_total": 160.9950059012653,
+        "pred_margin_raw": -0.3297806596492884,
+        "pred_margin_pre_guardrail": -0.3297806596492884,
+        "pred_margin_final": -0.3297806596492884,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": 0.013400000000000079,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": 0.08933333333333386,
+            "term": 0.022333333333333465
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": -0.22321000000000002,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.6377428571428573,
+            "term": -0.09566142857142859
+          },
+          {
+            "name": "pxp_diff",
+            "value": 0.06803327247391205,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 0.34016636236956027,
+            "term": 0.05102495435543404
+          },
+          {
+            "name": "lns_diff",
+            "value": -2.7,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": -0.135,
+            "term": -0.02025
+          },
+          {
+            "name": "vol_diff",
+            "value": 3.570000000000002,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.29750000000000015,
+            "term": 0.029750000000000016
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "posw",
+            "value": -0.22321000000000002,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.6377428571428573,
+            "term": -0.09566142857142859
+          },
+          {
+            "name": "pxp_diff",
+            "value": 0.06803327247391205,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 0.34016636236956027,
+            "term": 0.05102495435543404
+          },
+          {
+            "name": "vol_diff",
+            "value": 3.570000000000002,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.29750000000000015,
+            "term": 0.029750000000000016
+          },
+          {
+            "name": "odi_star_diff",
+            "value": 0.013400000000000079,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": 0.08933333333333386,
+            "term": 0.022333333333333465
+          },
+          {
+            "name": "lns_diff",
+            "value": -2.7,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": -0.135,
+            "term": -0.02025
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401823218",
+        "game_id": "401823218",
+        "home_team": "Northern Illinois Huskies",
+        "away_team": "Bellarmine Knights",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": 0.015109741680647236,
+        "legacy_unscaled_signal_raw": -0.4286411469019653,
+        "legacy_allocation_pct": -0.2,
+        "legacy_pred_margin_raw": -64.98090057040739,
+        "signal_tanh": 0.015108591912678666,
+        "allocation_raw": 0.0012086873530142933,
+        "allocation_final": 0.0012086873530142933,
+        "pred_total": 162.45225142601845,
+        "pred_margin_raw": 0.39270796353465337,
+        "pred_margin_pre_guardrail": 0.39270796353465337,
+        "pred_margin_final": 0.39270796353465337,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.03219999999999999,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.21466666666666662,
+            "term": -0.053666666666666654
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": 0.03489999999999993,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.09971428571428552,
+            "term": 0.014957142857142827
+          },
+          {
+            "name": "pxp_diff",
+            "value": 0.06115902065356138,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 0.3057951032678069,
+            "term": 0.045869265490171035
+          },
+          {
+            "name": "lns_diff",
+            "value": -8.839999999999998,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": -0.4419999999999999,
+            "term": -0.06629999999999998
+          },
+          {
+            "name": "vol_diff",
+            "value": 8.91,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.7425,
+            "term": 0.07425000000000001
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "vol_diff",
+            "value": 8.91,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.7425,
+            "term": 0.07425000000000001
+          },
+          {
+            "name": "lns_diff",
+            "value": -8.839999999999998,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": -0.4419999999999999,
+            "term": -0.06629999999999998
+          },
+          {
+            "name": "odi_star_diff",
+            "value": -0.03219999999999999,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.21466666666666662,
+            "term": -0.053666666666666654
+          },
+          {
+            "name": "pxp_diff",
+            "value": 0.06115902065356138,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 0.3057951032678069,
+            "term": 0.045869265490171035
+          },
+          {
+            "name": "posw",
+            "value": 0.03489999999999993,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.09971428571428552,
+            "term": 0.014957142857142827
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401814599",
+        "game_id": "401814599",
+        "home_team": "Toledo Rockets",
+        "away_team": "Buffalo Bulls",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": 0.021045123501871068,
+        "legacy_unscaled_signal_raw": 2.1138991056527554,
+        "legacy_allocation_pct": 0.2,
+        "legacy_pred_margin_raw": 57.60412296394874,
+        "signal_tanh": 0.02104201710994116,
+        "allocation_raw": 0.0016833613687952929,
+        "allocation_final": 0.0016833613687952929,
+        "pred_total": 144.01030740987184,
+        "pred_margin_raw": 0.4848427764042256,
+        "pred_margin_pre_guardrail": 0.4848427764042256,
+        "pred_margin_final": 0.4848427764042256,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.08789999999999998,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.5859999999999999,
+            "term": -0.14649999999999996
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": 0.15514200000000009,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.4432628571428574,
+            "term": 0.0664894285714286
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.01931462898163233,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.09657314490816166,
+            "term": -0.014485971736224248
+          },
+          {
+            "name": "lns_diff",
+            "value": 12.15,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.6075,
+            "term": 0.091125
+          },
+          {
+            "name": "vol_diff",
+            "value": 2.9300000000000015,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.24416666666666678,
+            "term": 0.02441666666666668
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.08789999999999998,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.5859999999999999,
+            "term": -0.14649999999999996
+          },
+          {
+            "name": "lns_diff",
+            "value": 12.15,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.6075,
+            "term": 0.091125
+          },
+          {
+            "name": "posw",
+            "value": 0.15514200000000009,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.4432628571428574,
+            "term": 0.0664894285714286
+          },
+          {
+            "name": "vol_diff",
+            "value": 2.9300000000000015,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.24416666666666678,
+            "term": 0.02441666666666668
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.01931462898163233,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.09657314490816166,
+            "term": -0.014485971736224248
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401827106",
+        "game_id": "401827106",
+        "home_team": "Alabama State Hornets",
+        "away_team": "Grambling Tigers",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": 0.026984257813483334,
+        "legacy_unscaled_signal_raw": 2.250935699181744,
+        "legacy_allocation_pct": 0.2,
+        "legacy_pred_margin_raw": 52.36288704470209,
+        "signal_tanh": 0.026977710189902235,
+        "allocation_raw": 0.0021582168151921786,
+        "allocation_final": 0.0021582168151921786,
+        "pred_total": 130.90721761175521,
+        "pred_margin_raw": 0.5650523165594237,
+        "pred_margin_pre_guardrail": 0.5650523165594237,
+        "pred_margin_final": 0.5650523165594237,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.04529999999999997,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.3019999999999998,
+            "term": -0.07549999999999996
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": -0.072792,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.20797714285714286,
+            "term": -0.031196571428571428
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.012136672121704828,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.06068336060852414,
+            "term": -0.009102504091278621
+          },
+          {
+            "name": "lns_diff",
+            "value": 9.36,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.46799999999999997,
+            "term": 0.0702
+          },
+          {
+            "name": "vol_diff",
+            "value": 8.71,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.7258333333333334,
+            "term": 0.07258333333333335
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.04529999999999997,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.3019999999999998,
+            "term": -0.07549999999999996
+          },
+          {
+            "name": "vol_diff",
+            "value": 8.71,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.7258333333333334,
+            "term": 0.07258333333333335
+          },
+          {
+            "name": "lns_diff",
+            "value": 9.36,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.46799999999999997,
+            "term": 0.0702
+          },
+          {
+            "name": "posw",
+            "value": -0.072792,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.20797714285714286,
+            "term": -0.031196571428571428
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.012136672121704828,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.06068336060852414,
+            "term": -0.009102504091278621
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401851350",
+        "game_id": "401851350",
+        "home_team": "Radford Highlanders",
+        "away_team": "Presbyterian Blue Hose",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": 0.02585866388804016,
+        "legacy_unscaled_signal_raw": 0.18526200278277427,
+        "legacy_allocation_pct": 0.18526200278277427,
+        "legacy_pred_margin_raw": 52.26298829103323,
+        "signal_tanh": 0.025852901787326767,
+        "allocation_raw": 0.0020682321429861413,
+        "allocation_final": 0.0020682321429861413,
+        "pred_total": 141.0515580799191,
+        "pred_margin_raw": 0.5834547324783305,
+        "pred_margin_pre_guardrail": 0.5834547324783305,
+        "pred_margin_final": 0.5834547324783305,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": 0.040100000000000025,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": 0.26733333333333353,
+            "term": 0.06683333333333338
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": 0.14023800000000006,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.4006800000000002,
+            "term": 0.06010200000000003
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.10803630916681278,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.5401815458340639,
+            "term": -0.08102723187510957
+          },
+          {
+            "name": "lns_diff",
+            "value": 6.8500000000000005,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.3425,
+            "term": 0.051375000000000004
+          },
+          {
+            "name": "vol_diff",
+            "value": -8.57093250842204,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.7142443757018366,
+            "term": -0.07142443757018367
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "pxp_diff",
+            "value": -0.10803630916681278,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.5401815458340639,
+            "term": -0.08102723187510957
+          },
+          {
+            "name": "vol_diff",
+            "value": -8.57093250842204,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.7142443757018366,
+            "term": -0.07142443757018367
+          },
+          {
+            "name": "odi_star_diff",
+            "value": 0.040100000000000025,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": 0.26733333333333353,
+            "term": 0.06683333333333338
+          },
+          {
+            "name": "posw",
+            "value": 0.14023800000000006,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.4006800000000002,
+            "term": 0.06010200000000003
+          },
+          {
+            "name": "lns_diff",
+            "value": 6.8500000000000005,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.3425,
+            "term": 0.051375000000000004
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401851348",
+        "game_id": "401851348",
+        "home_team": "Winthrop Eagles",
+        "away_team": "Charleston Southern Buccaneers",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": -0.02382368747286359,
+        "legacy_unscaled_signal_raw": -0.43245275416123935,
+        "legacy_allocation_pct": -0.2,
+        "legacy_pred_margin_raw": -65.55047285584719,
+        "signal_tanh": -0.023819181307659063,
+        "allocation_raw": -0.001905534504612725,
+        "allocation_final": -0.001905534504612725,
+        "pred_total": 163.87618213961798,
+        "pred_margin_raw": -0.6245434391024833,
+        "pred_margin_pre_guardrail": -0.6245434391024833,
+        "pred_margin_final": -0.6245434391024833,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.11260000000000005,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.750666666666667,
+            "term": -0.18766666666666676
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": 0.35767899999999997,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 1.02194,
+            "term": 0.153291
+          },
+          {
+            "name": "pxp_diff",
+            "value": 0.07696930559173754,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 0.3848465279586877,
+            "term": 0.05772697919380315
+          },
+          {
+            "name": "lns_diff",
+            "value": 1.61,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.0805,
+            "term": 0.012075
+          },
+          {
+            "name": "vol_diff",
+            "value": -7.109999999999999,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.5924999999999999,
+            "term": -0.05925
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.11260000000000005,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.750666666666667,
+            "term": -0.18766666666666676
+          },
+          {
+            "name": "posw",
+            "value": 0.35767899999999997,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 1.02194,
+            "term": 0.153291
+          },
+          {
+            "name": "vol_diff",
+            "value": -7.109999999999999,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.5924999999999999,
+            "term": -0.05925
+          },
+          {
+            "name": "pxp_diff",
+            "value": 0.07696930559173754,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 0.3848465279586877,
+            "term": 0.05772697919380315
+          },
+          {
+            "name": "lns_diff",
+            "value": 1.61,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.0805,
+            "term": 0.012075
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401822780",
+        "game_id": "401822780",
+        "home_team": "Morgan State Bears",
+        "away_team": "Coppin State Eagles",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": -0.031671899656105756,
+        "legacy_unscaled_signal_raw": 1.2591744157696168,
+        "legacy_allocation_pct": 0.2,
+        "legacy_pred_margin_raw": 65.31094198678805,
+        "signal_tanh": -0.031661313778666066,
+        "allocation_raw": -0.002532905102293285,
+        "allocation_final": -0.002532905102293285,
+        "pred_total": 163.2773549669701,
+        "pred_margin_raw": -0.827132090969581,
+        "pred_margin_pre_guardrail": -0.827132090969581,
+        "pred_margin_final": -0.827132090969581,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": 0.024999999999999988,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": 0.1666666666666666,
+            "term": 0.04166666666666665
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": -0.2978759999999999,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.8510742857142856,
+            "term": -0.12766114285714283
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.041642361283296236,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.20821180641648118,
+            "term": -0.031231770962472177
+          },
+          {
+            "name": "lns_diff",
+            "value": 4.62,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.231,
+            "term": 0.03465
+          },
+          {
+            "name": "vol_diff",
+            "value": 6.108521699621111,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.509043474968426,
+            "term": 0.0509043474968426
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "posw",
+            "value": -0.2978759999999999,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.8510742857142856,
+            "term": -0.12766114285714283
+          },
+          {
+            "name": "vol_diff",
+            "value": 6.108521699621111,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.509043474968426,
+            "term": 0.0509043474968426
+          },
+          {
+            "name": "odi_star_diff",
+            "value": 0.024999999999999988,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": 0.1666666666666666,
+            "term": 0.04166666666666665
+          },
+          {
+            "name": "lns_diff",
+            "value": 4.62,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.231,
+            "term": 0.03465
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.041642361283296236,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.20821180641648118,
+            "term": -0.031231770962472177
+          }
+        ],
+        "adjustments_applied": []
+      }
+    ],
+    "extreme": [
+      {
+        "event_id": "401804962",
+        "game_id": "401804962",
+        "home_team": "Florida International Panthers",
+        "away_team": "Middle Tennessee Blue Raiders",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": 0.15274461881202553,
+        "legacy_unscaled_signal_raw": -0.3764714762375948,
+        "legacy_allocation_pct": -0.2,
+        "legacy_pred_margin_raw": -70.0,
+        "signal_tanh": 0.15156771018200152,
+        "allocation_raw": 0.012125416814560122,
+        "allocation_final": 0.012125416814560122,
+        "pred_total": 175.0,
+        "pred_margin_raw": 4.243895885096043,
+        "pred_margin_pre_guardrail": 4.243895885096043,
+        "pred_margin_final": 4.243895885096043,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": 0.07700000000000003,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": 0.5133333333333335,
+            "term": 0.12833333333333338
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": 0.17421599999999998,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.49776,
+            "term": 0.074664
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.045692508250632646,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.22846254125316323,
+            "term": -0.034269381187974485
+          },
+          {
+            "name": "lns_diff",
+            "value": -3.7199999999999998,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": -0.186,
+            "term": -0.027899999999999998
+          },
+          {
+            "name": "vol_diff",
+            "value": 1.4299999999999997,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.11916666666666664,
+            "term": 0.011916666666666666
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": 0.07700000000000003,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": 0.5133333333333335,
+            "term": 0.12833333333333338
+          },
+          {
+            "name": "posw",
+            "value": 0.17421599999999998,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.49776,
+            "term": 0.074664
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.045692508250632646,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.22846254125316323,
+            "term": -0.034269381187974485
+          },
+          {
+            "name": "lns_diff",
+            "value": -3.7199999999999998,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": -0.186,
+            "term": -0.027899999999999998
+          },
+          {
+            "name": "vol_diff",
+            "value": 1.4299999999999997,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.11916666666666664,
+            "term": 0.011916666666666666
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401828257",
+        "game_id": "401828257",
+        "home_team": "East Carolina Pirates",
+        "away_team": "Tulsa Golden Hurricane",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": -0.14077102853231307,
+        "legacy_unscaled_signal_raw": 0.35019328476972783,
+        "legacy_allocation_pct": 0.2,
+        "legacy_pred_margin_raw": 70.0,
+        "signal_tanh": -0.13984847831635147,
+        "allocation_raw": -0.011187878265308118,
+        "allocation_final": -0.011187878265308118,
+        "pred_total": 175.0,
+        "pred_margin_raw": -3.915757392857841,
+        "pred_margin_pre_guardrail": -3.915757392857841,
+        "pred_margin_final": -3.915757392857841,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.026299999999999955,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.17533333333333304,
+            "term": -0.04383333333333326
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": -0.2377019999999999,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.6791485714285712,
+            "term": -0.10187228571428568
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.01717610153514776,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.0858805076757388,
+            "term": -0.012882076151360819
+          },
+          {
+            "name": "lns_diff",
+            "value": 3.02,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.151,
+            "term": 0.02265
+          },
+          {
+            "name": "vol_diff",
+            "value": -0.5800000000000001,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.04833333333333334,
+            "term": -0.0048333333333333344
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "posw",
+            "value": -0.2377019999999999,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.6791485714285712,
+            "term": -0.10187228571428568
+          },
+          {
+            "name": "odi_star_diff",
+            "value": -0.026299999999999955,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.17533333333333304,
+            "term": -0.04383333333333326
+          },
+          {
+            "name": "lns_diff",
+            "value": 3.02,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.151,
+            "term": 0.02265
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.01717610153514776,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.0858805076757388,
+            "term": -0.012882076151360819
+          },
+          {
+            "name": "vol_diff",
+            "value": -0.5800000000000001,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.04833333333333334,
+            "term": -0.0048333333333333344
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401804961",
+        "game_id": "401804961",
+        "home_team": "Missouri State Bears",
+        "away_team": "Western Kentucky Hilltoppers",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": -0.20972259547448197,
+        "legacy_unscaled_signal_raw": -3.5243075071901346,
+        "legacy_allocation_pct": -0.2,
+        "legacy_pred_margin_raw": -70.0,
+        "signal_tanh": -0.20670096262481708,
+        "allocation_raw": -0.016536077009985366,
+        "allocation_final": -0.016536077009985366,
+        "pred_total": 175.0,
+        "pred_margin_raw": -5.787626953494878,
+        "pred_margin_pre_guardrail": -5.787626953494878,
+        "pred_margin_final": -5.787626953494878,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.06009999999999994,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.4006666666666663,
+            "term": -0.10016666666666657
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": 0.37533500000000003,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 1.0723857142857145,
+            "term": 0.16085785714285716
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.09055171460089673,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.45275857300448363,
+            "term": -0.06791378595067254
+          },
+          {
+            "name": "lns_diff",
+            "value": -18.700000000000003,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": -0.9350000000000002,
+            "term": -0.14025
+          },
+          {
+            "name": "vol_diff",
+            "value": -7.470000000000001,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.6225,
+            "term": -0.06225000000000001
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "posw",
+            "value": 0.37533500000000003,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 1.0723857142857145,
+            "term": 0.16085785714285716
+          },
+          {
+            "name": "lns_diff",
+            "value": -18.700000000000003,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": -0.9350000000000002,
+            "term": -0.14025
+          },
+          {
+            "name": "odi_star_diff",
+            "value": -0.06009999999999994,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.4006666666666663,
+            "term": -0.10016666666666657
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.09055171460089673,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.45275857300448363,
+            "term": -0.06791378595067254
+          },
+          {
+            "name": "vol_diff",
+            "value": -7.470000000000001,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.6225,
+            "term": -0.06225000000000001
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401809151",
+        "game_id": "401809151",
+        "home_team": "Hawai'i Rainbow Warriors",
+        "away_team": "UC Riverside Highlanders",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": 0.07971949544721907,
+        "legacy_unscaled_signal_raw": 0.7319451467084913,
+        "legacy_allocation_pct": 0.2,
+        "legacy_pred_margin_raw": 70.0,
+        "signal_tanh": 0.07955104592150009,
+        "allocation_raw": 0.006364083673720007,
+        "allocation_final": 0.006364083673720007,
+        "pred_total": 175.0,
+        "pred_margin_raw": 2.2274292858020024,
+        "pred_margin_pre_guardrail": 2.2274292858020024,
+        "pred_margin_final": 2.2274292858020024,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.014500000000000042,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.09666666666666696,
+            "term": -0.02416666666666674
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": -0.29908800000000013,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.8545371428571433,
+            "term": -0.1281805714285715
+          },
+          {
+            "name": "pxp_diff",
+            "value": 0.2428889780566098,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 1.214444890283049,
+            "term": 0.18216673354245733
+          },
+          {
+            "name": "lns_diff",
+            "value": 2.42,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.121,
+            "term": 0.01815
+          },
+          {
+            "name": "vol_diff",
+            "value": 3.8099999999999987,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.3174999999999999,
+            "term": 0.031749999999999994
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "pxp_diff",
+            "value": 0.2428889780566098,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 1.214444890283049,
+            "term": 0.18216673354245733
+          },
+          {
+            "name": "posw",
+            "value": -0.29908800000000013,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.8545371428571433,
+            "term": -0.1281805714285715
+          },
+          {
+            "name": "vol_diff",
+            "value": 3.8099999999999987,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.3174999999999999,
+            "term": 0.031749999999999994
+          },
+          {
+            "name": "odi_star_diff",
+            "value": -0.014500000000000042,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.09666666666666696,
+            "term": -0.02416666666666674
+          },
+          {
+            "name": "lns_diff",
+            "value": 2.42,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.121,
+            "term": 0.01815
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401827722",
+        "game_id": "401827722",
+        "home_team": "West Virginia Mountaineers",
+        "away_team": "UCF Knights",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": -0.3847592320035987,
+        "legacy_unscaled_signal_raw": -0.5342265035435769,
+        "legacy_allocation_pct": -0.2,
+        "legacy_pred_margin_raw": -70.0,
+        "signal_tanh": -0.3668334372538728,
+        "allocation_raw": -0.029346674980309823,
+        "allocation_final": -0.029346674980309823,
+        "pred_total": 175.0,
+        "pred_margin_raw": -10.271336243108438,
+        "pred_margin_pre_guardrail": -10.271336243108438,
+        "pred_margin_final": -10.271336243108438,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.17310000000000003,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -1.1540000000000004,
+            "term": -0.2885000000000001
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": 0.0060720000000000695,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.01734857142857163,
+            "term": 0.0026022857142857445
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.09908202362384577,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.49541011811922886,
+            "term": -0.07431151771788433
+          },
+          {
+            "name": "lns_diff",
+            "value": -3.04,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": -0.152,
+            "term": -0.022799999999999997
+          },
+          {
+            "name": "vol_diff",
+            "value": -0.21000000000000085,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.01750000000000007,
+            "term": -0.0017500000000000072
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.17310000000000003,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -1.1540000000000004,
+            "term": -0.2885000000000001
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.09908202362384577,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.49541011811922886,
+            "term": -0.07431151771788433
+          },
+          {
+            "name": "lns_diff",
+            "value": -3.04,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": -0.152,
+            "term": -0.022799999999999997
+          },
+          {
+            "name": "posw",
+            "value": 0.0060720000000000695,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.01734857142857163,
+            "term": 0.0026022857142857445
+          },
+          {
+            "name": "vol_diff",
+            "value": -0.21000000000000085,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.01750000000000007,
+            "term": -0.0017500000000000072
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401851579",
+        "game_id": "401851579",
+        "home_team": "Chattanooga Mocs",
+        "away_team": "The Citadel Bulldogs",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": -0.04800468665691972,
+        "legacy_unscaled_signal_raw": 2.456761757906711,
+        "legacy_allocation_pct": 0.2,
+        "legacy_pred_margin_raw": 69.96664149353302,
+        "signal_tanh": -0.047967845816584156,
+        "allocation_raw": -0.0038374276653267325,
+        "allocation_final": -0.0038374276653267325,
+        "pred_total": 174.91660373383255,
+        "pred_margin_raw": -1.3424596285864046,
+        "pred_margin_pre_guardrail": -1.3424596285864046,
+        "pred_margin_final": -1.3424596285864046,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.078,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.52,
+            "term": -0.13
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": 0.11901600000000004,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.3400457142857144,
+            "term": 0.05100685714285716
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.073937613955258,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.36968806977629,
+            "term": -0.0554532104664435
+          },
+          {
+            "name": "lns_diff",
+            "value": 23.869999999999997,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 1.1934999999999998,
+            "term": 0.17902499999999996
+          },
+          {
+            "name": "vol_diff",
+            "value": -11.11,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.9258333333333333,
+            "term": -0.09258333333333334
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "lns_diff",
+            "value": 23.869999999999997,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 1.1934999999999998,
+            "term": 0.17902499999999996
+          },
+          {
+            "name": "odi_star_diff",
+            "value": -0.078,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.52,
+            "term": -0.13
+          },
+          {
+            "name": "vol_diff",
+            "value": -11.11,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.9258333333333333,
+            "term": -0.09258333333333334
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.073937613955258,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.36968806977629,
+            "term": -0.0554532104664435
+          },
+          {
+            "name": "posw",
+            "value": 0.11901600000000004,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.3400457142857144,
+            "term": 0.05100685714285716
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401804959",
+        "game_id": "401804959",
+        "home_team": "New Mexico State Aggies",
+        "away_team": "Jacksonville State Gamecocks",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": -0.04819151995181392,
+        "legacy_unscaled_signal_raw": 0.6510809674382084,
+        "legacy_allocation_pct": 0.2,
+        "legacy_pred_margin_raw": 68.59589651763596,
+        "signal_tanh": -0.04815424755139157,
+        "allocation_raw": -0.0038523398041113255,
+        "allocation_final": -0.0038523398041113255,
+        "pred_total": 171.4897412940899,
+        "pred_margin_raw": -1.3212735127679522,
+        "pred_margin_pre_guardrail": -1.3212735127679522,
+        "pred_margin_final": -1.3212735127679522,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.055600000000000045,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.370666666666667,
+            "term": -0.09266666666666674
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": 0.20532200000000003,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.5866342857142859,
+            "term": 0.08799514285714288
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.10544888374527561,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.5272444187263781,
+            "term": -0.07908666280895671
+          },
+          {
+            "name": "lns_diff",
+            "value": 3.7199999999999998,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.186,
+            "term": 0.027899999999999998
+          },
+          {
+            "name": "vol_diff",
+            "value": 0.9199999999999982,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.07666666666666651,
+            "term": 0.0076666666666666515
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.055600000000000045,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.370666666666667,
+            "term": -0.09266666666666674
+          },
+          {
+            "name": "posw",
+            "value": 0.20532200000000003,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.5866342857142859,
+            "term": 0.08799514285714288
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.10544888374527561,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.5272444187263781,
+            "term": -0.07908666280895671
+          },
+          {
+            "name": "lns_diff",
+            "value": 3.7199999999999998,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.186,
+            "term": 0.027899999999999998
+          },
+          {
+            "name": "vol_diff",
+            "value": 0.9199999999999982,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.07666666666666651,
+            "term": 0.0076666666666666515
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401851745",
+        "game_id": "401851745",
+        "home_team": "Portland Pilots",
+        "away_team": "Pepperdine Waves",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": 0.2332684434433104,
+        "legacy_unscaled_signal_raw": 1.8101636886886623,
+        "legacy_allocation_pct": 0.2,
+        "legacy_pred_margin_raw": 67.75198823207218,
+        "signal_tanh": 0.2291275142407309,
+        "allocation_raw": 0.018330201139258474,
+        "allocation_final": 0.018330201139258474,
+        "pred_total": 169.37997058018044,
+        "pred_margin_raw": 6.20953785939278,
+        "pred_margin_pre_guardrail": 6.20953785939278,
+        "pred_margin_final": 6.20953785939278,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": 0.057999999999999975,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": 0.3866666666666665,
+            "term": 0.09666666666666662
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": -0.049700000000000084,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.14200000000000024,
+            "term": -0.021300000000000034
+          },
+          {
+            "name": "pxp_diff",
+            "value": 0.06412459125774733,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 0.32062295628873666,
+            "term": 0.0480934434433105
+          },
+          {
+            "name": "lns_diff",
+            "value": 7.93,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.39649999999999996,
+            "term": 0.05947499999999999
+          },
+          {
+            "name": "vol_diff",
+            "value": 6.039999999999999,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.5033333333333333,
+            "term": 0.050333333333333334
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": 0.057999999999999975,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": 0.3866666666666665,
+            "term": 0.09666666666666662
+          },
+          {
+            "name": "lns_diff",
+            "value": 7.93,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.39649999999999996,
+            "term": 0.05947499999999999
+          },
+          {
+            "name": "vol_diff",
+            "value": 6.039999999999999,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.5033333333333333,
+            "term": 0.050333333333333334
+          },
+          {
+            "name": "pxp_diff",
+            "value": 0.06412459125774733,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 0.32062295628873666,
+            "term": 0.0480934434433105
+          },
+          {
+            "name": "posw",
+            "value": -0.049700000000000084,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.14200000000000024,
+            "term": -0.021300000000000034
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401823787",
+        "game_id": "401823787",
+        "home_team": "San Diego State Aztecs",
+        "away_team": "UNLV Rebels",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": -0.11126019940060139,
+        "legacy_unscaled_signal_raw": 0.46207225773892724,
+        "legacy_allocation_pct": 0.2,
+        "legacy_pred_margin_raw": 67.60217827655259,
+        "signal_tanh": -0.11080337083117625,
+        "allocation_raw": -0.0088642696664941,
+        "allocation_final": -0.0088642696664941,
+        "pred_total": 169.00544569138148,
+        "pred_margin_raw": -2.9962196914288577,
+        "pred_margin_pre_guardrail": -2.9962196914288577,
+        "pred_margin_final": -2.9962196914288577,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.0613999999999999,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.40933333333333266,
+            "term": -0.10233333333333317
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": 0.0070150000000000655,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.02004285714285733,
+            "term": 0.0030064285714285995
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.057533281740484665,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.2876664087024233,
+            "term": -0.0431499613053635
+          },
+          {
+            "name": "lns_diff",
+            "value": 1.8399999999999999,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.092,
+            "term": 0.0138
+          },
+          {
+            "name": "vol_diff",
+            "value": 2.09,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.17416666666666666,
+            "term": 0.017416666666666667
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": -0.0613999999999999,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": -0.40933333333333266,
+            "term": -0.10233333333333317
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.057533281740484665,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.2876664087024233,
+            "term": -0.0431499613053635
+          },
+          {
+            "name": "vol_diff",
+            "value": 2.09,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": 0.17416666666666666,
+            "term": 0.017416666666666667
+          },
+          {
+            "name": "lns_diff",
+            "value": 1.8399999999999999,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": 0.092,
+            "term": 0.0138
+          },
+          {
+            "name": "posw",
+            "value": 0.0070150000000000655,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": 0.02004285714285733,
+            "term": 0.0030064285714285995
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401823271",
+        "game_id": "401823271",
+        "home_team": "Cal State Bakersfield Roadrunners",
+        "away_team": "Cal State Northridge Matadors",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": 0.011970571208371902,
+        "legacy_unscaled_signal_raw": -5.919923521842319,
+        "legacy_allocation_pct": -0.2,
+        "legacy_pred_margin_raw": -67.51870594173245,
+        "signal_tanh": 0.011969999468504614,
+        "allocation_raw": 0.0009575999574803691,
+        "allocation_final": 0.0009575999574803691,
+        "pred_total": 168.79676485433112,
+        "pred_margin_raw": 0.3232795496946627,
+        "pred_margin_pre_guardrail": 0.3232795496946627,
+        "pred_margin_final": 0.3232795496946627,
+        "model_status": "OK",
+        "missing_spread_features": [],
+        "feature_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": 0.2273,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": 1.5153333333333334,
+            "term": 0.37883333333333336
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "posw",
+            "value": -0.07015000000000002,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.20042857142857148,
+            "term": -0.03006428571428572
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.01235657571590848,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.0617828785795424,
+            "term": -0.00926743178693136
+          },
+          {
+            "name": "lns_diff",
+            "value": -33.9,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": -1.6949999999999998,
+            "term": -0.25425
+          },
+          {
+            "name": "vol_diff",
+            "value": -8.79372535484933,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.7328104462374442,
+            "term": -0.07328104462374442
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "odi_star_diff",
+            "value": 0.2273,
+            "coef": 0.25,
+            "scale": 0.15,
+            "normalized_value": 1.5153333333333334,
+            "term": 0.37883333333333336
+          },
+          {
+            "name": "lns_diff",
+            "value": -33.9,
+            "coef": 0.15,
+            "scale": 20.0,
+            "normalized_value": -1.6949999999999998,
+            "term": -0.25425
+          },
+          {
+            "name": "vol_diff",
+            "value": -8.79372535484933,
+            "coef": 0.1,
+            "scale": 12.0,
+            "normalized_value": -0.7328104462374442,
+            "term": -0.07328104462374442
+          },
+          {
+            "name": "posw",
+            "value": -0.07015000000000002,
+            "coef": 0.15,
+            "scale": 0.35,
+            "normalized_value": -0.20042857142857148,
+            "term": -0.03006428571428572
+          },
+          {
+            "name": "pxp_diff",
+            "value": -0.01235657571590848,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": -0.0617828785795424,
+            "term": -0.00926743178693136
+          }
+        ],
+        "adjustments_applied": []
+      }
+    ],
+    "blocked": [
+      {
+        "event_id": "401831241",
+        "game_id": "401831241",
+        "home_team": "Florida A&M Rattlers",
+        "away_team": "Barber Scotia BARBER SCOTIA",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": 0.01152358806183299,
+        "legacy_unscaled_signal_raw": 0.0023047176123665975,
+        "legacy_allocation_pct": NaN,
+        "legacy_pred_margin_raw": NaN,
+        "signal_tanh": NaN,
+        "allocation_raw": NaN,
+        "allocation_final": NaN,
+        "pred_total": NaN,
+        "pred_margin_raw": NaN,
+        "pred_margin_pre_guardrail": NaN,
+        "pred_margin_final": NaN,
+        "model_status": "BLOCKED_MISSING_INPUT:lns_diff,odi_star_diff,posw,sch,tc_diff,vol_diff,wl",
+        "missing_spread_features": [
+          "odi_star_diff",
+          "posw",
+          "lns_diff",
+          "vol_diff"
+        ],
+        "feature_terms": [
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          },
+          {
+            "name": "pxp_diff",
+            "value": 0.005377674428855395,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 0.026888372144276973,
+            "term": 0.004033255821641546
+          }
+        ],
+        "top_abs_terms": [
+          {
+            "name": "pxp_diff",
+            "value": 0.005377674428855395,
+            "coef": 0.15,
+            "scale": 0.2,
+            "normalized_value": 0.026888372144276973,
+            "term": 0.004033255821641546
+          },
+          {
+            "name": "sme_diff",
+            "value": 0.0,
+            "coef": 0.2,
+            "scale": 0.15,
+            "normalized_value": 0.0,
+            "term": 0.0
+          }
+        ],
+        "adjustments_applied": []
+      },
+      {
+        "event_id": "401851457",
+        "game_id": "401851457",
+        "home_team": "Merrimack Warriors",
+        "away_team": "TBD",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": NaN,
+        "legacy_unscaled_signal_raw": NaN,
+        "legacy_allocation_pct": NaN,
+        "legacy_pred_margin_raw": NaN,
+        "signal_tanh": NaN,
+        "allocation_raw": NaN,
+        "allocation_final": NaN,
+        "pred_total": NaN,
+        "pred_margin_raw": NaN,
+        "pred_margin_pre_guardrail": NaN,
+        "pred_margin_final": NaN,
+        "model_status": "BLOCKED_MISSING_INPUT:team_snapshot",
+        "missing_spread_features": [
+          "away_team_snapshot"
+        ],
+        "feature_terms": [],
+        "top_abs_terms": [],
+        "adjustments_applied": [
+          "BLOCKED_MISSING_INPUT:team_snapshot"
+        ]
+      },
+      {
+        "event_id": "401851460",
+        "game_id": "401851460",
+        "home_team": "Saint Peter's Peacocks",
+        "away_team": "TBD",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": NaN,
+        "legacy_unscaled_signal_raw": NaN,
+        "legacy_allocation_pct": NaN,
+        "legacy_pred_margin_raw": NaN,
+        "signal_tanh": NaN,
+        "allocation_raw": NaN,
+        "allocation_final": NaN,
+        "pred_total": NaN,
+        "pred_margin_raw": NaN,
+        "pred_margin_pre_guardrail": NaN,
+        "pred_margin_final": NaN,
+        "model_status": "BLOCKED_MISSING_INPUT:team_snapshot",
+        "missing_spread_features": [
+          "away_team_snapshot"
+        ],
+        "feature_terms": [],
+        "top_abs_terms": [],
+        "adjustments_applied": [
+          "BLOCKED_MISSING_INPUT:team_snapshot"
+        ]
+      },
+      {
+        "event_id": "401851488",
+        "game_id": "401851488",
+        "home_team": "Belmont Bruins",
+        "away_team": "TBD",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": NaN,
+        "legacy_unscaled_signal_raw": NaN,
+        "legacy_allocation_pct": NaN,
+        "legacy_pred_margin_raw": NaN,
+        "signal_tanh": NaN,
+        "allocation_raw": NaN,
+        "allocation_final": NaN,
+        "pred_total": NaN,
+        "pred_margin_raw": NaN,
+        "pred_margin_pre_guardrail": NaN,
+        "pred_margin_final": NaN,
+        "model_status": "BLOCKED_MISSING_INPUT:team_snapshot",
+        "missing_spread_features": [
+          "away_team_snapshot"
+        ],
+        "feature_terms": [],
+        "top_abs_terms": [],
+        "adjustments_applied": [
+          "BLOCKED_MISSING_INPUT:team_snapshot"
+        ]
+      },
+      {
+        "event_id": "401851490",
+        "game_id": "401851490",
+        "home_team": "Bradley Braves",
+        "away_team": "TBD",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": NaN,
+        "legacy_unscaled_signal_raw": NaN,
+        "legacy_allocation_pct": NaN,
+        "legacy_pred_margin_raw": NaN,
+        "signal_tanh": NaN,
+        "allocation_raw": NaN,
+        "allocation_final": NaN,
+        "pred_total": NaN,
+        "pred_margin_raw": NaN,
+        "pred_margin_pre_guardrail": NaN,
+        "pred_margin_final": NaN,
+        "model_status": "BLOCKED_MISSING_INPUT:team_snapshot",
+        "missing_spread_features": [
+          "away_team_snapshot"
+        ],
+        "feature_terms": [],
+        "top_abs_terms": [],
+        "adjustments_applied": [
+          "BLOCKED_MISSING_INPUT:team_snapshot"
+        ]
+      },
+      {
+        "event_id": "401851491",
+        "game_id": "401851491",
+        "home_team": "Illinois State Redbirds",
+        "away_team": "TBD",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": NaN,
+        "legacy_unscaled_signal_raw": NaN,
+        "legacy_allocation_pct": NaN,
+        "legacy_pred_margin_raw": NaN,
+        "signal_tanh": NaN,
+        "allocation_raw": NaN,
+        "allocation_final": NaN,
+        "pred_total": NaN,
+        "pred_margin_raw": NaN,
+        "pred_margin_pre_guardrail": NaN,
+        "pred_margin_final": NaN,
+        "model_status": "BLOCKED_MISSING_INPUT:team_snapshot",
+        "missing_spread_features": [
+          "away_team_snapshot"
+        ],
+        "feature_terms": [],
+        "top_abs_terms": [],
+        "adjustments_applied": [
+          "BLOCKED_MISSING_INPUT:team_snapshot"
+        ]
+      },
+      {
+        "event_id": "401851530",
+        "game_id": "401851530",
+        "home_team": "Tennessee State Tigers",
+        "away_team": "TBD",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": NaN,
+        "legacy_unscaled_signal_raw": NaN,
+        "legacy_allocation_pct": NaN,
+        "legacy_pred_margin_raw": NaN,
+        "signal_tanh": NaN,
+        "allocation_raw": NaN,
+        "allocation_final": NaN,
+        "pred_total": NaN,
+        "pred_margin_raw": NaN,
+        "pred_margin_pre_guardrail": NaN,
+        "pred_margin_final": NaN,
+        "model_status": "BLOCKED_MISSING_INPUT:team_snapshot",
+        "missing_spread_features": [
+          "away_team_snapshot"
+        ],
+        "feature_terms": [],
+        "top_abs_terms": [],
+        "adjustments_applied": [
+          "BLOCKED_MISSING_INPUT:team_snapshot"
+        ]
+      },
+      {
+        "event_id": "401851532",
+        "game_id": "401851532",
+        "home_team": "Morehead State Eagles",
+        "away_team": "TBD",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": NaN,
+        "legacy_unscaled_signal_raw": NaN,
+        "legacy_allocation_pct": NaN,
+        "legacy_pred_margin_raw": NaN,
+        "signal_tanh": NaN,
+        "allocation_raw": NaN,
+        "allocation_final": NaN,
+        "pred_total": NaN,
+        "pred_margin_raw": NaN,
+        "pred_margin_pre_guardrail": NaN,
+        "pred_margin_final": NaN,
+        "model_status": "BLOCKED_MISSING_INPUT:team_snapshot",
+        "missing_spread_features": [
+          "away_team_snapshot"
+        ],
+        "feature_terms": [],
+        "top_abs_terms": [],
+        "adjustments_applied": [
+          "BLOCKED_MISSING_INPUT:team_snapshot"
+        ]
+      },
+      {
+        "event_id": "401851700",
+        "game_id": "401851700",
+        "home_team": "Texas State Bobcats",
+        "away_team": "TBD",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": NaN,
+        "legacy_unscaled_signal_raw": NaN,
+        "legacy_allocation_pct": NaN,
+        "legacy_pred_margin_raw": NaN,
+        "signal_tanh": NaN,
+        "allocation_raw": NaN,
+        "allocation_final": NaN,
+        "pred_total": NaN,
+        "pred_margin_raw": NaN,
+        "pred_margin_pre_guardrail": NaN,
+        "pred_margin_final": NaN,
+        "model_status": "BLOCKED_MISSING_INPUT:team_snapshot",
+        "missing_spread_features": [
+          "away_team_snapshot"
+        ],
+        "feature_terms": [],
+        "top_abs_terms": [],
+        "adjustments_applied": [
+          "BLOCKED_MISSING_INPUT:team_snapshot"
+        ]
+      },
+      {
+        "event_id": "401851701",
+        "game_id": "401851701",
+        "home_team": "South Alabama Jaguars",
+        "away_team": "TBD",
+        "model_name": "joint_v1.0",
+        "model_version": "joint_v1.0",
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+          "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+          "allocation_raw": "tanh(signal_raw) * 0.08",
+          "allocation_final": "clip(allocation_raw, -0.2, 0.2)",
+          "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+          "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+          "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)"
+        },
+        "intercept": 0.0,
+        "hca_points": 0.0,
+        "signal_raw": NaN,
+        "legacy_unscaled_signal_raw": NaN,
+        "legacy_allocation_pct": NaN,
+        "legacy_pred_margin_raw": NaN,
+        "signal_tanh": NaN,
+        "allocation_raw": NaN,
+        "allocation_final": NaN,
+        "pred_total": NaN,
+        "pred_margin_raw": NaN,
+        "pred_margin_pre_guardrail": NaN,
+        "pred_margin_final": NaN,
+        "model_status": "BLOCKED_MISSING_INPUT:team_snapshot",
+        "missing_spread_features": [
+          "away_team_snapshot"
+        ],
+        "feature_terms": [],
+        "top_abs_terms": [],
+        "adjustments_applied": [
+          "BLOCKED_MISSING_INPUT:team_snapshot"
+        ]
+      }
+    ]
+  }
+}

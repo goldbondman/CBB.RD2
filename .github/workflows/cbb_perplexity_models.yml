@@ -186,6 +186,9 @@ jobs:
         run: |
           set -euo pipefail
           bash .github/scripts/validate_perplexity_outputs.sh data/perplexity_contract_runner.log
+          python .github/scripts/validate_joint_predictions.py \
+            --input data/predictions_joint_latest.csv \
+            --debug-json debug/pred_margin_validation.json
 
       - name: Guard required outputs, oversize files, and build artifact payload
         if: always()

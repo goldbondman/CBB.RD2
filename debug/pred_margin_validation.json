@@ -1,0 +1,13 @@
+{
+  "input": "data\\predictions_joint_latest.csv",
+  "rows": 101,
+  "non_blocked_rows": 89,
+  "margin_final_column": "pred_margin_final",
+  "pct_non_blocked_abs_margin_gt_35": 0.0,
+  "counts": {
+    "abs_margin_gt_60": 0,
+    "blocked_with_numeric_margin": 0,
+    "non_blocked_suspicious_constants": 0
+  },
+  "violations": []
+}

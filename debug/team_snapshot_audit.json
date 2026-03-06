@@ -1,13 +1,13 @@
 {
-  "generated_at_utc": "2026-03-05T23:26:08.452310+00:00",
+  "generated_at_utc": "2026-03-06T06:50:03.819900+00:00",
   "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\team_snapshot.csv",
   "rows": 650,
-  "columns": 1166,
+  "columns": 428,
   "null_rates": {
     "team_id": 0.0,
-    "efg_pct": 0.098462,
+    "efg_pct": 0.118462,
     "efg_pct_l10": 0.323077,
-    "pace": 0.098462,
+    "pace": 0.118462,
     "pace_l10": 0.323077,
     "form_rating": 0.427692,
     "net_rtg_std_l10": 0.426154

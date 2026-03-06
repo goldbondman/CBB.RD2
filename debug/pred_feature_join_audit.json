@@ -1,0 +1,13 @@
+{
+  "generated_at_utc": "2026-03-06T06:50:04.444494+00:00",
+  "canonical_key_policy": "event_id preferred; fallback to game_id; both normalized to canonical_game_key",
+  "active_rows": 101,
+  "active_unique_keys": 101,
+  "duplicate_key_rows": 0,
+  "duplicate_key_count": 0,
+  "event_id_key_source_rows": 101,
+  "game_id_fallback_rows": 0,
+  "snapshot_both_sides_match_rate": 0.8910891089108911,
+  "market_lookup_match_rate": 1.0,
+  "mismatch_rows": 11
+}

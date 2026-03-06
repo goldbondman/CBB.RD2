@@ -1,0 +1,12 @@
+event_id,game_id,home_team,away_team,home_team_id,away_team_id,home_snapshot_present,away_snapshot_present,market_lookup_present,join_issue
+401851488,401851488,Belmont Bruins,TBD,2057,-2,True,False,True,MISSING_LOOKUP_OR_SNAPSHOT
+401851457,401851457,Merrimack Warriors,TBD,2771,-2,True,False,True,MISSING_LOOKUP_OR_SNAPSHOT
+401851700,401851700,Texas State Bobcats,TBD,326,-2,True,False,True,MISSING_LOOKUP_OR_SNAPSHOT
+401851490,401851490,Bradley Braves,TBD,71,-2,True,False,True,MISSING_LOOKUP_OR_SNAPSHOT
+401851530,401851530,Tennessee State Tigers,TBD,2634,-2,True,False,True,MISSING_LOOKUP_OR_SNAPSHOT
+401851460,401851460,Saint Peter's Peacocks,TBD,2612,-2,True,False,True,MISSING_LOOKUP_OR_SNAPSHOT
+401851701,401851701,South Alabama Jaguars,TBD,6,-2,True,False,True,MISSING_LOOKUP_OR_SNAPSHOT
+401851749,401851749,Washington State Cougars,TBD,265,-2,True,False,True,MISSING_LOOKUP_OR_SNAPSHOT
+401851491,401851491,Illinois State Redbirds,TBD,2287,-2,True,False,True,MISSING_LOOKUP_OR_SNAPSHOT
+401851532,401851532,Morehead State Eagles,TBD,2413,-2,True,False,True,MISSING_LOOKUP_OR_SNAPSHOT
+401851750,401851750,Seattle U Redhawks,TBD,2547,-2,True,False,True,MISSING_LOOKUP_OR_SNAPSHOT

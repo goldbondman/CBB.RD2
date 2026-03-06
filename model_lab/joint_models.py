@@ -31,6 +31,14 @@ OUT_SNAPSHOTS = DATA_DIR / "predictions_joint_snapshots.csv"
 OUT_SANITY = DEBUG_DIR / "sanity_outliers.csv"
 OUT_MISSING = DEBUG_DIR / "missing_predictions_report.csv"
 OUT_SCALE_CHECKS = DEBUG_DIR / "feature_scale_checks.json"
+OUT_FEATURE_RANGE_AUDIT = DEBUG_DIR / "feature_range_audit.json"
+OUT_PRED_MARGIN_DISTRIBUTION = DEBUG_DIR / "pred_margin_distribution.json"
+OUT_PRED_MARGIN_CONSTANTS = DEBUG_DIR / "pred_margin_constants.csv"
+OUT_SPREAD_CALC_SPEC = DEBUG_DIR / "spread_calculation_spec.md"
+OUT_SPREAD_CALC_SAMPLES = DEBUG_DIR / "spread_calculation_samples.json"
+OUT_PRED_FEATURE_JOIN_AUDIT = DEBUG_DIR / "pred_feature_join_audit.json"
+OUT_JOIN_MISMATCH_SAMPLES = DEBUG_DIR / "join_mismatch_samples.csv"
+OUT_BLOCKED_NUMERIC_PREDS = DEBUG_DIR / "blocked_rows_with_numeric_preds.csv"
 TEAM_SNAPSHOT_PATH = DATA_DIR / "team_snapshot.csv"
 TEAM_SNAPSHOT_AUDIT_PATH = DEBUG_DIR / "team_snapshot_audit.json"
 BLOCKED_SAMPLES_PATH = DEBUG_DIR / "blocked_missing_input_samples.csv"
@@ -39,10 +47,16 @@ FEATURE_GATE_FAILURE_PATH = DEBUG_DIR / "feature_gate_failures.json"
 MODEL_VERSION = "joint_v1.0"
 TOTAL_BOUNDS = (110.0, 175.0)
 ALLOCATION_BOUNDS = (-0.20, 0.20)
+ALLOCATION_TANH_SCALE = 0.08
 TOTAL_ADJUST_SCALE = 6.0
-MAX_ABS_SPREAD = 45.0
+MAX_ABS_SPREAD = 60.0
+SPREAD_EXTREME_THRESHOLD = 35.0
+SPREAD_BLOCK_THRESHOLD = 60.0
+SPREAD_INTERCEPT = 0.0
+SPREAD_HCA_POINTS = 0.0
 TOTAL_MIN = 110.0
 TOTAL_MAX = 180.0
+SPREAD_CONSTANTS_TO_AUDIT = (-70.0, -56.0, -44.0, 44.0, 56.0, 70.0)
 
 SPREAD_WEIGHTS = {
     "odi_star_diff": 0.25,
@@ -80,6 +94,17 @@ ULTIMATE_TOTALS_WEIGHTS = {
     "tc_diff": 0.12,
     "alt_diff": 0.08,
     "rfd_sum": 0.07,
+}
+
+SPREAD_FEATURE_SCALES = {
+    "odi_star_diff": 0.15,
+    "sme_diff": 0.15,
+    "posw": 0.35,
+    "pxp_diff": 0.20,
+    "lns_diff": 20.0,
+    "vol_diff": 12.0,
+    "away_efg_diff": 0.08,
+    "rfd": 3.0,
 }
 
 FEATURE_ALIAS_REGISTRY: dict[str, list[str]] = {
@@ -444,10 +469,15 @@ def compute_spread_features(game_row: dict[str, Any], team_rows: dict[str, dict[
     }
 
 
-def _weighted_signal(features: dict[str, float], weights: dict[str, float]) -> tuple[float, list[str], float]:
+def _weighted_signal_with_trace(
+    features: dict[str, float],
+    weights: dict[str, float],
+    scales: dict[str, float] | None = None,
+) -> tuple[float, list[str], float, list[dict[str, float | str]]]:
     missing: list[str] = []
     num = 0.0
     den = 0.0
+    terms: list[dict[str, float | str]] = []
     for name, w in weights.items():
         aliases = FEATURE_ALIAS_REGISTRY.get(name, [name])
         v = np.nan
@@ -459,11 +489,44 @@ def _weighted_signal(features: dict[str, float], weights: dict[str, float]) -> t
         if not np.isfinite(v):
             missing.append(name)
             continue
-        num += v * w
+        scale = _to_num((scales or {}).get(name, 1.0))
+        if not np.isfinite(scale) or scale == 0:
+            scale = 1.0
+        normalized = v / scale
+        term = normalized * w
+        terms.append(
+            {
+                "name": name,
+                "value": float(v),
+                "coef": float(w),
+                "scale": float(scale),
+                "normalized_value": float(normalized),
+                "term": float(term),
+            }
+        )
+        num += term
         den += w
     if den <= 0:
-        return np.nan, missing, 0.0
-    return num / den, missing, den
+        return np.nan, missing, 0.0, terms
+    return num / den, missing, den, terms
+
+
+def _weighted_signal(
+    features: dict[str, float],
+    weights: dict[str, float],
+    scales: dict[str, float] | None = None,
+) -> tuple[float, list[str], float]:
+    signal, missing, coverage, _ = _weighted_signal_with_trace(features, weights, scales=scales)
+    return signal, missing, coverage
+
+
+def _spread_allocation_from_signal(signal: float) -> tuple[float, float, bool]:
+    if not np.isfinite(signal):
+        return np.nan, np.nan, False
+    allocation_raw = float(np.tanh(signal) * ALLOCATION_TANH_SCALE)
+    allocation_pct = float(np.clip(allocation_raw, ALLOCATION_BOUNDS[0], ALLOCATION_BOUNDS[1]))
+    clipped = bool(allocation_pct != allocation_raw)
+    return allocation_raw, allocation_pct, clipped
 
 
 def _base_total(team_rows: dict[str, dict[str, Any]]) -> float:
@@ -500,8 +563,13 @@ def predict_game_joint(
     totals_features = compute_totals_features(game_row, team_rows, advanced_metrics)
     spread_features = compute_spread_features(game_row, team_rows, advanced_metrics)
 
-    totals_signal, missing_totals, totals_cov = _weighted_signal(totals_features, TOTALS_WEIGHTS)
-    spread_signal, missing_spread, spread_cov = _weighted_signal(spread_features, SPREAD_WEIGHTS)
+    totals_signal, missing_totals, totals_cov, totals_terms = _weighted_signal_with_trace(totals_features, TOTALS_WEIGHTS)
+    spread_signal, missing_spread, spread_cov, spread_terms = _weighted_signal_with_trace(
+        spread_features,
+        SPREAD_WEIGHTS,
+        scales=SPREAD_FEATURE_SCALES,
+    )
+    legacy_spread_signal, _, _, _ = _weighted_signal_with_trace(spread_features, SPREAD_WEIGHTS)
 
     required_count = len(TOTALS_WEIGHTS) + len(SPREAD_WEIGHTS)
     missing_count = len(missing_totals) + len(missing_spread)
@@ -511,21 +579,64 @@ def predict_game_joint(
     if totals_cov < 0.5 or spread_cov < 0.5:
         names = sorted(set(missing_totals + missing_spread))
         model_status = f"BLOCKED_MISSING_INPUT:{','.join(names) if names else 'insufficient_feature_weight'}"
+        blocked_row = {
+            "event_id": _canonical_id(game_row.get("event_id") or game_row.get("game_id")),
+            "game_id": _canonical_id(game_row.get("game_id") or game_row.get("event_id")),
+            "home_team": game_row.get("home_team"),
+            "away_team": game_row.get("away_team"),
+            "model_status": model_status,
+            "pred_total": np.nan,
+            "pred_margin_raw": np.nan,
+            "pred_margin_final": np.nan,
+            "allocation_raw": np.nan,
+            "allocation_pct": np.nan,
+            "spread_signal_raw": spread_signal,
+            "legacy_spread_signal_raw": legacy_spread_signal,
+            "legacy_allocation_pct": np.nan,
+            "legacy_pred_margin_raw": np.nan,
+            "spread_signal_tanh": np.nan,
+            "spread_terms": spread_terms,
+            "spread_features": spread_features,
+            "adjustments_applied": [],
+            "missing_spread_features": missing_spread,
+        }
         return {
             "pred_total": np.nan,
             "allocation_pct": np.nan,
             "pred_home_score": np.nan,
             "pred_away_score": np.nan,
             "pred_margin": np.nan,
+            "pred_margin_raw": np.nan,
+            "pred_margin_pre_guardrail": np.nan,
+            "pred_margin_final": np.nan,
             "pred_total_ultimate": np.nan,
             "pred_margin_ultimate": np.nan,
             "feature_missing_rate": feature_missing_rate,
             "model_status": model_status,
             "pred_total_raw": np.nan,
             "allocation_raw": np.nan,
+            "spread_signal_raw": spread_signal,
+            "legacy_spread_signal_raw": legacy_spread_signal,
+            "legacy_allocation_pct": np.nan,
+            "legacy_pred_margin_raw": np.nan,
+            "spread_signal_tanh": np.nan,
+            "spread_terms": spread_terms,
+            "totals_terms": totals_terms,
+            "adjustments_applied": [],
             "total_clipped": False,
             "totals_features": totals_features,
             "spread_features": spread_features,
+            "spread_calc_trace": build_spread_calc_trace(
+                blocked_row,
+                {
+                    "model_name": MODEL_VERSION,
+                    "model_version": MODEL_VERSION,
+                    "weights": SPREAD_WEIGHTS,
+                    "scales": SPREAD_FEATURE_SCALES,
+                    "intercept": SPREAD_INTERCEPT,
+                    "hca_points": SPREAD_HCA_POINTS,
+                },
+            ),
         }
 
     base_total = _base_total(team_rows)
@@ -536,11 +647,29 @@ def predict_game_joint(
         log.info(f"pred_total clipped game_id={game_row.get('game_id')} raw={pred_total_raw:.2f} clipped={clipped_total:.2f}")
     pred_total = clipped_total
 
-    allocation_raw = spread_signal
-    allocation_pct = float(np.clip(allocation_raw, ALLOCATION_BOUNDS[0], ALLOCATION_BOUNDS[1]))
-    pred_home_score = pred_total * (0.5 + allocation_pct)
-    pred_away_score = pred_total * (0.5 - allocation_pct)
-    pred_margin = pred_home_score - pred_away_score
+    allocation_raw, allocation_pct, allocation_clipped = _spread_allocation_from_signal(spread_signal)
+    spread_signal_tanh = float(np.tanh(spread_signal)) if np.isfinite(spread_signal) else np.nan
+    legacy_allocation_pct = float(np.clip(legacy_spread_signal, ALLOCATION_BOUNDS[0], ALLOCATION_BOUNDS[1])) if np.isfinite(legacy_spread_signal) else np.nan
+    legacy_pred_margin_raw = float(pred_total * 2.0 * legacy_allocation_pct) if np.isfinite(legacy_allocation_pct) else np.nan
+    pred_margin_raw = (pred_total * 2.0 * allocation_pct) + SPREAD_INTERCEPT + SPREAD_HCA_POINTS
+    pred_margin_pre_guardrail = pred_margin_raw
+    pred_margin_final = pred_margin_raw
+    adjustments_applied: list[str] = []
+    if allocation_clipped:
+        adjustments_applied.append(f"ALLOCATION_CLIPPED[{ALLOCATION_BOUNDS[0]},{ALLOCATION_BOUNDS[1]}]")
+
+    if np.isfinite(pred_margin_raw) and abs(float(pred_margin_raw)) > SPREAD_BLOCK_THRESHOLD:
+        model_status = f"BLOCKED_SPREAD_GUARDRAIL:abs(pred_margin_raw)>{SPREAD_BLOCK_THRESHOLD}"
+        pred_margin_raw = np.nan
+        pred_margin_final = np.nan
+        adjustments_applied.append(f"BLOCKED_SPREAD_GUARDRAIL:{SPREAD_BLOCK_THRESHOLD}")
+
+    if np.isfinite(pred_margin_final):
+        pred_home_score = (pred_total / 2.0) + (pred_margin_final / 2.0)
+        pred_away_score = (pred_total / 2.0) - (pred_margin_final / 2.0)
+    else:
+        pred_home_score = np.nan
+        pred_away_score = np.nan
 
     u_totals, _, u_cov_tot = _weighted_signal(
         {
@@ -558,8 +687,12 @@ def predict_game_joint(
     if np.isfinite(pred_total_ultimate):
         pred_total_ultimate = float(np.clip(pred_total_ultimate, TOTAL_BOUNDS[0], TOTAL_BOUNDS[1]))
 
-    u_spread, _, u_cov_spread = _weighted_signal(spread_features, ULTIMATE_SPREAD_WEIGHTS)
-    pred_margin_ultimate = float(np.clip(u_spread, ALLOCATION_BOUNDS[0], ALLOCATION_BOUNDS[1]) * pred_total * 2.0) if u_cov_spread > 0 else np.nan
+    u_spread, _, u_cov_spread = _weighted_signal(spread_features, ULTIMATE_SPREAD_WEIGHTS, scales=SPREAD_FEATURE_SCALES)
+    if u_cov_spread > 0:
+        _, u_alloc_pct, _ = _spread_allocation_from_signal(u_spread)
+        pred_margin_ultimate = float((u_alloc_pct * pred_total * 2.0) + SPREAD_INTERCEPT + SPREAD_HCA_POINTS)
+    else:
+        pred_margin_ultimate = np.nan
 
     market_status = "MISSING_LINES"
     spread_edge = np.nan
@@ -569,17 +702,54 @@ def predict_game_joint(
         total_line = _to_num(market_row.get("total_line"))
         if np.isfinite(spread_line) or np.isfinite(total_line):
             market_status = "OK"
-            if np.isfinite(spread_line):
-                spread_edge = pred_margin - spread_line
+            if np.isfinite(spread_line) and np.isfinite(pred_margin_final):
+                spread_edge = pred_margin_final - spread_line
             if np.isfinite(total_line):
                 total_edge = pred_total - total_line
+
+    calc_row = {
+        "event_id": _canonical_id(game_row.get("event_id") or game_row.get("game_id")),
+        "game_id": _canonical_id(game_row.get("game_id") or game_row.get("event_id")),
+        "home_team": game_row.get("home_team"),
+        "away_team": game_row.get("away_team"),
+        "model_status": model_status,
+        "pred_total": pred_total,
+        "pred_margin_raw": pred_margin_raw,
+        "pred_margin_pre_guardrail": pred_margin_pre_guardrail,
+        "pred_margin_final": pred_margin_final,
+        "allocation_raw": allocation_raw,
+        "allocation_pct": allocation_pct,
+        "spread_signal_raw": spread_signal,
+        "legacy_spread_signal_raw": legacy_spread_signal,
+        "legacy_allocation_pct": legacy_allocation_pct,
+        "legacy_pred_margin_raw": legacy_pred_margin_raw,
+        "spread_signal_tanh": spread_signal_tanh,
+        "spread_terms": spread_terms,
+        "spread_features": spread_features,
+        "adjustments_applied": adjustments_applied,
+        "missing_spread_features": missing_spread,
+    }
+    spread_calc_trace = build_spread_calc_trace(
+        calc_row,
+        {
+            "model_name": MODEL_VERSION,
+            "model_version": MODEL_VERSION,
+            "weights": SPREAD_WEIGHTS,
+            "scales": SPREAD_FEATURE_SCALES,
+            "intercept": SPREAD_INTERCEPT,
+            "hca_points": SPREAD_HCA_POINTS,
+        },
+    )
 
     return {
         "pred_total": pred_total,
         "allocation_pct": allocation_pct,
         "pred_home_score": pred_home_score,
         "pred_away_score": pred_away_score,
-        "pred_margin": pred_margin,
+        "pred_margin": pred_margin_final,
+        "pred_margin_raw": pred_margin_raw,
+        "pred_margin_pre_guardrail": pred_margin_pre_guardrail,
+        "pred_margin_final": pred_margin_final,
         "pred_total_ultimate": pred_total_ultimate,
         "pred_margin_ultimate": pred_margin_ultimate,
         "spread_edge": spread_edge,
@@ -589,9 +759,18 @@ def predict_game_joint(
         "model_status": model_status,
         "pred_total_raw": pred_total_raw,
         "allocation_raw": allocation_raw,
+        "spread_signal_raw": spread_signal,
+        "legacy_spread_signal_raw": legacy_spread_signal,
+        "legacy_allocation_pct": legacy_allocation_pct,
+        "legacy_pred_margin_raw": legacy_pred_margin_raw,
+        "spread_signal_tanh": spread_signal_tanh,
+        "spread_terms": spread_terms,
+        "totals_terms": totals_terms,
+        "adjustments_applied": adjustments_applied,
         "total_clipped": total_clipped,
         "totals_features": totals_features,
         "spread_features": spread_features,
+        "spread_calc_trace": spread_calc_trace,
     }
 
 
@@ -621,6 +800,328 @@ def _log_written_csv(path: Path, df: pd.DataFrame) -> None:
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def _series_distribution(series: pd.Series) -> dict[str, Any]:
+    numeric = pd.to_numeric(series, errors="coerce").dropna()
+    if numeric.empty:
+        return {
+            "count": 0,
+            "mean": np.nan,
+            "std": np.nan,
+            "min": np.nan,
+            "max": np.nan,
+            "p1": np.nan,
+            "p5": np.nan,
+            "p50": np.nan,
+            "p95": np.nan,
+            "p99": np.nan,
+        }
+    q = numeric.quantile([0.01, 0.05, 0.50, 0.95, 0.99]).to_dict()
+    return {
+        "count": int(numeric.notna().sum()),
+        "mean": float(numeric.mean()),
+        "std": float(numeric.std(ddof=0)),
+        "min": float(numeric.min()),
+        "max": float(numeric.max()),
+        "p1": float(q.get(0.01, np.nan)),
+        "p5": float(q.get(0.05, np.nan)),
+        "p50": float(q.get(0.50, np.nan)),
+        "p95": float(q.get(0.95, np.nan)),
+        "p99": float(q.get(0.99, np.nan)),
+    }
+
+
+def build_spread_calc_trace(row: dict[str, Any], model_spec: dict[str, Any]) -> dict[str, Any]:
+    terms = row.get("spread_terms", []) or []
+    sorted_terms = sorted(terms, key=lambda item: abs(_to_num(item.get("term"))), reverse=True)
+    return {
+        "event_id": row.get("event_id"),
+        "game_id": row.get("game_id"),
+        "home_team": row.get("home_team"),
+        "away_team": row.get("away_team"),
+        "model_name": model_spec.get("model_name"),
+        "model_version": model_spec.get("model_version"),
+        "perspective": "HOME (positive margin means home favored)",
+        "formula": {
+            "signal_raw": "sum((feature_value / feature_scale) * weight) / sum(weight_present)",
+            "allocation_raw": f"tanh(signal_raw) * {ALLOCATION_TANH_SCALE}",
+            "allocation_final": f"clip(allocation_raw, {ALLOCATION_BOUNDS[0]}, {ALLOCATION_BOUNDS[1]})",
+            "pred_margin_raw": "pred_total * 2 * allocation_final + intercept + hca_points",
+            "pred_margin_final": "pred_margin_raw unless blocked by guardrails",
+            "legacy_reference_formula": "pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)",
+        },
+        "intercept": float(_to_num(model_spec.get("intercept"))),
+        "hca_points": float(_to_num(model_spec.get("hca_points"))),
+        "signal_raw": _to_num(row.get("spread_signal_raw")),
+        "legacy_unscaled_signal_raw": _to_num(row.get("legacy_spread_signal_raw")),
+        "legacy_allocation_pct": _to_num(row.get("legacy_allocation_pct")),
+        "legacy_pred_margin_raw": _to_num(row.get("legacy_pred_margin_raw")),
+        "signal_tanh": _to_num(row.get("spread_signal_tanh")),
+        "allocation_raw": _to_num(row.get("allocation_raw")),
+        "allocation_final": _to_num(row.get("allocation_pct")),
+        "pred_total": _to_num(row.get("pred_total")),
+        "pred_margin_raw": _to_num(row.get("pred_margin_raw")),
+        "pred_margin_pre_guardrail": _to_num(row.get("pred_margin_pre_guardrail")),
+        "pred_margin_final": _to_num(row.get("pred_margin_final")),
+        "model_status": row.get("model_status"),
+        "missing_spread_features": row.get("missing_spread_features", []),
+        "feature_terms": terms,
+        "top_abs_terms": sorted_terms[:5],
+        "adjustments_applied": row.get("adjustments_applied", []),
+    }
+
+
+def _write_spread_calculation_spec() -> None:
+    lines = [
+        "# Spread Calculation Confirmation",
+        "",
+        f"Model: `{MODEL_VERSION}`",
+        "Perspective: HOME (positive margin means home favored).",
+        "",
+        "## Exact Formula",
+        "1. `signal_raw = sum((feature_i / scale_i) * weight_i) / sum(weight_i_present)`",
+        f"2. `allocation_raw = tanh(signal_raw) * {ALLOCATION_TANH_SCALE}`",
+        f"3. `allocation_final = clip(allocation_raw, {ALLOCATION_BOUNDS[0]}, {ALLOCATION_BOUNDS[1]})`",
+        "4. `pred_margin_raw = pred_total * 2 * allocation_final + intercept + hca_points`",
+        "5. `pred_margin_final = pred_margin_raw` unless a guardrail blocks the row.",
+        "Legacy (pre-fix) reference: `pred_margin_legacy = pred_total * 2 * clip(unscaled_signal_raw, -0.2, 0.2)`.",
+        "",
+        "## Intercept / HCA",
+        f"- intercept = {SPREAD_INTERCEPT}",
+        f"- hca_points = {SPREAD_HCA_POINTS}",
+        "",
+        "## Feature Scales",
+    ]
+    for key in sorted(SPREAD_FEATURE_SCALES):
+        lines.append(f"- `{key}` scale = {SPREAD_FEATURE_SCALES[key]}")
+    lines.extend(
+        [
+            "",
+            "## Percent Scaling Convention",
+            "- Percent-like source columns are read as either `0-1` or `0-100`.",
+            "- Normalization rule before metric construction: any value `> 1.5` is divided by `100`.",
+            "",
+            "## Notes",
+            "- No hard-coded spread fallback constants are used.",
+            "- BLOCKED rows keep `pred_margin` as blank/NaN.",
+        ]
+    )
+    OUT_SPREAD_CALC_SPEC.parent.mkdir(parents=True, exist_ok=True)
+    OUT_SPREAD_CALC_SPEC.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_pred_margin_diagnostics(out: pd.DataFrame) -> None:
+    margin_final = pd.to_numeric(out.get("pred_margin"), errors="coerce")
+    margin_raw = pd.to_numeric(out.get("pred_margin_raw"), errors="coerce")
+    margin_legacy = pd.to_numeric(out.get("legacy_pred_margin_raw"), errors="coerce")
+    payload = {
+        "generated_at_utc": pd.Timestamp.utcnow().isoformat(),
+        "model_version": MODEL_VERSION,
+        "pred_margin_final": _series_distribution(margin_final),
+        "pred_margin_raw": _series_distribution(margin_raw),
+        "pred_margin_legacy_reference": _series_distribution(margin_legacy),
+        "constant_values_checked": list(SPREAD_CONSTANTS_TO_AUDIT),
+    }
+    _write_json(OUT_PRED_MARGIN_DISTRIBUTION, payload)
+
+    status = out.get("model_status", pd.Series("", index=out.index)).astype(str)
+    records: list[dict[str, Any]] = []
+    for constant in SPREAD_CONSTANTS_TO_AUDIT:
+        for col in ("pred_margin", "pred_margin_raw"):
+            values = pd.to_numeric(out.get(col), errors="coerce")
+            match = values == float(constant)
+            blocked = match & status.str.startswith("BLOCKED")
+            records.append(
+                {
+                    "column": col,
+                    "constant_value": float(constant),
+                    "count_total": int(match.sum()),
+                    "count_blocked": int(blocked.sum()),
+                    "count_non_blocked": int((match & ~status.str.startswith("BLOCKED")).sum()),
+                }
+            )
+    constants_df = pd.DataFrame(records)
+    constants_df.to_csv(OUT_PRED_MARGIN_CONSTANTS, index=False)
+    _log_written_csv(OUT_PRED_MARGIN_CONSTANTS, constants_df)
+
+
+def _write_spread_calc_samples(traces: list[dict[str, Any]]) -> None:
+    def _abs_val(item: dict[str, Any], key: str) -> float:
+        return abs(_to_num(item.get(key))) if np.isfinite(_to_num(item.get(key))) else np.nan
+
+    normal = [
+        item
+        for item in traces
+        if str(item.get("model_status", "")).startswith("OK")
+        and np.isfinite(_to_num(item.get("pred_margin_final")))
+        and _abs_val(item, "pred_margin_final") <= SPREAD_EXTREME_THRESHOLD
+    ]
+    normal = sorted(normal, key=lambda item: (_abs_val(item, "pred_margin_final"), str(item.get("event_id"))))
+
+    extreme = [
+        item
+        for item in traces
+        if (
+            np.isfinite(_to_num(item.get("pred_margin_final")))
+            and _abs_val(item, "pred_margin_final") > SPREAD_EXTREME_THRESHOLD
+        )
+        or (
+            np.isfinite(_to_num(item.get("pred_margin_raw")))
+            and _abs_val(item, "pred_margin_raw") > SPREAD_EXTREME_THRESHOLD
+        )
+        or (
+            np.isfinite(_to_num(item.get("legacy_pred_margin_raw")))
+            and _abs_val(item, "legacy_pred_margin_raw") > SPREAD_EXTREME_THRESHOLD
+        )
+    ]
+    extreme = sorted(
+        extreme,
+        key=lambda item: max(
+            _abs_val(item, "pred_margin_raw") if np.isfinite(_abs_val(item, "pred_margin_raw")) else 0.0,
+            _abs_val(item, "legacy_pred_margin_raw") if np.isfinite(_abs_val(item, "legacy_pred_margin_raw")) else 0.0,
+        ),
+        reverse=True,
+    )
+
+    blocked = [item for item in traces if str(item.get("model_status", "")).startswith("BLOCKED")]
+    blocked = sorted(blocked, key=lambda item: str(item.get("event_id")))
+
+    payload = {
+        "generated_at_utc": pd.Timestamp.utcnow().isoformat(),
+        "model_version": MODEL_VERSION,
+        "selection_rules": {
+            "normal": "status=OK and abs(pred_margin_final)<=35, first 10 by abs margin",
+            "extreme": "abs(pred_margin_raw)>35 or abs(pred_margin_final)>35 or abs(legacy_pred_margin_raw)>35, top 10 by max abs margin",
+            "blocked": "status starts with BLOCKED, first 10",
+        },
+        "counts": {
+            "total_traces": len(traces),
+            "normal_candidates": len(normal),
+            "extreme_candidates": len(extreme),
+            "blocked_candidates": len(blocked),
+        },
+        "samples": {
+            "normal": normal[:10],
+            "extreme": extreme[:10],
+            "blocked": blocked[:10],
+        },
+    }
+    _write_json(OUT_SPREAD_CALC_SAMPLES, payload)
+
+
+def _write_feature_range_audit(snapshot_df: pd.DataFrame) -> None:
+    audit_cols = sorted(
+        {
+            "efg_pct",
+            "efg_pct_l10",
+            "orb_pct",
+            "orb_pct_l10",
+            "drb_pct",
+            "drb_pct_l10",
+            "tov_pct",
+            "tov_pct_l10",
+            "ftr",
+            "ftr_l10",
+            "pace",
+            "pace_l10",
+            "poss",
+            "poss_l10",
+            "form_rating",
+            "net_rtg_l10",
+            "adj_net_rtg",
+            "net_rtg_std_l10",
+            "rest_days",
+        }
+    )
+    percent_like = {"efg_pct", "efg_pct_l10", "orb_pct", "orb_pct_l10", "drb_pct", "drb_pct_l10", "tov_pct", "tov_pct_l10", "ftr", "ftr_l10"}
+    payload: dict[str, Any] = {
+        "generated_at_utc": pd.Timestamp.utcnow().isoformat(),
+        "normalization_rule": "values > 1.5 are interpreted as 0-100 percentages and divided by 100",
+        "columns": {},
+        "warnings": [],
+    }
+    for col in audit_cols:
+        if col not in snapshot_df.columns:
+            continue
+        raw = pd.to_numeric(snapshot_df[col], errors="coerce")
+        entry: dict[str, Any] = {
+            "raw": _series_distribution(raw),
+            "raw_scale": _numeric_scale_summary(snapshot_df[col]),
+        }
+        if col in percent_like:
+            normalized = snapshot_df[col].map(_to_rate)
+            norm_series = pd.to_numeric(normalized, errors="coerce")
+            entry["normalized"] = _series_distribution(norm_series)
+            entry["post_normalization_out_of_bounds"] = int(((norm_series < 0) | (norm_series > 1.5)).sum())
+            if entry["raw_scale"].get("scale") == "MIXED_0_1_AND_0_100":
+                payload["warnings"].append(f"{col}: mixed raw percent scale detected; normalized with _to_rate")
+        payload["columns"][col] = entry
+    _write_json(OUT_FEATURE_RANGE_AUDIT, payload)
+
+
+def _write_join_audit(active: pd.DataFrame, snapshots: dict[str, dict[str, Any]], market_lookup: dict[str, dict[str, Any]]) -> pd.DataFrame:
+    event_source = active.get("event_id", pd.Series("", index=active.index)).astype(str).str.strip()
+    game_source = active.get("game_id", pd.Series("", index=active.index)).astype(str).str.strip()
+    source_event = int(((event_source != "") & (event_source != "0")).sum())
+    source_game = int((((event_source == "") | (event_source == "0")) & (game_source != "") & (game_source != "0")).sum())
+
+    duplicate_key_counts = (
+        active["canonical_game_key"].value_counts().loc[lambda s: s > 1] if "canonical_game_key" in active.columns else pd.Series(dtype=int)
+    )
+    duplicate_keys = int(len(duplicate_key_counts))
+
+    rows: list[dict[str, Any]] = []
+    for _, g in active.iterrows():
+        gid = _canonical_id(g.get("canonical_game_key") or g.get("event_id") or g.get("game_id"))
+        home_id = _canonical_id(g.get("home_team_id"))
+        away_id = _canonical_id(g.get("away_team_id"))
+        home_present = home_id in snapshots
+        away_present = away_id in snapshots
+        market_present = gid in market_lookup
+        rows.append(
+            {
+                "event_id": gid,
+                "game_id": gid,
+                "home_team": g.get("home_team"),
+                "away_team": g.get("away_team"),
+                "home_team_id": home_id,
+                "away_team_id": away_id,
+                "home_snapshot_present": home_present,
+                "away_snapshot_present": away_present,
+                "market_lookup_present": market_present,
+                "join_issue": "" if (home_present and away_present and market_present) else "MISSING_LOOKUP_OR_SNAPSHOT",
+            }
+        )
+    join_df = pd.DataFrame(rows)
+    mismatch_df = join_df[join_df["join_issue"] != ""].copy()
+    mismatch_df.to_csv(OUT_JOIN_MISMATCH_SAMPLES, index=False)
+    _log_written_csv(OUT_JOIN_MISMATCH_SAMPLES, mismatch_df)
+
+    payload = {
+        "generated_at_utc": pd.Timestamp.utcnow().isoformat(),
+        "canonical_key_policy": "event_id preferred; fallback to game_id; both normalized to canonical_game_key",
+        "active_rows": int(len(active)),
+        "active_unique_keys": int(active["canonical_game_key"].nunique()) if "canonical_game_key" in active.columns else int(len(active)),
+        "duplicate_key_rows": int(duplicate_key_counts.sum()) if duplicate_keys > 0 else 0,
+        "duplicate_key_count": duplicate_keys,
+        "event_id_key_source_rows": source_event,
+        "game_id_fallback_rows": source_game,
+        "snapshot_both_sides_match_rate": float(
+            (
+                join_df["home_snapshot_present"].astype(bool)
+                & join_df["away_snapshot_present"].astype(bool)
+            ).mean()
+            if not join_df.empty
+            else 0.0
+        ),
+        "market_lookup_match_rate": float(join_df["market_lookup_present"].astype(bool).mean() if not join_df.empty else 0.0),
+        "mismatch_rows": int(len(mismatch_df)),
+    }
+    if duplicate_keys > 0:
+        payload["duplicate_key_examples"] = duplicate_key_counts.head(10).to_dict()
+    _write_json(OUT_PRED_FEATURE_JOIN_AUDIT, payload)
+    return mismatch_df
 
 
 def _numeric_scale_summary(series: pd.Series) -> dict[str, Any]:
@@ -697,6 +1198,8 @@ def run_joint_predictions(
     if snapshot_frame.empty:
         raise RuntimeError("team_snapshot artifact is empty; expected producer inputs data/team_game_weighted.csv and data/advanced_metrics.csv")
     _feature_presence_gate(snapshot_frame)
+    _write_feature_range_audit(snapshot_frame)
+    _write_spread_calculation_spec()
     market_lookup = _build_market_lookup()
 
     if "completed" in games.columns:
@@ -708,10 +1211,12 @@ def run_joint_predictions(
     active["canonical_game_key"] = canonical_game_key(active)
     active = active[active["canonical_game_key"] != "0"].copy()
     active = active.sort_values(["game_datetime_utc", "canonical_game_key"]).drop_duplicates("canonical_game_key", keep="last")
+    _write_join_audit(active, snapshots, market_lookup)
 
     rows: list[dict[str, Any]] = []
     sanity_rows: list[dict[str, Any]] = []
     blocked_samples: list[dict[str, Any]] = []
+    calc_traces: list[dict[str, Any]] = []
     generated_at = pd.Timestamp.utcnow().isoformat()
     for _, g in active.iterrows():
         gid = _canonical_id(g.get("canonical_game_key") or g.get("event_id") or g.get("game_id"))
@@ -733,6 +1238,9 @@ def run_joint_predictions(
                 "pred_home_score": np.nan,
                 "pred_away_score": np.nan,
                 "pred_margin": np.nan,
+                "pred_margin_raw": np.nan,
+                "pred_margin_pre_guardrail": np.nan,
+                "pred_margin_final": np.nan,
                 "pred_total_ultimate": np.nan,
                 "pred_margin_ultimate": np.nan,
                 "spread_edge": np.nan,
@@ -742,10 +1250,44 @@ def run_joint_predictions(
                 "model_status": status_text,
                 "pred_total_raw": np.nan,
                 "allocation_raw": np.nan,
+                "spread_signal_raw": np.nan,
+                "spread_signal_tanh": np.nan,
+                "spread_terms": [],
+                "totals_terms": [],
+                "adjustments_applied": [],
                 "total_clipped": False,
                 "totals_features": {},
                 "spread_features": {},
             }
+            pred["spread_calc_trace"] = build_spread_calc_trace(
+                {
+                    "event_id": gid,
+                    "game_id": gid,
+                    "home_team": g.get("home_team"),
+                    "away_team": g.get("away_team"),
+                    "model_status": status_text,
+                    "pred_total": np.nan,
+                    "pred_margin_raw": np.nan,
+                    "pred_margin_pre_guardrail": np.nan,
+                    "pred_margin_final": np.nan,
+                    "allocation_raw": np.nan,
+                    "allocation_pct": np.nan,
+                    "spread_signal_raw": np.nan,
+                    "spread_signal_tanh": np.nan,
+                    "spread_terms": [],
+                    "spread_features": {},
+                    "missing_spread_features": missing_pieces,
+                    "adjustments_applied": ["BLOCKED_MISSING_INPUT:team_snapshot"],
+                },
+                {
+                    "model_name": MODEL_VERSION,
+                    "model_version": MODEL_VERSION,
+                    "weights": SPREAD_WEIGHTS,
+                    "scales": SPREAD_FEATURE_SCALES,
+                    "intercept": SPREAD_INTERCEPT,
+                    "hca_points": SPREAD_HCA_POINTS,
+                },
+            )
             blocked_samples.append(
                 {
                     "model_name": MODEL_VERSION,
@@ -772,6 +1314,21 @@ def run_joint_predictions(
                         "timestamp_utc": generated_at,
                     }
                 )
+            elif model_status.startswith("BLOCKED_"):
+                blocked_samples.append(
+                    {
+                        "model_name": MODEL_VERSION,
+                        "event_id": gid,
+                        "game_id": gid,
+                        "missing_inputs": model_status,
+                        "expected_source_paths": "data/team_snapshot.csv|data/team_game_weighted.csv|data/advanced_metrics.csv",
+                        "stage": "joint_models_predictions",
+                        "timestamp_utc": generated_at,
+                    }
+                )
+        calc_trace = pred.get("spread_calc_trace")
+        if isinstance(calc_trace, dict):
+            calc_traces.append(calc_trace)
 
         pred_spread = pred["pred_margin"]
         sanity_flag = ""
@@ -797,9 +1354,11 @@ def run_joint_predictions(
                     "home_team": g.get("home_team"),
                     "away_team": g.get("away_team"),
                     "pred_spread": pred_spread,
+                    "pred_margin_raw": pred.get("pred_margin_raw"),
                     "pred_total": pred.get("pred_total"),
                     "pred_total_raw": pred.get("pred_total_raw"),
                     "allocation_pct": pred.get("allocation_pct"),
+                    "spread_signal_raw": pred.get("spread_signal_raw"),
                     "sanity_flag": sanity_flag,
                     "sanity_flag_total": sanity_flag_total,
                     "odi_star_diff": pred.get("spread_features", {}).get("odi_star_diff"),
@@ -831,7 +1390,15 @@ def run_joint_predictions(
                 "pred_home_score": pred["pred_home_score"],
                 "pred_away_score": pred["pred_away_score"],
                 "pred_margin": pred["pred_margin"],
+                "pred_margin_raw": pred.get("pred_margin_raw"),
+                "pred_margin_pre_guardrail": pred.get("pred_margin_pre_guardrail"),
+                "pred_margin_final": pred.get("pred_margin_final", pred.get("pred_margin")),
                 "pred_spread": pred_spread,
+                "spread_signal_raw": pred.get("spread_signal_raw"),
+                "legacy_spread_signal_raw": pred.get("legacy_spread_signal_raw"),
+                "legacy_allocation_pct": pred.get("legacy_allocation_pct"),
+                "legacy_pred_margin_raw": pred.get("legacy_pred_margin_raw"),
+                "spread_signal_tanh": pred.get("spread_signal_tanh"),
                 "sanity_flag": sanity_flag,
                 "sanity_flag_total": sanity_flag_total,
                 "is_official_prediction": is_official,
@@ -848,6 +1415,7 @@ def run_joint_predictions(
                 "total_edge": pred.get("total_edge"),
                 "pred_total_ultimate": pred.get("pred_total_ultimate"),
                 "pred_margin_ultimate": pred.get("pred_margin_ultimate"),
+                "adjustments_applied": "|".join(pred.get("adjustments_applied", [])) if pred.get("adjustments_applied") else "",
                 "blocked_stage": "joint_models_predictions" if str(pred.get("model_status", "")).startswith("BLOCKED_") else pd.NA,
                 "blocked_expected_source_paths": "data/team_snapshot.csv|data/team_game_weighted.csv|data/advanced_metrics.csv" if str(pred.get("model_status", "")).startswith("BLOCKED_") else pd.NA,
                 "blocked_missing_inputs": str(pred.get("model_status", "")).split(":", 1)[1] if str(pred.get("model_status", "")).startswith("BLOCKED_MISSING_INPUT:") else pd.NA,
@@ -872,6 +1440,24 @@ def run_joint_predictions(
     out.loc[(out["line_status"] == "MISSING") & out["line_source_used"].notna(), "line_missing_reason"] = "NO_ODDS_RETURNED"
     out.loc[(out["line_status"] == "MISSING") & out["line_source_used"].isna(), "line_missing_reason"] = "NO_MATCHING_GAME_ID"
     _append_blocked_samples(blocked_samples)
+    _write_spread_calc_samples(calc_traces)
+    _write_pred_margin_diagnostics(out)
+
+    blocked_mask = out.get("model_status", pd.Series("", index=out.index)).astype(str).str.startswith("BLOCKED")
+    blocked_numeric = out[
+        blocked_mask
+        & (
+            pd.to_numeric(out.get("pred_margin"), errors="coerce").notna()
+            | pd.to_numeric(out.get("pred_margin_final"), errors="coerce").notna()
+        )
+    ].copy()
+    blocked_numeric.to_csv(OUT_BLOCKED_NUMERIC_PREDS, index=False)
+    _log_written_csv(OUT_BLOCKED_NUMERIC_PREDS, blocked_numeric)
+    if len(blocked_numeric) > 0:
+        raise RuntimeError(
+            "Blocked rows contain numeric pred_margin values. "
+            f"See {OUT_BLOCKED_NUMERIC_PREDS}."
+        )
 
     expected = active[
         [
@@ -962,9 +1548,11 @@ def run_joint_predictions(
                 "home_team",
                 "away_team",
                 "pred_spread",
+                "pred_margin_raw",
                 "pred_total",
                 "pred_total_raw",
                 "allocation_pct",
+                "spread_signal_raw",
                 "sanity_flag",
                 "sanity_flag_total",
                 "odi_star_diff",
@@ -1001,6 +1589,8 @@ def run_joint_predictions(
     eligible_games = int(expected["canonical_game_key"].nunique()) if not expected.empty else 0
     predicted_games = int(out[pd.to_numeric(out["pred_margin"], errors="coerce").notna()]["game_id"].nunique()) if not out.empty else 0
     missing_predictions_count = max(0, eligible_games - predicted_games)
+    spread_dist = _series_distribution(pd.to_numeric(out.get("pred_margin"), errors="coerce"))
+    spread_raw_dist = _series_distribution(pd.to_numeric(out.get("pred_margin_raw"), errors="coerce"))
     log.info(
         "joint_predictions rows=%s null_rates=%s status_counts=%s eligible_games=%s predicted_games=%s missing_predictions=%s",
         len(out),
@@ -1010,6 +1600,15 @@ def run_joint_predictions(
         predicted_games,
         missing_predictions_count,
     )
+    log.info(
+        "Spread Calculation Confirmation | formula=pred_margin_raw=pred_total*2*clip(tanh(signal_raw)*%.3f,[%.2f,%.2f])+intercept+hca | intercept=%.2f | hca=%.2f | perspective=HOME+",
+        ALLOCATION_TANH_SCALE,
+        ALLOCATION_BOUNDS[0],
+        ALLOCATION_BOUNDS[1],
+        SPREAD_INTERCEPT,
+        SPREAD_HCA_POINTS,
+    )
+    log.info("Spread distribution final=%s raw=%s", spread_dist, spread_raw_dist)
     return out
 
 

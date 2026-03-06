@@ -1,0 +1,13 @@
+column,constant_value,count_total,count_blocked,count_non_blocked
+pred_margin,-70.0,0,0,0
+pred_margin_raw,-70.0,0,0,0
+pred_margin,-56.0,0,0,0
+pred_margin_raw,-56.0,0,0,0
+pred_margin,-44.0,0,0,0
+pred_margin_raw,-44.0,0,0,0
+pred_margin,44.0,0,0,0
+pred_margin_raw,44.0,0,0,0
+pred_margin,56.0,0,0,0
+pred_margin_raw,56.0,0,0,0
+pred_margin,70.0,0,0,0
+pred_margin_raw,70.0,0,0,0
