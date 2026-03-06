@@ -34,6 +34,7 @@ import numpy as np
 import pandas as pd
 
 from pipeline_csv_utils import safe_write_csv
+from model_lab.bet_recs import generate_bet_recs, BET_REC_SPREAD_THRESHOLD, BET_REC_TOTAL_THRESHOLD, BET_REC_ML_THRESHOLD
 
 # ── Paths ──────────────────────────────────────────────────────────────────
 DATA        = pathlib.Path("data")
@@ -49,9 +50,9 @@ PST_TZ      = ZoneInfo("America/Los_Angeles")
 _results: list[dict] = []
 
 # Config
-SPREAD_EDGE_MIN = 3.0
-TOTAL_EDGE_MIN = 4.0
-ML_EDGE_MIN = 0.05
+SPREAD_EDGE_MIN = BET_REC_SPREAD_THRESHOLD
+TOTAL_EDGE_MIN = BET_REC_TOTAL_THRESHOLD
+ML_EDGE_MIN = BET_REC_ML_THRESHOLD
 
 # Runtime overrideable window config (defaults preserve current behavior intent)
 WINDOW_START_HOURS = 0.0
