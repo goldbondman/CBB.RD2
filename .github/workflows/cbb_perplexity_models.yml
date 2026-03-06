@@ -375,13 +375,28 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add --ignore-missing -- \
+          echo "[INFO] staging diagnostics: pwd=$(pwd)"
+          echo "[INFO] git status --short:"
+          git status --short || true
+          echo "[INFO] staging target files (missing files are skipped, not an error):"
+          for _f in \
             data/advanced_metrics.csv \
             data/team_snapshot.csv \
             data/market_lines_canonical.csv \
             data/market_lines_latest_by_game.csv \
             data/predictions_joint_latest.csv \
-            data/predictions_joint_snapshots.csv
+            data/predictions_joint_snapshots.csv; do
+            if [[ -e "$_f" ]]; then
+              if git ls-files --error-unmatch "$_f" >/dev/null 2>&1; then
+                echo "[INFO] tracked, staging: $_f"
+              else
+                echo "[INFO] new file, staging: $_f"
+              fi
+              git add -- "$_f"
+            else
+              echo "[SKIP] missing, not staging: $_f"
+            fi
+          done
 
           if git diff --staged --quiet; then
             echo "[SKIP] No output changes to commit"
