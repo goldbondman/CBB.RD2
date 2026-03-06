@@ -2,7 +2,8 @@ name: CBB Pipeline
 
 on:
   schedule:
-    - cron: "0 10 1,15 * *"   # BIWEEKLY      — 10:00 UTC on 1st and 15th
+    - cron: "0 9 * * *"       # DAILY         — 09:00 UTC every day
+    - cron: "0 13 1,15 * *"   # BIWEEKLY      — 13:00 UTC on 1st and 15th
     - cron: "0 10 10 4 *"     # END OF SEASON — 10:00 UTC on April 10
   workflow_dispatch:
     inputs:
@@ -17,7 +18,7 @@ on:
           - end_of_season
 
 concurrency:
-  group: cbb-data-pipeline
+  group: cbb-pipeline-learning
   cancel-in-progress: false
 
 permissions:
@@ -134,7 +135,7 @@ jobs:
   biweekly_learning:
     name: "Biweekly — grid search and weight update"
     if: |
-      github.event.schedule == '0 10 1,15 * *' ||
+      github.event.schedule == '0 13 1,15 * *' ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.tier == 'biweekly')
     runs-on: ubuntu-latest
     env:

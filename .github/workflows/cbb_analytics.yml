@@ -2,10 +2,10 @@ name: CBB Analytics
 
 on:
   schedule:
-    - cron: "0 8 * * *"
-    - cron: "0 10 * * 1"
+    - cron: "0 12 * * *"
+    - cron: "0 13 * * 1"
   workflow_run:
-    workflows: ["Market Lines Capture", "CBB Predictions Rolling"]
+    workflows: ["Market Lines Capture"]
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -54,6 +54,7 @@ jobs:
   analytics:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: write
       actions: read
@@ -87,9 +88,9 @@ jobs:
 
           RUN_MODE="${INPUT_RUN_MODE:-both}"
           if [[ "$EVENT_NAME" == "schedule" ]]; then
-            if [[ "$EVENT_SCHEDULE" == "0 8 * * *" ]]; then
+            if [[ "$EVENT_SCHEDULE" == "0 12 * * *" ]]; then
               RUN_MODE="tracker_only"
-            elif [[ "$EVENT_SCHEDULE" == "0 10 * * 1" ]]; then
+            elif [[ "$EVENT_SCHEDULE" == "0 13 * * 1" ]]; then
               RUN_MODE="backtest_only"
             fi
           fi
@@ -134,6 +135,21 @@ jobs:
             exit 1
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+          # H1: staleness guard — warn if artifact >90min, fail if >4h
+          CREATED_AT=$(gh run view "$run_id" --json createdAt --jq '.createdAt')
+          if [[ -n "$CREATED_AT" ]]; then
+            CREATED_EPOCH=$(date -d "$CREATED_AT" +%s 2>/dev/null || echo 0)
+            NOW_EPOCH=$(date +%s)
+            AGE_MINUTES=$(( (NOW_EPOCH - CREATED_EPOCH) / 60 ))
+            echo "[INFO] Market Lines run $run_id age: ${AGE_MINUTES} minutes"
+            if (( AGE_MINUTES > 240 )); then
+              echo "[ERROR] INFRA-market-lines artifact is older than 4 hours (${AGE_MINUTES} min). Please re-run the market_lines workflow manually."
+              exit 1
+            elif (( AGE_MINUTES > 90 )); then
+              echo "[WARN] INFRA-market-lines artifact is older than 90 minutes (${AGE_MINUTES} min)"
+            fi
+          fi
 
       - name: Diagnose recent rolling runs + artifact presence
         env:

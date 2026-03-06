@@ -48,6 +48,7 @@ env:
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
     outputs:
@@ -293,6 +294,7 @@ jobs:
 
   rankings:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: update
     if: ${{ needs.update.result == 'success' && needs.update.outputs.run_rankings == 'true' }}
     permissions:
@@ -380,7 +382,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: INFRA-rankings-${{ github.run_id }}
+          name: INFRA-rankings
           if-no-files-found: error
           retention-days: 21
           path: |
