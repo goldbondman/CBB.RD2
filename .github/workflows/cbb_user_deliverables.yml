@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: cbb-data-pipeline
+  group: cbb-user-deliverables
   cancel-in-progress: true
 
 permissions:

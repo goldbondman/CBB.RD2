@@ -44,6 +44,7 @@ jobs:
       github.event_name != 'workflow_run' ||
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       TZ: America/Los_Angeles
       PIPELINE_TZ: America/Los_Angeles

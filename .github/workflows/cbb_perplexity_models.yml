@@ -103,6 +103,20 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Download ESPN artifact for perplexity (Tier A)
+        id: download_espn_for_perplexity
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "update_espn_cbb.yml" \
+            --artifact-name "INFRA-espn-data" \
+            --branch "main" \
+            --max-runs 20 \
+            --dest "data"
+
       - name: Run dependency-aware perplexity stages via contract runner
         id: contract_runner
         if: ${{ steps.preflight.outputs.allow_run == 'true' }}
@@ -111,13 +125,22 @@ jobs:
           set -euo pipefail
           mkdir -p data
           LOG_PATH="data/perplexity_contract_runner.log"
+          STAGES="espn_pipeline,rotation_features,situational_features,market_builder,advanced_metrics_builder,joint_models_predictions"
+          if [[ -f data/team_game_weighted.csv ]]; then
+            ROWS=$(python -c "import pandas as pd; print(len(pd.read_csv('data/team_game_weighted.csv')))" 2>/dev/null || echo 0)
+            # Require >50 rows to confirm ESPN data is substantive, not a stale/empty artifact
+            if (( ROWS > 50 )); then
+              echo "[INFO] ESPN artifact present with $ROWS rows; skipping espn_pipeline stage"
+              STAGES="rotation_features,situational_features,market_builder,advanced_metrics_builder,joint_models_predictions"
+            fi
+          fi
           set +e
           python .github/scripts/run_pipeline_contract.py \
             --contract .github/pipeline_contracts/espn_pipeline_contract.json \
             --job update \
             --days-back "${{ steps.resolve_inputs.outputs.days_back }}" \
             --manifest data/perplexity_models_manifest.json \
-            --stages "espn_pipeline,rotation_features,situational_features,market_builder,advanced_metrics_builder,joint_models_predictions" \
+            --stages "${STAGES}" \
             2>&1 | tee "${LOG_PATH}"
           CONTRACT_EXIT_CODE=${PIPESTATUS[0]}
           set -e
