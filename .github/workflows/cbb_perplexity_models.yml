@@ -372,20 +372,26 @@ jobs:
             exit 0
           fi
 
+          mkdir -p debug
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          echo "[INFO] staging diagnostics: pwd=$(pwd)"
-          echo "[INFO] git status --short:"
-          git status --short || true
+          COMMIT_PATHS=(
+            data/advanced_metrics.csv
+            data/team_snapshot.csv
+            data/market_lines_canonical.csv
+            data/market_lines_latest_by_game.csv
+            data/predictions_joint_latest.csv
+            data/predictions_joint_snapshots.csv
+          )
+          echo "[INFO] commit scope paths:"
+          printf '  - %s\n' "${COMMIT_PATHS[@]}"
+
+          echo "[INFO] pre-stage git status --short"
+          git status --short | tee debug/pre_stage_status.txt || true
+
           echo "[INFO] staging target files (missing files are skipped, not an error):"
-          for _f in \
-            data/advanced_metrics.csv \
-            data/team_snapshot.csv \
-            data/market_lines_canonical.csv \
-            data/market_lines_latest_by_game.csv \
-            data/predictions_joint_latest.csv \
-            data/predictions_joint_snapshots.csv; do
+          for _f in "${COMMIT_PATHS[@]}"; do
             if [[ -e "$_f" ]]; then
               if git ls-files --error-unmatch "$_f" >/dev/null 2>&1; then
                 echo "[INFO] tracked, staging: $_f"
@@ -412,10 +418,44 @@ jobs:
           fi
 
           git commit -m "data: refresh perplexity model outputs [skip ci]"
+
+          echo "[INFO] post-commit status (before cleanup)"
+          git status --porcelain | tee debug/post_commit_dirty_worktree.txt || true
+          POST_COMMIT_DIRTY_COUNT=$(grep -c '.*' debug/post_commit_dirty_worktree.txt || true)
+          POST_COMMIT_DIRTY_COUNT=${POST_COMMIT_DIRTY_COUNT:-0}
+          echo "[INFO] post_commit_dirty_files=${POST_COMMIT_DIRTY_COUNT}"
+
+          echo "[INFO] cleaning non-target generated changes before rebase"
+          git restore --worktree --staged .
+          git clean -fd
+
+          echo "[INFO] pre-rebase status after cleanup"
+          git status --porcelain | tee debug/pre_rebase_status.txt || true
+          if [[ -s debug/pre_rebase_status.txt ]]; then
+            echo "[ERROR] Refusing to pull/rebase with dirty worktree. Remaining files:"
+            cat debug/pre_rebase_status.txt
+            echo "[INFO] tracked/untracked classification:"
+            while IFS= read -r line; do
+              [[ -z "${line}" ]] && continue
+              status_code="${line:0:2}"
+              file_path="${line:3}"
+              file_kind="tracked"
+              if [[ "${status_code}" == "??" ]]; then
+                file_kind="untracked"
+              fi
+              echo "  - ${file_path} (${file_kind})"
+            done < debug/pre_rebase_status.txt
+            exit 1
+          fi
+
           for i in 1 2 3; do
-            if ! git pull --rebase origin main; then
+            git fetch origin main
+            if ! git rebase origin/main; then
               echo "[ERROR] rebase conflict while syncing main on attempt ${i}"
-              git rebase --abort || true
+              git status --short || true
+              if [[ -d .git/rebase-merge || -d .git/rebase-apply ]]; then
+                git rebase --abort || true
+              fi
               exit 1
             fi
             if git push origin HEAD:main; then
