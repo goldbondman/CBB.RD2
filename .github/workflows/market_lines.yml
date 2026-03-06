@@ -90,7 +90,7 @@ jobs:
             missing="${missing} data/team_game_weighted.csv"
           fi
           if [ ! -f data/predictions_latest.csv ] && [ ! -f data/predictions_combined_latest.csv ]; then
-            missing="${missing} data/predictions_latest.csv"
+            missing="${missing} data/predictions_latest.csv|predictions_combined_latest.csv"
           fi
           if [ -n "$missing" ]; then
             echo "[ERROR] Required files missing after hydration:${missing}"

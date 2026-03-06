@@ -113,12 +113,12 @@ jobs:
             echo "[ERROR] data/team_game_weighted.csv missing — run 'Update ESPN CBB Data' first."
           fi
           if [ ! -f data/market_lines.csv ] && [ ! -f data/market_lines_latest.csv ]; then
-            missing="${missing} data/market_lines.csv"
-            echo "[ERROR] data/market_lines.csv missing — run 'Market Lines Capture' first."
+            missing="${missing} data/market_lines.csv|market_lines_latest.csv"
+            echo "[ERROR] data/market_lines.csv or data/market_lines_latest.csv missing — run 'Market Lines Capture' first."
           fi
           if [ ! -f data/predictions_latest.csv ] && [ ! -f data/predictions_combined_latest.csv ]; then
-            missing="${missing} data/predictions_latest.csv"
-            echo "[ERROR] Predictions CSV missing — run 'CBB Predictions Rolling' first."
+            missing="${missing} data/predictions_latest.csv|predictions_combined_latest.csv"
+            echo "[ERROR] data/predictions_latest.csv or data/predictions_combined_latest.csv missing — run 'CBB Predictions Rolling' first."
           fi
           if [ -n "$missing" ]; then
             exit 1
