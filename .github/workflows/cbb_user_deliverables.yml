@@ -48,6 +48,27 @@ jobs:
           mkdir -p data/csv
           mkdir -p USER/deliverables
 
+      - name: Hydrate upstream artifacts (manual run safety)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "cbb_predictions_rolling.yml" \
+            --artifact-name "INFRA-predictions-rolling" \
+            --branch "main" \
+            --max-runs 20 \
+            --dest "data" || echo "[WARN] No INFRA-predictions-rolling found"
+
+      - name: Sanity-check hydrated data
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ ! -f data/predictions_latest.csv ] && [ ! -f data/predictions_combined_latest.csv ]; then
+            echo "[ERROR] No predictions CSV found after hydration; run 'CBB Predictions Rolling' first."
+            exit 1
+          fi
+
       - name: Remove repo prediction snapshots before artifact download
         if: github.event_name == 'workflow_run'
         run: rm -f data/predictions_latest.csv data/predictions_mc_latest.csv data/predictions_combined_latest.csv
