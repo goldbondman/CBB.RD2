@@ -128,6 +128,7 @@ jobs:
           STAGES="espn_pipeline,rotation_features,situational_features,market_builder,advanced_metrics_builder,joint_models_predictions"
           if [[ -f data/team_game_weighted.csv ]]; then
             ROWS=$(python -c "import pandas as pd; print(len(pd.read_csv('data/team_game_weighted.csv')))" 2>/dev/null || echo 0)
+            # Require >50 rows to confirm ESPN data is substantive, not a stale/empty artifact
             if (( ROWS > 50 )); then
               echo "[INFO] ESPN artifact present with $ROWS rows; skipping espn_pipeline stage"
               STAGES="rotation_features,situational_features,market_builder,advanced_metrics_builder,joint_models_predictions"
