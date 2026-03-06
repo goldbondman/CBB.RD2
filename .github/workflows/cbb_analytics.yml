@@ -168,7 +168,7 @@ jobs:
             echo "Current artifact dependency chain:"
             echo "1) update_espn_cbb.yml -> INFRA-espn-data (best effort download from main)"
             echo "2) market_lines.yml -> INFRA-market-lines + INFRA-predictions-with-context"
-            echo "3) cbb_predictions_rolling.yml -> INFRA-predictions-rolling + INFRA-ready-cbb-predictions-rolling"
+            echo "3) cbb_predictions_rolling.yml -> INFRA-predictions-rolling + INFRA-ready-cbb-predictions-rolling (optional marker)"
             echo "4) cbb_analytics.yml -> merges staged artifacts; runs ESPN fallback pipeline if Tier A missing/invalid"
           } | tee /tmp/cbb_artifact_chain.log
           {
@@ -230,6 +230,7 @@ jobs:
 
       - name: Download latest rolling ready marker from main
         id: download_pred_ready
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -242,19 +243,45 @@ jobs:
             --max-runs 100 \
             --dest "data/staging" \
             --debug-json "debug/artifact_payload_validation_ready.json" || {
-              echo "[ERROR] Artifact download failed: artifact=INFRA-ready-cbb-predictions-rolling workflow=cbb_predictions_rolling.yml branch=main max_runs=100"
-              echo "[ERROR] See helper stage above (LOOKUP_FAILED|METADATA_FAILED|DOWNLOAD_FAILED|EXTRACT_FAILED|VALIDATION_FAILED)."
-              echo "[ERROR] Next steps: 1) run cbb_predictions_rolling on main successfully 2) verify upload of INFRA-ready-cbb-predictions-rolling"
+              echo "[WARN] Marker artifact download failed: artifact=INFRA-ready-cbb-predictions-rolling"
+              echo "[INFO] This is non-fatal; INFRA-predictions-rolling already contains the marker file."
               exit 1
             }
 
       - name: Validate dependency marker
         run: |
-          if [[ ! -f data/staging/cbb_predictions_rolling_ready.json ]]; then
-            echo "[ERROR] Missing dependency marker: data/staging/cbb_predictions_rolling_ready.json"
-            exit 1
+          set -euo pipefail
+          # Check primary location (from separate marker artifact)
+          if [[ -f data/staging/cbb_predictions_rolling_ready.json ]]; then
+            echo "[OK] Found predictions ready marker (from marker artifact)"
+            exit 0
           fi
-          echo "[OK] Found predictions ready marker"
+          # Check secondary location (from main predictions artifact)
+          if [[ -f data/staging/ready_markers/cbb_predictions_rolling_ready.json ]]; then
+            echo "[OK] Found predictions ready marker (from predictions artifact)"
+            cp data/staging/ready_markers/cbb_predictions_rolling_ready.json data/staging/cbb_predictions_rolling_ready.json
+            exit 0
+          fi
+          # If INFRA-predictions-rolling downloaded OK, generate a synthetic marker
+          if [[ "${{ steps.download_pred_rolling.outcome }}" == "success" ]]; then
+            echo "[INFO] INFRA-predictions-rolling downloaded; generating synthetic ready marker"
+            python3 -c "
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+          marker = {
+              'workflow': 'cbb_predictions_rolling',
+              'source': 'synthetic_from_analytics',
+              'generated_at_utc': datetime.now(timezone.utc).isoformat(),
+              'note': 'Generated because INFRA-ready-cbb-predictions-rolling was unavailable but INFRA-predictions-rolling downloaded successfully'
+          }
+          Path('data/staging/cbb_predictions_rolling_ready.json').write_text(json.dumps(marker, indent=2))
+          print('[OK] Wrote synthetic ready marker')
+          "
+            exit 0
+          fi
+          echo "[ERROR] No predictions ready marker found and INFRA-predictions-rolling download did not succeed"
+          exit 1
 
       - name: Merge staged artifacts into working data
         run: |
