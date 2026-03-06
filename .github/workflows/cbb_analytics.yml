@@ -112,7 +112,7 @@ jobs:
           echo "start_date=$START_DATE" >> "$GITHUB_OUTPUT"
           echo "end_date=$END_DATE" >> "$GITHUB_OUTPUT"
 
-      - name: Resolve latest Market Lines run ID
+      - name: Resolve latest Market Lines run ID (best effort)
         id: get_ml_run
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -131,12 +131,14 @@ jobs:
               echo "$count $rid"
             done | sort -rn | head -1 | awk '{print $2}')
           if [[ -z "$run_id" ]]; then
-            echo "[ERROR] No successful market_lines run with INFRA-market-lines artifact found"
-            exit 1
+            echo "[WARN] No successful market_lines run with INFRA-market-lines artifact found. Proceeding without market lines."
+            echo "run_id=" >> "$GITHUB_OUTPUT"
+            echo "market_lines_available=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
-          # H1: staleness guard — warn if artifact >90min, fail if >4h
+          # Staleness check — informational warnings only, never hard-fail
           CREATED_AT=$(gh run view "$run_id" --json createdAt --jq '.createdAt')
           if [[ -n "$CREATED_AT" ]]; then
             CREATED_EPOCH=$(date -d "$CREATED_AT" +%s 2>/dev/null || echo 0)
@@ -144,12 +146,12 @@ jobs:
             AGE_MINUTES=$(( (NOW_EPOCH - CREATED_EPOCH) / 60 ))
             echo "[INFO] Market Lines run $run_id age: ${AGE_MINUTES} minutes"
             if (( AGE_MINUTES > 240 )); then
-              echo "[ERROR] INFRA-market-lines artifact is older than 4 hours (${AGE_MINUTES} min). Please re-run the market_lines workflow manually."
-              exit 1
+              echo "[WARN] INFRA-market-lines artifact is older than 4 hours (${AGE_MINUTES} min). Market data may be stale."
             elif (( AGE_MINUTES > 90 )); then
               echo "[WARN] INFRA-market-lines artifact is older than 90 minutes (${AGE_MINUTES} min)"
             fi
           fi
+          echo "market_lines_available=true" >> "$GITHUB_OUTPUT"
 
       - name: Diagnose recent rolling runs + artifact presence
         env:
@@ -183,7 +185,7 @@ jobs:
           {
             echo "Current artifact dependency chain:"
             echo "1) update_espn_cbb.yml -> INFRA-espn-data (best effort download from main)"
-            echo "2) market_lines.yml -> INFRA-market-lines + INFRA-predictions-with-context"
+            echo "2) market_lines.yml -> INFRA-market-lines + INFRA-predictions-with-context (optional; degraded mode if unavailable)"
             echo "3) cbb_predictions_rolling.yml -> INFRA-predictions-rolling + INFRA-ready-cbb-predictions-rolling (optional marker)"
             echo "4) cbb_analytics.yml -> merges staged artifacts; runs ESPN fallback pipeline if Tier A missing/invalid"
           } | tee /tmp/cbb_artifact_chain.log
@@ -209,6 +211,9 @@ jobs:
             --dest "data/staging"
 
       - name: Download market lines artifact
+        if: steps.get_ml_run.outputs.market_lines_available == 'true'
+        id: download_market_lines
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: INFRA-market-lines
@@ -217,12 +222,34 @@ jobs:
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
 
       - name: Download predictions with context artifact
+        if: steps.get_ml_run.outputs.market_lines_available == 'true'
+        id: download_predictions_context
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: INFRA-predictions-with-context
           path: data/staging/
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ steps.get_ml_run.outputs.run_id }}
+
+      - name: Report market data availability
+        run: |
+          set -euo pipefail
+          ML_AVAILABLE="${{ steps.get_ml_run.outputs.market_lines_available }}"
+          ML_DOWNLOAD="${{ steps.download_market_lines.outcome }}"
+          PC_DOWNLOAD="${{ steps.download_predictions_context.outcome }}"
+
+          echo "[INFO] Market lines resolution: available=${ML_AVAILABLE:-false}"
+          echo "[INFO] Market lines download: ${ML_DOWNLOAD:-skipped}"
+          echo "[INFO] Predictions with context download: ${PC_DOWNLOAD:-skipped}"
+
+          if [[ "${ML_AVAILABLE:-false}" != "true" || "${ML_DOWNLOAD:-skipped}" != "success" ]]; then
+            echo "[WARN] Running in degraded mode: market lines unavailable. Market-dependent enrichment will be skipped."
+            echo "MARKET_DATA_MODE=degraded" >> "$GITHUB_ENV"
+          else
+            echo "[OK] Market data available for enrichment."
+            echo "MARKET_DATA_MODE=full" >> "$GITHUB_ENV"
+          fi
 
       - name: Download latest rolling predictions artifact from main
         id: download_pred_rolling
@@ -526,7 +553,14 @@ jobs:
       - name: Validate required analytics inputs
         if: steps.gate_inputs.outputs.blocked != 'true'
         run: |
-          bash .github/scripts/check_csv.sh data/market_lines.csv 1 event_id
+          if [[ "${MARKET_DATA_MODE:-degraded}" == "full" ]]; then
+            bash .github/scripts/check_csv.sh data/market_lines.csv 1 event_id
+          else
+            echo "[WARN] Skipping market_lines.csv validation (MARKET_DATA_MODE=${MARKET_DATA_MODE:-degraded})"
+            if [[ -f data/market_lines.csv ]]; then
+              echo "[INFO] market_lines.csv exists from repo; using as best-effort data"
+            fi
+          fi
           bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 team_id
           if [[ -f data/predictions_with_context.csv ]]; then
             bash .github/scripts/check_csv.sh data/predictions_with_context.csv 0 game_id
@@ -596,6 +630,8 @@ jobs:
 
       - name: Validate backtester outputs
         if: steps.gate_inputs.outputs.blocked != 'true' && (steps.resolve_mode.outputs.run_mode == 'both' || steps.resolve_mode.outputs.run_mode == 'backtest_only')
+        env:
+          ALLOW_MARKET_MISSING: ${{ env.MARKET_DATA_MODE == 'degraded' && '1' || '0' }}
         run: |
           bash .github/scripts/check_csv.sh data/backtest_results_latest.csv 1
           python scripts/validate_backtest_market_data.py
@@ -693,6 +729,7 @@ jobs:
           ESPN_TIER_A_OUTCOME: ${{ steps.download_espn_artifact.outcome }}
           ESPN_FALLBACK_USED: ${{ steps.ensure_espn_inputs.outputs.used_fallback }}
           ESPN_FALLBACK_REASON: ${{ steps.ensure_espn_inputs.outputs.fallback_reason }}
+          MARKET_LINES_AVAILABLE: ${{ steps.get_ml_run.outputs.market_lines_available }}
         run: |
           set +e
           mkdir -p data/debug
@@ -704,6 +741,8 @@ jobs:
             echo "espn_tier_a_outcome=${ESPN_TIER_A_OUTCOME}"
             echo "espn_fallback_used=${ESPN_FALLBACK_USED}"
             echo "espn_fallback_reason=${ESPN_FALLBACK_REASON}"
+            echo "market_data_mode=${MARKET_DATA_MODE:-degraded}"
+            echo "market_lines_available=${MARKET_LINES_AVAILABLE:-false}"
             echo
             echo "## data/ tree (depth 2)"
             if [[ -d data ]]; then
