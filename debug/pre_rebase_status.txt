@@ -1,8 +1,0 @@
-This file is written by `.github/workflows/cbb_perplexity_models.yml` immediately before rebase.
-
-Gate behavior:
-- Command: `git status --porcelain | tee debug/pre_rebase_status.txt`
-- Requirement: file must be empty
-- If non-empty, workflow exits with:
-  - `Refusing to pull/rebase with dirty worktree`
-  - plus tracked/untracked classification per remaining path
