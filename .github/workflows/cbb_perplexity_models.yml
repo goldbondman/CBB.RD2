@@ -483,7 +483,6 @@ jobs:
             data/market_lines_latest_by_game.csv
             data/predictions_joint_latest.csv
             data/predictions_joint_snapshots.csv
-            data/internal/
             data/cbb_picks_today.csv
           )
           echo "[INFO] commit scope paths:"
