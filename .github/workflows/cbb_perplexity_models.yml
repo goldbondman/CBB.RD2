@@ -524,7 +524,7 @@ jobs:
           echo "[INFO] post-commit status (before cleanup)"
           POST_COMMIT_STATUS=$(git status --porcelain || true)
           echo "${POST_COMMIT_STATUS}"
-          POST_COMMIT_DIRTY_COUNT=$(echo "${POST_COMMIT_STATUS}" | grep -c '.' || true)
+          POST_COMMIT_DIRTY_COUNT=$(grep -c '.' <<< "${POST_COMMIT_STATUS}" || true)
           POST_COMMIT_DIRTY_COUNT=${POST_COMMIT_DIRTY_COUNT:-0}
           echo "[INFO] post_commit_dirty_files=${POST_COMMIT_DIRTY_COUNT}"
 
