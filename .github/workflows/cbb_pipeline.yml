@@ -105,9 +105,11 @@ jobs:
 
           if [ "$SEASON_ACTIVE" = "true" ]; then
             run_step "daily" "prediction_runner"   python espn_prediction_runner.py
+            run_step "daily" "signal_overlay"      python apply_signals.py
           else
             echo "[SKIP] espn_prediction_runner.py — SEASON_ACTIVE is False"
             log_step "daily" "prediction_runner" "python espn_prediction_runner.py" "skipped" "SEASON_ACTIVE=False"
+            log_step "daily" "signal_overlay"    "python apply_signals.py"           "skipped" "SEASON_ACTIVE=False"
           fi
 
           run_step "daily" "results_tracker"       python cbb_results_tracker.py
