@@ -1,0 +1,159 @@
+name: CAGE Rankings
+
+on:
+  schedule:
+    # 15:00 UTC = after ESPN pipeline (10:00 UTC) has had time to complete
+    - cron: "0 15 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: cage-rankings
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  TZ: UTC
+  PYTHONHASHSEED: "0"
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
+
+jobs:
+  rankings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f constraints.txt ]]; then
+            pip install -r requirements.txt -c constraints.txt
+          else
+            pip install -r requirements.txt
+          fi
+
+      - name: Download ESPN data artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "update_espn_cbb.yml" \
+            --artifact-name "INFRA-espn-data" \
+            --branch "main" \
+            --max-runs 20 \
+            --dest "data"
+
+      - name: Validate inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in data/team_pretournament_snapshot.csv data/team_game_weighted.csv; do
+            if [[ ! -f "$f" ]]; then
+              echo "[ERROR] Required input missing: $f"
+              exit 1
+            fi
+            rows=$(python3 -c "import pandas as pd; print(len(pd.read_csv('$f')))" 2>/dev/null || echo 0)
+            echo "[INFO] $f — $rows rows"
+            if (( rows < 10 )); then
+              echo "[ERROR] $f has too few rows ($rows) — ESPN artifact may be stale"
+              exit 1
+            fi
+          done
+
+      - name: Build CAGE rankings
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p data
+          python espn_rankings.py
+          echo "[OK] Rankings built"
+
+      - name: Validate output
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pandas as pd, sys
+          df = pd.read_csv("data/cbb_rankings.csv")
+          required = [
+              "rank", "team", "cage_em", "cage_o", "cage_d", "cage_t",
+              "barthag", "wab", "cage_power_index", "cage_ats_index",
+              "svc", "drpi", "decay_momentum",
+          ]
+          missing = [c for c in required if c not in df.columns]
+          if missing:
+              print(f"[ERROR] Missing columns: {missing}")
+              sys.exit(1)
+          print(f"[OK] {len(df)} teams | columns: {len(df.columns)}")
+          print(df[["rank","team","cage_em","cage_power_index","cage_ats_index",
+                     "svc","drpi","decay_momentum","trend_arrow"]].head(10).to_string(index=False))
+          PY
+
+      - name: Upload rankings artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-cage-rankings
+          if-no-files-found: warn
+          retention-days: 21
+          path: |
+            data/cbb_rankings.csv
+            data/cbb_rankings_by_conference.csv
+            data/cbb_rankings_data_dictionary.csv
+
+      - name: Commit rankings to main
+        if: ${{ github.ref == 'refs/heads/main' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          COMMIT_PATHS=(
+            data/cbb_rankings.csv
+            data/cbb_rankings_by_conference.csv
+            data/cbb_rankings_data_dictionary.csv
+          )
+
+          for _f in "${COMMIT_PATHS[@]}"; do
+            if [[ -e "$_f" ]]; then
+              git add -- "$_f"
+            else
+              echo "[SKIP] missing: $_f"
+            fi
+          done
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "data: refresh CAGE rankings [skip ci]"
+
+          for i in 1 2 3; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              echo "[OK] pushed on attempt $i"
+              exit 0
+            fi
+            echo "[WARN] push failed on attempt $i; retrying"
+            if [[ -d .git/rebase-merge || -d .git/rebase-apply ]]; then
+              git rebase --abort || true
+            fi
+            sleep $((i * 2))
+          done
+          echo "[ERROR] failed to push after retries"
+          exit 1
