@@ -42,6 +42,7 @@ def _adequate_history(df: pd.DataFrame, team_col: str, min_games: int) -> bool:
 
 def _choose_primary_file(audit: dict[str, object], log_lines: list[str]) -> Path:
     candidates = [
+        Path("data/team_game_weighted.csv"),
         Path("data/advanced_metrics.csv"),
         Path("data/team_snapshot.csv"),
     ]

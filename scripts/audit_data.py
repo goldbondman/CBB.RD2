@@ -9,6 +9,7 @@ from pathlib import Path
 import pandas as pd
 
 FILES = {
+    "team_game_weighted": Path("data/team_game_weighted.csv"),
     "advanced_metrics": Path("data/advanced_metrics.csv"),
     "team_snapshot": Path("data/team_snapshot.csv"),
     "market_lines": Path("data/market_lines_latest_by_game.csv"),
@@ -98,7 +99,7 @@ def run_audit() -> tuple[dict[str, object], dict[str, bool]]:
 
     resolved: dict[str, dict[str, str]] = {}
     for metric, candidates in BOX_SCORE_CANDIDATES.items():
-        for file_key in ["advanced_metrics", "team_snapshot", "predictions_joint"]:
+        for file_key in ["team_game_weighted", "advanced_metrics", "team_snapshot", "predictions_joint"]:
             file_audit = audit.get(file_key, {})
             if not isinstance(file_audit, dict) or not file_audit.get("exists"):
                 continue
