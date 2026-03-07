@@ -276,16 +276,16 @@ jobs:
           import pandas as pd, sys
           df = pd.read_csv("data/cbb_picks_today.csv")
           required = ['game_date','away_team','home_team','vegas_spread','vegas_total',
-                      'vegas_pred_win','model_predicted_margin','model_predicted_total','spread_pick','spread_edge',
+                      'vegas_pred_win','model_predicted_margin','model_predicted_total','model_pick','spread_edge',
                       'spread_conf','spread_prob','total_pick','total_edge','total_conf',
-                      'total_prob','key_signal','trend_flag']
+                      'total_prob','key_signal','trend_flag','total_key_signal']
           missing = [c for c in required if c not in df.columns]
           if missing:
               print(f"[ERROR] Missing cols: {missing}"); sys.exit(1)
           high = df[df['spread_conf']=='HIGH']
           print(f"[OK] {len(df)} picks | {len(high)} HIGH confidence")
-          print(df[['away_team','home_team','spread_pick','spread_conf',
-                     'key_signal','trend_flag']].to_string(index=False))
+          print(df[['away_team','home_team','model_pick','spread_conf',
+                     'key_signal','trend_flag','total_key_signal']].to_string(index=False))
           PY
 
       - name: Guard required outputs, oversize files, and build artifact payload
