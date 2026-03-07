@@ -176,7 +176,7 @@ jobs:
         run: |
           set -euo pipefail
           bash .github/scripts/check_csv.sh data/games.csv 1 "game_id,game_datetime_utc"
-          bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "game_id,team_id,game_datetime_utc"
+          bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "event_id,team_id,game_datetime_utc"
           bash .github/scripts/check_csv.sh data/team_pretournament_snapshot.csv 1 "team_id"
           bash .github/scripts/check_csv.sh data/advanced_metrics.csv 1 "event_id,team_id"
           bash .github/scripts/check_csv.sh data/predictions_joint_latest.csv 1 "game_id,pred_total,pred_margin"
@@ -347,7 +347,7 @@ jobs:
               raise SystemExit(f"[ERROR] update_manifest missing required stages: {missing}")
           print('[OK] update_manifest stage list:', stage_names)
           PY
-          bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "team_id,game_id,game_datetime_utc" 36
+          bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "team_id,event_id,game_datetime_utc" 36
           bash .github/scripts/check_csv.sh data/team_pretournament_snapshot.csv 1 "team_id" 36
 
       - name: Run dependency-aware rankings stage
