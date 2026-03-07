@@ -1,0 +1,9 @@
+game_date,away_team,home_team,vegas_spread,vegas_pred_win,model_predicted_margin,spread_edge,spread_pick,spread_conf,spread_prob,vegas_total,model_predicted_total,total_edge,total_pick,total_conf,total_prob,key_signal,trend_flag
+2026-03-07,VMI Keydets,UNC Greensboro Spartans,-7.5,UNC Greensboro Spartans,14.8,22.3,HOME -7.5,HIGH,0.987,155.5,143.5,-12.0,UNDER 155.5,HIGH,0.419,Trend edge (home up 6.3),HOME_UP
+2026-03-07,UNLV Rebels,San Diego State Aztecs,-10.5,San Diego State Aztecs,10.4,20.9,HOME -10.5,HIGH,0.916,154.5,152.6,-1.9,PASS,LOW,0.462,Trend edge,AWAY_UP
+2026-03-07,West Georgia Wolves,Queens University Royals,-5.5,Queens University Royals,8.2,13.7,HOME -5.5,HIGH,0.899,164.5,155.1,-9.4,UNDER 164.5,MED,0.429,Trend edge (home up 3.4),HOME_UP
+2026-03-07,Presbyterian Blue Hose,Radford Highlanders,-2.5,Radford Highlanders,5.8,8.3,HOME -2.5,HIGH,0.815,145.5,160.3,14.8,OVER 145.5,MED,0.562,Trend edge (home up 2.5),HOME_UP
+2026-03-07,UCF Knights,West Virginia Mountaineers,-3.5,West Virginia Mountaineers,4.3,7.8,HOME -3.5,HIGH,0.691,141.5,138.9,-2.6,UNDER 141.5,MED,0.418,Trend edge (home up 2.2),BOTH_UP
+2026-03-07,St. John's Red Storm,Seton Hall Pirates,4.5,St. John's Red Storm,-0.6,-5.1,AWAY -4.5,HIGH,0.381,137.5,151.5,14.0,OVER 137.5,MED,0.573,SCH clash,
+2026-03-07,Denver Pioneers,North Dakota Fighting Hawks,3.5,Denver Pioneers,-2.3,-5.8,AWAY -3.5,HIGH,0.323,161.5,149.4,-12.1,UNDER 161.5,MED,0.445,Trend edge,AWAY_UP
+2026-03-07,Miami (OH) RedHawks,Ohio Bobcats,5.5,Miami (OH) RedHawks,-3.8,-9.3,AWAY -5.5,HIGH,0.292,158.5,154.0,-4.5,UNDER 158.5,MED,0.459,SCH clash,BOTH_UP

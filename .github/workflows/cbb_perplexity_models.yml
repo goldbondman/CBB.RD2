@@ -235,6 +235,59 @@ jobs:
             --input data/predictions_joint_latest.csv \
             --debug-json debug/pred_margin_validation.json
 
+      - name: Compute L6/L11 core metrics
+        if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p data/internal models
+          python scripts/compute_core_metrics.py 2>&1 | tee data/internal/metrics_build_log.txt
+          echo "[OK] core metrics written"
+
+      - name: Build matchup features
+        if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/build_matchup_features.py
+          echo "[OK] matchup features written"
+
+      - name: Train models
+        if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/train_models.py
+          echo "[OK] models trained"
+
+      - name: Generate picks
+        if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/generate_picks.py
+          echo "[OK] picks generated"
+
+      - name: Validate picks output
+        if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import pandas as pd, sys
+          df = pd.read_csv("data/cbb_picks_today.csv")
+          required = ['game_date','away_team','home_team','vegas_spread','vegas_total',
+                      'vegas_pred_win','model_predicted_margin','model_predicted_total','spread_pick','spread_edge',
+                      'spread_conf','spread_prob','total_pick','total_edge','total_conf',
+                      'total_prob','key_signal','trend_flag']
+          missing = [c for c in required if c not in df.columns]
+          if missing:
+              print(f"[ERROR] Missing cols: {missing}"); sys.exit(1)
+          high = df[df['spread_conf']=='HIGH']
+          print(f"[OK] {len(df)} picks | {len(high)} HIGH confidence")
+          print(df[['away_team','home_team','spread_pick','spread_conf',
+                     'key_signal','trend_flag']].to_string(index=False))
+          PY
+
       - name: Guard required outputs, oversize files, and build artifact payload
         if: always()
         shell: bash
@@ -406,6 +459,8 @@ jobs:
             debug/sample_*.csv
             debug/output_file_stats.json
             debug/artifact_upload_manifest.json
+            data/internal/
+            data/cbb_picks_today.csv
 
       - name: Commit and push model outputs to main
         if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
@@ -428,6 +483,8 @@ jobs:
             data/market_lines_latest_by_game.csv
             data/predictions_joint_latest.csv
             data/predictions_joint_snapshots.csv
+            data/internal/
+            data/cbb_picks_today.csv
           )
           echo "[INFO] commit scope paths:"
           printf '  - %s\n' "${COMMIT_PATHS[@]}"
