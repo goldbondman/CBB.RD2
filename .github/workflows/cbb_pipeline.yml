@@ -114,6 +114,7 @@ jobs:
 
           run_step "daily" "results_tracker"       python cbb_results_tracker.py
           run_step "daily" "grade_predictions"     python -m evaluation.predictions_graded
+          run_step "daily" "grade_signal_picks"    python grade_signal_picks.py
           run_step "daily" "accuracy_report"       python cbb_accuracy_report.py
           run_step "daily" "season_summaries"      python cbb_season_summaries.py
 
