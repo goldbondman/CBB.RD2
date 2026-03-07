@@ -16,13 +16,13 @@
    - `git add --ignore-missing -- "${COMMIT_PATHS[@]}"`
 3. Commit staged paths (line 408):
    - `git commit -m "data: refresh perplexity model outputs [skip ci]"`
-4. Capture dirty state after commit, before cleanup (line 411):
-   - `git status --porcelain | tee debug/post_commit_dirty_worktree.txt`
-5. Cleanup non-target changes (lines 417-418):
+4. Capture dirty state after commit, before cleanup (stdout only):
+   - `POST_COMMIT_STATUS=$(git status --porcelain || true)`
+5. Cleanup non-target changes:
    - `git restore --worktree --staged .`
    - `git clean -fd`
-6. Pre-rebase cleanliness gate (lines 421-437):
-   - `git status --porcelain | tee debug/pre_rebase_status.txt`
+6. Pre-rebase cleanliness gate (in-memory, no tracked file writes):
+   - `PRE_REBASE_STATUS=$(git status --porcelain || true)`
    - fail if non-empty
 7. Sync + push retry loop (lines 439-455):
    - `git fetch origin main`

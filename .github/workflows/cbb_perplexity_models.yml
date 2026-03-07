@@ -522,8 +522,9 @@ jobs:
           git commit -m "data: refresh perplexity model outputs [skip ci]"
 
           echo "[INFO] post-commit status (before cleanup)"
-          git status --porcelain | tee debug/post_commit_dirty_worktree.txt || true
-          POST_COMMIT_DIRTY_COUNT=$(grep -c '.*' debug/post_commit_dirty_worktree.txt || true)
+          POST_COMMIT_STATUS=$(git status --porcelain || true)
+          echo "${POST_COMMIT_STATUS}"
+          POST_COMMIT_DIRTY_COUNT=$(grep -c '.' <<< "${POST_COMMIT_STATUS}" || true)
           POST_COMMIT_DIRTY_COUNT=${POST_COMMIT_DIRTY_COUNT:-0}
           echo "[INFO] post_commit_dirty_files=${POST_COMMIT_DIRTY_COUNT}"
 
@@ -532,10 +533,11 @@ jobs:
           git clean -fd
 
           echo "[INFO] pre-rebase status after cleanup"
-          git status --porcelain | tee debug/pre_rebase_status.txt || true
-          if [[ -s debug/pre_rebase_status.txt ]]; then
+          PRE_REBASE_STATUS=$(git status --porcelain || true)
+          echo "${PRE_REBASE_STATUS}"
+          if [[ -n "${PRE_REBASE_STATUS}" ]]; then
             echo "[ERROR] Refusing to pull/rebase with dirty worktree. Remaining files:"
-            cat debug/pre_rebase_status.txt
+            echo "${PRE_REBASE_STATUS}"
             echo "[INFO] tracked/untracked classification:"
             while IFS= read -r line; do
               [[ -z "${line}" ]] && continue
@@ -546,7 +548,7 @@ jobs:
                 file_kind="untracked"
               fi
               echo "  - ${file_path} (${file_kind})"
-            done < debug/pre_rebase_status.txt
+            done <<< "${PRE_REBASE_STATUS}"
             exit 1
           fi
 

@@ -20,3 +20,7 @@ vercel.json
 data/staging/
 
 !data/.market_master_rowcount
+
+# Runtime debug status files (written by CI, not source artifacts)
+debug/pre_rebase_status.txt
+debug/post_commit_dirty_worktree.txt
