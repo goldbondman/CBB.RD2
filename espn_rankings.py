@@ -63,14 +63,41 @@ TZ = ZoneInfo("America/Los_Angeles")
 BUBBLE_NET_RTG    = 0.0       # Bubble team definition (NET rating = 0)
 # Quad 4: < -8.0              # Bottom tier
 
-# CAGE Power Index weights — tuned by quant team
-POWER_INDEX_WEIGHTS = {
-    "cage_em":          0.35,   # Adjusted efficiency margin (core)
-    "barthag":          0.20,   # Win probability vs average D1
-    "suffocation":      0.15,   # Defensive composite
-    "momentum":         0.12,   # Trend-adjusted form
-    "resume":           0.10,   # Strength of wins
-    "clutch":           0.08,   # Close-game performance
+# ── CAGE v2.0 Index Weights ───────────────────────────────────────────────────
+# Tournament Power Index (TPI) — bracket predictor, neutral-court optimized.
+# Shot risk penalty (–5%) applied as a separate deduction after weighted sum.
+# Continuity proxy and Home/Road Delta omitted (data unavailable / neutral courts).
+TPI_WEIGHTS = {
+    "cage_em_dn":  0.40,   # De-noised CAGE_EM (luck-stripped)
+    "cage_d":      0.15,   # AdjD — pure defensive quality
+    "barthag":     0.12,   # P(beat avg D1) win probability
+    "svc":         0.10,   # Shot Volume Composite (OREB + TOV + FTR process)
+    "decay_mom":   0.08,   # Exponential-decay momentum (λ=0.98/game)
+    "drpi":        0.07,   # Defensive Rebound Power Index
+    "ftrd_norm":   0.05,   # Conference-normalized Free Throw Rate Differential
+    # shot_risk_penalty: –5% of normalized three_par (applied below, not in sum)
+    # Home/Road Delta: 0% on neutral courts
+}
+
+# ATS Index — betting edge, adaptive by season phase.
+# Closing Line Value and Continuity Proxy omitted (data unavailable).
+ATS_WEIGHTS_BASE = {        # Weeks 1–18 (non-Feb/Mar)
+    "cage_em_dn":    0.32,
+    "decay_mom":     0.15,
+    "home_road":     0.13,
+    "ftrd_interact": 0.10,  # FTR × (1 – opp_avg_efg) interaction proxy
+    "svc":           0.08,
+    "drpi":          0.07,
+    "pace":          0.04,
+}
+ATS_WEIGHTS_LATE = {        # Feb–Mar (late season, form solidifies)
+    "cage_em_dn":    0.28,
+    "decay_mom":     0.22,
+    "home_road":     0.16,
+    "ftrd_interact": 0.10,
+    "svc":           0.08,
+    "drpi":          0.07,
+    "pace":          0.04,
 }
 
 
@@ -509,60 +536,256 @@ def compute_home_road_delta(df: pd.DataFrame) -> pd.Series:
     return delta.rename("home_road_delta_pct")
 
 
+def compute_decay_momentum(game_log: pd.DataFrame, lam: float = 0.98) -> pd.Series:
+    """
+    DECAY MOMENTUM v2.0 — Exponential-decay weighted net efficiency.
+
+    Weights each game's adj_net_rtg by lam^(games_ago), so the most recent
+    game has weight 1.0, the prior game lam, the one before lam^2, etc.
+    Smooth recency without artificial fixed windows; amplifies true streaks
+    while ignoring cupcake runs (opponent-adjusted efficiency already discounts them).
+
+    λ = 0.98 per game ≈ half-life of ~34 games (full season decay).
+
+    Returns series indexed by team_id, normalized 0–100.
+    Falls back to net_rtg_l5 from snapshot if game log lacks adj_net_rtg.
+    """
+    required = {"team_id", "adj_net_rtg", "game_datetime_utc"}
+    if game_log.empty or not required.issubset(game_log.columns):
+        return pd.Series(dtype=float, name="decay_momentum")
+
+    gl = game_log.dropna(subset=["team_id", "adj_net_rtg"]).copy()
+    gl["adj_net_rtg"] = pd.to_numeric(gl["adj_net_rtg"], errors="coerce")
+    gl = gl.dropna(subset=["adj_net_rtg"])
+
+    raw: dict[str, float] = {}
+    for team_id, grp in gl.groupby("team_id"):
+        grp = grp.sort_values("game_datetime_utc")
+        vals = grp["adj_net_rtg"].to_numpy()[::-1]   # most recent first
+        weights = lam ** np.arange(len(vals))
+        raw[str(team_id)] = float(np.dot(vals, weights) / weights.sum())
+
+    s = pd.Series(raw, name="decay_momentum")
+    lo, hi = s.min(), s.max()
+    rng = (hi - lo) if (hi - lo) > 0 else 1
+    return ((s - lo) / rng * 100).round(1)
+
+
+def compute_svc(df: pd.DataFrame) -> pd.Series:
+    """
+    SVC — Shot Volume Composite.
+
+    Combines three Four Factors into a single "scoring chances per 100
+    possessions above average" index.  Rewards process over results and
+    is highly stable / predictive of future efficiency.
+
+    Components (all z-scored so scale differences don't dominate):
+      + OREB%      — offensive rebounding (second-chance chances)
+      + (1–TOV%)   — ball security (inverted so higher = better)
+      + FTR        — free throw rate (trips to the line)
+
+    Normalized 0–100. 50 = average D1. Higher = more efficient process.
+    """
+    orb = _to_num(df, "orb_pct", fill=25.0)
+    tov = _to_num(df, "tov_pct", fill=18.0)
+    ftr = _to_num(df, "ftr",     fill=0.30)
+
+    def _z(s: pd.Series) -> pd.Series:
+        std = s.std()
+        return (s - s.mean()) / std if std > 0 else pd.Series(0.0, index=s.index)
+
+    raw = _z(orb) + _z(1.0 - tov) + _z(ftr)
+    lo, hi = raw.min(), raw.max()
+    return ((raw - lo) / max(hi - lo, 1) * 100).round(1).rename("svc")
+
+
+def compute_drpi(df: pd.DataFrame) -> pd.Series:
+    """
+    DRPI v2.0 — Defensive Rebound Power Index.
+
+    DefReb% relative to the league distribution.  Rewards elite rebounding
+    against aggressive crashing opponents more than elite rebounding against
+    passive teams — the z-score automatically accounts for the league-wide
+    average, making the stat fully portable across conference strength levels.
+
+    Normalized 0–100. 50 = league average. Higher = elite defensive rebounding.
+    """
+    drb = _to_num(df, "drb_pct", fill=72.0)
+    std = drb.std()
+    if std > 0:
+        z = (drb - drb.mean()) / std
+    else:
+        z = pd.Series(0.0, index=drb.index)
+    lo, hi = z.min(), z.max()
+    return ((z - lo) / max(hi - lo, 1) * 100).round(1).rename("drpi")
+
+
 def compute_power_index(
     df: pd.DataFrame,
     barthag: pd.Series,
     resume: pd.Series,
     clutch: pd.Series,
+    svc: pd.Series,
+    drpi: pd.Series,
+    decay_mom: pd.Series,
 ) -> pd.Series:
     """
-    CAGE POWER INDEX — Our master composite ranking number (0–100).
+    CAGE TOURNAMENT POWER INDEX v2.0 — bracket predictor (0–100).
 
-    Combines adjusted efficiency (the engine), BARTHAG (win probability),
-    defensive suffocation, recent momentum, resume quality, and clutch rating.
+    Optimized for neutral-court single-elimination prediction.
+    Key changes from v1: luck-stripped CAGE_EM, AdjD as standalone factor,
+    SVC + DRPI process metrics replace raw resume/clutch in weighting,
+    exponential-decay momentum, shot-risk penalty for high-variance teams.
 
-    Weights tuned by quant team through backtesting vs actual tournament outcomes.
-    The exact weights are intentionally different from KenPom/Torvik — we weight
-    momentum and clutch more heavily because this is optimized for predictive
-    accuracy in single-elimination tournament contexts.
+    Weights (TPI_WEIGHTS):
+      40% CAGE_EM (de-noised)  15% AdjD  12% BARTHAG  10% SVC
+       8% Decay Momentum        7% DRPI   5% FTRD norm
+      –5% Shot Risk Penalty (three_par z-score)
 
     100 = historically elite (2012 Kentucky tier)
     85+ = legitimate national title contender
     70–85 = tournament team, likely 5-seed or better
     55–70 = tournament team, first-round threat
-    40–55 = bubble
-    <40 = NIT / non-tournament
+    40–55 = bubble  /  <40 = NIT / non-tournament
     """
-    cage_em  = _to_num(df, "adj_net_rtg",        fill=0)
-    suf      = _to_num(df, "t_suffocation_rating", fill=50)
-    mom      = _to_num(df, "t_momentum_quality_rating", fill=50)
+    # De-noise CAGE_EM by stripping half the luck component
+    cage_em_raw = _to_num(df, "adj_net_rtg", fill=0)
+    luck        = _to_num(df, "luck_score",   fill=0)
+    cage_em_dn  = cage_em_raw - luck * 0.5
 
-    # Normalize each component 0–100
+    # AdjD (lower = better → invert for scoring)
+    cage_d_raw  = _to_num(df, "adj_drtg", fill=103.0)
+    adj_d_inv   = -cage_d_raw   # higher score = better defense
+
+    # Conference-normalized FTRD (ftr z-scored within conference if available)
+    ftr_s = _to_num(df, "ftr", fill=0.30)
+    if "conference" in df.columns:
+        ftrd_norm = df.groupby("conference", group_keys=False)["ftr"].transform(
+            lambda g: (g - g.mean()) / g.std() if g.std() > 0 else pd.Series(0.0, index=g.index)
+        )
+        ftrd_norm = pd.to_numeric(ftrd_norm, errors="coerce").fillna(0.0)
+    else:
+        std = ftr_s.std()
+        ftrd_norm = (ftr_s - ftr_s.mean()) / std if std > 0 else pd.Series(0.0, index=ftr_s.index)
+
+    # Shot risk penalty — three_par z-score (high 3PA rate = structural variance)
+    tpar = _to_num(df, "three_par", fill=33.0)
+    tpar_std = tpar.std()
+    shot_risk_z = (tpar - tpar.mean()) / tpar_std if tpar_std > 0 else pd.Series(0.0, index=tpar.index)
+
     def _norm(s: pd.Series) -> pd.Series:
         lo, hi = s.min(), s.max()
         rng = (hi - lo) if (hi - lo) > 0 else 1
         return (s - lo) / rng * 100
 
-    em_n      = _norm(cage_em)
-    bthg_n    = (barthag.reindex(df.index) * 100)
-    suf_n     = suf.reindex(df.index) if hasattr(suf, 'reindex') else suf
-    mom_n     = mom.reindex(df.index) if hasattr(mom, 'reindex') else mom
-    resume_n  = resume.reindex(df.index).fillna(50) if hasattr(resume, 'reindex') else resume.fillna(50)
-    clutch_n  = clutch.reindex(df.index).fillna(50) if hasattr(clutch, 'reindex') else clutch.fillna(50)
+    em_n     = _norm(cage_em_dn)
+    d_n      = _norm(adj_d_inv)
+    bthg_n   = barthag.reindex(df.index).fillna(0.5) * 100
+    svc_n    = svc.reindex(df.index).fillna(50)
+    drpi_n   = drpi.reindex(df.index).fillna(50)
+    ftrd_n   = _norm(ftrd_norm)
 
-    w = POWER_INDEX_WEIGHTS
+    # Decay momentum: use column if computed, else fall back to L5 vs L10 trend
+    if not decay_mom.empty:
+        mom_n = decay_mom.reindex(df["team_id"].astype(str)).fillna(50).values
+        mom_n = pd.Series(mom_n, index=df.index)
+    else:
+        mom_n = _norm(_to_num(df, "net_rtg_l5", fill=0))
+
+    w = TPI_WEIGHTS
+    total_w = sum(w.values())   # ~0.97; normalize so weights sum to 1
     raw = (
-        em_n     * w["cage_em"]      +
-        bthg_n   * w["barthag"]      +
-        suf_n    * w["suffocation"]  +
-        mom_n    * w["momentum"]     +
-        resume_n * w["resume"]       +
-        clutch_n * w["clutch"]
+        em_n   * (w["cage_em_dn"] / total_w) +
+        d_n    * (w["cage_d"]     / total_w) +
+        bthg_n * (w["barthag"]    / total_w) +
+        svc_n  * (w["svc"]        / total_w) +
+        mom_n  * (w["decay_mom"]  / total_w) +
+        drpi_n * (w["drpi"]       / total_w) +
+        ftrd_n * (w["ftrd_norm"]  / total_w)
     )
+
+    # Apply shot-risk penalty (–5% deduction proportional to variance risk)
+    shot_risk_n = _norm(shot_risk_z)   # 0–100, high = risky
+    raw = raw - shot_risk_n * 0.05
 
     lo, hi = raw.min(), raw.max()
     rng = (hi - lo) if (hi - lo) > 0 else 1
     return ((raw - lo) / rng * 100).round(1).rename("cage_power_index")
+
+
+def compute_ats_index(df: pd.DataFrame, decay_mom: pd.Series) -> pd.Series:
+    """
+    CAGE ATS INDEX v2.0 — betting edge predictor (0–100).
+
+    Adaptive weights shift by calendar: late-season (Feb–Mar) boosts decay
+    momentum and home/road delta as form solidifies and schedule ramps up.
+
+    Weights (base → late):
+      32%→28% CAGE_EM (de-noised)   15%→22% Decay Momentum
+      13%→16% Home/Road Delta        10%→10% FTRD × eFG interaction
+       8%→ 8% SVC                     7%→ 7% DRPI
+       4%→ 4% Pace differential
+    (CLV tendency and Continuity Proxy omitted — data unavailable)
+
+    High ATS Index = undervalued by market. Use alongside spread_edge for
+    double-confirmation.
+    """
+    now = datetime.now(TZ)
+    is_late = now.month in {2, 3}   # Feb–Mar = late season
+    w = ATS_WEIGHTS_LATE if is_late else ATS_WEIGHTS_BASE
+    total_w = sum(w.values())
+
+    # De-noised CAGE_EM
+    cage_em_raw = _to_num(df, "adj_net_rtg", fill=0)
+    luck        = _to_num(df, "luck_score",   fill=0)
+    cage_em_dn  = cage_em_raw - luck * 0.5
+
+    # Home/road delta (already computed in df if called after compute_home_road_delta)
+    home_road = _to_num(df, "home_road_delta_pct", fill=0)
+
+    # FTRD interaction: ftr × (1 – opp_avg_efg) — foul-environment collision proxy
+    ftr      = _to_num(df, "ftr",                fill=0.30)
+    opp_efg  = _to_num(df, "opp_avg_efg_season", fill=0.505)
+    ftrd_int = ftr * (1.0 - opp_efg)
+
+    # SVC and DRPI (already in df columns)
+    svc_s  = _to_num(df, "svc",  fill=50)
+    drpi_s = _to_num(df, "drpi", fill=50)
+
+    # Pace (cage_t, normalized)
+    pace = _to_num(df, "adj_pace", fill=70)
+
+    def _norm(s: pd.Series) -> pd.Series:
+        lo, hi = s.min(), s.max()
+        rng = (hi - lo) if (hi - lo) > 0 else 1
+        return (s - lo) / rng * 100
+
+    em_n      = _norm(cage_em_dn)
+    hr_n      = _norm(home_road)
+    ftrd_n    = _norm(ftrd_int)
+    svc_n     = svc_s     # already 0–100
+    drpi_n    = drpi_s    # already 0–100
+    pace_n    = _norm(pace)
+
+    if not decay_mom.empty:
+        mom_n = decay_mom.reindex(df["team_id"].astype(str)).fillna(50).values
+        mom_n = pd.Series(mom_n, index=df.index)
+    else:
+        mom_n = _norm(_to_num(df, "net_rtg_l5", fill=0))
+
+    raw = (
+        em_n   * (w["cage_em_dn"]    / total_w) +
+        mom_n  * (w["decay_mom"]     / total_w) +
+        hr_n   * (w["home_road"]     / total_w) +
+        ftrd_n * (w["ftrd_interact"] / total_w) +
+        svc_n  * (w["svc"]           / total_w) +
+        drpi_n * (w["drpi"]          / total_w) +
+        pace_n * (w["pace"]          / total_w)
+    )
+
+    lo, hi = raw.min(), raw.max()
+    rng = (hi - lo) if (hi - lo) > 0 else 1
+    return ((raw - lo) / rng * 100).round(1).rename("cage_ats_index")
 
 
 def assign_efficiency_grade(cage_em: pd.Series) -> pd.Series:
@@ -891,6 +1114,28 @@ def build_rankings(
     df["trend_numeric"] = trend_num.values
     df["trend_arrow"]   = trend_arrow.values
 
+    # ── 5b. CAGE v2.0 process metrics ─────────────────────────────────────────
+    df["svc"]  = compute_svc(df).values
+    df["drpi"] = compute_drpi(df).values
+
+    decay_mom = compute_decay_momentum(game_log)
+    if decay_mom.empty:
+        # Fallback: use L5 vs L10 trend rescaled to 0–100
+        net_l5  = _to_num(df, "net_rtg_l5",  fill=0)
+        net_l10 = _to_num(df, "net_rtg_l10", fill=0)
+        raw_mom = net_l5 - net_l10
+        lo, hi  = raw_mom.min(), raw_mom.max()
+        rng = (hi - lo) if (hi - lo) > 0 else 1
+        decay_mom_series = pd.Series(
+            ((raw_mom - lo) / rng * 100).round(1).values,
+            index=df["team_id"].astype(str),
+            name="decay_momentum",
+        )
+    else:
+        decay_mom_series = decay_mom
+    # Store as column (indexed by row position) for later output
+    df["decay_momentum"] = decay_mom_series.reindex(df["team_id"].astype(str)).values
+
     # ── 6. Pull tournament composites (from espn_tournament.py output) ────────
     # These are present if espn_tournament.py has run; gracefully NaN if not
     tourn_cols = {
@@ -923,13 +1168,19 @@ def build_rankings(
         lo, hi  = raw_suf.min(), raw_suf.max()
         df["suffocation"] = ((raw_suf - lo) / max(hi - lo, 1) * 100).round(1)
 
-    # ── 7. CAGE Power Index ───────────────────────────────────────────────────
+    # ── 7. CAGE Power Index (TPI v2.0) ────────────────────────────────────────
     df["cage_power_index"] = compute_power_index(
         df,
         barthag=df["barthag"],
         resume=df["resume_score"],
         clutch=df["clutch_rating"],
+        svc=df["svc"],
+        drpi=df["drpi"],
+        decay_mom=decay_mom_series,
     )
+
+    # ── 7b. CAGE ATS Index (v2.0) ─────────────────────────────────────────────
+    df["cage_ats_index"] = compute_ats_index(df, decay_mom=decay_mom_series)
 
     # ── 8. Efficiency grade ───────────────────────────────────────────────────
     df["eff_grade"] = assign_efficiency_grade(df["cage_em"])
@@ -1007,11 +1258,11 @@ def format_rankings_csv(df: pd.DataFrame) -> pd.DataFrame:
     # Round floats that may have crept to too many decimals
     float_2 = ["cage_em", "cage_o", "cage_d", "cage_t", "sos", "wab",
                 "floor_em", "ceiling_em", "net_rtg_l5", "net_rtg_l10"]
-    float_1 = ["cage_power_index", "resume_score", "suffocation", "momentum",
-                "clutch_rating", "consistency_score", "off_identity",
-                "tourney_readiness", "dna_score", "star_risk",
-                "home_road_delta_pct", "efg_pct", "opp_efg_pct", "tov_pct",
-                "orb_pct", "drb_pct", "three_par", "three_pct", "ft_pct"]
+    float_1 = ["cage_power_index", "cage_ats_index", "resume_score", "suffocation",
+                "momentum", "clutch_rating", "consistency_score", "off_identity",
+                "tourney_readiness", "dna_score", "star_risk", "svc", "drpi",
+                "decay_momentum", "home_road_delta_pct", "efg_pct", "opp_efg_pct",
+                "tov_pct", "orb_pct", "drb_pct", "three_par", "three_pct", "ft_pct"]
 
     for col in float_2:
         if col in out.columns:

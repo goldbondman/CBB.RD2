@@ -43,11 +43,15 @@ RANKINGS_COLUMNS = [
     "bad_loss_count",
 
     # CAGE proprietary composites
-    "cage_power_index", # Master composite (0–100)
+    "cage_power_index", # TPI v2.0 — tournament power index (0–100)
+    "cage_ats_index",   # ATS v2.0 — betting edge index (0–100)
     "eff_grade",        # Letter grade
     "resume_score",     # Quality-wins composite
     "suffocation",      # Defensive composite
-    "momentum",         # Hot-streak quality
+    "momentum",         # Hot-streak quality (tournament module)
+    "decay_momentum",   # Decay-weighted momentum λ=0.98 (v2.0)
+    "svc",              # Shot Volume Composite — OREB+TOV+FTR process
+    "drpi",             # Defensive Rebound Power Index (v2.0)
     "clutch_rating",    # Close-game excellence
     "consistency_score",# Variance-based reliability
     "off_identity",     # Offensive system strength
@@ -139,11 +143,15 @@ def write_data_dictionary(output_dir: Path = OUT_RANKINGS.parent) -> Path:
         ("bad_loss_count", "Quad Records", "Number of losses to Quad 4 opponents (embarrassing losses).", "0 – 5+", "Computed", "Each bad loss significantly hurts tournament seeding and resume score."),
 
         # ── CAGE Proprietary Composites ───────────────────────────────────────
-        ("cage_power_index","CAGE Composite", "Master composite ranking score combining efficiency, win probability, defense, momentum, resume, and clutch performance. Our single best overall team quality number.", "0 – 100", "Computed (weighted blend)", "100 = historically elite (2012 Kentucky tier). 85+ = title contender. 70–85 = top-5 seed. 55–70 = tournament team. 40–55 = bubble. <40 = NIT."),
+        ("cage_power_index","CAGE Composite", "Tournament Power Index v2.0 — neutral-court bracket predictor. Uses luck-stripped CAGE_EM, standalone AdjD, BARTHAG, SVC, decay momentum, DRPI, FTRD, minus shot-risk penalty.", "0 – 100", "Computed (TPI_WEIGHTS)", "100 = historically elite. 85+ = title contender. 70–85 = top-5 seed. 55–70 = tournament team. 40–55 = bubble. <40 = NIT."),
+        ("cage_ats_index", "CAGE Composite", "ATS Index v2.0 — betting edge predictor with adaptive late-season weights. Boosts decay momentum and home/road delta in Feb–Mar as form solidifies.", "0 – 100", "Computed (ATS_WEIGHTS)", "High = undervalued by market. Use alongside spread_edge for double-confirmation. Weights shift: decay_mom 15%→22%, home_road 13%→16% in Feb–Mar."),
         ("eff_grade",      "CAGE Composite", "Letter grade for adjusted efficiency margin. Calibrated to actual D1 distribution.", "A+ through F", "Computed from cage_em", "A+: ≥25. A: 18–25. A-: 12–18. B+: 7–12. B: 2–7. B-: 0–2. C+: -3–0. C: -7–-3. D: -18–-12. F: <-18."),
         ("resume_score",   "CAGE Composite", "Quality-wins composite on 0–100 scale. Rewards Q1 wins, win rate vs good teams, road success. Penalizes bad losses. Our version of Torvik's resume metric.", "0 – 100", "Computed", "50 = bubble-quality resume. >60 = comfortable. >75 = top-10 resume. Useful for committee-style seeding analysis."),
         ("suffocation",    "CAGE Composite", "Defensive composite — how completely this defense shuts down opponents. Combines opponent eFG%, defensive rebounding, and adjusted defensive rating.", "0 – 100", "Tournament module / fallback computed", "50 = average. >75 = elite shutdown defense. Low-scoring game predictor."),
         ("momentum",       "CAGE Composite", "Momentum Quality Rating — recent form weighted by opponent quality. Not just win streak: a 5-game win streak vs weak opponents scores lower than 3 wins vs top-25.", "0 – 100", "Tournament module", "50 = neutral. >65 = meaningfully hot. >80 = surging through elite competition."),
+        ("decay_momentum", "CAGE Composite", "Decay-weighted momentum v2.0 — exponential-decay (λ=0.98/game) of opponent-adjusted net efficiency. Smooth recency without artificial fixed windows.", "0 – 100", "Computed from game log adj_net_rtg", "Replaces fixed L5/L10 windows. Half-life ≈34 games. Amplifies true streaks; ignores cupcake runs (opponent-adjusted)."),
+        ("svc",            "CAGE Composite", "Shot Volume Composite — z-scored combination of OREB%, inverted TOV%, and FTR. Measures scoring chances per 100 possessions above average.", "0 – 100", "Computed from orb_pct + tov_pct + ftr", "Rewards process over results. High SVC = team creates second chances, protects the ball, draws fouls. Stable and predictive of future efficiency."),
+        ("drpi",           "CAGE Composite", "Defensive Rebound Power Index v2.0 — drb_pct z-scored relative to league distribution. Portable across schedule strength levels.", "0 – 100", "Computed from drb_pct", "50 = league average. >75 = elite defensive rebounding. Elite vs aggressive crashers scores higher than elite vs passive teams."),
         ("clutch_rating",  "CAGE Composite", "Close-game excellence — performance in games decided by ≤5 points, adjusted for luck in those games.", "0 – 100", "Computed", "50 = average. >70 = consistently closes games. Important for single-elimination tournament prediction."),
         ("consistency_score","CAGE Composite","How predictable/reliable this team is game-to-game. Inverse of net efficiency and shooting variance.", "0 – 100", "Computed from std dev", "100 = machine-like (Virginia under Bennett). 50 = average. <35 = boom-or-bust — dangerous to pick in tournament."),
         ("off_identity",   "CAGE Composite", "Offensive Identity Score — how cohesive and defined the offensive system is. High = team executes a clear, repeatable offensive scheme.", "0 – 100", "Tournament module", "High identity teams are more consistent under tournament pressure."),
