@@ -44,6 +44,12 @@ def _trend_direction(h: float, a: float, edge: float) -> str:
     return "FLAT"
 
 
+def _pick_tag(model_pick: str, conf: str, spread_edge: float) -> str:
+    """Return a short pick annotation like 'Duke -4.5 [HIGH +3.2]'."""
+    edge_str = f"{spread_edge:+.1f}" if spread_edge else ""
+    return f"{model_pick} [{conf} {edge_str}]"
+
+
 def _utc_to_et(dt_str: str) -> str:
     """Convert UTC datetime string to ET time string like '12:00p ET'."""
     if not dt_str or str(dt_str).strip() in ("", "nan"):
@@ -124,13 +130,18 @@ def main() -> int:
         total_conf = str(row.get("total_conf", ""))
         total_edge = row.get("total_edge", np.nan)
 
+        model_pick = str(row.get("model_pick", ""))
+        pick_tag = _pick_tag(model_pick, conf, round(edge, 1))
+        trend_flag_text = str(row.get("trend_flag", ""))
+        key_signal_text = str(row.get("key_signal", ""))
+
         rows.append({
             "game_date": str(row.get("game_date", ""))[:10],
             "game_time_et": game_time_et,
             "away_team": away,
             "home_team": home,
             "vegas_spread": row.get("vegas_spread", np.nan),
-            "model_pick": row.get("model_pick", ""),
+            "model_pick": model_pick,
             "spread_edge": round(edge, 1),
             "spread_conf": conf,
             "spread_prob": row.get("spread_prob", np.nan),
@@ -139,8 +150,10 @@ def main() -> int:
             "trend_strength": round(trend_strength, 1),
             "netrtg_trend_home": round(h, 2),
             "netrtg_trend_away": round(a, 2),
-            "trend_flag": str(row.get("trend_flag", "")),
-            "key_signal": str(row.get("key_signal", "")),
+            "trend_flag": trend_flag_text,
+            "trend_flag_pick": f"{trend_flag_text} → {pick_tag}" if trend_flag_text else pick_tag,
+            "key_signal": key_signal_text,
+            "key_signal_pick": f"{key_signal_text} → {pick_tag}" if key_signal_text else pick_tag,
             "total_pick": total_pick if total_pick != "PASS" else "",
             "total_conf": total_conf if total_pick != "PASS" else "",
             "total_edge": round(float(total_edge), 1) if pd.notna(total_edge) and total_pick != "PASS" else np.nan,
@@ -152,7 +165,9 @@ def main() -> int:
             "game_date", "game_time_et", "away_team", "home_team", "vegas_spread",
             "model_pick", "spread_edge", "spread_conf", "spread_prob",
             "model_predicted_margin", "trend_direction", "trend_strength",
-            "netrtg_trend_home", "netrtg_trend_away", "trend_flag", "key_signal",
+            "netrtg_trend_home", "netrtg_trend_away",
+            "trend_flag", "trend_flag_pick",
+            "key_signal", "key_signal_pick",
             "total_pick", "total_conf", "total_edge",
         ])
         out.to_csv("data/cbb_trend_picks_today.csv", index=False)
