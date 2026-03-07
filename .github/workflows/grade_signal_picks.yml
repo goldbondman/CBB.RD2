@@ -1,0 +1,121 @@
+name: Grade Signal Picks
+
+on:
+  # Run every morning after the daily pipeline has graded predictions
+  schedule:
+    - cron: "30 11 * * *"   # 11:30 UTC = ~6:30 AM ET, after cbb_pipeline daily job
+
+  # Also run on demand
+  workflow_dispatch:
+    inputs:
+      results_file:
+        description: "Path to results CSV (default: data/backtest_results_latest.csv)"
+        required: false
+        default: "data/backtest_results_latest.csv"
+
+  # Auto-trigger whenever backtest results are updated
+  workflow_run:
+    workflows: ["CBB Pipeline"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  grade:
+    name: Grade Signal Disagreement Picks
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install pandas numpy
+
+      - name: Check tracker exists
+        id: check
+        run: |
+          if [ -f "data/signal_picks_tracker.csv" ]; then
+            ROWS=$(tail -n +2 data/signal_picks_tracker.csv | wc -l)
+            echo "tracker_rows=$ROWS" >> $GITHUB_OUTPUT
+            echo "tracker_exists=true" >> $GITHUB_OUTPUT
+            echo "Tracker has $ROWS picks"
+          else
+            echo "tracker_exists=false" >> $GITHUB_OUTPUT
+            echo "No tracker found — skipping"
+          fi
+
+      - name: Grade picks
+        if: steps.check.outputs.tracker_exists == 'true'
+        run: |
+          RESULTS="${{ github.event.inputs.results_file || 'data/backtest_results_latest.csv' }}"
+          echo "Grading against: $RESULTS"
+          python grade_signal_picks.py --results "$RESULTS"
+
+      - name: Show summary
+        if: steps.check.outputs.tracker_exists == 'true'
+        run: |
+          echo "=== TRACKER STATE ==="
+          python -c "
+          import pandas as pd
+          df = pd.read_csv('data/signal_picks_tracker.csv')
+          graded = df[df['signal_correct'].notna()]
+          pending = df[df['signal_correct'].isna()]
+          print(f'Total tracked: {len(df)}')
+          print(f'Graded:        {len(graded)}')
+          print(f'Pending:       {len(pending)}')
+          if len(graded):
+              sig_acc = graded['signal_correct'].mean()
+              mod_acc = graded['model_correct'].mean()
+              print(f'Signal accuracy:  {sig_acc:.1%} ({int(graded[\"signal_correct\"].sum())}/{len(graded)})')
+              print(f'Model accuracy:   {mod_acc:.1%} ({int(graded[\"model_correct\"].sum())}/{len(graded)})')
+              wins = graded[(graded['signal_correct']) & (~graded['model_correct'].astype(bool))]
+              print(f'Signal right, Model wrong: {len(wins)}')
+          "
+
+      - name: Commit updated tracker
+        if: steps.check.outputs.tracker_exists == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/signal_picks_tracker.csv
+          if git diff --staged --quiet; then
+            echo "No changes to tracker — all picks already graded or no new results"
+          else
+            GRADED=$(python -c "
+          import pandas as pd
+          df = pd.read_csv('data/signal_picks_tracker.csv')
+          n = df['signal_correct'].notna().sum()
+          total = len(df)
+          acc = df['signal_correct'].mean() if n > 0 else 0
+          print(f'{n}/{total} graded, signal acc {acc:.1%}')
+            ")
+            git commit -m "chore: update signal picks tracker — $GRADED"
+            git push
+          fi
+
+      - name: Log pending picks
+        if: steps.check.outputs.tracker_exists == 'true'
+        run: |
+          python -c "
+          import pandas as pd
+          df = pd.read_csv('data/signal_picks_tracker.csv')
+          pending = df[df['signal_correct'].isna()][['game_datetime_utc','home_team','away_team','signal_n_fired','signal_best_holdout_su']]
+          if len(pending):
+              print('=== PENDING PICKS (results not yet available) ===')
+              print(pending.sort_values('signal_n_fired', ascending=False).to_string(index=False))
+          "
