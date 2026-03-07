@@ -974,7 +974,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401809119,2026-02-27 03:00:00+00:00,2463,300,Cal State Northridge Matadors,UC Irvine Anteaters,,-1.5,-1.5,-1.5,154.5,154.5,154.5,,,espn_games,games.csv,90,,,OK,espn_games
 401809120,2026-03-01 03:30:00+00:00,300,2540,UC Irvine Anteaters,UC Santa Barbara Gauchos,,-3.5,-3.5,-3.5,139.5,139.5,139.5,,,espn_games,games.csv,90,,,OK,espn_games
 401809121,2026-03-06 03:00:00+00:00,300,13,UC Irvine Anteaters,Cal Poly Mustangs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401809122,2026-03-08 01:00:00+00:00,300,302,UC Irvine Anteaters,UC Davis Aggies,,-9.5,-9.5,-9.5,145.5,145.5,145.5,,,espn_games,games.csv,90,,,OK,espn_games
+401809122,2026-03-08 01:00:00+00:00,300,302,UC Irvine Anteaters,UC Davis Aggies,,-9.5,-9.5,-9.5,146.5,146.5,146.5,,,espn_games,games.csv,90,,,OK,espn_games
 401809123,2025-12-05 04:59:00+00:00,62,302,Hawai'i Rainbow Warriors,UC Davis Aggies,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809124,2026-01-01 22:00:00+00:00,302,2463,UC Davis Aggies,Cal State Northridge Matadors,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809125,2026-01-03 22:00:00+00:00,302,2934,UC Davis Aggies,Cal State Bakersfield Roadrunners,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -5109,7 +5109,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401851490,2026-03-07 00:00:00+00:00,71,2674,Bradley Braves,Valparaiso Beacons,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851491,2026-03-07 03:25:00+00:00,2287,2460,Illinois State Redbirds,Northern Iowa Panthers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851492,2026-03-07 20:30:00+00:00,82,2181,UIC Flames,Drake Bulldogs,,-5.5,-5.5,-5.5,141.5,141.5,141.5,,,espn_games,games.csv,90,,,OK,espn_games
-401851493,2026-03-07 23:00:00+00:00,71,2460,Bradley Braves,Northern Iowa Panthers,,5.5,5.5,5.5,128.5,128.5,128.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851493,2026-03-07 23:00:00+00:00,71,2460,Bradley Braves,Northern Iowa Panthers,,4.5,4.5,4.5,127.5,127.5,127.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851513,2026-03-05 00:00:00+00:00,112358,2130,Long Island University Sharks,Chicago State Cougars,,-11.5,-11.5,-11.5,139.5,139.5,139.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851514,2026-03-05 00:00:00+00:00,2115,2681,Central Connecticut Blue Devils,Wagner Seahawks,,-5.5,-5.5,-5.5,138.5,138.5,138.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851515,2026-03-05 00:00:00+00:00,2385,161,Mercyhurst Lakers,Fairleigh Dickinson Knights,,-4.5,-4.5,-4.5,132.5,132.5,132.5,,,espn_games,games.csv,90,,,OK,espn_games
@@ -5145,7 +5145,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401851622,2026-03-06 02:30:00+00:00,2900,2571,St. Thomas-Minnesota Tommies,South Dakota State Jackrabbits,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851624,2026-03-07 02:30:00+00:00,155,2172,North Dakota Fighting Hawks,Denver Pioneers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851626,2026-03-08 01:00:00+00:00,2449,2437,North Dakota State Bison,Omaha Mavericks,,-6.5,-6.5,-6.5,140.5,140.5,140.5,,,espn_games,games.csv,90,,,OK,espn_games
-401851627,2026-03-08 03:30:00+00:00,2900,155,St. Thomas-Minnesota Tommies,North Dakota Fighting Hawks,,-12.5,-12.5,-12.5,151.5,151.5,151.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851627,2026-03-08 03:30:00+00:00,2900,155,St. Thomas-Minnesota Tommies,North Dakota Fighting Hawks,,-13.5,-13.5,-13.5,151.5,151.5,151.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851633,2026-03-03 23:00:00+00:00,309,2247,Louisiana Ragin' Cajuns,Georgia State Panthers,,1.5,1.5,1.5,132.5,132.5,132.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851635,2026-03-04 01:30:00+00:00,295,2433,Old Dominion Monarchs,UL Monroe Warhawks,,-10.5,-10.5,-10.5,158.5,158.5,158.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851636,2026-03-04 23:00:00+00:00,256,309,James Madison Dukes,Louisiana Ragin' Cajuns,,-6.5,-6.5,-6.5,133.5,133.5,133.5,,,espn_games,games.csv,90,,,OK,espn_games
