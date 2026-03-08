@@ -3,9 +3,50 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import joblib
+
+_CAGE_RANKINGS_PATH = Path("data/cbb_rankings.csv")
+_CAGE_EM_THRESHOLD = 3.0  # below this = coin-flip territory, treat as NEUTRAL
+
+
+def _load_cage_em(path: Path = _CAGE_RANKINGS_PATH) -> dict[str, float]:
+    """Load cage_em per team → {team_name_lower: cage_em}."""
+    if not path.exists():
+        return {}
+    try:
+        df = pd.read_csv(path, low_memory=False)
+        if "team" not in df.columns or "cage_em" not in df.columns:
+            return {}
+        return {str(r["team"]).lower().strip(): float(r["cage_em"]) for _, r in df.iterrows() if pd.notna(r.get("cage_em"))}
+    except Exception:
+        return {}
+
+
+def _get_cage_em(lookup: dict[str, float], team: str) -> float:
+    key = team.lower().strip()
+    if key in lookup:
+        return lookup[key]
+    for k, v in lookup.items():
+        if key in k or k in key:
+            return v
+    return 0.0
+
+
+def _cage_validates(spread_edge: float, cage_em_diff: float) -> str:
+    """Check whether CAGE team-quality direction agrees with model pick.
+
+    Returns 'CONFIRMS', 'NEUTRAL' (small EM gap), or 'DIVERGES'.
+    Not used as a standalone ATS call — informational validation only.
+    """
+    if abs(cage_em_diff) < _CAGE_EM_THRESHOLD:
+        return "NEUTRAL"
+    if (spread_edge > 0) == (cage_em_diff > 0):
+        return "CONFIRMS"
+    return "DIVERGES"
 
 SPREAD_EDGE_MIN = 2.0
 TOTAL_EDGE_MIN = 2.5
@@ -201,6 +242,12 @@ def main() -> int:
         print("[STOP] matchup_features.csv is empty")
         return 1
 
+    cage_em = _load_cage_em()
+    if cage_em:
+        print(f"[INFO] CAGE EM loaded for {len(cage_em)} teams (validation only)")
+    else:
+        print("[WARN] CAGE EM not available — cage_validates will be NEUTRAL for all picks")
+
     features = joblib.load("models/feature_lists.pkl")
     ridge_s = joblib.load("models/spread_ridge.pkl")
     ridge_t = joblib.load("models/total_ridge.pkl")
@@ -243,6 +290,9 @@ def main() -> int:
         t_edge = round(float(row["total_edge"]), 1)
         s_prob = float(row["spread_prob"])
         t_prob = float(row["total_prob"])
+        home_em = _get_cage_em(cage_em, str(row.get("home_team", "")))
+        away_em = _get_cage_em(cage_em, str(row.get("away_team", "")))
+        c_em_diff = round(home_em - away_em, 1)
         picks.append(
             {
                 "game_date": str(row.get("game_date", ""))[:10],
@@ -267,6 +317,8 @@ def main() -> int:
                 "trend_flag": _trend_flag(row),
                 "total_key_signal": _total_key_signal(row),
                 "cage_edge_bucket": _cage_edge_bucket(abs(s_edge)),
+                "cage_em_diff": c_em_diff,
+                "cage_validates": _cage_validates(s_edge, c_em_diff),
             }
         )
 
@@ -296,6 +348,8 @@ def main() -> int:
         "trend_flag",
         "total_key_signal",
         "cage_edge_bucket",
+        "cage_em_diff",
+        "cage_validates",
     ]
     out = out[[c for c in ordered_cols if c in out.columns]]
     out.to_csv("data/cbb_picks_today.csv", index=False)

@@ -1058,6 +1058,23 @@ def main() -> int:
             home, away, h_seed_val, a_seed_val, edge, cage_lookup, tourn_rates,
         )
 
+        # CAGE as validation signal against model pick — not a standalone ATS call.
+        # cage_em_diff > 0 → home is better quality team per CAGE.
+        # CONFIRMS when CAGE quality direction agrees with model pick direction.
+        # NEUTRAL when |cage_em_diff| < 3 (coin-flip territory per SU backtest).
+        _home_cage = _get_cage(cage_lookup, home)
+        _away_cage = _get_cage(cage_lookup, away)
+        _cage_em_diff = round(
+            float(_home_cage.get("cage_em", 0) or 0) - float(_away_cage.get("cage_em", 0) or 0), 1
+        )
+        _cage_em_threshold = 3.0
+        if abs(_cage_em_diff) < _cage_em_threshold:
+            _cage_val = "NEUTRAL"
+        elif (edge > 0) == (_cage_em_diff > 0):
+            _cage_val = "CONFIRMS"
+        else:
+            _cage_val = "DIVERGES"
+
         model_rows.append({
             "game_date":              str(row.get("game_date", ""))[:10],
             "game_time_et":           game_time_et,
@@ -1091,6 +1108,8 @@ def main() -> int:
             "total_pick":             total_pick if total_pick != "PASS" else "",
             "total_conf":             total_conf if total_pick != "PASS" else "",
             "total_edge":             round(float(total_edge), 1) if pd.notna(total_edge) and total_pick != "PASS" else np.nan,
+            "cage_em_diff":           _cage_em_diff,
+            "cage_validates":         _cage_val,
         })
 
     _EMPTY_MODEL_COLS = [
@@ -1104,6 +1123,7 @@ def main() -> int:
         "tourn_seed_signal", "tourn_r1_profile",
         "trend_flag", "trend_flag_pick", "key_signal", "key_signal_pick",
         "total_pick", "total_conf", "total_edge",
+        "cage_em_diff", "cage_validates",
     ]
 
     if not model_rows:
@@ -1193,6 +1213,18 @@ def main() -> int:
         r1_profile = _tourn_r1_profile(
             home, away, h_seed_val, a_seed_val, pure_edge, cage_lookup, tourn_rates,
         )
+        _ph_cage = _get_cage(cage_lookup, home)
+        _pa_cage = _get_cage(cage_lookup, away)
+        _p_cage_em_diff = round(
+            float(_ph_cage.get("cage_em", 0) or 0) - float(_pa_cage.get("cage_em", 0) or 0), 1
+        )
+        _cage_em_thr = 3.0
+        if abs(_p_cage_em_diff) < _cage_em_thr:
+            _p_cage_val = "NEUTRAL"
+        elif (pure_edge > 0) == (_p_cage_em_diff > 0):
+            _p_cage_val = "CONFIRMS"
+        else:
+            _p_cage_val = "DIVERGES"
         pure_rows.append({
             "game_date":              str(row.get("game_date", ""))[:10],
             "game_time_et":           game_time_et,
@@ -1217,6 +1249,8 @@ def main() -> int:
             "model_pick":             model_pick if model_pick != "PASS" else "",
             "spread_conf":            model_conf_pure,
             "spread_edge":            round(pure_edge_for_model, 1),
+            "cage_em_diff":           _p_cage_em_diff,
+            "cage_validates":         _p_cage_val,
         })
 
     _EMPTY_PURE_COLS = [
@@ -1227,6 +1261,7 @@ def main() -> int:
         "tourn_seed_signal", "tourn_r1_profile",
         "netrtg_trend_home", "netrtg_trend_away",
         "vs_model", "model_pick", "spread_conf", "spread_edge",
+        "cage_em_diff", "cage_validates",
     ]
 
     if not pure_rows:
