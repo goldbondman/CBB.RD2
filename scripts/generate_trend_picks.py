@@ -4,16 +4,19 @@ Generate two trend-picks CSVs:
 
   cbb_trend_picks_today.csv   — HIGH/MED model picks where trend aligns.
                                  Enhanced with: active_trends, agreement_level,
-                                 trend_hit_pct (ATS backtest), multi_trend.
+                                 trend_hit_pct (ATS backtest), multi_trend,
+                                 tourn_seed_signal (March Madness context).
 
   cbb_pure_trend_picks_today.csv — ALL games with any strong trend signal,
                                     no model required. Includes: trend_pick
                                     (trend-only), vs_model, per-signal ATS
-                                    backtest rates, multi-trend breakdown.
+                                    backtest rates, multi-trend breakdown,
+                                    tourn_seed_signal (March Madness context).
 """
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -27,6 +30,11 @@ L_RECENT        = 6
 L_BASE          = 11
 
 ET = ZoneInfo("America/New_York")
+
+# ── March Madness context ─────────────────────────────────────────────────────
+# Active when month is March–April and a seed ATS rates file is present.
+_TOURN_RATES_PATH = Path("data/march_madness_seed_ats_rates.csv")
+_TOURN_MONTHS     = {3, 4}   # March, April
 
 
 # ── Trend helpers ─────────────────────────────────────────────────────────────
@@ -271,6 +279,94 @@ def _compute_trend_backtest(gl_path: Path) -> dict[str, dict]:
     }
 
 
+def _load_tourn_seed_rates() -> dict[str, dict]:
+    """
+    Load March Madness seed-tier ATS rates from the pre-computed backtest CSV.
+    Returns {seed_tier: {fav_cover_pct, dog_cover_pct, ref_note}} or {} if unavailable.
+    Only loaded during March–April (tournament season).
+    """
+    if datetime.now(ET).month not in _TOURN_MONTHS:
+        return {}
+    if not _TOURN_RATES_PATH.exists():
+        return {}
+    try:
+        df = pd.read_csv(_TOURN_RATES_PATH)
+        result: dict[str, dict] = {}
+        for _, row in df.iterrows():
+            tier = str(row.get("seed_tier", "")).strip()
+            if not tier:
+                continue
+            result[tier] = {
+                "fav_cover_pct": row.get("fav_cover_pct"),
+                "dog_cover_pct": row.get("dog_cover_pct"),
+                "ref_note":      row.get("ref_note", row.get("interpretation", "")),
+            }
+        return result
+    except Exception:
+        return {}
+
+
+def _tourn_seed_signal(
+    home_team: str, away_team: str,
+    home_seed, away_seed,
+    edge: float,
+    rates: dict[str, dict],
+) -> str:
+    """
+    Generate a tournament seed-ATS signal string for a given matchup.
+    Returns empty string if seed data or rates are unavailable.
+
+    Format: "5 seed (home) — dog covers 59.6% ATS historically | FADE fav"
+    """
+    if not rates:
+        return ""
+
+    try:
+        h_seed = int(home_seed) if home_seed is not None and not pd.isna(home_seed) else None
+        a_seed = int(away_seed) if away_seed is not None and not pd.isna(away_seed) else None
+    except (TypeError, ValueError):
+        return ""
+
+    if h_seed is None or a_seed is None:
+        return ""
+
+    fav_seed  = min(h_seed, a_seed)
+    dog_seed  = max(h_seed, a_seed)
+    tier      = f"{fav_seed}_vs_{dog_seed}"
+    rate_info = rates.get(tier)
+    if not rate_info:
+        return ""
+
+    fav_cover  = rate_info.get("fav_cover_pct")
+    dog_cover  = rate_info.get("dog_cover_pct")
+    ref_note   = rate_info.get("ref_note", "")
+
+    # Determine which team is the favorite
+    fav_team  = home_team if h_seed == fav_seed else away_team
+    dog_team  = away_team if h_seed == fav_seed else home_team
+    pick_side = "home" if edge > 0 else "away"
+    pick_team = home_team if pick_side == "home" else away_team
+
+    parts: list[str] = [f"Seed {fav_seed} vs {dog_seed}"]
+
+    if dog_cover is not None and float(dog_cover) >= 58:
+        parts.append(f"{dog_team} ({dog_seed}-seed dog) covers {dog_cover:.1f}% ATS — FADE {fav_team}")
+        if pick_team == dog_team:
+            parts.append("ALIGNS WITH PICK")
+        else:
+            parts.append("AGAINST PICK")
+    elif fav_cover is not None and float(fav_cover) >= 58:
+        parts.append(f"{fav_team} ({fav_seed}-seed fav) covers {fav_cover:.1f}% ATS")
+        if pick_team == fav_team:
+            parts.append("ALIGNS WITH PICK")
+        else:
+            parts.append("AGAINST PICK")
+    elif ref_note:
+        parts.append(ref_note)
+
+    return " | ".join(parts)
+
+
 def _backtest_for_signals(signals: list[str], backtest: dict) -> tuple[str, str]:
     """
     Return (trend_hit_pct_str, trend_hit_detail_str) for a set of active signals.
@@ -338,6 +434,13 @@ def main() -> int:
     else:
         print("[WARN] Trend backtest unavailable — cover_margin or game log missing")
 
+    # ── March Madness seed context ─────────────────────────────────────────────
+    tourn_rates = _load_tourn_seed_rates()
+    if tourn_rates:
+        print(f"[INFO] Tournament seed ATS rates loaded: {len(tourn_rates)} tiers")
+    else:
+        print("[INFO] Tournament seed context inactive (non-tournament month or no rates file)")
+
     # ── Coerce columns ────────────────────────────────────────────────────────
     for col in ["netrtg_trend_home", "netrtg_trend_away"]:
         if col not in picks.columns:
@@ -345,6 +448,11 @@ def main() -> int:
     picks["netrtg_trend_home"] = pd.to_numeric(picks["netrtg_trend_home"], errors="coerce").fillna(0.0)
     picks["netrtg_trend_away"] = pd.to_numeric(picks["netrtg_trend_away"], errors="coerce").fillna(0.0)
     picks["spread_edge"]       = pd.to_numeric(picks["spread_edge"],       errors="coerce").fillna(0.0)
+
+    # Seed columns may or may not be present in picks
+    for col in ["home_seed", "away_seed"]:
+        if col not in picks.columns:
+            picks[col] = None
 
     game_times = _load_game_times(Path("data/predictions_joint_latest.csv"))
 
@@ -391,6 +499,12 @@ def main() -> int:
         trend_flag_tx = str(row.get("trend_flag", ""))
         key_signal_tx = str(row.get("key_signal", ""))
 
+        tourn_sig = _tourn_seed_signal(
+            home, away,
+            row.get("home_seed"), row.get("away_seed"),
+            edge, tourn_rates,
+        )
+
         model_rows.append({
             "game_date":              str(row.get("game_date", ""))[:10],
             "game_time_et":           game_time_et,
@@ -412,6 +526,7 @@ def main() -> int:
             "netrtg_trend_away":      round(a, 2),
             "trend_hit_pct":          hit_pct_str,
             "trend_hit_detail":       hit_detail,
+            "tourn_seed_signal":      tourn_sig,
             "trend_flag":             trend_flag_tx,
             "trend_flag_pick":        f"{trend_flag_tx} → {pick_tag}" if trend_flag_tx else pick_tag,
             "key_signal":             key_signal_tx,
@@ -427,7 +542,7 @@ def main() -> int:
         "model_predicted_margin", "agreement_level", "trend_team_pick",
         "trend_direction", "active_trends", "multi_trend", "trend_strength",
         "netrtg_trend_home", "netrtg_trend_away",
-        "trend_hit_pct", "trend_hit_detail",
+        "trend_hit_pct", "trend_hit_detail", "tourn_seed_signal",
         "trend_flag", "trend_flag_pick", "key_signal", "key_signal_pick",
         "total_pick", "total_conf", "total_edge",
     ]
@@ -498,31 +613,40 @@ def main() -> int:
 
         # trend_team_pick for pure CSV uses edge=0 proxy: side determines direction
         pure_edge = 1.0 if side == "home" else -1.0
+        pure_edge_for_model = float(
+            pd.to_numeric(row.get("spread_edge", 0), errors="coerce") or 0
+        )
+        tourn_sig = _tourn_seed_signal(
+            home, away,
+            row.get("home_seed"), row.get("away_seed"),
+            pure_edge, tourn_rates,
+        )
         pure_rows.append({
-            "game_date":        str(row.get("game_date", ""))[:10],
-            "game_time_et":     game_time_et,
-            "away_team":        away,
-            "home_team":        home,
-            "vegas_spread":     vegas_spread,
-            "trend_pick":       trend_pick,
-            "trend_team_pick":  _trend_team_pick(home, away, h, a, pure_edge),
-            "trend_conf":       trend_conf,
-            "active_trends":    active_str,
-            "multi_trend":      multi_trend,
-            "trend_hit_pct":    hit_pct_str,
-            "trend_hit_detail": hit_detail,
+            "game_date":         str(row.get("game_date", ""))[:10],
+            "game_time_et":      game_time_et,
+            "away_team":         away,
+            "home_team":         home,
+            "vegas_spread":      vegas_spread,
+            "trend_pick":        trend_pick,
+            "trend_team_pick":   _trend_team_pick(home, away, h, a, pure_edge),
+            "trend_conf":        trend_conf,
+            "active_trends":     active_str,
+            "multi_trend":       multi_trend,
+            "trend_hit_pct":     hit_pct_str,
+            "trend_hit_detail":  hit_detail,
+            "tourn_seed_signal": tourn_sig,
             "netrtg_trend_home": round(h, 2),
             "netrtg_trend_away": round(a, 2),
-            "vs_model":         vs_model,
-            "model_pick":       model_pick if model_pick != "PASS" else "",
-            "spread_conf":      str(row.get("spread_conf", "")),
-            "spread_edge":      round(float(pd.to_numeric(row.get("spread_edge", 0), errors="coerce") or 0), 1),
+            "vs_model":          vs_model,
+            "model_pick":        model_pick if model_pick != "PASS" else "",
+            "spread_conf":       str(row.get("spread_conf", "")),
+            "spread_edge":       round(pure_edge_for_model, 1),
         })
 
     _EMPTY_PURE_COLS = [
         "game_date", "game_time_et", "away_team", "home_team", "vegas_spread",
         "trend_pick", "trend_team_pick", "trend_conf", "active_trends", "multi_trend",
-        "trend_hit_pct", "trend_hit_detail",
+        "trend_hit_pct", "trend_hit_detail", "tourn_seed_signal",
         "netrtg_trend_home", "netrtg_trend_away",
         "vs_model", "model_pick", "spread_conf", "spread_edge",
     ]

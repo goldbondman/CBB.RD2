@@ -1,0 +1,149 @@
+name: March Madness Backtest
+
+on:
+  schedule:
+    # Run annually on March 1 at 12:00 UTC (pre-tournament data refresh)
+    - cron: "0 12 1 3 *"
+  workflow_dispatch:
+    inputs:
+      years:
+        description: "Space-separated list of years (e.g. '2023 2024 2025')"
+        required: false
+        default: ""
+      reference_only:
+        description: "Skip ESPN API fetch — write static reference table only"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: march-madness-backtest
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  TZ: UTC
+  PYTHONHASHSEED: "0"
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f constraints.txt ]]; then
+            pip install -r requirements.txt -c constraints.txt
+          else
+            pip install -r requirements.txt
+          fi
+
+      - name: Run March Madness backtest
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXTRA_ARGS=""
+          if [[ "${{ github.event.inputs.reference_only }}" == "true" ]]; then
+            EXTRA_ARGS="--reference-only"
+          fi
+          if [[ -n "${{ github.event.inputs.years }}" ]]; then
+            EXTRA_ARGS="$EXTRA_ARGS --years ${{ github.event.inputs.years }}"
+          fi
+          python scripts/march_madness_backtest.py \
+            --sleep 0.4 \
+            --out-dir data \
+            $EXTRA_ARGS
+          echo "[OK] March Madness backtest complete"
+
+      - name: Validate output
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pandas as pd, sys
+
+          rates = pd.read_csv("data/march_madness_seed_ats_rates.csv")
+          if rates.empty:
+              print("[ERROR] march_madness_seed_ats_rates.csv is empty")
+              sys.exit(1)
+
+          required_tiers = {"5_vs_12", "6_vs_11", "8_vs_9"}
+          found = set(rates["seed_tier"].tolist())
+          missing = required_tiers - found
+          if missing:
+              print(f"[WARN] Missing expected seed tiers: {missing}")
+
+          print(f"[OK] {len(rates)} seed tiers in output")
+          print(rates[["seed_tier", "fav_cover_pct", "dog_cover_pct", "interpretation"]
+                      ].to_string(index=False))
+          PY
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-march-madness-backtest
+          if-no-files-found: warn
+          retention-days: 365
+          path: |
+            data/march_madness_backtest.csv
+            data/march_madness_seed_ats_rates.csv
+
+      - name: Commit results to main
+        if: ${{ github.ref == 'refs/heads/main' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          COMMIT_PATHS=(
+            data/march_madness_backtest.csv
+            data/march_madness_seed_ats_rates.csv
+          )
+
+          for _f in "${COMMIT_PATHS[@]}"; do
+            if [[ -e "$_f" ]]; then
+              git add -- "$_f"
+            else
+              echo "[SKIP] missing: $_f"
+            fi
+          done
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "data: refresh march madness ATS backtest [skip ci]"
+
+          for i in 1 2 3; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              echo "[OK] pushed on attempt $i"
+              exit 0
+            fi
+            echo "[WARN] push failed on attempt $i; retrying"
+            if [[ -d .git/rebase-merge || -d .git/rebase-apply ]]; then
+              git rebase --abort || true
+            fi
+            sleep $((i * 2))
+          done
+          echo "[ERROR] failed to push after retries"
+          exit 1
