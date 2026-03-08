@@ -90,6 +90,28 @@ def _trend_side(h: float, a: float) -> str | None:
     return "home" if home_score >= away_score else "away"
 
 
+def _trend_team_pick(home: str, away: str, h: float, a: float, edge: float) -> str:
+    """
+    Human-readable column showing which team the trend clearly favors.
+
+    Format: "<Team> trending (<rate>/game)" or
+            "<Team> (<rate>/game) vs <Opp> fading (<rate>/game)" for double signal.
+    Always reflects the pick direction (same side as model pick for aligned CSV).
+    """
+    if edge > 0:   # model & trend both like home
+        if h > TREND_THRESHOLD and a < -TREND_THRESHOLD:
+            return f"{home} ({h:+.1f}/game) — {away} fading ({a:+.1f}/game)"
+        if h > TREND_THRESHOLD:
+            return f"{home} trending ({h:+.1f}/game)"
+        return f"{home} — fading opponent {away} ({a:+.1f}/game)"
+    else:           # model & trend both like away
+        if a > TREND_THRESHOLD and h < -TREND_THRESHOLD:
+            return f"{away} ({a:+.1f}/game) — {home} fading ({h:+.1f}/game)"
+        if a > TREND_THRESHOLD:
+            return f"{away} trending ({a:+.1f}/game)"
+        return f"{away} — fading opponent {home} ({h:+.1f}/game)"
+
+
 def _fmt_pick(team: str, vegas_spread, is_home: bool) -> str:
     """Format pick as 'Team +/-line' or just 'Team' if no spread."""
     try:
@@ -381,6 +403,7 @@ def main() -> int:
             "spread_prob":            row.get("spread_prob", np.nan),
             "model_predicted_margin": row.get("model_predicted_margin", np.nan),
             "agreement_level":        agree_level,
+            "trend_team_pick":        _trend_team_pick(home, away, h, a, edge),
             "trend_direction":        direction,
             "active_trends":          active_str,
             "multi_trend":            multi_trend,
@@ -401,8 +424,8 @@ def main() -> int:
     _EMPTY_MODEL_COLS = [
         "game_date", "game_time_et", "away_team", "home_team", "vegas_spread",
         "model_pick", "spread_edge", "spread_conf", "spread_prob",
-        "model_predicted_margin", "agreement_level", "trend_direction",
-        "active_trends", "multi_trend", "trend_strength",
+        "model_predicted_margin", "agreement_level", "trend_team_pick",
+        "trend_direction", "active_trends", "multi_trend", "trend_strength",
         "netrtg_trend_home", "netrtg_trend_away",
         "trend_hit_pct", "trend_hit_detail",
         "trend_flag", "trend_flag_pick", "key_signal", "key_signal_pick",
@@ -473,6 +496,8 @@ def main() -> int:
             trend_agrees = _trend_aligns(edge, h, a)
             vs_model = "AGREES" if trend_agrees else "DISAGREES"
 
+        # trend_team_pick for pure CSV uses edge=0 proxy: side determines direction
+        pure_edge = 1.0 if side == "home" else -1.0
         pure_rows.append({
             "game_date":        str(row.get("game_date", ""))[:10],
             "game_time_et":     game_time_et,
@@ -480,6 +505,7 @@ def main() -> int:
             "home_team":        home,
             "vegas_spread":     vegas_spread,
             "trend_pick":       trend_pick,
+            "trend_team_pick":  _trend_team_pick(home, away, h, a, pure_edge),
             "trend_conf":       trend_conf,
             "active_trends":    active_str,
             "multi_trend":      multi_trend,
@@ -495,7 +521,7 @@ def main() -> int:
 
     _EMPTY_PURE_COLS = [
         "game_date", "game_time_et", "away_team", "home_team", "vegas_spread",
-        "trend_pick", "trend_conf", "active_trends", "multi_trend",
+        "trend_pick", "trend_team_pick", "trend_conf", "active_trends", "multi_trend",
         "trend_hit_pct", "trend_hit_detail",
         "netrtg_trend_home", "netrtg_trend_away",
         "vs_model", "model_pick", "spread_conf", "spread_edge",
