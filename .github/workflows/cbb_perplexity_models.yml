@@ -470,6 +470,7 @@ jobs:
             data/internal/
             data/cbb_picks_today.csv
             data/cbb_trend_picks_today.csv
+            data/cbb_pure_trend_picks_today.csv
 
       - name: Commit and push model outputs to main
         if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
@@ -494,6 +495,7 @@ jobs:
             data/predictions_joint_snapshots.csv
             data/cbb_picks_today.csv
             data/cbb_trend_picks_today.csv
+            data/cbb_pure_trend_picks_today.csv
           )
           echo "[INFO] commit scope paths:"
           printf '  - %s\n' "${COMMIT_PATHS[@]}"
