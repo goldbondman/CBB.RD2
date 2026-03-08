@@ -33,6 +33,9 @@ on:
         required: false
         default: 'data/market_lines_master.csv'
 
+permissions:
+  contents: write
+
 # Standardized concurrency group to prevent race conditions across all pipeline workflows
 concurrency:
   group: cbb-data-pipeline

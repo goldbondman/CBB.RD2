@@ -296,6 +296,14 @@ jobs:
           python scripts/generate_trend_picks.py
           echo "[OK] trend picks generated"
 
+      - name: Generate 30-hour prediction report
+        if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/generate_prediction_report.py
+          echo "[OK] 30-hour prediction report generated"
+
       - name: Guard required outputs, oversize files, and build artifact payload
         if: always()
         shell: bash
@@ -471,6 +479,8 @@ jobs:
             data/cbb_picks_today.csv
             data/cbb_trend_picks_today.csv
             data/cbb_pure_trend_picks_today.csv
+            data/prediction_report_30h.md
+            data/prediction_report_30h.csv
 
       - name: Commit and push model outputs to main
         if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
@@ -496,6 +506,8 @@ jobs:
             data/cbb_picks_today.csv
             data/cbb_trend_picks_today.csv
             data/cbb_pure_trend_picks_today.csv
+            data/prediction_report_30h.md
+            data/prediction_report_30h.csv
           )
           echo "[INFO] commit scope paths:"
           printf '  - %s\n' "${COMMIT_PATHS[@]}"

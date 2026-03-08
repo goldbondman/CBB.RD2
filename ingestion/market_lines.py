@@ -1432,7 +1432,13 @@ def main() -> None:
             all_rows.extend(rows)
             capture_diagnostics.append(diag)
 
-    enumerated_total = sum(int(d.get("events_fetched", 0)) for d in capture_diagnostics)
+    # Subtract FINAL-filtered games: in pregame mode, completed games are legitimately
+    # excluded from insertion (not lost). Using raw events_fetched as the denominator
+    # causes false positives on days with many completed games (e.g. conference tournaments).
+    enumerated_total = sum(
+        int(d.get("events_fetched", 0)) - int(d.get("events_filtered_final", 0))
+        for d in capture_diagnostics
+    )
     inserted_total = len(all_rows)
     if enumerated_total >= MIN_ENUM_GAMES_FOR_GAP_GUARD:
         minimum_rows = int(round(enumerated_total * (1.0 - MAX_ENUM_TO_OUTPUT_DROP_RATIO)))

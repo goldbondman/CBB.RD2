@@ -16,7 +16,7 @@ CAGE-only  → Suffocation, Momentum, Clutch, Floor/Ceiling,    (proprietary)
              Power Index, Efficiency Grade, Consistency,
              Star Risk, Offensive Identity, Trend Arrow
 
-OUTPUT: data/cbb_rankings.csv — one row per D1 team, ranked by CAGE_EM
+OUTPUT: data/cbb_rankings.csv — one row per D1 team, ranked by CAGE Power Index
         data/cbb_rankings_YYYYMMDDTHHMMSSZ.csv — dated snapshot
 
 Inputs:
@@ -68,9 +68,10 @@ BUBBLE_NET_RTG    = 0.0       # Bubble team definition (NET rating = 0)
 # Shot risk penalty (–5%) applied as a separate deduction after weighted sum.
 # Continuity proxy and Home/Road Delta omitted (data unavailable / neutral courts).
 TPI_WEIGHTS = {
-    "cage_em_dn":  0.40,   # De-noised CAGE_EM (luck-stripped)
+    "cage_em_dn":  0.35,   # De-noised CAGE_EM (luck-stripped, SOS-adjusted)
     "cage_d":      0.15,   # AdjD — pure defensive quality
-    "barthag":     0.12,   # P(beat avg D1) win probability
+    "barthag":     0.10,   # P(beat avg D1) win probability
+    "resume":      0.08,   # Quality wins / schedule context (Q1 record composite)
     "svc":         0.10,   # Shot Volume Composite (OREB + TOV + FTR process)
     "decay_mom":   0.08,   # Exponential-decay momentum (λ=0.98/game)
     "drpi":        0.07,   # Defensive Rebound Power Index
@@ -566,9 +567,10 @@ def compute_decay_momentum(game_log: pd.DataFrame, lam: float = 0.98) -> pd.Seri
         raw[str(team_id)] = float(np.dot(vals, weights) / weights.sum())
 
     s = pd.Series(raw, name="decay_momentum")
-    lo, hi = s.min(), s.max()
-    rng = (hi - lo) if (hi - lo) > 0 else 1
-    return ((s - lo) / rng * 100).round(1)
+    # Fixed absolute anchors (same scale as adj_net_rtg: elite ~+25, bottom ~-25).
+    # Dataset-relative min-max would inflate a surging 8-16 team to 100 in a weak dataset.
+    lo_anchor, hi_anchor = -25.0, 30.0
+    return ((s.clip(lo_anchor, hi_anchor) - lo_anchor) / (hi_anchor - lo_anchor) * 100).round(1)
 
 
 def compute_svc(df: pd.DataFrame) -> pd.Series:
@@ -633,14 +635,17 @@ def compute_power_index(
     CAGE TOURNAMENT POWER INDEX v2.0 — bracket predictor (0–100).
 
     Optimized for neutral-court single-elimination prediction.
-    Key changes from v1: luck-stripped CAGE_EM, AdjD as standalone factor,
-    SVC + DRPI process metrics replace raw resume/clutch in weighting,
-    exponential-decay momentum, shot-risk penalty for high-variance teams.
+    Key changes from v1: luck-stripped CAGE_EM (SOS-adjusted), AdjD as
+    standalone factor, Resume integrated for schedule context, SVC + DRPI
+    process metrics, exponential-decay momentum, shot-risk penalty.
 
     Weights (TPI_WEIGHTS):
-      40% CAGE_EM (de-noised)  15% AdjD  12% BARTHAG  10% SVC
-       8% Decay Momentum        7% DRPI   5% FTRD norm
+      35% CAGE_EM (de-noised, SOS-adj)  15% AdjD  10% BARTHAG  10% SVC
+       8% Resume (Q1 context)            8% Decay Momentum  7% DRPI  5% FTRD
       –5% Shot Risk Penalty (three_par z-score)
+
+    Fixed absolute anchors used for cage_em_dn and adj_d (schedule-blind
+    dataset-relative normalization would inflate weak-conference teams).
 
     100 = historically elite (2012 Kentucky tier)
     85+ = legitimate national title contender
@@ -652,6 +657,11 @@ def compute_power_index(
     cage_em_raw = _to_num(df, "adj_net_rtg", fill=0)
     luck        = _to_num(df, "luck_score",   fill=0)
     cage_em_dn  = cage_em_raw - luck * 0.5
+
+    # SOS adjustment: teams with soft schedules get deflated EM
+    # clip ±10 so one cupcake schedule can't swing more than ±1.5 pts
+    sos = _to_num(df, "opp_avg_net_rtg_season", fill=0)
+    cage_em_dn  = cage_em_dn + sos.clip(-10, 10) * 0.15
 
     # AdjD (lower = better → invert for scoring)
     cage_d_raw  = _to_num(df, "adj_drtg", fill=103.0)
@@ -673,14 +683,25 @@ def compute_power_index(
     tpar_std = tpar.std()
     shot_risk_z = (tpar - tpar.mean()) / tpar_std if tpar_std > 0 else pd.Series(0.0, index=tpar.index)
 
+    def _clip_norm(s: pd.Series, lo: float, hi: float) -> pd.Series:
+        """Normalize to 0-100 using fixed absolute anchors (clips outliers)."""
+        rng = (hi - lo) if (hi - lo) > 0 else 1
+        return ((s.clip(lo, hi) - lo) / rng * 100)
+
     def _norm(s: pd.Series) -> pd.Series:
+        """Dataset-relative normalization for metrics already in standard units."""
         lo, hi = s.min(), s.max()
         rng = (hi - lo) if (hi - lo) > 0 else 1
         return (s - lo) / rng * 100
 
-    em_n     = _norm(cage_em_dn)
-    d_n      = _norm(adj_d_inv)
+    # Fixed anchors for schedule-sensitive metrics — prevents weak-conference
+    # teams from inflating to 100 when their cohort is weak.
+    # CAGE_EM: elite ~+25 to +35, bottom ~-25; anchored at -30 to +35
+    # AdjD:    elite ~85-90, terrible ~115-120; inverted so -120→0, -85→100
+    em_n     = _clip_norm(cage_em_dn, lo=-30.0, hi=35.0)
+    d_n      = _clip_norm(adj_d_inv,  lo=-120.0, hi=-85.0)
     bthg_n   = barthag.reindex(df.index).fillna(0.5) * 100
+    resume_n = resume.reindex(df.index).fillna(50)
     svc_n    = svc.reindex(df.index).fillna(50)
     drpi_n   = drpi.reindex(df.index).fillna(50)
     ftrd_n   = _norm(ftrd_norm)
@@ -693,15 +714,16 @@ def compute_power_index(
         mom_n = _norm(_to_num(df, "net_rtg_l5", fill=0))
 
     w = TPI_WEIGHTS
-    total_w = sum(w.values())   # ~0.97; normalize so weights sum to 1
+    total_w = sum(w.values())   # normalize so weights sum to 1
     raw = (
-        em_n   * (w["cage_em_dn"] / total_w) +
-        d_n    * (w["cage_d"]     / total_w) +
-        bthg_n * (w["barthag"]    / total_w) +
-        svc_n  * (w["svc"]        / total_w) +
-        mom_n  * (w["decay_mom"]  / total_w) +
-        drpi_n * (w["drpi"]       / total_w) +
-        ftrd_n * (w["ftrd_norm"]  / total_w)
+        em_n     * (w["cage_em_dn"] / total_w) +
+        d_n      * (w["cage_d"]     / total_w) +
+        bthg_n   * (w["barthag"]    / total_w) +
+        resume_n * (w["resume"]     / total_w) +
+        svc_n    * (w["svc"]        / total_w) +
+        mom_n    * (w["decay_mom"]  / total_w) +
+        drpi_n   * (w["drpi"]       / total_w) +
+        ftrd_n   * (w["ftrd_norm"]  / total_w)
     )
 
     # Apply shot-risk penalty (–5% deduction proportional to variance risk)
@@ -1031,12 +1053,23 @@ def build_rankings(
     df["cage_t"]     = _to_num(df, "adj_pace",       fill=70.0).round(1)
 
     # If adj_* not populated yet, fall back to raw ratings
-    if df["cage_em"].abs().max() < 0.1:
+    # Use std() check: well-populated adj_net_rtg has std ~8-12; near-zero means missing data
+    if df["cage_em"].std() < 0.5:
         log.warning("adj_net_rtg appears empty — using raw net_rtg as fallback")
         df["cage_em"] = _to_num(df, "net_rtg", fill=0).round(2)
         df["cage_o"]  = _to_num(df, "ortg",    fill=LEAGUE_AVG_ORTG).round(1)
         df["cage_d"]  = _to_num(df, "drtg",    fill=LEAGUE_AVG_DRTG).round(1)
         df["cage_t"]  = _to_num(df, "pace",    fill=70.0).round(1)
+
+    # Minimum games gate — exclude teams with too few games to produce reliable ratings.
+    # Prevents 2–4 game teams (exhibitions, mid-season callups) from ranking top-10.
+    _wins_g   = _to_num(df, "wins",   fill=0)
+    _losses_g = _to_num(df, "losses", fill=0)
+    _games_g  = _wins_g + _losses_g
+    _few_g    = _games_g < 5
+    if _few_g.any():
+        log.warning(f"Excluding {int(_few_g.sum())} teams with <5 games played from rankings")
+        df = df[~_few_g].copy().reset_index(drop=True)
 
     # BARTHAG
     df["barthag"] = compute_barthag(df["cage_o"], df["cage_d"])
@@ -1213,8 +1246,12 @@ def build_rankings(
     df["net_rtg_l5"]  = _to_num(df, "net_rtg_l5",  fill=np.nan).round(1)
     df["net_rtg_l10"] = _to_num(df, "net_rtg_l10", fill=np.nan).round(1)
 
-    # ── 13. Rank by CAGE_EM (primary), BARTHAG (tiebreak) ────────────────────
-    df = df.sort_values(["cage_em", "barthag"], ascending=[False, False])
+    # ── 13. Rank by CAGE Power Index (primary), CAGE_EM (secondary), BARTHAG (tiebreak) ──
+    # cage_power_index integrates schedule context; cage_em alone is schedule-blind
+    df = df.sort_values(
+        ["cage_power_index", "cage_em", "barthag"],
+        ascending=[False, False, False],
+    )
     df = df.drop(columns=["rank"], errors="ignore")
     df.insert(0, "rank", range(1, len(df) + 1))
 

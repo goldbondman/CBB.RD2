@@ -37,13 +37,30 @@ _TOURN_RATES_PATH    = Path("data/march_madness_seed_ats_rates.csv")
 _CAGE_RANKINGS_PATH  = Path("data/cbb_rankings.csv")
 _TOURN_MONTHS        = {3, 4}   # March, April
 
-# R1 profile thresholds
+# R1 profile thresholds — efficiency and momentum
 _DECAY_HOT    =  1.5    # decay_momentum ≥ this = trending up (hot streak)
 _DECAY_COLD   = -1.5    # decay_momentum ≤ this = trending down (fading)
 _DEF_ELITE    =  97.0   # cage_d ≤ this = elite defense (~top 40)
 _DEF_WEAK     = 106.0   # cage_d ≥ this = vulnerable defense
 _EM_DOMINANT  =  15.0   # cage_em gap ≥ this = commanding favorite
 _EM_CLOSE     =   5.0   # cage_em gap ≤ this = closer than seed suggests
+
+# Ball-security thresholds (lower TO% = ball security)
+_TOV_SAFE     = 16.0    # dog tov_pct ≤ this = takes care of ball (top-35%)
+_TOV_SLOPPY   = 20.0    # fav  tov_pct ≥ this = fav is turnover-prone
+
+# Rebounding thresholds (DRPI is 0-100, higher = better defensive rebounding)
+_DRPI_SOLID   = 55.0    # dog drpi ≥ this = doesn't get killed on the glass
+_OREB_THREAT  = 30.0    # dog orb_pct ≥ this = crashes offensively
+
+# Free-throw rate (FTR = FTA/FGA; higher = gets to the line)
+_FTR_DRIVER   =  0.35   # dog ftr ≥ this = drives paint, earns fouls
+_FTR_LOW_FAV  =  0.26   # fav ftr ≤ this = relies on jumpers, avoids contact
+
+# Pace/variance thresholds (cage_t = adjusted tempo)
+_PACE_MISMATCH = 4.0    # |fav_pace - dog_pace| ≥ this = style clash (variance game)
+_LUCK_HIGH     =  0.05  # fav luck_score ≥ this = overperforming, regression risk
+_THREE_PAR_HIGH = 40.0  # three_par ≥ this = high 3PA rate (variance team)
 
 # Seed tiers where the underdog historically covers (from 2021-2025 backtest +
 # published research). 4v13 added per 2021-2025 API result (dog covers 63.2%).
@@ -403,6 +420,22 @@ def _tourn_r1_profile(
     dog_mom  = float(dog_cage.get("decay_momentum",  0)   or 0)
     dog_conf = str(dog_cage.get("conference", "") or "")
 
+    # Structural metrics (safe fallbacks for missing columns)
+    fav_tov  = float(fav_cage.get("tov_pct",      18.0) or 18.0)
+    dog_tov  = float(dog_cage.get("tov_pct",      18.0) or 18.0)
+    dog_drpi = float(dog_cage.get("drpi",          50.0) or 50.0)
+    dog_orb  = float(dog_cage.get("orb_pct",       25.0) or 25.0)
+    dog_ftr  = float(dog_cage.get("ftr",            0.0) or 0.0)
+    fav_ftr  = float(fav_cage.get("ftr",            0.0) or 0.0)
+    fav_pace = float(fav_cage.get("cage_t",        70.0) or 70.0)
+    dog_pace = float(dog_cage.get("cage_t",        70.0) or 70.0)
+    fav_luck = float(
+        fav_cage.get("luck_score") or fav_cage.get("luck") or 0.0
+    )
+    fav_3par = float(fav_cage.get("three_par",     33.0) or 33.0)
+    dog_3par = float(dog_cage.get("three_par",     33.0) or 33.0)
+    pace_diff = abs(fav_pace - dog_pace)
+
     em_gap   = fav_em - dog_em
     tier     = f"{min(fav_seed, dog_seed)}_vs_{max(fav_seed, dog_seed)}"
     rate     = seed_rates.get(tier, {})
@@ -423,6 +456,15 @@ def _tourn_r1_profile(
         v.append(f"dog_surging({dog_mom:+.1f})")
     if tier in _DOG_ADVANTAGE_TIERS and dog_cov is not None and float(dog_cov) >= 55:
         v.append(f"seed_fade_angle({tier} dog={dog_cov:.0f}%_ATS)")
+    # Structural vulnerability signals
+    if dog_tov <= _TOV_SAFE:
+        v.append(f"dog_ball_secure(TOV={dog_tov:.1f}%)")
+    if fav_tov >= _TOV_SLOPPY:
+        v.append(f"fav_sloppy_ball(TOV={fav_tov:.1f}%)")
+    if fav_luck >= _LUCK_HIGH:
+        v.append(f"fav_luck_regression(luck={fav_luck:+.3f})")
+    if pace_diff >= _PACE_MISMATCH:
+        v.append(f"pace_mismatch({fav_pace:.0f}v{dog_pace:.0f})")
     if v:
         flags.append(f"VULNERABLE_FAV({fav_team}): " + " | ".join(v))
 
@@ -438,8 +480,36 @@ def _tourn_r1_profile(
         d.append(f"close_efficiency(gap={em_gap:+.1f})")
     if tier in _DOG_ADVANTAGE_TIERS and dog_cov is not None and float(dog_cov) >= 55:
         d.append(f"historical_edge(dog={dog_cov:.0f}%_ATS)")
+    # Structural dog-cover signals
+    if dog_tov <= _TOV_SAFE:
+        d.append(f"ball_security(TOV={dog_tov:.1f}%)")
+    if dog_drpi >= _DRPI_SOLID:
+        d.append(f"solid_rebounding(DRPI={dog_drpi:.0f})")
+    elif dog_orb >= _OREB_THREAT:
+        d.append(f"oreb_threat(ORB={dog_orb:.1f}%)")
+    if dog_ftr >= _FTR_DRIVER and fav_ftr <= _FTR_LOW_FAV:
+        d.append(f"paint_access(dog_FTR={dog_ftr:.2f}_fav={fav_ftr:.2f})")
+    elif dog_ftr >= _FTR_DRIVER:
+        d.append(f"drives_paint(FTR={dog_ftr:.2f})")
+    if pace_diff >= _PACE_MISMATCH:
+        d.append(f"style_clash({fav_pace:.0f}v{dog_pace:.0f})")
     if d:
         flags.append(f"LIVE_DOG({dog_team}): " + " | ".join(d))
+
+    # ── MATCHUP VOLATILITY ───────────────────────────────────────────────────
+    # Informational: structural factors that raise game variance regardless of pick side.
+    # Fires only when 2+ variance signals are present.
+    mv: list[str] = []
+    if pace_diff >= _PACE_MISMATCH:
+        mv.append(f"pace_clash({fav_pace:.0f}v{dog_pace:.0f})")
+    if fav_3par >= _THREE_PAR_HIGH:
+        mv.append(f"fav_3pt_heavy({fav_3par:.0f}%_3PA)")
+    if dog_3par >= _THREE_PAR_HIGH:
+        mv.append(f"dog_3pt_heavy({dog_3par:.0f}%_3PA)")
+    if fav_luck >= _LUCK_HIGH:
+        mv.append(f"fav_luck_risk(score={fav_luck:+.3f})")
+    if len(mv) >= 2:
+        flags.append("MATCHUP_VOLATILITY: " + " | ".join(mv))
 
     # ── BIG FAV COVERS ──────────────────────────────────────────────────────
     # Requires at least 2 converging signals to fire (avoid noise)
@@ -576,6 +646,288 @@ def _backtest_for_signals(signals: list[str], backtest: dict) -> tuple[str, str]
     return (f"{best_pct:.1f}%" if best_pct else ""), " | ".join(parts)
 
 
+# ── Model + flag alignment backtest ───────────────────────────────────────────
+
+_BT_RESULTS_PATH = Path("data/backtest_results_latest.csv")
+
+# Bucket labels — model confidence × trend alignment level
+_MF_BUCKET_ORDER = [
+    "model_HIGH+STRONG",
+    "model_HIGH+AGREE",
+    "model_HIGH_MED+STRONG",
+    "model_HIGH_MED+AGREE",
+    "model_any+STRONG",
+    "model_any+AGREE",
+    "model_HIGH",
+    "model_HIGH_MED",
+    "model_any",
+]
+
+
+def _model_only_buckets(bt: pd.DataFrame, conf_col: str | None) -> dict[str, dict]:
+    """Return model-only hit rate buckets when trend data is unavailable."""
+    buckets: dict[str, list[int]] = {}
+    for _, row in bt.iterrows():
+        correct = int(row["_model_correct"])
+        conf = str(row[conf_col]).upper().strip() if conf_col else "UNKNOWN"
+        buckets.setdefault("model_any", []).append(correct)
+        if conf == "HIGH":
+            buckets.setdefault("model_HIGH", []).append(correct)
+        if conf in ("HIGH", "MED"):
+            buckets.setdefault("model_HIGH_MED", []).append(correct)
+    return {
+        k: {"hit_pct": round(sum(v) / len(v) * 100, 1), "n_games": len(v)}
+        for k, v in buckets.items()
+        if len(v) >= MIN_BT_GAMES
+    }
+
+
+def _compute_model_flag_backtest(
+    backtest_path: Path,
+    gl_path: Path,
+) -> dict[str, dict]:
+    """
+    Compute ATS hit rates for model picks segmented by trend alignment level.
+
+    Joins backtest_results_latest.csv (model predictions + actual ATS outcomes)
+    with trend signals reconstructed from team_game_weighted.csv.
+
+    Bucket keys (model confidence × trend agreement):
+        "model_any"             — all model picks (baseline)
+        "model_HIGH"            — HIGH confidence only
+        "model_HIGH_MED"        — HIGH or MED confidence
+        "model_any+AGREE"       — model + ≥1 trend signal aligns
+        "model_HIGH+AGREE"      — HIGH conf + trend AGREE
+        "model_HIGH_MED+AGREE"  — HIGH/MED conf + trend AGREE
+        "model_any+STRONG"      — model + ≥2 trend signals align (STRONG AGREE)
+        "model_HIGH+STRONG"     — HIGH conf + STRONG AGREE
+        "model_HIGH_MED+STRONG" — HIGH/MED conf + STRONG AGREE
+        "model_HIGH+NO_TREND"   — HIGH conf, trend PARTIAL/absent (contrast bucket)
+
+    Returns dict[key → {"hit_pct": float, "n_games": int}].
+    """
+    if not backtest_path.exists() or not gl_path.exists():
+        return {}
+
+    try:
+        bt = pd.read_csv(backtest_path, low_memory=False)
+    except Exception:
+        return {}
+
+    # ── Discover columns ───────────────────────────────────────────────────────
+    edge_col = next(
+        (c for c in ["spread_edge", "ens_spread", "pred_margin_ATS", "pred_home_spread"]
+         if c in bt.columns),
+        None,
+    )
+    outcome_col = next(
+        (c for c in ["actual_margin_ATS", "ats_result", "home_cover_margin"]
+         if c in bt.columns),
+        None,
+    )
+    conf_col = next(
+        (c for c in ["ens_confidence", "spread_conf"] if c in bt.columns), None
+    )
+    bt_eid_col = "event_id" if "event_id" in bt.columns else None
+    bt_htid = next((c for c in ["home_team_id", "home_id"] if c in bt.columns), None)
+    bt_atid = next((c for c in ["away_team_id", "away_id"] if c in bt.columns), None)
+
+    if not edge_col or not outcome_col:
+        return {}
+
+    bt = bt.copy()
+    bt[edge_col]    = pd.to_numeric(bt[edge_col],    errors="coerce")
+    bt[outcome_col] = pd.to_numeric(bt[outcome_col], errors="coerce")
+    bt = bt.dropna(subset=[edge_col, outcome_col])
+    bt = bt[bt[edge_col].abs() >= 0.5]   # require directional conviction
+    if bt.empty:
+        return {}
+
+    # model_correct: edge > 0 predicts home covers (actual_margin_ATS > 0)
+    bt["_model_dir"]     = (bt[edge_col] > 0).astype(int)
+    bt["_home_covered"]  = (bt[outcome_col] > 0).astype(int)
+    bt["_model_correct"] = (bt["_model_dir"] == bt["_home_covered"]).astype(int)
+    if conf_col:
+        bt[conf_col] = bt[conf_col].astype(str).str.strip().str.upper()
+
+    # ── Build per-game trend signals from game log ─────────────────────────────
+    try:
+        gl = pd.read_csv(gl_path, low_memory=False)
+    except Exception:
+        return _model_only_buckets(bt, conf_col)
+
+    date_col = next((c for c in ["game_datetime_utc", "game_date", "date"] if c in gl.columns), None)
+    ha_col   = next((c for c in ["home_away", "is_home", "location"]        if c in gl.columns), None)
+    rtg_col  = next((c for c in ["adj_net_rtg", "net_rtg"]                  if c in gl.columns), None)
+    opp_col  = next((c for c in ["opponent_id", "opponent"]                  if c in gl.columns), None)
+    eid_col  = "event_id" if "event_id" in gl.columns else None
+
+    if not all([date_col, ha_col, rtg_col, opp_col, "team_id" in gl.columns]):
+        return _model_only_buckets(bt, conf_col)
+
+    gl = gl.copy()
+    gl["team_id"] = gl["team_id"].astype(str)
+    gl[opp_col]   = gl[opp_col].astype(str)
+    gl[rtg_col]   = pd.to_numeric(gl[rtg_col], errors="coerce")
+    gl[date_col]  = pd.to_datetime(gl[date_col], errors="coerce", utc=True)
+    gl = gl.dropna(subset=["team_id", rtg_col, date_col]).sort_values(["team_id", date_col])
+
+    # Compute L6/L11 rolling trend (shifted 1 game — leak-free)
+    chunks: list[pd.DataFrame] = []
+    for _, grp in gl.groupby("team_id", sort=False):
+        grp = grp.sort_values(date_col).copy()
+        shifted = grp[rtg_col].shift(1)
+        grp["_trend"] = (
+            shifted.rolling(L_RECENT, min_periods=L_RECENT).mean()
+            - shifted.rolling(L_BASE,   min_periods=L_RECENT).mean()
+        ).values
+        chunks.append(grp)
+
+    gl = pd.concat(chunks, ignore_index=True).dropna(subset=["_trend"])
+
+    def _is_home_val(v) -> bool | None:
+        s = str(v).strip().lower()
+        if s in {"home", "1", "true"}:          return True
+        if s in {"away", "0", "false", "road"}: return False
+        return None
+
+    gl["_is_home"] = gl[ha_col].apply(_is_home_val)
+    gl = gl.dropna(subset=["_is_home"])
+
+    keep = ["team_id", opp_col, "_trend", "_is_home"] + ([eid_col] if eid_col else [])
+    home_df = gl[gl["_is_home"] == True][keep].copy()
+    away_df = gl[gl["_is_home"] == False][
+        ["team_id", opp_col, "_trend"] + ([eid_col] if eid_col else [])
+    ].copy()
+
+    home_df = home_df.rename(columns={"team_id": "h_id", opp_col: "a_id", "_trend": "h_trend"})
+    away_df = away_df.rename(columns={"team_id": "a_id", opp_col: "h_id", "_trend": "a_trend"})
+
+    if eid_col:
+        game_trends = home_df.merge(away_df, on=[eid_col, "h_id", "a_id"], how="inner")
+    else:
+        game_trends = home_df.merge(away_df, on=["h_id", "a_id"], how="inner")
+
+    if game_trends.empty:
+        return _model_only_buckets(bt, conf_col)
+
+    # ── Join backtest with trend data ─────────────────────────────────────────
+    if bt_eid_col and eid_col:
+        bt[bt_eid_col]       = bt[bt_eid_col].astype(str)
+        game_trends[eid_col] = game_trends[eid_col].astype(str)
+        trend_cols = [eid_col, "h_trend", "a_trend"]
+        merged = bt.merge(game_trends[trend_cols], left_on=bt_eid_col, right_on=eid_col, how="inner")
+    elif bt_htid and bt_atid:
+        bt[bt_htid] = bt[bt_htid].astype(str)
+        bt[bt_atid] = bt[bt_atid].astype(str)
+        game_trends["h_id"] = game_trends["h_id"].astype(str)
+        game_trends["a_id"] = game_trends["a_id"].astype(str)
+        merged = bt.merge(
+            game_trends[["h_id", "a_id", "h_trend", "a_trend"]],
+            left_on=[bt_htid, bt_atid],
+            right_on=["h_id", "a_id"],
+            how="inner",
+        )
+    else:
+        return _model_only_buckets(bt, conf_col)
+
+    if merged.empty:
+        return _model_only_buckets(bt, conf_col)
+
+    # ── Compute hit rates per (model_conf × agreement) bucket ─────────────────
+    buckets: dict[str, list[int]] = {}
+
+    for _, row in merged.iterrows():
+        correct  = int(row["_model_correct"])
+        conf     = str(row[conf_col]).upper().strip() if conf_col else "UNKNOWN"
+        edge_dir = int(row["_model_dir"])   # 1=home, 0=away
+        h_trend  = float(row["h_trend"])
+        a_trend  = float(row["a_trend"])
+
+        # Use actual model direction sign when computing agreement
+        edge_proxy = 1.0 if edge_dir == 1 else -1.0
+        signals    = _classify_active_trends(h_trend, a_trend)
+        agree      = _agreement_level(edge_proxy, signals)
+
+        # Baseline (no trend filter)
+        buckets.setdefault("model_any", []).append(correct)
+        if conf == "HIGH":
+            buckets.setdefault("model_HIGH", []).append(correct)
+        if conf in ("HIGH", "MED"):
+            buckets.setdefault("model_HIGH_MED", []).append(correct)
+
+        # AGREE or better (at least 1 supporting trend signal)
+        if agree in ("AGREE", "STRONG AGREE"):
+            buckets.setdefault("model_any+AGREE", []).append(correct)
+            if conf == "HIGH":
+                buckets.setdefault("model_HIGH+AGREE", []).append(correct)
+            if conf in ("HIGH", "MED"):
+                buckets.setdefault("model_HIGH_MED+AGREE", []).append(correct)
+
+        # STRONG AGREE (≥2 supporting trend signals)
+        if agree == "STRONG AGREE":
+            buckets.setdefault("model_any+STRONG", []).append(correct)
+            if conf == "HIGH":
+                buckets.setdefault("model_HIGH+STRONG", []).append(correct)
+            if conf in ("HIGH", "MED"):
+                buckets.setdefault("model_HIGH_MED+STRONG", []).append(correct)
+
+        # Contrast bucket: HIGH conf with no trend support
+        if conf == "HIGH" and agree == "PARTIAL":
+            buckets.setdefault("model_HIGH+NO_TREND", []).append(correct)
+
+    return {
+        k: {"hit_pct": round(sum(v) / len(v) * 100, 1), "n_games": len(v)}
+        for k, v in buckets.items()
+        if len(v) >= MIN_BT_GAMES
+    }
+
+
+def _fmt_model_flag_stat(
+    conf: str,
+    agree_level: str,
+    mf_bt: dict[str, dict],
+) -> tuple[str, str, str]:
+    """
+    Return (baseline_str, aligned_str, uplift_str) for a game's conf+agree_level.
+
+    baseline_str: model-only hit rate string ("54.8% (n=612)")
+    aligned_str:  model+flag hit rate string  ("63.1% (n=94)")
+    uplift_str:   difference                  ("+8.3%")
+    """
+    # Pick the most specific baseline and aligned bucket for this game
+    if conf == "HIGH":
+        base_key    = "model_HIGH"
+        agree_key   = "model_HIGH+AGREE"  if agree_level in ("AGREE", "STRONG AGREE") else ""
+        strong_key  = "model_HIGH+STRONG" if agree_level == "STRONG AGREE" else ""
+    elif conf == "MED":
+        base_key    = "model_HIGH_MED"
+        agree_key   = "model_HIGH_MED+AGREE"  if agree_level in ("AGREE", "STRONG AGREE") else ""
+        strong_key  = "model_HIGH_MED+STRONG" if agree_level == "STRONG AGREE" else ""
+    else:
+        base_key    = "model_any"
+        agree_key   = "model_any+AGREE"   if agree_level in ("AGREE", "STRONG AGREE") else ""
+        strong_key  = "model_any+STRONG"  if agree_level == "STRONG AGREE" else ""
+
+    def _fmt(key: str) -> str:
+        if not key or key not in mf_bt:
+            return ""
+        d = mf_bt[key]
+        return f"{d['hit_pct']:.1f}% (n={d['n_games']})"
+
+    base_str   = _fmt(base_key)
+    # Prefer STRONG over AGREE when available
+    aligned_key = strong_key if (strong_key and strong_key in mf_bt) else agree_key
+    aligned_str = _fmt(aligned_key)
+
+    uplift_str = ""
+    if base_str and aligned_str and base_key in mf_bt and aligned_key in mf_bt:
+        delta = mf_bt[aligned_key]["hit_pct"] - mf_bt[base_key]["hit_pct"]
+        uplift_str = f"{delta:+.1f}%"
+
+    return base_str, aligned_str, uplift_str
+
+
 # ── Game time ─────────────────────────────────────────────────────────────────
 
 def _load_game_times(times_path: Path) -> dict[tuple[str, str], str]:
@@ -615,6 +967,17 @@ def main() -> int:
             print(f"  {sig}: {d['hit_pct']}% ATS (n={d['n_games']})")
     else:
         print("[WARN] Trend backtest unavailable — cover_margin or game log missing")
+
+    # ── Model + flag alignment backtest ───────────────────────────────────────
+    mf_bt = _compute_model_flag_backtest(_BT_RESULTS_PATH, gl_path)
+    if mf_bt:
+        print(f"[INFO] Model+flag alignment backtest: {len(mf_bt)} buckets")
+        for key in _MF_BUCKET_ORDER:
+            if key in mf_bt:
+                d = mf_bt[key]
+                print(f"  {key}: {d['hit_pct']}% ATS (n={d['n_games']})")
+    else:
+        print("[WARN] Model+flag backtest unavailable — backtest_results_latest.csv missing or no joinable event_ids")
 
     # ── March Madness seed context + R1 profiles ──────────────────────────────
     tourn_rates = _load_tourn_seed_rates()
@@ -674,6 +1037,7 @@ def main() -> int:
         multi_trend    = len(signals) >= 2
 
         hit_pct_str, hit_detail = _backtest_for_signals(signals, backtest)
+        mf_base, mf_aligned, mf_uplift = _fmt_model_flag_stat(conf, agree_level, mf_bt)
 
         total_pick = str(row.get("total_pick", "PASS")).strip()
         total_conf = str(row.get("total_conf", ""))
@@ -715,6 +1079,9 @@ def main() -> int:
             "netrtg_trend_away":      round(a, 2),
             "trend_hit_pct":          hit_pct_str,
             "trend_hit_detail":       hit_detail,
+            "model_baseline_hit_pct": mf_base,
+            "model_flag_hit_pct":     mf_aligned,
+            "model_flag_uplift":      mf_uplift,
             "tourn_seed_signal":      tourn_sig,
             "tourn_r1_profile":       r1_profile,
             "trend_flag":             trend_flag_tx,
@@ -732,7 +1099,9 @@ def main() -> int:
         "model_predicted_margin", "agreement_level", "trend_team_pick",
         "trend_direction", "active_trends", "multi_trend", "trend_strength",
         "netrtg_trend_home", "netrtg_trend_away",
-        "trend_hit_pct", "trend_hit_detail", "tourn_seed_signal", "tourn_r1_profile",
+        "trend_hit_pct", "trend_hit_detail",
+        "model_baseline_hit_pct", "model_flag_hit_pct", "model_flag_uplift",
+        "tourn_seed_signal", "tourn_r1_profile",
         "trend_flag", "trend_flag_pick", "key_signal", "key_signal_pick",
         "total_pick", "total_conf", "total_edge",
     ]
@@ -794,12 +1163,22 @@ def main() -> int:
 
         # vs_model: does trend agree with model pick?
         model_pick = str(row.get("model_pick", "PASS")).strip()
+        model_conf_pure = str(row.get("spread_conf", "")).strip().upper()
         if model_pick == "PASS":
             vs_model = "NO_MODEL_PICK"
+            mf_base_p, mf_aligned_p, mf_uplift_p = "", "", ""
         else:
             edge = float(pd.to_numeric(row.get("spread_edge", 0), errors="coerce") or 0)
             trend_agrees = _trend_aligns(edge, h, a)
             vs_model = "AGREES" if trend_agrees else "DISAGREES"
+            # Only show model+flag hit rates when trend and model agree
+            if vs_model == "AGREES":
+                align_level = "STRONG AGREE" if multi_trend else "AGREE"
+                mf_base_p, mf_aligned_p, mf_uplift_p = _fmt_model_flag_stat(
+                    model_conf_pure, align_level, mf_bt
+                )
+            else:
+                mf_base_p, mf_aligned_p, mf_uplift_p = "", "", ""
 
         # trend_team_pick for pure CSV uses edge=0 proxy: side determines direction
         pure_edge = 1.0 if side == "home" else -1.0
@@ -815,32 +1194,37 @@ def main() -> int:
             home, away, h_seed_val, a_seed_val, pure_edge, cage_lookup, tourn_rates,
         )
         pure_rows.append({
-            "game_date":         str(row.get("game_date", ""))[:10],
-            "game_time_et":      game_time_et,
-            "away_team":         away,
-            "home_team":         home,
-            "vegas_spread":      vegas_spread,
-            "trend_pick":        trend_pick,
-            "trend_team_pick":   _trend_team_pick(home, away, h, a, pure_edge),
-            "trend_conf":        trend_conf,
-            "active_trends":     active_str,
-            "multi_trend":       multi_trend,
-            "trend_hit_pct":     hit_pct_str,
-            "trend_hit_detail":  hit_detail,
-            "tourn_seed_signal": tourn_sig,
-            "tourn_r1_profile":  r1_profile,
-            "netrtg_trend_home": round(h, 2),
-            "netrtg_trend_away": round(a, 2),
-            "vs_model":          vs_model,
-            "model_pick":        model_pick if model_pick != "PASS" else "",
-            "spread_conf":       str(row.get("spread_conf", "")),
-            "spread_edge":       round(pure_edge_for_model, 1),
+            "game_date":              str(row.get("game_date", ""))[:10],
+            "game_time_et":           game_time_et,
+            "away_team":              away,
+            "home_team":              home,
+            "vegas_spread":           vegas_spread,
+            "trend_pick":             trend_pick,
+            "trend_team_pick":        _trend_team_pick(home, away, h, a, pure_edge),
+            "trend_conf":             trend_conf,
+            "active_trends":          active_str,
+            "multi_trend":            multi_trend,
+            "trend_hit_pct":          hit_pct_str,
+            "trend_hit_detail":       hit_detail,
+            "model_baseline_hit_pct": mf_base_p,
+            "model_flag_hit_pct":     mf_aligned_p,
+            "model_flag_uplift":      mf_uplift_p,
+            "tourn_seed_signal":      tourn_sig,
+            "tourn_r1_profile":       r1_profile,
+            "netrtg_trend_home":      round(h, 2),
+            "netrtg_trend_away":      round(a, 2),
+            "vs_model":               vs_model,
+            "model_pick":             model_pick if model_pick != "PASS" else "",
+            "spread_conf":            model_conf_pure,
+            "spread_edge":            round(pure_edge_for_model, 1),
         })
 
     _EMPTY_PURE_COLS = [
         "game_date", "game_time_et", "away_team", "home_team", "vegas_spread",
         "trend_pick", "trend_team_pick", "trend_conf", "active_trends", "multi_trend",
-        "trend_hit_pct", "trend_hit_detail", "tourn_seed_signal", "tourn_r1_profile",
+        "trend_hit_pct", "trend_hit_detail",
+        "model_baseline_hit_pct", "model_flag_hit_pct", "model_flag_uplift",
+        "tourn_seed_signal", "tourn_r1_profile",
         "netrtg_trend_home", "netrtg_trend_away",
         "vs_model", "model_pick", "spread_conf", "spread_edge",
     ]
