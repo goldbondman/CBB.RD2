@@ -1,5 +1,5 @@
 # CAGE Standalone ATS Predictor Backtest
-_Generated 2026-03-08 08:43 UTC_
+_Generated 2026-03-08 14:30 UTC_
 
 **Dataset**: 3,297 games (SU), 88 games with market spread (ATS)  
 **CAGE model**: `cagerankings_spread` sub-model (one of 7 ensemble components)  
