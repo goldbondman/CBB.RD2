@@ -32,18 +32,44 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401825553,,356,2483,Illinois Fighting Illini,Oregon Ducks,consensus,,-18.5,-18.5,,145.5,145.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:56.846805+00:00,2026-03-03 23:35:56.846805+00:00,OK
 401825554,,26,158,UCLA Bruins,Nebraska Cornhuskers,consensus,,-1.5,-1.5,,144.5,144.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:59.980094+00:00,2026-03-03 23:35:59.980094+00:00,OK
 401825556,,77,2509,Northwestern Wildcats,Purdue Boilermakers,consensus,,11.5,11.5,,146.5,146.5,,,ESPN,market_lines.csv,2,2026-03-04 17:51:39.511563+00:00,2026-03-04 17:51:39.511563+00:00,OK
+401825567,,120,356,Maryland Terrapins,Illinois Fighting Illini,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:35.450833+00:00,2026-03-08 20:36:35.450833+00:00,MISSING
+401825567,,120,356,Maryland Terrapins,Illinois Fighting Illini,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:35.450833+00:00,2026-03-08 20:36:35.450833+00:00,MISSING
+401825567,,120,356,Maryland Terrapins,Illinois Fighting Illini,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:12.019447+00:00,2026-03-08 19:31:12.019447+00:00,MISSING
+401825567,,120,356,Maryland Terrapins,Illinois Fighting Illini,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:12.019447+00:00,2026-03-08 19:31:12.019447+00:00,MISSING
+401825567,,120,356,Maryland Terrapins,Illinois Fighting Illini,consensus,,14.5,14.5,,145.5,145.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:53:58.511528+00:00,2026-03-08 18:53:58.511528+00:00,OK
+401825567,,120,356,Maryland Terrapins,Illinois Fighting Illini,consensus,,14.5,14.5,,145.5,145.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:53:58.511528+00:00,2026-03-08 18:53:58.511528+00:00,OK
 401825567,,120,356,Maryland Terrapins,Illinois Fighting Illini,consensus,,14.5,14.5,,143.5,143.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:37.416074+00:00,2026-03-08 17:31:37.416074+00:00,OK
 401825567,,120,356,Maryland Terrapins,Illinois Fighting Illini,consensus,,14.5,14.5,,143.5,143.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:37.416074+00:00,2026-03-08 17:31:37.416074+00:00,OK
 401825567,,120,356,Maryland Terrapins,Illinois Fighting Illini,consensus,,14.5,14.5,,145.5,145.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:39:59.711617+00:00,2026-03-08 16:39:59.711617+00:00,OK
 401825567,,120,356,Maryland Terrapins,Illinois Fighting Illini,consensus,,14.5,14.5,,145.5,145.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:39:59.711617+00:00,2026-03-08 16:39:59.711617+00:00,OK
 401825567,,120,356,Maryland Terrapins,Illinois Fighting Illini,consensus,,15.5,15.5,,145.5,145.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:48.068308+00:00,2026-03-08 15:32:48.068308+00:00,OK
 401825567,,120,356,Maryland Terrapins,Illinois Fighting Illini,consensus,,15.5,15.5,,145.5,145.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:48.068308+00:00,2026-03-08 15:32:48.068308+00:00,OK
+401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:47.732296+00:00,2026-03-08 22:33:47.732296+00:00,MISSING
+401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 22:33:47.732296+00:00,2026-03-08 22:33:47.732296+00:00,MISSING
+401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:11.611604+00:00,2026-03-08 21:32:11.611604+00:00,MISSING
+401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:11.611604+00:00,2026-03-08 21:32:11.611604+00:00,MISSING
+401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,-10.5,-10.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:39.347304+00:00,2026-03-08 20:36:39.347304+00:00,OK
+401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,-10.5,-10.5,,152.5,152.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:39.347304+00:00,2026-03-08 20:36:39.347304+00:00,OK
+401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,-10.5,-10.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:17.465337+00:00,2026-03-08 19:31:17.465337+00:00,OK
+401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,-10.5,-10.5,,152.5,152.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:17.465337+00:00,2026-03-08 19:31:17.465337+00:00,OK
+401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,-9.5,-9.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:05.340049+00:00,2026-03-08 18:54:05.340049+00:00,OK
+401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,-9.5,-9.5,,152.5,152.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:05.340049+00:00,2026-03-08 18:54:05.340049+00:00,OK
 401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,-9.5,-9.5,,151.5,151.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:41.443935+00:00,2026-03-08 17:31:41.443935+00:00,OK
 401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,-9.5,-9.5,,151.5,151.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:41.443935+00:00,2026-03-08 17:31:41.443935+00:00,OK
 401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,-9.5,-9.5,,151.5,151.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:08.796004+00:00,2026-03-08 16:40:08.796004+00:00,OK
 401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,-9.5,-9.5,,151.5,151.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:08.796004+00:00,2026-03-08 16:40:08.796004+00:00,OK
 401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,-9.5,-9.5,,150.5,150.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:56.683403+00:00,2026-03-08 15:32:56.683403+00:00,OK
 401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,-9.5,-9.5,,150.5,150.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:56.683403+00:00,2026-03-08 15:32:56.683403+00:00,OK
+401825569,,158,2294,Nebraska Cornhuskers,Iowa Hawkeyes,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:49.072870+00:00,2026-03-08 22:33:49.072870+00:00,MISSING
+401825569,,158,2294,Nebraska Cornhuskers,Iowa Hawkeyes,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 22:33:49.072870+00:00,2026-03-08 22:33:49.072870+00:00,MISSING
+401825569,,158,2294,Nebraska Cornhuskers,Iowa Hawkeyes,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:12.174858+00:00,2026-03-08 21:32:12.174858+00:00,MISSING
+401825569,,158,2294,Nebraska Cornhuskers,Iowa Hawkeyes,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:12.174858+00:00,2026-03-08 21:32:12.174858+00:00,MISSING
+401825569,,158,2294,Nebraska Cornhuskers,Iowa Hawkeyes,consensus,,-5.5,-5.5,,136.5,136.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:39.892350+00:00,2026-03-08 20:36:39.892350+00:00,OK
+401825569,,158,2294,Nebraska Cornhuskers,Iowa Hawkeyes,consensus,,-5.5,-5.5,,136.5,136.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:39.892350+00:00,2026-03-08 20:36:39.892350+00:00,OK
+401825569,,158,2294,Nebraska Cornhuskers,Iowa Hawkeyes,consensus,,-5.5,-5.5,,136.5,136.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:17.947090+00:00,2026-03-08 19:31:17.947090+00:00,OK
+401825569,,158,2294,Nebraska Cornhuskers,Iowa Hawkeyes,consensus,,-5.5,-5.5,,136.5,136.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:17.947090+00:00,2026-03-08 19:31:17.947090+00:00,OK
+401825569,,158,2294,Nebraska Cornhuskers,Iowa Hawkeyes,consensus,,-5.5,-5.5,,136.5,136.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:06.225638+00:00,2026-03-08 18:54:06.225638+00:00,OK
+401825569,,158,2294,Nebraska Cornhuskers,Iowa Hawkeyes,consensus,,-5.5,-5.5,,136.5,136.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:06.225638+00:00,2026-03-08 18:54:06.225638+00:00,OK
 401825569,,158,2294,Nebraska Cornhuskers,Iowa Hawkeyes,consensus,,-5.5,-5.5,,134.5,134.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:42.123297+00:00,2026-03-08 17:31:42.123297+00:00,OK
 401825569,,158,2294,Nebraska Cornhuskers,Iowa Hawkeyes,consensus,,-5.5,-5.5,,134.5,134.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:42.123297+00:00,2026-03-08 17:31:42.123297+00:00,OK
 401825569,,158,2294,Nebraska Cornhuskers,Iowa Hawkeyes,consensus,,-5.5,-5.5,,134.5,134.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:10.238314+00:00,2026-03-08 16:40:10.238314+00:00,OK
@@ -71,30 +97,56 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401827715,,9,2305,Arizona State Sun Devils,Kansas Jayhawks,consensus,,5.5,5.5,,150.5,150.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:57.901453+00:00,2026-03-03 23:35:57.901453+00:00,OK
 401827719,,2641,2628,Texas Tech Red Raiders,TCU Horned Frogs,consensus,,-8.5,-8.5,,147.5,147.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:50.360601+00:00,2026-03-03 23:35:50.360601+00:00,OK
 401827721,,248,239,Houston Cougars,Baylor Bears,consensus,,-15.5,-15.5,,141.5,141.5,,,ESPN,market_lines.csv,2,2026-03-04 17:51:40.971805+00:00,2026-03-04 17:51:40.971805+00:00,OK
+401828262,,5,151,UAB Blazers,East Carolina Pirates,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:37.781619+00:00,2026-03-08 20:36:37.781619+00:00,MISSING
+401828262,,5,151,UAB Blazers,East Carolina Pirates,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:37.781619+00:00,2026-03-08 20:36:37.781619+00:00,MISSING
+401828262,,5,151,UAB Blazers,East Carolina Pirates,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:16.017127+00:00,2026-03-08 19:31:16.017127+00:00,MISSING
+401828262,,5,151,UAB Blazers,East Carolina Pirates,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:16.017127+00:00,2026-03-08 19:31:16.017127+00:00,MISSING
+401828262,,5,151,UAB Blazers,East Carolina Pirates,consensus,,-10.5,-10.5,,151.5,151.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:02.553587+00:00,2026-03-08 18:54:02.553587+00:00,OK
+401828262,,5,151,UAB Blazers,East Carolina Pirates,consensus,,-10.5,-10.5,,151.5,151.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:02.553587+00:00,2026-03-08 18:54:02.553587+00:00,OK
 401828262,,5,151,UAB Blazers,East Carolina Pirates,consensus,,-10.5,-10.5,,150.5,150.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:39.439760+00:00,2026-03-08 17:31:39.439760+00:00,OK
 401828262,,5,151,UAB Blazers,East Carolina Pirates,consensus,,-10.5,-10.5,,150.5,150.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:39.439760+00:00,2026-03-08 17:31:39.439760+00:00,OK
 401828262,,5,151,UAB Blazers,East Carolina Pirates,consensus,,-10.5,-10.5,,149.5,149.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:04.316893+00:00,2026-03-08 16:40:04.316893+00:00,OK
 401828262,,5,151,UAB Blazers,East Carolina Pirates,consensus,,-10.5,-10.5,,149.5,149.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:04.316893+00:00,2026-03-08 16:40:04.316893+00:00,OK
 401828262,,5,151,UAB Blazers,East Carolina Pirates,consensus,,-10.5,-10.5,,148.5,148.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:52.433678+00:00,2026-03-08 15:32:52.433678+00:00,OK
 401828262,,5,151,UAB Blazers,East Carolina Pirates,consensus,,-10.5,-10.5,,148.5,148.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:52.433678+00:00,2026-03-08 15:32:52.433678+00:00,OK
+401828263,,58,2429,South Florida Bulls,Charlotte 49ers,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:14.075307+00:00,2026-03-08 19:31:14.075307+00:00,MISSING
+401828263,,58,2429,South Florida Bulls,Charlotte 49ers,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:14.075307+00:00,2026-03-08 19:31:14.075307+00:00,MISSING
+401828263,,58,2429,South Florida Bulls,Charlotte 49ers,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:53:57.581007+00:00,2026-03-08 18:53:57.581007+00:00,MISSING
+401828263,,58,2429,South Florida Bulls,Charlotte 49ers,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 18:53:57.581007+00:00,2026-03-08 18:53:57.581007+00:00,MISSING
 401828263,,58,2429,South Florida Bulls,Charlotte 49ers,consensus,,-16.5,-16.5,,156.5,156.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:36.056792+00:00,2026-03-08 17:31:36.056792+00:00,OK
 401828263,,58,2429,South Florida Bulls,Charlotte 49ers,consensus,,-16.5,-16.5,,156.5,156.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:36.056792+00:00,2026-03-08 17:31:36.056792+00:00,OK
 401828263,,58,2429,South Florida Bulls,Charlotte 49ers,consensus,,-16.5,-16.5,,156.5,156.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:39:56.780101+00:00,2026-03-08 16:39:56.780101+00:00,OK
 401828263,,58,2429,South Florida Bulls,Charlotte 49ers,consensus,,-16.5,-16.5,,156.5,156.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:39:56.780101+00:00,2026-03-08 16:39:56.780101+00:00,OK
 401828263,,58,2429,South Florida Bulls,Charlotte 49ers,consensus,,-16.5,-16.5,,153.5,153.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:45.228335+00:00,2026-03-08 15:32:45.228335+00:00,OK
 401828263,,58,2429,South Florida Bulls,Charlotte 49ers,consensus,,-16.5,-16.5,,153.5,153.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:45.228335+00:00,2026-03-08 15:32:45.228335+00:00,OK
+401828264,,2655,235,Tulane Green Wave,Memphis Tigers,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:13.583011+00:00,2026-03-08 19:31:13.583011+00:00,MISSING
+401828264,,2655,235,Tulane Green Wave,Memphis Tigers,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:13.583011+00:00,2026-03-08 19:31:13.583011+00:00,MISSING
+401828264,,2655,235,Tulane Green Wave,Memphis Tigers,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:53:56.216282+00:00,2026-03-08 18:53:56.216282+00:00,MISSING
+401828264,,2655,235,Tulane Green Wave,Memphis Tigers,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 18:53:56.216282+00:00,2026-03-08 18:53:56.216282+00:00,MISSING
 401828264,,2655,235,Tulane Green Wave,Memphis Tigers,consensus,,2.5,2.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:35.378266+00:00,2026-03-08 17:31:35.378266+00:00,OK
 401828264,,2655,235,Tulane Green Wave,Memphis Tigers,consensus,,2.5,2.5,,152.5,152.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:35.378266+00:00,2026-03-08 17:31:35.378266+00:00,OK
 401828264,,2655,235,Tulane Green Wave,Memphis Tigers,consensus,,1.5,1.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:39:55.063300+00:00,2026-03-08 16:39:55.063300+00:00,OK
 401828264,,2655,235,Tulane Green Wave,Memphis Tigers,consensus,,1.5,1.5,,152.5,152.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:39:55.063300+00:00,2026-03-08 16:39:55.063300+00:00,OK
 401828264,,2655,235,Tulane Green Wave,Memphis Tigers,consensus,,1.5,1.5,,151.5,151.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:43.801391+00:00,2026-03-08 15:32:43.801391+00:00,OK
 401828264,,2655,235,Tulane Green Wave,Memphis Tigers,consensus,,1.5,1.5,,151.5,151.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:43.801391+00:00,2026-03-08 15:32:43.801391+00:00,OK
+401828265,,242,2636,Rice Owls,UTSA Roadrunners,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:37.249948+00:00,2026-03-08 20:36:37.249948+00:00,MISSING
+401828265,,242,2636,Rice Owls,UTSA Roadrunners,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:37.249948+00:00,2026-03-08 20:36:37.249948+00:00,MISSING
+401828265,,242,2636,Rice Owls,UTSA Roadrunners,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:15.531561+00:00,2026-03-08 19:31:15.531561+00:00,MISSING
+401828265,,242,2636,Rice Owls,UTSA Roadrunners,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:15.531561+00:00,2026-03-08 19:31:15.531561+00:00,MISSING
+401828265,,242,2636,Rice Owls,UTSA Roadrunners,consensus,,-11.5,-11.5,,150.5,150.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:01.587147+00:00,2026-03-08 18:54:01.587147+00:00,OK
+401828265,,242,2636,Rice Owls,UTSA Roadrunners,consensus,,-11.5,-11.5,,150.5,150.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:01.587147+00:00,2026-03-08 18:54:01.587147+00:00,OK
 401828265,,242,2636,Rice Owls,UTSA Roadrunners,consensus,,-12.5,-12.5,,150.5,150.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:38.772482+00:00,2026-03-08 17:31:38.772482+00:00,OK
 401828265,,242,2636,Rice Owls,UTSA Roadrunners,consensus,,-12.5,-12.5,,150.5,150.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:38.772482+00:00,2026-03-08 17:31:38.772482+00:00,OK
 401828265,,242,2636,Rice Owls,UTSA Roadrunners,consensus,,-12.5,-12.5,,150.5,150.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:02.825302+00:00,2026-03-08 16:40:02.825302+00:00,OK
 401828265,,242,2636,Rice Owls,UTSA Roadrunners,consensus,,-12.5,-12.5,,150.5,150.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:02.825302+00:00,2026-03-08 16:40:02.825302+00:00,OK
 401828265,,242,2636,Rice Owls,UTSA Roadrunners,consensus,,-12.5,-12.5,,150.5,150.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:51.002777+00:00,2026-03-08 15:32:51.002777+00:00,OK
 401828265,,242,2636,Rice Owls,UTSA Roadrunners,consensus,,-12.5,-12.5,,150.5,150.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:51.002777+00:00,2026-03-08 15:32:51.002777+00:00,OK
+401828266,,202,218,Tulsa Golden Hurricane,Temple Owls,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:36.701105+00:00,2026-03-08 20:36:36.701105+00:00,MISSING
+401828266,,202,218,Tulsa Golden Hurricane,Temple Owls,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:36.701105+00:00,2026-03-08 20:36:36.701105+00:00,MISSING
+401828266,,202,218,Tulsa Golden Hurricane,Temple Owls,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:15.024295+00:00,2026-03-08 19:31:15.024295+00:00,MISSING
+401828266,,202,218,Tulsa Golden Hurricane,Temple Owls,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:15.024295+00:00,2026-03-08 19:31:15.024295+00:00,MISSING
+401828266,,202,218,Tulsa Golden Hurricane,Temple Owls,consensus,,-11.5,-11.5,,150.5,150.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:00.587090+00:00,2026-03-08 18:54:00.587090+00:00,OK
+401828266,,202,218,Tulsa Golden Hurricane,Temple Owls,consensus,,-11.5,-11.5,,150.5,150.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:00.587090+00:00,2026-03-08 18:54:00.587090+00:00,OK
 401828266,,202,218,Tulsa Golden Hurricane,Temple Owls,consensus,,-11.5,-11.5,,150.5,150.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:38.094835+00:00,2026-03-08 17:31:38.094835+00:00,OK
 401828266,,202,218,Tulsa Golden Hurricane,Temple Owls,consensus,,-11.5,-11.5,,150.5,150.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:38.094835+00:00,2026-03-08 17:31:38.094835+00:00,OK
 401828266,,202,218,Tulsa Golden Hurricane,Temple Owls,consensus,,-11.5,-11.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:01.390547+00:00,2026-03-08 16:40:01.390547+00:00,OK
@@ -105,18 +157,42 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401828443,,2168,139,,,consensus,,-4.5,-4.5,,156.5,156.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:22+00:00,2026-02-24 23:50:22+00:00,OK
 401828443,2026-02-25 00:00:00+00:00,2168,139,,,consensus,,-4.5,-4.5,,156.5,156.5,,,ESPN,market_lines_closing.csv,3,2026-02-24 23:50:22+00:00,2026-02-24 23:50:22+00:00,OK
 401828461,,139,2350,Saint Louis Billikens,Loyola Chicago Ramblers,consensus,,-22.5,-22.5,,155.5,155.5,,,ESPN,market_lines.csv,2,2026-03-04 17:51:37.968942+00:00,2026-03-04 17:51:37.968942+00:00,OK
+401851251,,2110,2511,Central Arkansas Bears,Queens University Royals,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:13.072443+00:00,2026-03-08 19:31:13.072443+00:00,MISSING
+401851251,,2110,2511,Central Arkansas Bears,Queens University Royals,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:13.072443+00:00,2026-03-08 19:31:13.072443+00:00,MISSING
+401851251,,2110,2511,Central Arkansas Bears,Queens University Royals,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:53:55.189140+00:00,2026-03-08 18:53:55.189140+00:00,MISSING
+401851251,,2110,2511,Central Arkansas Bears,Queens University Royals,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 18:53:55.189140+00:00,2026-03-08 18:53:55.189140+00:00,MISSING
 401851251,,2110,2511,Central Arkansas Bears,Queens University Royals,consensus,,-2.5,-2.5,,155.5,155.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:34.685553+00:00,2026-03-08 17:31:34.685553+00:00,OK
 401851251,,2110,2511,Central Arkansas Bears,Queens University Royals,consensus,,-2.5,-2.5,,155.5,155.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:34.685553+00:00,2026-03-08 17:31:34.685553+00:00,OK
 401851251,,2110,2511,Central Arkansas Bears,Queens University Royals,consensus,,-2.5,-2.5,,155.5,155.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:39:53.594483+00:00,2026-03-08 16:39:53.594483+00:00,OK
 401851251,,2110,2511,Central Arkansas Bears,Queens University Royals,consensus,,-2.5,-2.5,,155.5,155.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:39:53.594483+00:00,2026-03-08 16:39:53.594483+00:00,OK
 401851251,,2110,2511,Central Arkansas Bears,Queens University Royals,consensus,,-2.5,-2.5,,155.5,155.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:42.316448+00:00,2026-03-08 15:32:42.316448+00:00,OK
 401851251,,2110,2511,Central Arkansas Bears,Queens University Royals,consensus,,-2.5,-2.5,,155.5,155.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:42.316448+00:00,2026-03-08 15:32:42.316448+00:00,OK
+401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-5.5,-5.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:55.093682+00:00,2026-03-08 22:33:55.093682+00:00,OK
+401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-5.5,-5.5,,141.5,141.5,,,ESPN,market_lines_master.csv,4,2026-03-08 22:33:55.093682+00:00,2026-03-08 22:33:55.093682+00:00,OK
+401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-5.5,-5.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:15.859952+00:00,2026-03-08 21:32:15.859952+00:00,OK
+401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-5.5,-5.5,,141.5,141.5,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:15.859952+00:00,2026-03-08 21:32:15.859952+00:00,OK
+401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-5.5,-5.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:43.057960+00:00,2026-03-08 20:36:43.057960+00:00,OK
+401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-5.5,-5.5,,141.5,141.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:43.057960+00:00,2026-03-08 20:36:43.057960+00:00,OK
+401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-6.5,-6.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:20.869671+00:00,2026-03-08 19:31:20.869671+00:00,OK
+401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-6.5,-6.5,,141.5,141.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:20.869671+00:00,2026-03-08 19:31:20.869671+00:00,OK
+401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-6.5,-6.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:11.726905+00:00,2026-03-08 18:54:11.726905+00:00,OK
+401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-6.5,-6.5,,141.5,141.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:11.726905+00:00,2026-03-08 18:54:11.726905+00:00,OK
 401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-6.5,-6.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:46.179949+00:00,2026-03-08 17:31:46.179949+00:00,OK
 401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-6.5,-6.5,,141.5,141.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:46.179949+00:00,2026-03-08 17:31:46.179949+00:00,OK
 401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-7.5,-7.5,,140.5,140.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:18.914007+00:00,2026-03-08 16:40:18.914007+00:00,OK
 401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-7.5,-7.5,,140.5,140.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:18.914007+00:00,2026-03-08 16:40:18.914007+00:00,OK
 401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-7.5,-7.5,,140.5,140.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:33:06.609622+00:00,2026-03-08 15:33:06.609622+00:00,OK
 401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-7.5,-7.5,,140.5,140.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:33:06.609622+00:00,2026-03-08 15:33:06.609622+00:00,OK
+401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,1.5,1.5,,143.5,143.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:34:01.541108+00:00,2026-03-08 22:34:01.541108+00:00,OK
+401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,1.5,1.5,,143.5,143.5,,,ESPN,market_lines_master.csv,4,2026-03-08 22:34:01.541108+00:00,2026-03-08 22:34:01.541108+00:00,OK
+401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,1.5,1.5,,143.5,143.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:19.309150+00:00,2026-03-08 21:32:19.309150+00:00,OK
+401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,1.5,1.5,,143.5,143.5,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:19.309150+00:00,2026-03-08 21:32:19.309150+00:00,OK
+401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,-1.5,-1.5,,144.5,144.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:46.663376+00:00,2026-03-08 20:36:46.663376+00:00,OK
+401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,-1.5,-1.5,,144.5,144.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:46.663376+00:00,2026-03-08 20:36:46.663376+00:00,OK
+401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,-1.5,-1.5,,144.5,144.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:24.309149+00:00,2026-03-08 19:31:24.309149+00:00,OK
+401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,-1.5,-1.5,,144.5,144.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:24.309149+00:00,2026-03-08 19:31:24.309149+00:00,OK
+401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,-2.5,-2.5,,144.5,144.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:17.929422+00:00,2026-03-08 18:54:17.929422+00:00,OK
+401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,-2.5,-2.5,,144.5,144.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:17.929422+00:00,2026-03-08 18:54:17.929422+00:00,OK
 401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,-2.5,-2.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:50.854194+00:00,2026-03-08 17:31:50.854194+00:00,OK
 401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,-2.5,-2.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:50.854194+00:00,2026-03-08 17:31:50.854194+00:00,OK
 401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,-2.5,-2.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:29.336472+00:00,2026-03-08 16:40:29.336472+00:00,OK
@@ -129,18 +205,44 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401851353,,2272,2737,High Point Panthers,Winthrop Eagles,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 16:39:48.402451+00:00,2026-03-08 16:39:48.402451+00:00,MISSING
 401851353,,2272,2737,High Point Panthers,Winthrop Eagles,consensus,,-6.5,-6.5,,157.5,157.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:37.933384+00:00,2026-03-08 15:32:37.933384+00:00,OK
 401851353,,2272,2737,High Point Panthers,Winthrop Eagles,consensus,,-6.5,-6.5,,157.5,157.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:37.933384+00:00,2026-03-08 15:32:37.933384+00:00,OK
+401851431,,2739,94,Green Bay Phoenix,Northern Kentucky Norse,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:38.305813+00:00,2026-03-08 20:36:38.305813+00:00,MISSING
+401851431,,2739,94,Green Bay Phoenix,Northern Kentucky Norse,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:38.305813+00:00,2026-03-08 20:36:38.305813+00:00,MISSING
+401851431,,2739,94,Green Bay Phoenix,Northern Kentucky Norse,consensus,,3.5,3.5,,146.5,146.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:16.511156+00:00,2026-03-08 19:31:16.511156+00:00,OK
+401851431,,2739,94,Green Bay Phoenix,Northern Kentucky Norse,consensus,,3.5,3.5,,146.5,146.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:16.511156+00:00,2026-03-08 19:31:16.511156+00:00,OK
+401851431,,2739,94,Green Bay Phoenix,Northern Kentucky Norse,consensus,,3.5,3.5,,147.5,147.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:03.567384+00:00,2026-03-08 18:54:03.567384+00:00,OK
+401851431,,2739,94,Green Bay Phoenix,Northern Kentucky Norse,consensus,,3.5,3.5,,147.5,147.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:03.567384+00:00,2026-03-08 18:54:03.567384+00:00,OK
 401851431,,2739,94,Green Bay Phoenix,Northern Kentucky Norse,consensus,,2.5,2.5,,147.5,147.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:40.106840+00:00,2026-03-08 17:31:40.106840+00:00,OK
 401851431,,2739,94,Green Bay Phoenix,Northern Kentucky Norse,consensus,,2.5,2.5,,147.5,147.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:40.106840+00:00,2026-03-08 17:31:40.106840+00:00,OK
 401851431,,2739,94,Green Bay Phoenix,Northern Kentucky Norse,consensus,,2.5,2.5,,147.5,147.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:05.787654+00:00,2026-03-08 16:40:05.787654+00:00,OK
 401851431,,2739,94,Green Bay Phoenix,Northern Kentucky Norse,consensus,,2.5,2.5,,147.5,147.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:05.787654+00:00,2026-03-08 16:40:05.787654+00:00,OK
 401851431,,2739,94,Green Bay Phoenix,Northern Kentucky Norse,consensus,,2.5,2.5,,145.5,145.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:53.856571+00:00,2026-03-08 15:32:53.856571+00:00,OK
 401851431,,2739,94,Green Bay Phoenix,Northern Kentucky Norse,consensus,,2.5,2.5,,145.5,145.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:53.856571+00:00,2026-03-08 15:32:53.856571+00:00,OK
+401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:53.203358+00:00,2026-03-08 22:33:53.203358+00:00,MISSING
+401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 22:33:53.203358+00:00,2026-03-08 22:33:53.203358+00:00,MISSING
+401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-2.5,-2.5,,128.5,128.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:14.868264+00:00,2026-03-08 21:32:14.868264+00:00,OK
+401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-2.5,-2.5,,128.5,128.5,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:14.868264+00:00,2026-03-08 21:32:14.868264+00:00,OK
+401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-3.5,-3.5,,128.5,128.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:42.010012+00:00,2026-03-08 20:36:42.010012+00:00,OK
+401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-3.5,-3.5,,128.5,128.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:42.010012+00:00,2026-03-08 20:36:42.010012+00:00,OK
+401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-3.5,-3.5,,126.5,126.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:19.906912+00:00,2026-03-08 19:31:19.906912+00:00,OK
+401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-3.5,-3.5,,126.5,126.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:19.906912+00:00,2026-03-08 19:31:19.906912+00:00,OK
+401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-3.5,-3.5,,125.5,125.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:09.761497+00:00,2026-03-08 18:54:09.761497+00:00,OK
+401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-3.5,-3.5,,125.5,125.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:09.761497+00:00,2026-03-08 18:54:09.761497+00:00,OK
 401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-4.5,-4.5,,124.5,124.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:44.818268+00:00,2026-03-08 17:31:44.818268+00:00,OK
 401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-4.5,-4.5,,124.5,124.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:44.818268+00:00,2026-03-08 17:31:44.818268+00:00,OK
 401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-4.5,-4.5,,124.5,124.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:15.968926+00:00,2026-03-08 16:40:15.968926+00:00,OK
 401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-4.5,-4.5,,124.5,124.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:15.968926+00:00,2026-03-08 16:40:15.968926+00:00,OK
 401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-4.5,-4.5,,124.5,124.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:33:03.790454+00:00,2026-03-08 15:33:03.790454+00:00,OK
 401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-4.5,-4.5,,124.5,124.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:33:03.790454+00:00,2026-03-08 15:33:03.790454+00:00,OK
+401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-1.5,-1.5,,137.5,137.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:59.747762+00:00,2026-03-08 22:33:59.747762+00:00,OK
+401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-1.5,-1.5,,137.5,137.5,,,ESPN,market_lines_master.csv,4,2026-03-08 22:33:59.747762+00:00,2026-03-08 22:33:59.747762+00:00,OK
+401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:18.325247+00:00,2026-03-08 21:32:18.325247+00:00,OK
+401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:18.325247+00:00,2026-03-08 21:32:18.325247+00:00,OK
+401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-2.5,-2.5,,137.5,137.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:45.634255+00:00,2026-03-08 20:36:45.634255+00:00,OK
+401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-2.5,-2.5,,137.5,137.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:45.634255+00:00,2026-03-08 20:36:45.634255+00:00,OK
+401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-2.5,-2.5,,137.5,137.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:23.361499+00:00,2026-03-08 19:31:23.361499+00:00,OK
+401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-2.5,-2.5,,137.5,137.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:23.361499+00:00,2026-03-08 19:31:23.361499+00:00,OK
+401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-2.5,-2.5,,137.5,137.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:16.164315+00:00,2026-03-08 18:54:16.164315+00:00,OK
+401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-2.5,-2.5,,137.5,137.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:16.164315+00:00,2026-03-08 18:54:16.164315+00:00,OK
 401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-2.5,-2.5,,137.5,137.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:49.510564+00:00,2026-03-08 17:31:49.510564+00:00,OK
 401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-2.5,-2.5,,137.5,137.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:49.510564+00:00,2026-03-08 17:31:49.510564+00:00,OK
 401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-2.5,-2.5,,137.5,137.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:26.229631+00:00,2026-03-08 16:40:26.229631+00:00,OK
@@ -159,60 +261,152 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401851547,,2329,2142,Lehigh Mountain Hawks,Colgate Raiders,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 16:39:45.041976+00:00,2026-03-08 16:39:45.041976+00:00,MISSING
 401851547,,2329,2142,Lehigh Mountain Hawks,Colgate Raiders,consensus,,1.5,1.5,,146.5,146.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:34.947085+00:00,2026-03-08 15:32:34.947085+00:00,OK
 401851547,,2329,2142,Lehigh Mountain Hawks,Colgate Raiders,consensus,,1.5,1.5,,146.5,146.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:34.947085+00:00,2026-03-08 15:32:34.947085+00:00,OK
+401851548,,2426,104,Navy Midshipmen,Boston University Terriers,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:12.573291+00:00,2026-03-08 19:31:12.573291+00:00,MISSING
+401851548,,2426,104,Navy Midshipmen,Boston University Terriers,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:12.573291+00:00,2026-03-08 19:31:12.573291+00:00,MISSING
+401851548,,2426,104,Navy Midshipmen,Boston University Terriers,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:53:53.896340+00:00,2026-03-08 18:53:53.896340+00:00,MISSING
+401851548,,2426,104,Navy Midshipmen,Boston University Terriers,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 18:53:53.896340+00:00,2026-03-08 18:53:53.896340+00:00,MISSING
 401851548,,2426,104,Navy Midshipmen,Boston University Terriers,consensus,,-7.5,-7.5,,136.5,136.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:34.019761+00:00,2026-03-08 17:31:34.019761+00:00,OK
 401851548,,2426,104,Navy Midshipmen,Boston University Terriers,consensus,,-7.5,-7.5,,136.5,136.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:34.019761+00:00,2026-03-08 17:31:34.019761+00:00,OK
 401851548,,2426,104,Navy Midshipmen,Boston University Terriers,consensus,,-6.5,-6.5,,137.5,137.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:39:51.994008+00:00,2026-03-08 16:39:51.994008+00:00,OK
 401851548,,2426,104,Navy Midshipmen,Boston University Terriers,consensus,,-6.5,-6.5,,137.5,137.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:39:51.994008+00:00,2026-03-08 16:39:51.994008+00:00,OK
 401851548,,2426,104,Navy Midshipmen,Boston University Terriers,consensus,,-7.5,-7.5,,137.5,137.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:40.857363+00:00,2026-03-08 15:32:40.857363+00:00,OK
 401851548,,2426,104,Navy Midshipmen,Boston University Terriers,consensus,,-7.5,-7.5,,137.5,137.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:40.857363+00:00,2026-03-08 15:32:40.857363+00:00,OK
+401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:12.709313+00:00,2026-03-08 21:32:12.709313+00:00,MISSING
+401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:12.709313+00:00,2026-03-08 21:32:12.709313+00:00,MISSING
+401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:38.825941+00:00,2026-03-08 20:36:38.825941+00:00,MISSING
+401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:38.825941+00:00,2026-03-08 20:36:38.825941+00:00,MISSING
+401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,-3.5,-3.5,,146.5,146.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:16.986080+00:00,2026-03-08 19:31:16.986080+00:00,OK
+401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,-3.5,-3.5,,146.5,146.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:16.986080+00:00,2026-03-08 19:31:16.986080+00:00,OK
+401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,-3.5,-3.5,,146.5,146.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:04.441270+00:00,2026-03-08 18:54:04.441270+00:00,OK
+401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,-3.5,-3.5,,146.5,146.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:04.441270+00:00,2026-03-08 18:54:04.441270+00:00,OK
 401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,-3.5,-3.5,,145.5,145.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:40.769096+00:00,2026-03-08 17:31:40.769096+00:00,OK
 401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,-3.5,-3.5,,145.5,145.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:40.769096+00:00,2026-03-08 17:31:40.769096+00:00,OK
 401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,-4.5,-4.5,,147.5,147.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:07.327797+00:00,2026-03-08 16:40:07.327797+00:00,OK
 401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,-4.5,-4.5,,147.5,147.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:07.327797+00:00,2026-03-08 16:40:07.327797+00:00,OK
 401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,-3.5,-3.5,,147.5,147.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:55.279316+00:00,2026-03-08 15:32:55.279316+00:00,OK
 401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,-3.5,-3.5,,147.5,147.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:55.279316+00:00,2026-03-08 15:32:55.279316+00:00,OK
+401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-5.5,-5.5,,147.5,147.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:54.178106+00:00,2026-03-08 22:33:54.178106+00:00,OK
+401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-5.5,-5.5,,147.5,147.5,,,ESPN,market_lines_master.csv,4,2026-03-08 22:33:54.178106+00:00,2026-03-08 22:33:54.178106+00:00,OK
+401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-6.5,-6.5,,148.5,148.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:15.355232+00:00,2026-03-08 21:32:15.355232+00:00,OK
+401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-6.5,-6.5,,148.5,148.5,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:15.355232+00:00,2026-03-08 21:32:15.355232+00:00,OK
+401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-6.5,-6.5,,148.5,148.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:42.529693+00:00,2026-03-08 20:36:42.529693+00:00,OK
+401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-6.5,-6.5,,148.5,148.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:42.529693+00:00,2026-03-08 20:36:42.529693+00:00,OK
+401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-7.5,-7.5,,148.5,148.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:20.396707+00:00,2026-03-08 19:31:20.396707+00:00,OK
+401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-7.5,-7.5,,148.5,148.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:20.396707+00:00,2026-03-08 19:31:20.396707+00:00,OK
+401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-7.5,-7.5,,148.5,148.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:10.817386+00:00,2026-03-08 18:54:10.817386+00:00,OK
+401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-7.5,-7.5,,148.5,148.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:10.817386+00:00,2026-03-08 18:54:10.817386+00:00,OK
 401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-7.5,-7.5,,148.5,148.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:45.504060+00:00,2026-03-08 17:31:45.504060+00:00,OK
 401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-7.5,-7.5,,148.5,148.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:45.504060+00:00,2026-03-08 17:31:45.504060+00:00,OK
 401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-7.5,-7.5,,148.5,148.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:17.400141+00:00,2026-03-08 16:40:17.400141+00:00,OK
 401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-7.5,-7.5,,148.5,148.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:17.400141+00:00,2026-03-08 16:40:17.400141+00:00,OK
 401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-7.5,-7.5,,148.5,148.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:33:05.212419+00:00,2026-03-08 15:33:05.212419+00:00,OK
 401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-7.5,-7.5,,148.5,148.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:33:05.212419+00:00,2026-03-08 15:33:05.212419+00:00,OK
+401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:52.130799+00:00,2026-03-08 22:33:52.130799+00:00,MISSING
+401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 22:33:52.130799+00:00,2026-03-08 22:33:52.130799+00:00,MISSING
+401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-3.5,-3.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:14.385038+00:00,2026-03-08 21:32:14.385038+00:00,OK
+401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-3.5,-3.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:14.385038+00:00,2026-03-08 21:32:14.385038+00:00,OK
+401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-3.5,-3.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:41.488034+00:00,2026-03-08 20:36:41.488034+00:00,OK
+401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-3.5,-3.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:41.488034+00:00,2026-03-08 20:36:41.488034+00:00,OK
+401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-3.5,-3.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:19.427965+00:00,2026-03-08 19:31:19.427965+00:00,OK
+401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-3.5,-3.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:19.427965+00:00,2026-03-08 19:31:19.427965+00:00,OK
+401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-3.5,-3.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:08.885585+00:00,2026-03-08 18:54:08.885585+00:00,OK
+401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-3.5,-3.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:08.885585+00:00,2026-03-08 18:54:08.885585+00:00,OK
 401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-4.5,-4.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:44.142205+00:00,2026-03-08 17:31:44.142205+00:00,OK
 401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-4.5,-4.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:44.142205+00:00,2026-03-08 17:31:44.142205+00:00,OK
 401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-4.5,-4.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:14.577750+00:00,2026-03-08 16:40:14.577750+00:00,OK
 401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-4.5,-4.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:14.577750+00:00,2026-03-08 16:40:14.577750+00:00,OK
 401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-4.5,-4.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:33:02.388285+00:00,2026-03-08 15:33:02.388285+00:00,OK
 401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-4.5,-4.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:33:02.388285+00:00,2026-03-08 15:33:02.388285+00:00,OK
+401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:58.766709+00:00,2026-03-08 22:33:58.766709+00:00,OK
+401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,market_lines_master.csv,4,2026-03-08 22:33:58.766709+00:00,2026-03-08 22:33:58.766709+00:00,OK
+401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:17.841133+00:00,2026-03-08 21:32:17.841133+00:00,OK
+401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:17.841133+00:00,2026-03-08 21:32:17.841133+00:00,OK
+401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:45.120085+00:00,2026-03-08 20:36:45.120085+00:00,OK
+401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:45.120085+00:00,2026-03-08 20:36:45.120085+00:00,OK
+401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:22.863892+00:00,2026-03-08 19:31:22.863892+00:00,OK
+401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:22.863892+00:00,2026-03-08 19:31:22.863892+00:00,OK
+401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:15.244817+00:00,2026-03-08 18:54:15.244817+00:00,OK
+401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:15.244817+00:00,2026-03-08 18:54:15.244817+00:00,OK
 401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:48.839425+00:00,2026-03-08 17:31:48.839425+00:00,OK
 401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:48.839425+00:00,2026-03-08 17:31:48.839425+00:00,OK
 401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:24.827117+00:00,2026-03-08 16:40:24.827117+00:00,OK
 401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:24.827117+00:00,2026-03-08 16:40:24.827117+00:00,OK
 401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-2.5,-2.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:33:12.184699+00:00,2026-03-08 15:33:12.184699+00:00,OK
 401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-2.5,-2.5,,138.5,138.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:33:12.184699+00:00,2026-03-08 15:33:12.184699+00:00,OK
+401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-11.5,-11.5,,147.5,147.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:34:00.651184+00:00,2026-03-08 22:34:00.651184+00:00,OK
+401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-11.5,-11.5,,147.5,147.5,,,ESPN,market_lines_master.csv,4,2026-03-08 22:34:00.651184+00:00,2026-03-08 22:34:00.651184+00:00,OK
+401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-10.5,-10.5,,144.5,144.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:18.813303+00:00,2026-03-08 21:32:18.813303+00:00,OK
+401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-10.5,-10.5,,144.5,144.5,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:18.813303+00:00,2026-03-08 21:32:18.813303+00:00,OK
+401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-10.5,-10.5,,144.5,144.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:46.149767+00:00,2026-03-08 20:36:46.149767+00:00,OK
+401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-10.5,-10.5,,144.5,144.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:46.149767+00:00,2026-03-08 20:36:46.149767+00:00,OK
+401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-9.5,-9.5,,145.5,145.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:23.836811+00:00,2026-03-08 19:31:23.836811+00:00,OK
+401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-9.5,-9.5,,145.5,145.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:23.836811+00:00,2026-03-08 19:31:23.836811+00:00,OK
+401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-9.5,-9.5,,144.5,144.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:17.050079+00:00,2026-03-08 18:54:17.050079+00:00,OK
+401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-9.5,-9.5,,144.5,144.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:17.050079+00:00,2026-03-08 18:54:17.050079+00:00,OK
 401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-9.5,-9.5,,144.5,144.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:50.177267+00:00,2026-03-08 17:31:50.177267+00:00,OK
 401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-9.5,-9.5,,144.5,144.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:50.177267+00:00,2026-03-08 17:31:50.177267+00:00,OK
 401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-9.5,-9.5,,144.5,144.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:27.752564+00:00,2026-03-08 16:40:27.752564+00:00,OK
 401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-9.5,-9.5,,144.5,144.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:27.752564+00:00,2026-03-08 16:40:27.752564+00:00,OK
 401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-9.5,-9.5,,144.5,144.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:33:15.081156+00:00,2026-03-08 15:33:15.081156+00:00,OK
 401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-9.5,-9.5,,144.5,144.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:33:15.081156+00:00,2026-03-08 15:33:15.081156+00:00,OK
+401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:51.077561+00:00,2026-03-08 22:33:51.077561+00:00,MISSING
+401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 22:33:51.077561+00:00,2026-03-08 22:33:51.077561+00:00,MISSING
+401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-5.5,-5.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:13.768484+00:00,2026-03-08 21:32:13.768484+00:00,OK
+401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-5.5,-5.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:13.768484+00:00,2026-03-08 21:32:13.768484+00:00,OK
+401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-5.5,-5.5,,143.5,143.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:40.929762+00:00,2026-03-08 20:36:40.929762+00:00,OK
+401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-5.5,-5.5,,143.5,143.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:40.929762+00:00,2026-03-08 20:36:40.929762+00:00,OK
+401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-4.5,-4.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:18.903386+00:00,2026-03-08 19:31:18.903386+00:00,OK
+401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-4.5,-4.5,,141.5,141.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:18.903386+00:00,2026-03-08 19:31:18.903386+00:00,OK
+401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-4.5,-4.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:07.986339+00:00,2026-03-08 18:54:07.986339+00:00,OK
+401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-4.5,-4.5,,141.5,141.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:07.986339+00:00,2026-03-08 18:54:07.986339+00:00,OK
 401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-5.5,-5.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:43.471587+00:00,2026-03-08 17:31:43.471587+00:00,OK
 401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-5.5,-5.5,,141.5,141.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:43.471587+00:00,2026-03-08 17:31:43.471587+00:00,OK
 401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-5.5,-5.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:13.143996+00:00,2026-03-08 16:40:13.143996+00:00,OK
 401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-5.5,-5.5,,141.5,141.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:13.143996+00:00,2026-03-08 16:40:13.143996+00:00,OK
 401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-5.5,-5.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:33:00.901594+00:00,2026-03-08 15:33:00.901594+00:00,OK
 401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-5.5,-5.5,,141.5,141.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:33:00.901594+00:00,2026-03-08 15:33:00.901594+00:00,OK
+401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-4.5,-4.5,,166.5,166.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:57.807183+00:00,2026-03-08 22:33:57.807183+00:00,OK
+401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-4.5,-4.5,,166.5,166.5,,,ESPN,market_lines_master.csv,4,2026-03-08 22:33:57.807183+00:00,2026-03-08 22:33:57.807183+00:00,OK
+401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-3.5,-3.5,,167.5,167.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:17.350488+00:00,2026-03-08 21:32:17.350488+00:00,OK
+401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-3.5,-3.5,,167.5,167.5,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:17.350488+00:00,2026-03-08 21:32:17.350488+00:00,OK
+401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-3.5,-3.5,,167.5,167.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:44.604532+00:00,2026-03-08 20:36:44.604532+00:00,OK
+401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-3.5,-3.5,,167.5,167.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:44.604532+00:00,2026-03-08 20:36:44.604532+00:00,OK
+401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-3.5,-3.5,,167.5,167.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:22.391343+00:00,2026-03-08 19:31:22.391343+00:00,OK
+401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-3.5,-3.5,,167.5,167.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:22.391343+00:00,2026-03-08 19:31:22.391343+00:00,OK
+401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-4.5,-4.5,,167.5,167.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:14.364778+00:00,2026-03-08 18:54:14.364778+00:00,OK
+401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-4.5,-4.5,,167.5,167.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:14.364778+00:00,2026-03-08 18:54:14.364778+00:00,OK
 401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-4.5,-4.5,,168.5,168.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:48.184402+00:00,2026-03-08 17:31:48.184402+00:00,OK
 401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-4.5,-4.5,,168.5,168.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:48.184402+00:00,2026-03-08 17:31:48.184402+00:00,OK
 401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-4.5,-4.5,,168.5,168.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:23.385040+00:00,2026-03-08 16:40:23.385040+00:00,OK
 401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-4.5,-4.5,,168.5,168.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:23.385040+00:00,2026-03-08 16:40:23.385040+00:00,OK
 401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-4.5,-4.5,,168.5,168.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:33:10.785515+00:00,2026-03-08 15:33:10.785515+00:00,OK
 401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-4.5,-4.5,,168.5,168.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:33:10.785515+00:00,2026-03-08 15:33:10.785515+00:00,OK
+401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,145.5,145.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:56.896505+00:00,2026-03-08 22:33:56.896505+00:00,OK
+401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,145.5,145.5,,,ESPN,market_lines_master.csv,4,2026-03-08 22:33:56.896505+00:00,2026-03-08 22:33:56.896505+00:00,OK
+401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:16.866666+00:00,2026-03-08 21:32:16.866666+00:00,OK
+401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:16.866666+00:00,2026-03-08 21:32:16.866666+00:00,OK
+401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:44.083151+00:00,2026-03-08 20:36:44.083151+00:00,OK
+401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:44.083151+00:00,2026-03-08 20:36:44.083151+00:00,OK
+401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:21.819998+00:00,2026-03-08 19:31:21.819998+00:00,OK
+401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:21.819998+00:00,2026-03-08 19:31:21.819998+00:00,OK
+401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:13.482098+00:00,2026-03-08 18:54:13.482098+00:00,OK
+401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:13.482098+00:00,2026-03-08 18:54:13.482098+00:00,OK
 401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:47.515649+00:00,2026-03-08 17:31:47.515649+00:00,OK
 401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:47.515649+00:00,2026-03-08 17:31:47.515649+00:00,OK
 401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:21.983903+00:00,2026-03-08 16:40:21.983903+00:00,OK
 401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:21.983903+00:00,2026-03-08 16:40:21.983903+00:00,OK
 401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:33:09.401804+00:00,2026-03-08 15:33:09.401804+00:00,OK
 401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,142.5,142.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:33:09.401804+00:00,2026-03-08 15:33:09.401804+00:00,OK
+401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-9.5,-9.5,,149.5,149.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:34:02.474086+00:00,2026-03-08 22:34:02.474086+00:00,OK
+401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-9.5,-9.5,,149.5,149.5,,,ESPN,market_lines_master.csv,4,2026-03-08 22:34:02.474086+00:00,2026-03-08 22:34:02.474086+00:00,OK
+401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-9.5,-9.5,,149.5,149.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:19.796705+00:00,2026-03-08 21:32:19.796705+00:00,OK
+401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-9.5,-9.5,,149.5,149.5,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:19.796705+00:00,2026-03-08 21:32:19.796705+00:00,OK
+401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-9.5,-9.5,,149.5,149.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:47.194113+00:00,2026-03-08 20:36:47.194113+00:00,OK
+401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-9.5,-9.5,,149.5,149.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:47.194113+00:00,2026-03-08 20:36:47.194113+00:00,OK
+401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-10.5,-10.5,,149.5,149.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:24.776639+00:00,2026-03-08 19:31:24.776639+00:00,OK
+401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-10.5,-10.5,,149.5,149.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:24.776639+00:00,2026-03-08 19:31:24.776639+00:00,OK
+401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-10.5,-10.5,,149.5,149.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:18.800870+00:00,2026-03-08 18:54:18.800870+00:00,OK
+401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-10.5,-10.5,,149.5,149.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:18.800870+00:00,2026-03-08 18:54:18.800870+00:00,OK
 401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-10.5,-10.5,,149.5,149.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:51.520071+00:00,2026-03-08 17:31:51.520071+00:00,OK
 401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-10.5,-10.5,,149.5,149.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:51.520071+00:00,2026-03-08 17:31:51.520071+00:00,OK
 401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-10.5,-10.5,,149.5,149.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:30.815203+00:00,2026-03-08 16:40:30.815203+00:00,OK
@@ -225,18 +419,44 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401856427,,350,2097,UNC Wilmington Seahawks,Campbell Fighting Camels,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 16:39:43.017033+00:00,2026-03-08 16:39:43.017033+00:00,MISSING
 401856427,,350,2097,UNC Wilmington Seahawks,Campbell Fighting Camels,consensus,,-7.5,-7.5,,149.5,149.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:33.280579+00:00,2026-03-08 15:32:33.280579+00:00,OK
 401856427,,350,2097,UNC Wilmington Seahawks,Campbell Fighting Camels,consensus,,-7.5,-7.5,,149.5,149.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:33.280579+00:00,2026-03-08 15:32:33.280579+00:00,OK
+401856428,,2405,2182,Monmouth Hawks,Drexel Dragons,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:36.077949+00:00,2026-03-08 20:36:36.077949+00:00,MISSING
+401856428,,2405,2182,Monmouth Hawks,Drexel Dragons,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:36.077949+00:00,2026-03-08 20:36:36.077949+00:00,MISSING
+401856428,,2405,2182,Monmouth Hawks,Drexel Dragons,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:14.544353+00:00,2026-03-08 19:31:14.544353+00:00,MISSING
+401856428,,2405,2182,Monmouth Hawks,Drexel Dragons,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:14.544353+00:00,2026-03-08 19:31:14.544353+00:00,MISSING
+401856428,,2405,2182,Monmouth Hawks,Drexel Dragons,consensus,,-3.5,-3.5,,136.5,136.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:53:59.474665+00:00,2026-03-08 18:53:59.474665+00:00,OK
+401856428,,2405,2182,Monmouth Hawks,Drexel Dragons,consensus,,-3.5,-3.5,,136.5,136.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:53:59.474665+00:00,2026-03-08 18:53:59.474665+00:00,OK
 401856428,,2405,2182,Monmouth Hawks,Drexel Dragons,consensus,,-3.5,-3.5,,137.5,137.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:36.741881+00:00,2026-03-08 17:31:36.741881+00:00,OK
 401856428,,2405,2182,Monmouth Hawks,Drexel Dragons,consensus,,-3.5,-3.5,,137.5,137.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:36.741881+00:00,2026-03-08 17:31:36.741881+00:00,OK
 401856428,,2405,2182,Monmouth Hawks,Drexel Dragons,consensus,,-4.5,-4.5,,137.5,137.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:39:58.288117+00:00,2026-03-08 16:39:58.288117+00:00,OK
 401856428,,2405,2182,Monmouth Hawks,Drexel Dragons,consensus,,-4.5,-4.5,,137.5,137.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:39:58.288117+00:00,2026-03-08 16:39:58.288117+00:00,OK
 401856428,,2405,2182,Monmouth Hawks,Drexel Dragons,consensus,,-4.5,-4.5,,137.5,137.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:46.671701+00:00,2026-03-08 15:32:46.671701+00:00,OK
 401856428,,2405,2182,Monmouth Hawks,Drexel Dragons,consensus,,-4.5,-4.5,,137.5,137.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:46.671701+00:00,2026-03-08 15:32:46.671701+00:00,OK
+401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,,,,,,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:50.104386+00:00,2026-03-08 22:33:50.104386+00:00,MISSING
+401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,,,,,,,,ESPN,market_lines_master.csv,4,2026-03-08 22:33:50.104386+00:00,2026-03-08 22:33:50.104386+00:00,MISSING
+401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-3.5,-3.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:13.235252+00:00,2026-03-08 21:32:13.235252+00:00,OK
+401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-3.5,-3.5,,138.5,138.5,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:13.235252+00:00,2026-03-08 21:32:13.235252+00:00,OK
+401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-2.5,-2.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:40.413028+00:00,2026-03-08 20:36:40.413028+00:00,OK
+401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-2.5,-2.5,,138.5,138.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:40.413028+00:00,2026-03-08 20:36:40.413028+00:00,OK
+401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:18.421970+00:00,2026-03-08 19:31:18.421970+00:00,OK
+401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:18.421970+00:00,2026-03-08 19:31:18.421970+00:00,OK
+401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:07.100433+00:00,2026-03-08 18:54:07.100433+00:00,OK
+401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:07.100433+00:00,2026-03-08 18:54:07.100433+00:00,OK
 401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-1.5,-1.5,,134.5,134.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:42.797703+00:00,2026-03-08 17:31:42.797703+00:00,OK
 401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-1.5,-1.5,,134.5,134.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:42.797703+00:00,2026-03-08 17:31:42.797703+00:00,OK
 401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-1.5,-1.5,,134.5,134.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:11.681618+00:00,2026-03-08 16:40:11.681618+00:00,OK
 401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-1.5,-1.5,,134.5,134.5,,,ESPN,market_lines_master.csv,4,2026-03-08 16:40:11.681618+00:00,2026-03-08 16:40:11.681618+00:00,OK
 401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-2.5,-2.5,,134.5,134.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:59.503106+00:00,2026-03-08 15:32:59.503106+00:00,OK
 401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-2.5,-2.5,,134.5,134.5,,,ESPN,market_lines_master.csv,4,2026-03-08 15:32:59.503106+00:00,2026-03-08 15:32:59.503106+00:00,OK
+401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-3.5,-3.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:55.997913+00:00,2026-03-08 22:33:55.997913+00:00,OK
+401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-3.5,-3.5,,152.5,152.5,,,ESPN,market_lines_master.csv,4,2026-03-08 22:33:55.997913+00:00,2026-03-08 22:33:55.997913+00:00,OK
+401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-3.5,-3.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:16.346474+00:00,2026-03-08 21:32:16.346474+00:00,OK
+401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-3.5,-3.5,,152.5,152.5,,,ESPN,market_lines_master.csv,4,2026-03-08 21:32:16.346474+00:00,2026-03-08 21:32:16.346474+00:00,OK
+401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-3.5,-3.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:43.568378+00:00,2026-03-08 20:36:43.568378+00:00,OK
+401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-3.5,-3.5,,152.5,152.5,,,ESPN,market_lines_master.csv,4,2026-03-08 20:36:43.568378+00:00,2026-03-08 20:36:43.568378+00:00,OK
+401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-3.5,-3.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:21.343784+00:00,2026-03-08 19:31:21.343784+00:00,OK
+401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-3.5,-3.5,,152.5,152.5,,,ESPN,market_lines_master.csv,4,2026-03-08 19:31:21.343784+00:00,2026-03-08 19:31:21.343784+00:00,OK
+401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-3.5,-3.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:12.613621+00:00,2026-03-08 18:54:12.613621+00:00,OK
+401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-3.5,-3.5,,152.5,152.5,,,ESPN,market_lines_master.csv,4,2026-03-08 18:54:12.613621+00:00,2026-03-08 18:54:12.613621+00:00,OK
 401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-5.5,-5.5,,154.5,154.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:46.857568+00:00,2026-03-08 17:31:46.857568+00:00,OK
 401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-5.5,-5.5,,154.5,154.5,,,ESPN,market_lines_master.csv,4,2026-03-08 17:31:46.857568+00:00,2026-03-08 17:31:46.857568+00:00,OK
 401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-5.5,-5.5,,154.5,154.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 16:40:20.469221+00:00,2026-03-08 16:40:20.469221+00:00,OK

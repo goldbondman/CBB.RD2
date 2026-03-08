@@ -1,5 +1,5 @@
 # Signal Alignment Backtest: Model + CAGE + Trend
-_Generated 2026-03-08 18:52 UTC_
+_Generated 2026-03-08 23:09 UTC_
 
 **Dataset**: 185 games with model edge (|edge| ≥ 1.0 pts)  
 **Source**: `backtest_training_data.csv` (221 games with all signals)  
