@@ -33,8 +33,27 @@ ET = ZoneInfo("America/New_York")
 
 # ── March Madness context ─────────────────────────────────────────────────────
 # Active when month is March–April and a seed ATS rates file is present.
-_TOURN_RATES_PATH = Path("data/march_madness_seed_ats_rates.csv")
-_TOURN_MONTHS     = {3, 4}   # March, April
+_TOURN_RATES_PATH    = Path("data/march_madness_seed_ats_rates.csv")
+_CAGE_RANKINGS_PATH  = Path("data/cbb_rankings.csv")
+_TOURN_MONTHS        = {3, 4}   # March, April
+
+# R1 profile thresholds
+_DECAY_HOT    =  1.5    # decay_momentum ≥ this = trending up (hot streak)
+_DECAY_COLD   = -1.5    # decay_momentum ≤ this = trending down (fading)
+_DEF_ELITE    =  97.0   # cage_d ≤ this = elite defense (~top 40)
+_DEF_WEAK     = 106.0   # cage_d ≥ this = vulnerable defense
+_EM_DOMINANT  =  15.0   # cage_em gap ≥ this = commanding favorite
+_EM_CLOSE     =   5.0   # cage_em gap ≤ this = closer than seed suggests
+
+# Seed tiers where the underdog historically covers (from 2021-2025 backtest +
+# published research). 4v13 added per 2021-2025 API result (dog covers 63.2%).
+_DOG_ADVANTAGE_TIERS = frozenset({"4_vs_13", "5_vs_12", "6_vs_11", "8_vs_9"})
+
+# Power conferences for mid-major detection
+_POWER_CONFS = frozenset({
+    "Atlantic Coast", "Big Ten", "Big 12", "Southeastern", "Big East",
+    "American Athletic", "Mountain West",
+})
 
 
 # ── Trend helpers ─────────────────────────────────────────────────────────────
@@ -279,6 +298,169 @@ def _compute_trend_backtest(gl_path: Path) -> dict[str, dict]:
     }
 
 
+def _load_cage_rankings(path: Path = _CAGE_RANKINGS_PATH) -> dict[str, dict]:
+    """Load CAGE rankings → {team_name_lower: metric_dict}."""
+    if not path.exists():
+        return {}
+    try:
+        df = pd.read_csv(path, low_memory=False)
+        result: dict[str, dict] = {}
+        for _, row in df.iterrows():
+            team = str(row.get("team", "")).strip()
+            if team:
+                result[team.lower()] = row.to_dict()
+        return result
+    except Exception:
+        return {}
+
+
+def _get_cage(cage_lookup: dict, team_name: str) -> dict:
+    """Look up CAGE metrics for a team (case-insensitive, with partial fallback)."""
+    key = team_name.strip().lower()
+    if key in cage_lookup:
+        return cage_lookup[key]
+    for k, v in cage_lookup.items():
+        if k in key or key in k:
+            return v
+    return {}
+
+
+def _is_power_conf(conference: str) -> bool:
+    if not conference:
+        return False
+    conf = str(conference).strip()
+    return any(p.lower() in conf.lower() for p in _POWER_CONFS)
+
+
+def _tourn_r1_profile(
+    home: str,
+    away: str,
+    home_seed,
+    away_seed,
+    edge: float,
+    cage_lookup: dict,
+    seed_rates: dict,
+) -> str:
+    """
+    Compute R1 tournament profile flags based on CAGE metrics + seed ATS history.
+
+    Returns a formatted string with three possible tag groups:
+      VULNERABLE_FAV(<team>): <reasons>
+      LIVE_DOG(<team>): <reasons>
+      BIG_FAV_COVERS(<team>): <reasons>
+
+    Empty string if seeds are unavailable or not tournament season.
+
+    Vulnerable fav signals (upset risk):
+      trending_down    — fav's decay_momentum < -1.5 (fading into the tournament)
+      weak_D           — fav's cage_d >= 106 (porous defense)
+      close_matchup    — cage_em gap < 5 (less dominant than seed implies)
+      dog_hot          — underdog's momentum > 1.5 (opponent is surging)
+      seed_fade        — this seed tier historically favors the dog by ATS
+
+    Live dog signals (upset/cover potential):
+      trending_up      — dog's decay_momentum > 1.5 (heating up)
+      elite_D          — dog's cage_d <= 97 (suffocation defense)
+      mid_major        — dog from non-power conference (proven mid-major)
+      close_efficiency — cage_em gap < 5 (closer than seed suggests)
+      historical_edge  — seed tier ATS history favors dog
+
+    Big fav covers signals (back the favorite):
+      elite_seed_N     — seed 1/2/3 (cover 65-67% in 2021-2025 R1 data)
+      dominant_EM      — cage_em gap >= 15
+      trending_up      — fav's momentum > 1.5
+      elite_D          — fav's cage_d <= 97
+      vs_low_major     — opponent is a 14-16 seed
+    """
+    if not cage_lookup:
+        return ""
+
+    try:
+        h_seed = int(home_seed) if home_seed is not None and not pd.isna(home_seed) else None
+        a_seed = int(away_seed) if away_seed is not None and not pd.isna(away_seed) else None
+    except (TypeError, ValueError):
+        return ""
+
+    if h_seed is None or a_seed is None:
+        return ""
+
+    # Identify favorite (lower seed number = better team)
+    if h_seed <= a_seed:
+        fav_team, fav_seed = home, h_seed
+        dog_team, dog_seed = away, a_seed
+    else:
+        fav_team, fav_seed = away, a_seed
+        dog_team, dog_seed = home, h_seed
+
+    fav_cage = _get_cage(cage_lookup, fav_team)
+    dog_cage = _get_cage(cage_lookup, dog_team)
+
+    fav_em   = float(fav_cage.get("cage_em",         0)   or 0)
+    dog_em   = float(dog_cage.get("cage_em",         0)   or 0)
+    fav_d    = float(fav_cage.get("cage_d",        103)   or 103)
+    dog_d    = float(dog_cage.get("cage_d",        103)   or 103)
+    fav_mom  = float(fav_cage.get("decay_momentum",  0)   or 0)
+    dog_mom  = float(dog_cage.get("decay_momentum",  0)   or 0)
+    dog_conf = str(dog_cage.get("conference", "") or "")
+
+    em_gap   = fav_em - dog_em
+    tier     = f"{min(fav_seed, dog_seed)}_vs_{max(fav_seed, dog_seed)}"
+    rate     = seed_rates.get(tier, {})
+    dog_cov  = rate.get("dog_cover_pct")
+    fav_cov  = rate.get("fav_cover_pct")
+
+    flags: list[str] = []
+
+    # ── VULNERABLE FAV ──────────────────────────────────────────────────────
+    v: list[str] = []
+    if fav_mom <= _DECAY_COLD:
+        v.append(f"trending_down({fav_mom:+.1f})")
+    if fav_d >= _DEF_WEAK:
+        v.append(f"weak_D(cage_d={fav_d:.1f})")
+    if em_gap < _EM_CLOSE and fav_seed > 4:
+        v.append(f"close_matchup(EM_gap={em_gap:+.1f})")
+    if dog_mom >= _DECAY_HOT:
+        v.append(f"dog_surging({dog_mom:+.1f})")
+    if tier in _DOG_ADVANTAGE_TIERS and dog_cov is not None and float(dog_cov) >= 55:
+        v.append(f"seed_fade_angle({tier} dog={dog_cov:.0f}%_ATS)")
+    if v:
+        flags.append(f"VULNERABLE_FAV({fav_team}): " + " | ".join(v))
+
+    # ── LIVE DOG ────────────────────────────────────────────────────────────
+    d: list[str] = []
+    if dog_mom >= _DECAY_HOT:
+        d.append(f"trending_up({dog_mom:+.1f})")
+    if dog_d <= _DEF_ELITE:
+        d.append(f"elite_D(cage_d={dog_d:.1f})")
+    if not _is_power_conf(dog_conf) and dog_seed <= 13:
+        d.append(f"mid_major({dog_conf or 'non-power'})")
+    if em_gap < _EM_CLOSE:
+        d.append(f"close_efficiency(gap={em_gap:+.1f})")
+    if tier in _DOG_ADVANTAGE_TIERS and dog_cov is not None and float(dog_cov) >= 55:
+        d.append(f"historical_edge(dog={dog_cov:.0f}%_ATS)")
+    if d:
+        flags.append(f"LIVE_DOG({dog_team}): " + " | ".join(d))
+
+    # ── BIG FAV COVERS ──────────────────────────────────────────────────────
+    # Requires at least 2 converging signals to fire (avoid noise)
+    f: list[str] = []
+    if fav_seed <= 3:
+        pct = f"{fav_cov:.0f}%_ATS" if fav_cov is not None else "65%+_ATS_historically"
+        f.append(f"elite_seed_{fav_seed}({pct})")
+    if em_gap >= _EM_DOMINANT:
+        f.append(f"dominant_EM(gap={em_gap:+.1f})")
+    if fav_mom >= _DECAY_HOT:
+        f.append(f"trending_up({fav_mom:+.1f})")
+    if fav_d <= _DEF_ELITE:
+        f.append(f"elite_D(cage_d={fav_d:.1f})")
+    if dog_seed >= 14:
+        f.append(f"vs_low_major(seed_{dog_seed})")
+    if len(f) >= 2:
+        flags.append(f"BIG_FAV_COVERS({fav_team}): " + " | ".join(f))
+
+    return "  ||  ".join(flags)
+
+
 def _load_tourn_seed_rates() -> dict[str, dict]:
     """
     Load March Madness seed-tier ATS rates from the pre-computed backtest CSV.
@@ -434,12 +616,15 @@ def main() -> int:
     else:
         print("[WARN] Trend backtest unavailable — cover_margin or game log missing")
 
-    # ── March Madness seed context ─────────────────────────────────────────────
+    # ── March Madness seed context + R1 profiles ──────────────────────────────
     tourn_rates = _load_tourn_seed_rates()
+    cage_lookup  = _load_cage_rankings() if datetime.now(ET).month in _TOURN_MONTHS else {}
     if tourn_rates:
         print(f"[INFO] Tournament seed ATS rates loaded: {len(tourn_rates)} tiers")
     else:
         print("[INFO] Tournament seed context inactive (non-tournament month or no rates file)")
+    if cage_lookup:
+        print(f"[INFO] CAGE rankings loaded for R1 profile scoring: {len(cage_lookup)} teams")
 
     # ── Coerce columns ────────────────────────────────────────────────────────
     for col in ["netrtg_trend_home", "netrtg_trend_away"]:
@@ -499,10 +684,14 @@ def main() -> int:
         trend_flag_tx = str(row.get("trend_flag", ""))
         key_signal_tx = str(row.get("key_signal", ""))
 
+        h_seed_val = row.get("home_seed")
+        a_seed_val = row.get("away_seed")
+
         tourn_sig = _tourn_seed_signal(
-            home, away,
-            row.get("home_seed"), row.get("away_seed"),
-            edge, tourn_rates,
+            home, away, h_seed_val, a_seed_val, edge, tourn_rates,
+        )
+        r1_profile = _tourn_r1_profile(
+            home, away, h_seed_val, a_seed_val, edge, cage_lookup, tourn_rates,
         )
 
         model_rows.append({
@@ -527,6 +716,7 @@ def main() -> int:
             "trend_hit_pct":          hit_pct_str,
             "trend_hit_detail":       hit_detail,
             "tourn_seed_signal":      tourn_sig,
+            "tourn_r1_profile":       r1_profile,
             "trend_flag":             trend_flag_tx,
             "trend_flag_pick":        f"{trend_flag_tx} → {pick_tag}" if trend_flag_tx else pick_tag,
             "key_signal":             key_signal_tx,
@@ -542,7 +732,7 @@ def main() -> int:
         "model_predicted_margin", "agreement_level", "trend_team_pick",
         "trend_direction", "active_trends", "multi_trend", "trend_strength",
         "netrtg_trend_home", "netrtg_trend_away",
-        "trend_hit_pct", "trend_hit_detail", "tourn_seed_signal",
+        "trend_hit_pct", "trend_hit_detail", "tourn_seed_signal", "tourn_r1_profile",
         "trend_flag", "trend_flag_pick", "key_signal", "key_signal_pick",
         "total_pick", "total_conf", "total_edge",
     ]
@@ -616,10 +806,13 @@ def main() -> int:
         pure_edge_for_model = float(
             pd.to_numeric(row.get("spread_edge", 0), errors="coerce") or 0
         )
-        tourn_sig = _tourn_seed_signal(
-            home, away,
-            row.get("home_seed"), row.get("away_seed"),
-            pure_edge, tourn_rates,
+        h_seed_val = row.get("home_seed")
+        a_seed_val = row.get("away_seed")
+        tourn_sig  = _tourn_seed_signal(
+            home, away, h_seed_val, a_seed_val, pure_edge, tourn_rates,
+        )
+        r1_profile = _tourn_r1_profile(
+            home, away, h_seed_val, a_seed_val, pure_edge, cage_lookup, tourn_rates,
         )
         pure_rows.append({
             "game_date":         str(row.get("game_date", ""))[:10],
@@ -635,6 +828,7 @@ def main() -> int:
             "trend_hit_pct":     hit_pct_str,
             "trend_hit_detail":  hit_detail,
             "tourn_seed_signal": tourn_sig,
+            "tourn_r1_profile":  r1_profile,
             "netrtg_trend_home": round(h, 2),
             "netrtg_trend_away": round(a, 2),
             "vs_model":          vs_model,
@@ -646,7 +840,7 @@ def main() -> int:
     _EMPTY_PURE_COLS = [
         "game_date", "game_time_et", "away_team", "home_team", "vegas_spread",
         "trend_pick", "trend_team_pick", "trend_conf", "active_trends", "multi_trend",
-        "trend_hit_pct", "trend_hit_detail", "tourn_seed_signal",
+        "trend_hit_pct", "trend_hit_detail", "tourn_seed_signal", "tourn_r1_profile",
         "netrtg_trend_home", "netrtg_trend_away",
         "vs_model", "model_pick", "spread_conf", "spread_edge",
     ]
