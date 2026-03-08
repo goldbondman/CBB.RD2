@@ -16,12 +16,16 @@ Generate two trend-picks CSVs:
 
 from __future__ import annotations
 
+import sys
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).parent))
+from kelly import kelly_units as _kelly_units, is_elite_spot as _is_elite
 
 TREND_THRESHOLD = 1.5       # net rtg/game considered "trending"
 CONF_ALLOWED    = {"HIGH", "MED"}
@@ -1110,6 +1114,8 @@ def main() -> int:
             "total_edge":             round(float(total_edge), 1) if pd.notna(total_edge) and total_pick != "PASS" else np.nan,
             "cage_em_diff":           _cage_em_diff,
             "cage_validates":         _cage_val,
+            "kelly_units":            _kelly_units(edge, _cage_val, True),
+            "is_elite_spot":          _is_elite(edge, _cage_val, True),
         })
 
     _EMPTY_MODEL_COLS = [
@@ -1124,6 +1130,7 @@ def main() -> int:
         "trend_flag", "trend_flag_pick", "key_signal", "key_signal_pick",
         "total_pick", "total_conf", "total_edge",
         "cage_em_diff", "cage_validates",
+        "kelly_units", "is_elite_spot",
     ]
 
     if not model_rows:

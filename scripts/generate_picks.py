@@ -3,11 +3,15 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import joblib
+
+sys.path.insert(0, str(Path(__file__).parent))
+from kelly import kelly_units as _kelly_units, is_elite_spot as _is_elite
 
 _CAGE_RANKINGS_PATH = Path("data/cbb_rankings.csv")
 _CAGE_EM_THRESHOLD = 3.0  # below this = coin-flip territory, treat as NEUTRAL
@@ -319,6 +323,12 @@ def main() -> int:
                 "cage_edge_bucket": _cage_edge_bucket(abs(s_edge)),
                 "cage_em_diff": c_em_diff,
                 "cage_validates": _cage_validates(s_edge, c_em_diff),
+                "kelly_units": _kelly_units(
+                    s_edge,
+                    _cage_validates(s_edge, c_em_diff),
+                    False,   # trend unknown at this stage; updated by trend picks pipeline
+                ) if str(row.get("model_pick", "PASS")) != "PASS" else 0.0,
+                "is_elite_spot": False,  # requires trend confirmation; set by downstream
             }
         )
 
@@ -350,6 +360,8 @@ def main() -> int:
         "cage_edge_bucket",
         "cage_em_diff",
         "cage_validates",
+        "kelly_units",
+        "is_elite_spot",
     ]
     out = out[[c for c in ordered_cols if c in out.columns]]
     out.to_csv("data/cbb_picks_today.csv", index=False)
