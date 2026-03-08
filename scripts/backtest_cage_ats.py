@@ -26,15 +26,18 @@ import numpy as np
 import pandas as pd
 
 _CTX_PATH     = Path("data/backtest_predictions_with_context.csv")
+_TRAIN_PATH   = Path("data/backtest_training_data.csv")
 _BT_PATH      = Path("data/backtest_results_latest.csv")
 _OUT_MD       = Path("data/cage_ats_backtest.md")
 _OUT_CSV      = Path("data/cage_ats_backtest.csv")
 
+# ATS edge buckets — EM magnitude used as CAGE conviction proxy
 _EDGE_BUCKETS = [
-    ("0–3",   0.0,  3.0),
-    ("3.1–5", 3.0,  5.0),
-    ("5.1–8", 5.0,  8.0),
-    ("8.1+",  8.0, 999.0),
+    ("0–3",    0.0,   3.0),
+    ("3.1–5",  3.0,   5.0),
+    ("5.1–10", 5.0,  10.0),
+    ("10–20", 10.0,  20.0),
+    ("20+",   20.0, 999.0),
 ]
 _SU_BUCKETS = [
     ("0–3",   0.0,  3.0),
@@ -56,39 +59,66 @@ def _roi(wins: int, total: int) -> float:
 
 
 def _load() -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Return (ctx_df, ats_df) where ats_df is subset with market spread."""
-    # Prefer larger predictions_with_context dataset
-    path = _CTX_PATH if _CTX_PATH.exists() else _BT_PATH
-    if not path.exists():
-        print(f"[ERROR] Neither {_CTX_PATH} nor {_BT_PATH} found")
+    """Return (su_df, ats_df).
+
+    su_df  — all games with cage_em_diff + actual_margin (SU analysis)
+    ats_df — 404-game set from backtest_training_data.csv with ESPN spread +
+             home_covered_ats.  Falls back to 88-game market_spread set if
+             training data is unavailable.
+
+    Note: ats_df uses cage_em_diff sign as pick direction and |cage_em_diff|
+    as conviction proxy, since cagerankings_spread is not in the training file.
+    """
+    # ── SU dataset (3 297 games) ────────────────────────────────────────────
+    ctx_path = _CTX_PATH if _CTX_PATH.exists() else _BT_PATH
+    if not ctx_path.exists():
+        print(f"[ERROR] SU dataset not found at {_CTX_PATH} or {_BT_PATH}")
         sys.exit(1)
 
-    df = pd.read_csv(path, low_memory=False)
-    print(f"[INFO] Loaded {len(df)} rows from {path}")
+    su_df = pd.read_csv(ctx_path, low_memory=False)
+    print(f"[INFO] SU dataset: {len(su_df)} rows from {ctx_path}")
+    for col in ["actual_margin", "cage_em_diff", "cagerankings_spread"]:
+        if col in su_df.columns:
+            su_df[col] = pd.to_numeric(su_df[col], errors="coerce")
+    su_df = su_df.dropna(subset=["actual_margin", "cage_em_diff"]).copy()
+    print(f"[INFO] SU after null-drop: {len(su_df)} games")
 
-    numeric = [
-        "actual_margin", "cage_em_diff", "cage_edge",
-        "cagerankings_spread", "ens_spread",
-        "market_spread", "home_market_spread",
-        "luckregression_spread", "fourfactors_spread",
-        "situational_spread",
-    ]
-    for col in numeric:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+    # ── ATS dataset — prefer 404-game training set ──────────────────────────
+    if _TRAIN_PATH.exists():
+        td = pd.read_csv(_TRAIN_PATH, low_memory=False)
+        for col in ["cage_em_diff", "espn_spread", "spread_line", "actual_margin",
+                    "home_covered_ats", "pred_spread"]:
+            if col in td.columns:
+                td[col] = pd.to_numeric(td[col], errors="coerce")
 
-    # Resolve market spread column
-    if "market_spread" not in df.columns or df["market_spread"].notna().sum() < df.get("home_market_spread", pd.Series()).notna().sum():
-        df["market_spread"] = df.get("home_market_spread", pd.Series(np.nan, index=df.index))
+        # Resolve best market spread column
+        if "espn_spread" in td.columns and td["espn_spread"].notna().sum() > 50:
+            td["market_spread"] = td["espn_spread"]
+        elif "spread_line" in td.columns:
+            td["market_spread"] = td["spread_line"]
 
-    df = df.dropna(subset=["actual_margin", "cage_em_diff", "cagerankings_spread"]).copy()
-    print(f"[INFO] After dropping nulls: {len(df)} games")
+        ats = td.dropna(subset=["cage_em_diff", "market_spread", "home_covered_ats"]).copy()
+        ats["home_covered"] = ats["home_covered_ats"].astype(int)
+        # Derive actual_margin if missing
+        if "actual_margin" not in ats.columns or ats["actual_margin"].isna().all():
+            ats["actual_margin"] = np.nan
+        ats["ats_source"] = "training_data (espn_spread)"
+        print(f"[INFO] ATS dataset (training): {len(ats)} games with ESPN spread + ATS outcome")
+    else:
+        # Fallback to original 88-game market_spread set
+        for col in ["market_spread", "home_market_spread", "ens_spread"]:
+            if col in su_df.columns:
+                su_df[col] = pd.to_numeric(su_df[col], errors="coerce")
+        if "market_spread" not in su_df.columns or su_df["market_spread"].notna().sum() < 50:
+            su_df["market_spread"] = su_df.get("home_market_spread",
+                                               pd.Series(np.nan, index=su_df.index))
+        ats = su_df.dropna(subset=["market_spread", "cagerankings_spread"]).copy()
+        ats["ats_outcome"]  = ats["actual_margin"] - ats["market_spread"]
+        ats["home_covered"] = (ats["ats_outcome"] > 0).astype(int)
+        ats["ats_source"] = "ctx (market_spread)"
+        print(f"[INFO] ATS dataset (fallback): {len(ats)} games with market spread")
 
-    ats = df.dropna(subset=["market_spread"]).copy()
-    ats["ats_outcome"]  = ats["actual_margin"] - ats["market_spread"]
-    ats["home_covered"] = (ats["ats_outcome"] > 0).astype(int)
-
-    return df, ats
+    return su_df, ats
 
 
 def _su_analysis(df: pd.DataFrame) -> list[str]:
@@ -125,15 +155,26 @@ def _su_analysis(df: pd.DataFrame) -> list[str]:
 
 
 def _ats_analysis(ats: pd.DataFrame) -> tuple[list[str], pd.DataFrame]:
-    """ATS hit rate and ROI on games with market spread lines."""
+    """ATS hit rate and ROI on games with market spread lines.
+
+    Pick signal: cage_em_diff > 0 → pick home; < 0 → pick away.
+    Conviction proxy: |cage_em_diff| magnitude buckets.
+    (cagerankings_spread not required — works with raw EM diff.)
+    """
     lines: list[str] = []
     ats = ats.copy()
+    source = ats["ats_source"].iloc[0] if "ats_source" in ats.columns else "unknown"
 
-    ats["cage_edge_vs_mkt"] = ats["cagerankings_spread"] - ats["market_spread"]
-    ats["cage_pick_home"]   = (ats["cage_edge_vs_mkt"] > 0).astype(int)
+    # CAGE pick direction from raw EM diff (positive = home better quality)
+    ats["cage_pick_home"]   = (ats["cage_em_diff"] > 0).astype(int)
     ats["cage_ats_correct"] = (ats["cage_pick_home"] == ats["home_covered"]).astype(int)
 
-    if "ens_spread" in ats.columns:
+    # Ensemble pick if available
+    if "pred_spread" in ats.columns and ats["pred_spread"].notna().sum() > 10:
+        ats["ens_edge_vs_mkt"] = ats["pred_spread"] - ats["market_spread"]
+        ats["ens_pick_home"]   = (ats["ens_edge_vs_mkt"] > 0).astype(int)
+        ats["ens_ats_correct"] = (ats["ens_pick_home"] == ats["home_covered"]).astype(int)
+    elif "ens_spread" in ats.columns and ats["ens_spread"].notna().sum() > 10:
         ats["ens_edge_vs_mkt"] = ats["ens_spread"] - ats["market_spread"]
         ats["ens_pick_home"]   = (ats["ens_edge_vs_mkt"] > 0).astype(int)
         ats["ens_ats_correct"] = (ats["ens_pick_home"] == ats["home_covered"]).astype(int)
@@ -143,36 +184,39 @@ def _ats_analysis(ats: pd.DataFrame) -> tuple[list[str], pd.DataFrame]:
     cage_pct  = cage_wins / n * 100 if n else 0
     cage_roi  = _roi(cage_wins, n)
 
-    lines.append(f"**Sample size**: {n} games with market spread lines")
+    lines.append(f"**Sample size**: {n} games ({source})")
+    lines.append("**Pick signal**: `cage_em_diff` direction (home > 0 → pick home)")
+    lines.append("**Conviction**: `|cage_em_diff|` magnitude buckets")
     lines.append("")
     lines.append("### Overall ATS Performance\n")
     lines.append("| Model | W | L | ATS% | ROI (−110) |")
     lines.append("|-------|---|---|------|------------|")
-    lines.append(f"| CAGERankings | {cage_wins} | {n-cage_wins} | {cage_pct:.1f}% | {cage_roi:+.1f}% |")
+    lines.append(f"| CAGE (EM direction) | {cage_wins} | {n-cage_wins} | {cage_pct:.1f}% | {cage_roi:+.1f}% |")
 
     if "ens_ats_correct" in ats.columns:
         ens_wins = int(ats["ens_ats_correct"].sum())
         ens_pct  = ens_wins / n * 100 if n else 0
         ens_roi  = _roi(ens_wins, n)
-        lines.append(f"| Ensemble | {ens_wins} | {n-ens_wins} | {ens_pct:.1f}% | {ens_roi:+.1f}% |")
+        lines.append(f"| Ensemble (pred_spread) | {ens_wins} | {n-ens_wins} | {ens_pct:.1f}% | {ens_roi:+.1f}% |")
 
     lines.append("")
-    lines.append("### ATS by Edge Bucket (CAGE vs market line)\n")
-    lines.append("| Edge bucket | W | L | ATS% | ROI (−110) | Note |")
-    lines.append("|-------------|---|---|------|------------|------|")
+    lines.append("### ATS by CAGE Conviction (|cage_em_diff| magnitude)\n")
+    lines.append("| EM magnitude | W | L | ATS% | ROI (−110) | n | Note |")
+    lines.append("|--------------|---|---|------|------------|---|------|")
 
     for label, lo, hi in _EDGE_BUCKETS:
-        mask = ats["cage_edge_vs_mkt"].abs().between(lo, hi - 0.001 if hi < 999 else hi)
+        hi_val = hi - 0.001 if hi < 999 else hi
+        mask = ats["cage_em_diff"].abs().between(lo, hi_val)
         sub = ats[mask]
-        if len(sub) < 3:
-            lines.append(f"| {label} | — | — | — | — | n={len(sub)} (too small) |")
+        if len(sub) < 5:
+            lines.append(f"| {label} | — | — | — | — | {len(sub)} | too small |")
             continue
         wins = int(sub["cage_ats_correct"].sum())
         losses = len(sub) - wins
         pct = wins / len(sub) * 100
         roi = _roi(wins, len(sub))
         note = "✓ VALUE" if pct >= 55 and roi > 0 else ("⚠ FADE" if pct < 45 else "—")
-        lines.append(f"| {label} | {wins} | {losses} | {pct:.1f}% | {roi:+.1f}% | {note} |")
+        lines.append(f"| {label} | {wins} | {losses} | {pct:.1f}% | {roi:+.1f}% | {len(sub)} | {note} |")
 
     return lines, ats
 
@@ -182,10 +226,8 @@ def _underdog_analysis(ats: pd.DataFrame) -> list[str]:
     lines: list[str] = []
     ats = ats.copy()
 
-    if "cage_edge_vs_mkt" not in ats.columns:
-        ats["cage_edge_vs_mkt"] = ats["cagerankings_spread"] - ats["market_spread"]
     if "cage_pick_home" not in ats.columns:
-        ats["cage_pick_home"] = (ats["cage_edge_vs_mkt"] > 0).astype(int)
+        ats["cage_pick_home"] = (ats["cage_em_diff"] > 0).astype(int)
     if "cage_ats_correct" not in ats.columns:
         ats["cage_ats_correct"] = (ats["cage_pick_home"] == ats["home_covered"]).astype(int)
 
@@ -233,19 +275,25 @@ def _stacking_analysis(ats: pd.DataFrame) -> list[str]:
     """CAGE + ensemble agreement as a stacking filter."""
     lines: list[str] = []
 
-    if "ens_spread" not in ats.columns or "cage_edge_vs_mkt" not in ats.columns:
-        lines.append("_Ensemble column not available — skipping stacking analysis_")
-        return lines
-
     ats = ats.copy()
     if "cage_pick_home" not in ats.columns:
-        ats["cage_pick_home"] = (ats["cage_edge_vs_mkt"] > 0).astype(int)
+        ats["cage_pick_home"] = (ats["cage_em_diff"] > 0).astype(int)
     if "cage_ats_correct" not in ats.columns:
         ats["cage_ats_correct"] = (ats["cage_pick_home"] == ats["home_covered"]).astype(int)
-    if "ens_pick_home" not in ats.columns:
-        ats["ens_edge_vs_mkt"] = ats["ens_spread"] - ats["market_spread"]
-        ats["ens_pick_home"]   = (ats["ens_edge_vs_mkt"] > 0).astype(int)
-        ats["ens_ats_correct"] = (ats["ens_pick_home"] == ats["home_covered"]).astype(int)
+
+    ens_col = None
+    if "ens_ats_correct" not in ats.columns:
+        for spread_col in ("pred_spread", "ens_spread"):
+            if spread_col in ats.columns and ats[spread_col].notna().sum() > 10:
+                ats["ens_edge_vs_mkt"] = ats[spread_col] - ats["market_spread"]
+                ats["ens_pick_home"]   = (ats["ens_edge_vs_mkt"] > 0).astype(int)
+                ats["ens_ats_correct"] = (ats["ens_pick_home"] == ats["home_covered"]).astype(int)
+                ens_col = spread_col
+                break
+
+    if "ens_ats_correct" not in ats.columns:
+        lines.append("_Ensemble column not available — skipping stacking analysis_")
+        return lines
 
     ats["cage_ens_agree"] = (ats["cage_pick_home"] == ats["ens_pick_home"]).astype(int)
     agree    = ats[ats["cage_ens_agree"] == 1]
@@ -312,23 +360,24 @@ def main() -> int:
 
     doc.append("\n---\n")
     doc.append("## Summary & Recommendations\n")
-    doc.append("""
+    n_ats = len(ats_enriched)
+    cage_pct_all = ats_enriched["cage_ats_correct"].mean() * 100 if n_ats else 0
+    dog_mask = ats_enriched.get("cage_picks_dog", pd.Series(dtype=int)) == 1 if "cage_picks_dog" in ats_enriched.columns else pd.Series(False, index=ats_enriched.index)
+    dog_pct = ats_enriched.loc[dog_mask, "cage_ats_correct"].mean() * 100 if dog_mask.any() else 0
+    doc.append(f"""
 | Dimension | Finding |
 |-----------|---------|
-| SU accuracy (all games) | **58.3%** — solid directional predictor when |EM| > 10 |
-| ATS hit rate (88 games) | **59.1%** — matches ensemble; sample too small for conviction |
-| Best ATS edge bucket | **8.1+ edge: 65.5% / +25% ROI** (n=55) — highest value tier |
-| Market underdog picks | CAGE picks dog 43% of time but covers only 24% — **avoid** |
-| Stacking with ensemble | 98% agreement rate — minimal additive signal |
-| Primary value | Confirming signal for large-edge (8.1+) ensemble picks, not standalone |
+| SU accuracy (all games) | Directional predictor; strongest when |EM| > 10 |
+| ATS hit rate ({n_ats} games) | **{cage_pct_all:.1f}%** using cage_em_diff direction |
+| Market underdog picks | CAGE picks dog ~43% of time; covers only ~{dog_pct:.0f}% — **avoid** |
+| Primary value | Validation signal alongside model/trend picks, not standalone |
 
 ### How to use CAGE in the pick stack:
 
 1. **Don't** use cage_em_diff alone to pick vs. a spread. The market already knows team quality.
-2. **Do** use CAGE edge bucket as a filter: when the ensemble has 8.1+ edge AND CAGE agrees,
-   that bucket historically runs at 65%+ ATS.
-3. **Do** use CAGE magnitude (|EM_diff| > 30) to flag dominant matchups — 65% SU accuracy
-   means the "underdog" is likely just losing outright, not covering in tight games.
+2. **Do** use cage_validates (CONFIRMS/NEUTRAL/DIVERGES) as a filter on model/trend picks.
+3. **Do** use CAGE magnitude (|EM_diff| > 20) to flag dominant matchups — high SU accuracy
+   means the "underdog" is likely losing outright, not covering in tight games.
 4. **Do** use `tourn_r1_profile` flags (which incorporate CAGE) as structural context for
    identifying vulnerable favorites in the March tournament.
 """)
@@ -340,13 +389,13 @@ def main() -> int:
     # ── Save game-level CSV ─────────────────────────────────────────────────
     if not ats_enriched.empty:
         out_cols = [
-            "game_datetime", "home_team", "away_team",
-            "actual_margin", "market_spread", "ats_outcome",
-            "home_covered", "cage_em_diff", "cagerankings_spread",
-            "cage_edge_vs_mkt", "cage_pick_home", "cage_ats_correct",
+            "game_date", "game_datetime", "home_team", "away_team",
+            "actual_margin", "market_spread", "home_covered",
+            "cage_em_diff", "cage_pick_home", "cage_ats_correct",
+            "ats_source",
         ]
         if "ens_ats_correct" in ats_enriched.columns:
-            out_cols += ["ens_spread", "ens_pick_home", "ens_ats_correct", "cage_ens_agree"]
+            out_cols += ["pred_spread", "ens_pick_home", "ens_ats_correct", "cage_ens_agree"]
         if "cage_picks_dog" in ats_enriched.columns:
             out_cols.append("cage_picks_dog")
         available = [c for c in out_cols if c in ats_enriched.columns]
