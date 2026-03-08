@@ -1,0 +1,9 @@
+seed_tier,ref_n,ref_fav_cover_pct,ref_dog_cover_pct,ref_upset_su_pct,ref_note,api_n_games,api_fav_covers,api_dog_covers,fav_cover_pct,dog_cover_pct,upset_su_pct,avg_fav_margin,typical_line,interpretation
+1_vs_16,160,51.3,48.7,1.3,1 seeds 150-2 SU but near 50/50 ATS,,,,51.3,48.7,1.3,,,1 seeds 150-2 SU but near 50/50 ATS
+2_vs_15,160,55.6,44.4,6.3,2 seeds reliable SU; ATS moderate,,,,55.6,44.4,6.3,,,2 seeds reliable SU; ATS moderate
+3_vs_14,160,52.5,47.5,15.0,Slight tilt toward 3 seed covering,,,,52.5,47.5,15.0,,,Slight tilt toward 3 seed covering
+4_vs_13,160,50.0,50.0,21.3,Near-perfect coin flip ATS,,,,50.0,50.0,21.3,,,Near-perfect coin flip ATS
+5_vs_12,160,40.4,59.6,35.6,FADE 5 seed — 12s cover 59.6% ATS (last 15 tourneys),,,,40.4,59.6,35.6,,,FADE 5 seed — 12s cover 59.6% ATS (last 15 tourneys)
+6_vs_11,160,37.3,62.7,37.5,STRONG FADE 6 seed — 11s cover 62.7% ATS,,,,37.3,62.7,37.5,,,STRONG FADE 6 seed — 11s cover 62.7% ATS
+7_vs_10,160,52.5,47.5,39.4,Non-power 7 seeds: 70% ATS; power conf 7s: ~44%,,,,52.5,47.5,39.4,,,Non-power 7 seeds: 70% ATS; power conf 7s: ~44%
+8_vs_9,160,22.7,77.3,47.5,AVOID 8 seed as small fav — 9s and dogs 77% ATS,,,,22.7,77.3,47.5,,,AVOID 8 seed as small fav — 9s and dogs 77% ATS
