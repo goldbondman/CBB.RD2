@@ -304,6 +304,14 @@ jobs:
           python scripts/generate_prediction_report.py
           echo "[OK] 30-hour prediction report generated"
 
+      - name: CAGE ATS backtest
+        if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/backtest_cage_ats.py
+          echo "[OK] CAGE ATS backtest written"
+
       - name: Guard required outputs, oversize files, and build artifact payload
         if: always()
         shell: bash
@@ -481,6 +489,8 @@ jobs:
             data/cbb_pure_trend_picks_today.csv
             data/prediction_report_30h.md
             data/prediction_report_30h.csv
+            data/cage_ats_backtest.md
+            data/cage_ats_backtest.csv
 
       - name: Commit and push model outputs to main
         if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
@@ -508,6 +518,8 @@ jobs:
             data/cbb_pure_trend_picks_today.csv
             data/prediction_report_30h.md
             data/prediction_report_30h.csv
+            data/cage_ats_backtest.md
+            data/cage_ats_backtest.csv
           )
           echo "[INFO] commit scope paths:"
           printf '  - %s\n' "${COMMIT_PATHS[@]}"

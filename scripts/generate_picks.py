@@ -49,6 +49,19 @@ def _conf_tier(edge_abs: float, prob_dist: float) -> str:
     return "PASS"
 
 
+# Edge bucket labels — mirrors backtest_cage_ats.py buckets.
+# The 5.1–8 bucket showed 36.4% ATS / −30.6% ROI in CAGE ATS backtest (n=11).
+# Flag it so users know CAGE's spread compression in this range is historically noisy.
+def _cage_edge_bucket(edge_abs: float) -> str:
+    if edge_abs < 3.0:
+        return "0–3"
+    if edge_abs < 5.0:
+        return "3.1–5"
+    if edge_abs < 8.0:
+        return "5.1–8 (CAGE dead zone)"
+    return "8.1+"
+
+
 def _vegas_pred_win(row: pd.Series) -> str:
     line = row.get("closing_spread", np.nan)
     if pd.isna(line):
@@ -253,6 +266,7 @@ def main() -> int:
                 "key_signal": _key_signal(row),
                 "trend_flag": _trend_flag(row),
                 "total_key_signal": _total_key_signal(row),
+                "cage_edge_bucket": _cage_edge_bucket(abs(s_edge)),
             }
         )
 
@@ -281,6 +295,7 @@ def main() -> int:
         "key_signal",
         "trend_flag",
         "total_key_signal",
+        "cage_edge_bucket",
     ]
     out = out[[c for c in ordered_cols if c in out.columns]]
     out.to_csv("data/cbb_picks_today.csv", index=False)

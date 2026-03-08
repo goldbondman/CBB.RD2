@@ -1028,13 +1028,26 @@ class CAGERankingsModel(_BaseModel):
         resume_edge = (home.resume_score - away.resume_score) / 50.0
         dna_edge    = (home.dna_score - away.dna_score) / 50.0
 
-        base_margin = (
-            0.45 * power_edge
-            + 0.15 * suff_edge
-            + 0.15 * clutch_edge
-            + 0.15 * resume_edge
-            + 0.10 * dna_edge
-        )
+        # Neutral site: shift weight from schedule-dependent power index
+        # toward clutch execution and tournament DNA.  Power index is
+        # SOS-adjusted but built on home/away splits; at a neutral court
+        # those splits are irrelevant and DNA is directly predictive.
+        if neutral:
+            base_margin = (
+                0.35 * power_edge
+                + 0.15 * suff_edge
+                + 0.20 * clutch_edge   # +5pp — big-game execution
+                + 0.10 * resume_edge   # -5pp — home-schedule resume less valid
+                + 0.20 * dna_edge      # +10pp — tournament DNA specifically predictive
+            )
+        else:
+            base_margin = (
+                0.45 * power_edge
+                + 0.15 * suff_edge
+                + 0.15 * clutch_edge
+                + 0.15 * resume_edge
+                + 0.10 * dna_edge
+            )
 
         if all(
             abs(v - 50.0) < 1e-6
@@ -1052,16 +1065,29 @@ class CAGERankingsModel(_BaseModel):
             self._loc_net(home, True, neutral) - self._loc_net(away, False, neutral)
         ) * 0.20
         margin = base_margin + loc_context_edge + self._hca(neutral)
+
+        # Pace normalization: a given EM gap produces a larger actual-game spread
+        # in a high-possession game than a slow, grind-it-out game.
+        # Scale by tempo relative to league average; clip to ±18% to limit outliers.
+        pace = self._loc_game_pace(home, away, neutral)
+        pace_factor = max(0.82, min(1.18, pace / LEAGUE_AVG_PACE))
+        margin *= pace_factor
+
         spread = -margin
 
-        pace = self._loc_game_pace(home, away, neutral)
+        # Variance-adjusted confidence: teams with volatile recent net ratings
+        # are inherently harder to pin down — shrink confidence proportionally.
+        _NORM_STD = 8.0          # approximate league-average net_rtg std over L10
+        avg_std = (home.net_rtg_std_l10 + away.net_rtg_std_l10) / 2.0
+        variance_penalty = max(0.0, min(0.12, (avg_std - _NORM_STD) / _NORM_STD * 0.12))
+
         h_form_off = home.ortg_l10 if abs(home.ortg_l10) > 1e-6 else self._loc_off(home, True, neutral)
         a_form_off = away.ortg_l10 if abs(away.ortg_l10) > 1e-6 else self._loc_off(away, False, neutral)
         total = self._eff_to_total(h_form_off, a_form_off, pace)
 
         sample_conf = self._confidence_from_games(home, away)
         risk_penalty = (home.star_risk + away.star_risk - 100.0) / 200.0
-        conf = max(0.10, min(0.95, sample_conf - max(0.0, risk_penalty)))
+        conf = max(0.10, min(0.95, sample_conf - max(0.0, risk_penalty) - variance_penalty))
 
         return ModelPrediction(
             self.name, round(spread, 2), round(total, 1), round(conf, 3)
