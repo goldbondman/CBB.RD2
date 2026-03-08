@@ -87,10 +87,19 @@ REFERENCE_ATS = [
 ]
 
 # ── Round classification keywords ─────────────────────────────────────────────
-_R1_KEYWORDS = frozenset(["first round", "round of 64", "r64", "first four", "opening round"])
-_R2_KEYWORDS = frozenset(["second round", "round of 32", "r32"])
+# ESPN headlines use "1st Round" / "2nd Round" (ordinal), not "First/Second Round".
+# "First Four" is the play-in round — treated as R1 for ATS purposes since
+# it produces 11 vs 11 and 16 vs 16 matchups feeding into the main bracket.
+_R1_KEYWORDS = frozenset(["1st round", "first round", "round of 64", "r64",
+                           "first four", "opening round"])
+_R2_KEYWORDS = frozenset(["2nd round", "second round", "round of 32", "r32"])
 _LATE_KEYWORDS = frozenset(["sweet 16", "elite 8", "final four", "national championship",
-                             "semifinal", "quarterfinal", "regional"])
+                             "semifinal", "quarterfinal", "regional",
+                             "3rd round", "third round"])
+
+# Only include NCAA Men's Basketball Championship (tournamentId 22).
+# Excludes NIT (21), CBI, Basketball Classic (42), etc.
+_NCAA_TOURNAMENT_ID = "22"
 
 
 def _date_range(start: date, end: date):
@@ -105,7 +114,7 @@ def _seed_tier(fav: int, dog: int) -> str:
 
 
 def _classify_round(notes: list[dict], season_slug: str) -> str:
-    """Return 'R1', 'R2', 'LATE', or 'UNKNOWN' from ESPN game notes."""
+    """Return 'R1', 'R2', 'LATE', or 'UNKNOWN' from ESPN game notes/slug."""
     texts = [n.get("headline", "").lower() for n in notes] + [season_slug.lower()]
     combined = " ".join(texts)
     if any(kw in combined for kw in _LATE_KEYWORDS):
@@ -136,6 +145,11 @@ def _parse_tournament_games(data: dict, year: int) -> list[dict]:
 
         # Skip incomplete games
         if not comp.get("status", {}).get("type", {}).get("completed", False):
+            continue
+
+        # Filter to NCAA Men's Basketball Championship only (tournamentId=22)
+        tourn_id = str(comp.get("tournamentId", "")).strip()
+        if tourn_id and tourn_id != _NCAA_TOURNAMENT_ID:
             continue
 
         notes = comp.get("notes", [])
@@ -180,12 +194,13 @@ def _parse_tournament_games(data: dict, year: int) -> list[dict]:
             continue
 
         games.append({
-            "year":       year,
-            "event_id":   event.get("id", ""),
-            "game_date":  event.get("date", "")[:10],
-            "round":      round_label,
-            "round_note": notes[0].get("headline", "") if notes else "",
-            "home_team":  home.get("team", ""),
+            "year":         year,
+            "event_id":     event.get("id", ""),
+            "game_date":    event.get("date", "")[:10],
+            "round":        round_label,
+            "round_note":   notes[0].get("headline", "") if notes else "",
+            "tournament_id": tourn_id,
+            "home_team":    home.get("team", ""),
             "home_seed":  home.get("seed"),
             "home_score": home.get("score", 0.0),
             "away_team":  away.get("team", ""),
