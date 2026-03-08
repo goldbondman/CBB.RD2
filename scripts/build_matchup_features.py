@@ -172,6 +172,11 @@ def main() -> int:
     rows: list[dict[str, object]] = []
     skipped: list[dict[str, str]] = []
     now_utc = pd.Timestamp.now(tz="UTC")
+    # Window: [now - 30min grace, now + 30h] covers games starting at run time through 6pm PST next day
+    # when run at 12pm PST.  The 30-min grace handles the sub-second/minute drift between a game's
+    # stored UTC tip-off time and the moment this script executes.
+    _window_start = now_utc - pd.Timedelta(minutes=30)
+    _window_end   = now_utc + pd.Timedelta(hours=30)
 
     for _, game in market.iterrows():
         gdate = game[date_col]
@@ -262,7 +267,7 @@ def main() -> int:
         if result_col and result_col in market.columns:
             is_upcoming = pd.isna(game.get(result_col))
         else:
-            is_upcoming = (not has_scores) and (pd.isna(gdate) or gdate >= now_utc)
+            is_upcoming = (not has_scores) and pd.notna(gdate) and (_window_start <= gdate <= _window_end)
 
         rows.append(
             {

@@ -1361,6 +1361,23 @@ def main() -> None:
         args.days_back,
         today=_pipeline_today(args.timezone),
     )
+
+    # Pregame default run: extend to tomorrow so the market master includes games up to
+    # 30+ hours ahead.  This lets the perplexity pipeline produce picks for any game
+    # starting between the 12pm PST run time and 6pm PST the following day.
+    # Only applied when no explicit date range or days-back override was provided.
+    if (
+        args.mode == "pregame"
+        and not args.backfill_days
+        and args.start_date is None
+        and args.end_date is None
+        and args.days_back is None
+    ):
+        tomorrow = _pipeline_today(args.timezone) + timedelta(days=1)
+        if end_date < tomorrow:
+            end_date = tomorrow
+            log.info("Pregame mode: extending capture window to include tomorrow (%s)", end_date)
+
     log.info(
         "Resolved date range: start=%s end=%s timezone=%s espn_groups=%s",
         start_date,
