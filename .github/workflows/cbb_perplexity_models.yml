@@ -312,6 +312,14 @@ jobs:
           python scripts/backtest_cage_ats.py
           echo "[OK] CAGE ATS backtest written"
 
+      - name: Signal alignment backtest (Model + CAGE + Trend)
+        if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/backtest_alignment.py
+          echo "[OK] Alignment backtest written"
+
       - name: Guard required outputs, oversize files, and build artifact payload
         if: always()
         shell: bash
@@ -491,6 +499,8 @@ jobs:
             data/prediction_report_30h.csv
             data/cage_ats_backtest.md
             data/cage_ats_backtest.csv
+            data/backtest_alignment.md
+            data/backtest_alignment.csv
 
       - name: Commit and push model outputs to main
         if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
@@ -520,6 +530,8 @@ jobs:
             data/prediction_report_30h.csv
             data/cage_ats_backtest.md
             data/cage_ats_backtest.csv
+            data/backtest_alignment.md
+            data/backtest_alignment.csv
           )
           echo "[INFO] commit scope paths:"
           printf '  - %s\n' "${COMMIT_PATHS[@]}"
