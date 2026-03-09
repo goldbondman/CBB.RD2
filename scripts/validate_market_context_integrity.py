@@ -32,12 +32,23 @@ def main() -> int:
     if merge_report_path.exists():
         report = json.loads(merge_report_path.read_text(encoding="utf-8"))
         slate_games = int(report.get("slate_games", 0))
+        effective_slate_games = int(report.get("effective_slate_games", slate_games))
+        filtered_final_games = int(report.get("filtered_final_games", 0))
         merged_games = int(report.get("merged_games", 0))
-        required = int(round(slate_games * args.min_coverage_ratio))
-        print(f"[INFO] merge_report slate_games={slate_games} merged_games={merged_games} required={required}")
-        if slate_games >= 10 and merged_games < required:
+        coverage_basis = effective_slate_games if effective_slate_games > 0 else slate_games
+        required = int(round(coverage_basis * args.min_coverage_ratio))
+        print(
+            "[INFO] merge_report "
+            f"slate_games={slate_games} "
+            f"effective_slate_games={effective_slate_games} "
+            f"filtered_final_games={filtered_final_games} "
+            f"merged_games={merged_games} required={required}"
+        )
+        if coverage_basis >= 10 and merged_games < required:
             errors.append(
-                f"merge_report coverage failed: merged_games={merged_games} < required={required} (slate_games={slate_games})"
+                "merge_report coverage failed: "
+                f"merged_games={merged_games} < required={required} "
+                f"(coverage_basis_games={coverage_basis}, slate_games={slate_games})"
             )
     else:
         print(f"[WARN] merge report not found: {merge_report_path}")

@@ -155,6 +155,49 @@ def _http_get_json(
             resp = requests.get(url, params=params, headers=req_headers, timeout=timeout)
             resp.raise_for_status()
             return resp.json()
+        except requests.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else None
+            if status == 403:
+                log.warning(
+                    "%s fetch forbidden (403): url=%s params=%s. Continuing without this source.",
+                    source,
+                    url,
+                    params,
+                )
+                return None
+            retryable_statuses = {408, 409, 425, 429, 500, 502, 503, 504}
+            if status not in retryable_statuses:
+                log.warning(
+                    "%s fetch failed (non-retryable HTTP %s): url=%s params=%s err=%s",
+                    source,
+                    status,
+                    url,
+                    params,
+                    exc,
+                )
+                return None
+            if attempt > retries:
+                log.warning(
+                    "%s fetch failed after %s attempts: url=%s params=%s err=%s",
+                    source,
+                    attempt,
+                    url,
+                    params,
+                    exc,
+                )
+                return None
+            sleep_s = HTTP_RETRY_BACKOFF_SECONDS * attempt
+            log.warning(
+                "%s fetch retry %s/%s: url=%s params=%s sleep=%.2fs err=%s",
+                source,
+                attempt,
+                retries + 1,
+                url,
+                params,
+                sleep_s,
+                exc,
+            )
+            time.sleep(sleep_s)
         except Exception as exc:  # noqa: BLE001
             if attempt > retries:
                 log.warning(
@@ -1076,10 +1119,19 @@ def _write_merge_report(
     }
     missing_odds_ids = sorted(merged_ids - odds_ids)
     dropped_ids = sorted(enumerated_ids - merged_ids)
+    filtered_final_games = sum(int(diag.get("events_filtered_final", 0)) for diag in capture_diagnostics)
+    effective_slate_games = sum(
+        max(int(diag.get("events_fetched", 0)) - int(diag.get("events_filtered_final", 0)), 0)
+        for diag in capture_diagnostics
+    )
+    coverage_ratio = (len(merged_ids) / effective_slate_games) if effective_slate_games > 0 else None
 
     payload = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "slate_games": len(enumerated_ids),
+        "effective_slate_games": effective_slate_games,
+        "filtered_final_games": filtered_final_games,
+        "coverage_ratio": coverage_ratio,
         "odds_games": len(odds_ids),
         "merged_games": len(merged_ids),
         "missing_odds_games": len(missing_odds_ids),
