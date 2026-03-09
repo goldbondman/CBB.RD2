@@ -1,0 +1,116 @@
+name: Run Backtest
+
+on:
+  schedule:
+    - cron: "0 12 * * 1"   # Weekly Monday noon UTC
+  workflow_dispatch:
+    inputs:
+      skip_compute:
+        description: "Skip metric computation (use existing matchup_metrics.csv)"
+        required: false
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+
+# Standardized concurrency group to prevent race conditions across all pipeline workflows
+concurrency:
+  group: cbb-data-pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  run-backtest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Get latest ESPN data run ID
+        id: get_espn_run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          run_id=$(gh run list \
+            --workflow=update_espn_cbb.yml \
+            --status=success \
+            --limit=1 \
+            --json=databaseId \
+            --jq='.[0].databaseId // ""')
+          echo "run_id=$run_id" >> $GITHUB_OUTPUT
+
+      - name: Download ESPN data artifact
+        if: steps.get_espn_run.outputs.run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: INFRA-espn-data
+          path: data/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.get_espn_run.outputs.run_id }}
+
+      - name: Verify required input data
+        run: |
+          for f in data/team_game_weighted.csv data/games.csv; do
+            if [ ! -s "$f" ]; then
+              echo "[ERROR] Required input file missing: $f"
+              echo "[ERROR] Ensure update_espn_cbb workflow has run successfully first."
+              exit 1
+            fi
+            echo "[OK] $f"
+          done
+
+      - name: Run backtest
+        run: |
+          if [ "${{ github.event.inputs.skip_compute }}" = "true" ] && [ -f data/matchup_metrics.csv ]; then
+            python run_backtest.py --skip-compute --dry-run
+          else
+            python run_backtest.py --dry-run
+          fi
+
+      - name: Upload backtest artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-backtest-run
+          retention-days: 7
+          path: |
+            backtest_results.csv
+            user_signals.csv
+            signals_library.py
+            data/matchup_metrics.csv
+            data/team_game_metrics_advanced.csv
+
+      # Standardized commit step with retry logic
+      - name: Commit to repo
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add backtest_results.csv user_signals.csv signals_library.py data/
+          if git diff --staged --quiet; then
+            echo "[SKIP] No changes to commit"
+            exit 0
+          fi
+          git commit -m "backtest: $(date +'%Y-%m-%d %H:%M UTC') [skip ci]"
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            git rebase -X ours origin/main --no-stat 2>&1 || {
+              git rebase --abort 2>/dev/null || true
+              git merge origin/main -X ours --no-edit
+            }
+            git push origin HEAD:main && { echo "[OK] Push succeeded attempt $i"; exit 0; }
+            sleep $((i * 3))
+          done
+          echo "[WARN] Push failed after 5 attempts"
