@@ -62,6 +62,7 @@ MARKET_LINES_SCHEMA_COLUMNS = [
     "away_team_name",
     "home_team_id",
     "away_team_id",
+    "game_datetime_utc",
     "capture_type",
     "captured_at_utc",
     "pulled_at_utc",
@@ -366,6 +367,81 @@ def fetch_espn_scoreboard(game_date: date, groups: str = DEFAULT_ESPN_GROUPS) ->
     events = payload.get("events", [])
     log.info("ESPN scoreboard returned %s events for date=%s groups=%s", len(events), date_str, groups_clean or "<default>")
     return events
+
+
+def _event_tipoff_local_date(event: dict, tz_name: str) -> Optional[date]:
+    """Resolve event tipoff into a local-date in the pipeline timezone."""
+    try:
+        comp = (event.get("competitions") or [{}])[0]
+        raw_ts = comp.get("date") or event.get("date")
+        if not raw_ts:
+            return None
+        tipoff_utc = pd.to_datetime(raw_ts, errors="coerce", utc=True)
+        if pd.isna(tipoff_utc):
+            return None
+        return tipoff_utc.tz_convert(ZoneInfo(tz_name)).date()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def fetch_espn_scoreboard_for_local_date(
+    game_date: date,
+    timezone_name: str,
+    groups: str = DEFAULT_ESPN_GROUPS,
+) -> list[dict]:
+    """
+    Fetch scoreboard events for a Pacific-local date.
+
+    ESPN date slices can drift near UTC boundaries, so query +/-1 day and
+    keep only events whose tipoff local date matches the requested day.
+    """
+    collected: dict[str, tuple[dict, int]] = {}
+    fallback_same_day: list[dict] = []
+
+    for offset in (-1, 0, 1):
+        query_date = game_date + timedelta(days=offset)
+        events = fetch_espn_scoreboard(query_date, groups=groups)
+        for event in events:
+            event_id = str(event.get("id", "")).strip()
+            if not event_id:
+                if offset == 0:
+                    fallback_same_day.append(event)
+                continue
+            distance = abs(offset)
+            prior = collected.get(event_id)
+            if prior is None or distance < prior[1]:
+                collected[event_id] = (event, distance)
+
+    filtered: list[dict] = []
+    for event, distance in collected.values():
+        event_local_date = _event_tipoff_local_date(event, timezone_name)
+        if event_local_date == game_date:
+            filtered.append(event)
+        elif event_local_date is None and distance == 0:
+            filtered.append(event)
+
+    for event in fallback_same_day:
+        event_local_date = _event_tipoff_local_date(event, timezone_name)
+        if event_local_date == game_date or event_local_date is None:
+            filtered.append(event)
+
+    deduped_by_id: dict[str, dict] = {}
+    no_id_events: list[dict] = []
+    for event in filtered:
+        event_id = str(event.get("id", "")).strip()
+        if event_id:
+            deduped_by_id[event_id] = event
+        else:
+            no_id_events.append(event)
+
+    output = list(deduped_by_id.values()) + no_id_events
+    log.info(
+        "ESPN local-date filter target=%s tz=%s events=%s",
+        game_date.isoformat(),
+        timezone_name,
+        len(output),
+    )
+    return output
 
 
 def fetch_pinnacle_lines() -> list[dict]:
@@ -845,6 +921,7 @@ def build_market_row(
     return {
         "game_id": event_id,
         "event_id": event_id,
+        "game_datetime_utc": market_data.get("game_time_utc"),
         "capture_type": capture_type,
         "captured_at_utc": captured_now,
         "pulled_at_utc": pulled_now,
@@ -1069,6 +1146,12 @@ def build_parser(data_dir: Path) -> argparse.ArgumentParser:
     parser.add_argument("--backfill-days", type=int, default=0)
     parser.add_argument("--timezone", type=str, default=DEFAULT_PIPELINE_TIMEZONE)
     parser.add_argument("--espn-groups", type=str, default=DEFAULT_ESPN_GROUPS)
+    parser.add_argument(
+        "--include-next-day",
+        type=_str_to_bool,
+        default=False,
+        help="Include tomorrow in pregame capture when no explicit date range is set.",
+    )
     _add_date_range_args(parser, data_dir)
     parser.add_argument("--build-views-only", action="store_true")
     return parser
@@ -1240,8 +1323,8 @@ def run_capture(
     )
 
     pulled_at_utc = datetime.now(timezone.utc).isoformat()
-    log.info("Fetching ESPN scoreboard (groups=%s)...", espn_groups or "<default>")
-    espn_events = fetch_espn_scoreboard(today, groups=espn_groups)
+    log.info("Fetching ESPN scoreboard for local_date=%s (groups=%s)...", today, espn_groups or "<default>")
+    espn_events = fetch_espn_scoreboard_for_local_date(today, timezone_name, groups=espn_groups)
     time.sleep(REQUEST_DELAY)
 
     log.info("Fetching Action Network...")
@@ -1454,6 +1537,7 @@ def main() -> None:
     env_days_back = _norm_int(os.getenv("DAYS_BACK"))
     args.days_back = _norm_int(args.days_back) if args.days_back is not None else env_days_back
     args.append = _norm_bool(args.append, default=True)
+    args.include_next_day = _norm_bool(getattr(args, "include_next_day", False), default=False)
 
     log.info(
         "Date arg debug before resolve_date_range: start_date=%r (%s), end_date=%r (%s), days_back=%r (%s)",
@@ -1472,12 +1556,10 @@ def main() -> None:
         today=_pipeline_today(args.timezone),
     )
 
-    # Pregame default run: extend to tomorrow so the market master includes games up to
-    # 30+ hours ahead.  This lets the perplexity pipeline produce picks for any game
-    # starting between the 12pm PST run time and 6pm PST the following day.
-    # Only applied when no explicit date range or days-back override was provided.
+    # Optional pregame extension to tomorrow. Default is Pacific "today" only.
     if (
         args.mode == "pregame"
+        and args.include_next_day
         and not args.backfill_days
         and args.start_date is None
         and args.end_date is None
@@ -1486,7 +1568,7 @@ def main() -> None:
         tomorrow = _pipeline_today(args.timezone) + timedelta(days=1)
         if end_date < tomorrow:
             end_date = tomorrow
-            log.info("Pregame mode: extending capture window to include tomorrow (%s)", end_date)
+            log.info("Pregame mode: include-next-day enabled, extending capture window to %s", end_date)
 
     log.info(
         "Resolved date range: start=%s end=%s timezone=%s espn_groups=%s",
