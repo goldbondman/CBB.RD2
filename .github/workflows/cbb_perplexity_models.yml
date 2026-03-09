@@ -7,10 +7,14 @@ on:
     - cron: "0 14 * * *"
   workflow_dispatch:
     inputs:
-      days_back:
-        description: "Days back to fetch (default 3)"
+      hours_back:
+        description: "How many hours back from now to include (manual runs)"
         required: false
-        default: "3"
+        default: "24"
+      hours_ahead:
+        description: "How many hours ahead from now to include (manual runs)"
+        required: false
+        default: "30"
       run_mode:
         description: "Execution mode label"
         required: false
@@ -41,26 +45,79 @@ jobs:
         id: resolve_inputs
         shell: bash
         env:
+          INPUT_HOURS_BACK: ${{ github.event.inputs.hours_back }}
+          INPUT_HOURS_AHEAD: ${{ github.event.inputs.hours_ahead }}
           INPUT_DAYS_BACK: ${{ github.event.inputs.days_back }}
           INPUT_RUN_MODE: ${{ github.event.inputs.run_mode }}
         run: |
           set -euo pipefail
-          DAYS_BACK="${INPUT_DAYS_BACK:-3}"
           RUN_MODE="${INPUT_RUN_MODE:-daily}"
-          if [[ -z "$DAYS_BACK" ]]; then
-            DAYS_BACK="3"
+          EVENT_NAME="${GITHUB_EVENT_NAME:-}"
+
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            HOURS_BACK="${INPUT_HOURS_BACK:-24}"
+            HOURS_AHEAD="${INPUT_HOURS_AHEAD:-30}"
+            # Backward compatibility for callers still sending days_back programmatically.
+            if [[ -z "${INPUT_HOURS_BACK:-}" && -n "${INPUT_DAYS_BACK:-}" && "${INPUT_DAYS_BACK}" =~ ^[0-9]+$ ]]; then
+              HOURS_BACK="$(( INPUT_DAYS_BACK * 24 ))"
+            fi
+          else
+            # Preserve prior scheduled behavior roughly equivalent to days_back=3.
+            HOURS_BACK="72"
+            HOURS_AHEAD="30"
           fi
-          if ! [[ "$DAYS_BACK" =~ ^[0-9]+$ ]]; then
-            echo "[ERROR] days_back must be numeric; got '$DAYS_BACK'"
+
+          if ! [[ "$HOURS_BACK" =~ ^[0-9]+$ ]]; then
+            echo "[ERROR] hours_back must be numeric; got '$HOURS_BACK'"
             exit 1
           fi
-          if (( DAYS_BACK < 1 )); then
-            echo "[ERROR] days_back must be >= 1"
+          if ! [[ "$HOURS_AHEAD" =~ ^[0-9]+$ ]]; then
+            echo "[ERROR] hours_ahead must be numeric; got '$HOURS_AHEAD'"
             exit 1
           fi
+          if (( HOURS_BACK < 0 )); then
+            echo "[ERROR] hours_back must be >= 0"
+            exit 1
+          fi
+          if (( HOURS_AHEAD < 1 )); then
+            echo "[ERROR] hours_ahead must be >= 1"
+            exit 1
+          fi
+          # Contract runner still uses days_back. Derive from hours_back with a +1 day buffer so
+          # today's PST window is not dropped at UTC date boundaries.
+          DAYS_BACK=$(( (HOURS_BACK + 23) / 24 + 1 ))
+          if (( DAYS_BACK < 1 )); then DAYS_BACK=1; fi
+
+          mapfile -t _window_vals < <(HOURS_BACK="$HOURS_BACK" HOURS_AHEAD="$HOURS_AHEAD" python - <<'PY'
+          from datetime import datetime, timedelta, timezone
+          from zoneinfo import ZoneInfo
+          import os
+          hb = int(os.environ["HOURS_BACK"])
+          ha = int(os.environ["HOURS_AHEAD"])
+          now_utc = datetime.now(timezone.utc)
+          now_pst = now_utc.astimezone(ZoneInfo("America/Los_Angeles"))
+          print(now_utc.isoformat())
+          print(now_pst.isoformat())
+          print((now_utc - timedelta(hours=hb)).isoformat())
+          print((now_utc + timedelta(hours=ha)).isoformat())
+          PY
+          )
+          NOW_UTC="${_window_vals[0]}"
+          NOW_PST="${_window_vals[1]}"
+          WINDOW_START_UTC="${_window_vals[2]}"
+          WINDOW_END_UTC="${_window_vals[3]}"
+
+          echo "hours_back=$HOURS_BACK" >> "$GITHUB_OUTPUT"
+          echo "hours_ahead=$HOURS_AHEAD" >> "$GITHUB_OUTPUT"
           echo "days_back=$DAYS_BACK" >> "$GITHUB_OUTPUT"
+          echo "now_utc=$NOW_UTC" >> "$GITHUB_OUTPUT"
+          echo "now_pst=$NOW_PST" >> "$GITHUB_OUTPUT"
+          echo "window_start_utc=$WINDOW_START_UTC" >> "$GITHUB_OUTPUT"
+          echo "window_end_utc=$WINDOW_END_UTC" >> "$GITHUB_OUTPUT"
           echo "run_mode=$RUN_MODE" >> "$GITHUB_OUTPUT"
-          echo "[INFO] run_mode=$RUN_MODE days_back=$DAYS_BACK"
+          echo "[INFO] run_mode=$RUN_MODE hours_back=$HOURS_BACK hours_ahead=$HOURS_AHEAD derived_days_back=$DAYS_BACK"
+          echo "[INFO] now_pst=$NOW_PST now_utc=$NOW_UTC"
+          echo "[INFO] window_utc=[${WINDOW_START_UTC} -> ${WINDOW_END_UTC}]"
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -88,12 +145,14 @@ jobs:
         run: |
           set -euo pipefail
           DAYS_BACK="${{ steps.resolve_inputs.outputs.days_back }}"
+          HOURS_BACK="${{ steps.resolve_inputs.outputs.hours_back }}"
+          HOURS_AHEAD="${{ steps.resolve_inputs.outputs.hours_ahead }}"
           MAX_DAYS_BACK=14
           ALLOW_RUN="true"
           REASON=""
           if (( DAYS_BACK > MAX_DAYS_BACK )); then
             ALLOW_RUN="false"
-            REASON="days_back=${DAYS_BACK} exceeds safe cap ${MAX_DAYS_BACK} for this workflow; skip heavy espn_pipeline backfills here and use update_espn_cbb instead."
+            REASON="derived days_back=${DAYS_BACK} (from hours_back=${HOURS_BACK}, hours_ahead=${HOURS_AHEAD}) exceeds safe cap ${MAX_DAYS_BACK}; use update_espn_cbb for larger backfills."
           fi
           echo "[INFO] preflight allow_run=${ALLOW_RUN} reason='${REASON}'"
           echo "allow_run=${ALLOW_RUN}" >> "$GITHUB_OUTPUT"
