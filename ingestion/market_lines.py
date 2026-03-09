@@ -481,6 +481,51 @@ def build_book_index(book_games: list[dict]) -> dict[tuple[str, str], dict]:
     return index
 
 
+def _token_subset_match(a: str, b: str) -> bool:
+    """True if one name's tokens are a subset of the other's with ≥2 tokens overlapping.
+
+    Handles cases like ESPN 'Weber State Wildcats' vs Pinnacle 'Weber State':
+    {'weber','state'} ⊆ {'weber','state','wildcats'} with 2 common tokens → match.
+    Requires at least 2 tokens to prevent single-word false positives ('State').
+    """
+    ta, tb = set(a.split()), set(b.split())
+    overlap = ta & tb
+    if len(overlap) < 2:
+        return False
+    return ta.issubset(tb) or tb.issubset(ta)
+
+
+def book_lookup(
+    index: dict[tuple[str, str], dict],
+    home_key: str,
+    away_key: str,
+) -> Optional[dict]:
+    """Look up a game in a book index, falling back to token-subset matching.
+
+    Exact match is tried first. If it fails, we scan the index for any entry
+    where the home and away names fuzzy-match (token-subset) the query keys.
+    This handles Pinnacle/Action Network names that omit team nicknames.
+    """
+    # 1. Exact match (both orientations)
+    result = index.get((home_key, away_key)) or index.get((away_key, home_key))
+    if result is not None:
+        return result
+
+    # 2. Token-subset fallback
+    for (idx_h, idx_a), val in index.items():
+        h_match = idx_h == home_key or _token_subset_match(home_key, idx_h)
+        a_match = idx_a == away_key or _token_subset_match(away_key, idx_a)
+        if h_match and a_match:
+            return val
+        # Also try reversed orientation
+        h_match_r = idx_h == away_key or _token_subset_match(away_key, idx_h)
+        a_match_r = idx_a == home_key or _token_subset_match(home_key, idx_a)
+        if h_match_r and a_match_r:
+            return val
+
+    return None
+
+
 def parse_action_network_game(game: dict) -> Optional[dict]:
     try:
         teams = game.get("teams", [])
@@ -1244,7 +1289,7 @@ def run_capture(
             normalize_team_name(parsed.get("home_team_name", "")),
             normalize_team_name(parsed.get("away_team_name", "")),
         )
-        an_enrichment = action_by_team.get(espn_key) or action_by_team.get((espn_key[1], espn_key[0]))
+        an_enrichment = book_lookup(action_by_team, espn_key[0], espn_key[1])
         if an_enrichment:
             an_matched += 1
             parsed["home_tickets_pct"] = an_enrichment.get("home_tickets_pct")
@@ -1293,7 +1338,7 @@ def run_capture(
             normalize_team_name(str(parsed.get("home_team_name", ""))),
             normalize_team_name(str(parsed.get("away_team_name", ""))),
         )
-        pinn_match = pinnacle_by_team.get(team_key) or pinnacle_by_team.get((team_key[1], team_key[0]))
+        pinn_match = book_lookup(pinnacle_by_team, team_key[0], team_key[1])
 
         # DK lines come from ESPN's embedded odds array (parsed per-event).
         # Action Network book_id=68 is the fallback if ESPN has no DK entry.
