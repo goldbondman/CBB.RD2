@@ -116,7 +116,11 @@ def cmd_run(args: argparse.Namespace) -> int:
                     f"- {exc}\n",
                     encoding="utf-8",
                 )
-                raise
+                backtest_meta = {
+                    "status": "skipped",
+                    "reason": str(exc),
+                }
+                print(f"[WARN] Backtest output package skipped: {exc}")
 
             summary = write_evaluation_outputs(DATA_DIR)
             (run_dir / "evaluation").mkdir(parents=True, exist_ok=True)

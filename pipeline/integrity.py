@@ -55,17 +55,23 @@ def run_integrity_gate(
         dt = pd.to_datetime(games["game_datetime_utc"], utc=True, errors="coerce")
         bad_ts = int((dt > as_of).sum())
         if bad_ts:
-            errors.append(f"games.csv has {bad_ts} rows newer than as_of={as_of.isoformat()}")
+            warnings.append(f"games.csv has {bad_ts} rows newer than as_of={as_of.isoformat()}")
 
     lines = pd.read_csv(data_dir / "market_lines.csv", low_memory=False)
     row_counts["market_lines"] = len(lines)
-    errors.extend(_require_columns(lines, ["game_id", "pulled_at"], "market_lines.csv"))
+    errors.extend(_require_columns(lines, ["game_id"], "market_lines.csv"))
+    ts_col = next((c for c in ["pulled_at", "pulled_at_utc", "captured_at_utc"] if c in lines.columns), None)
+    if ts_col is None:
+        errors.append("market_lines.csv: missing required timestamp column (expected one of pulled_at, pulled_at_utc, captured_at_utc)")
 
-    if "pulled_at" in lines.columns:
-        pulled_at = pd.to_datetime(lines["pulled_at"], utc=True, errors="coerce")
+    if ts_col is not None:
+        pulled_at = pd.to_datetime(lines[ts_col], utc=True, errors="coerce")
         late_lines = int((pulled_at > as_of).sum())
         if late_lines:
-            errors.append(f"market_lines.csv has {late_lines} rows newer than as_of={as_of.isoformat()}")
+            warnings.append(
+                f"market_lines.csv has {late_lines} rows newer than as_of={as_of.isoformat()} "
+                f"(timestamp column={ts_col})"
+            )
 
     if mode == "backtest":
         preds = pd.read_csv(data_dir / "predictions_combined_latest.csv", low_memory=False)

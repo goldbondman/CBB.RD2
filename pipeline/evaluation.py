@@ -13,11 +13,17 @@ def _roi_from_win_rate(win_rate: float, odds: int = -110) -> float:
     return (win_rate * (100 / abs(odds))) - (1 - win_rate)
 
 
+def _numeric_series(df: pd.DataFrame, column: str) -> pd.Series:
+    if column in df.columns:
+        return pd.to_numeric(df[column], errors="coerce")
+    return pd.Series(index=df.index, dtype="float64")
+
+
 def build_standard_evaluation(data_dir: Path) -> tuple[pd.DataFrame, dict]:
     graded = pd.read_csv(data_dir / "results_log_graded.csv", low_memory=False)
 
-    spread_mae = pd.to_numeric(graded.get("primary_margin_error"), errors="coerce").abs().mean()
-    total_mae = pd.to_numeric(graded.get("total_error"), errors="coerce").abs().mean()
+    spread_mae = _numeric_series(graded, "primary_margin_error").abs().mean()
+    total_mae = _numeric_series(graded, "total_error").abs().mean()
 
     if {"primary_confidence", "primary_wins_game"}.issubset(graded.columns):
         p = pd.to_numeric(graded["primary_confidence"], errors="coerce").clip(0, 1)
@@ -27,18 +33,18 @@ def build_standard_evaluation(data_dir: Path) -> tuple[pd.DataFrame, dict]:
     else:
         brier = np.nan
 
-    ats = pd.to_numeric(graded.get("primary_ats_correct"), errors="coerce")
-    ou = pd.to_numeric(graded.get("primary_ou_correct"), errors="coerce")
+    ats = _numeric_series(graded, "primary_ats_correct")
+    ou = _numeric_series(graded, "primary_ou_correct")
     ats_hit = float(ats.mean()) if ats.notna().any() else np.nan
     ou_hit = float(ou.mean()) if ou.notna().any() else np.nan
 
     roi_ats = _roi_from_win_rate(ats_hit)
     roi_ou = _roi_from_win_rate(ou_hit)
 
-    clv_spread = pd.to_numeric(graded.get("clv_vs_close"), errors="coerce").median()
-    clv_ml = pd.to_numeric(graded.get("clv_ml_implied_prob"), errors="coerce").median()
+    clv_spread = _numeric_series(graded, "clv_vs_close").median()
+    clv_ml = _numeric_series(graded, "clv_ml_implied_prob").median()
 
-    edge = pd.to_numeric(graded.get("edge_abs"), errors="coerce")
+    edge = _numeric_series(graded, "edge_abs")
     edge_bucket = pd.cut(edge, bins=[-np.inf, 2, 4, 6, np.inf], labels=["0-2", "2-4", "4-6", "6+"])
     edge_perf = (
         graded.assign(edge_bucket=edge_bucket)
