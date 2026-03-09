@@ -562,66 +562,88 @@ def parse_espn_event(event: dict) -> Optional[dict]:
     """Parse ESPN scoreboard event into market row fields."""
     try:
         comp = event.get("competitions", [{}])[0]
-        odds = (comp.get("odds") or [{}])[0]
+        all_odds = comp.get("odds") or []
+        odds = all_odds[0] if all_odds else {}
         teams = comp.get("competitors", [])
         home_team = next((t for t in teams if t.get("homeAway") == "home"), {})
         away_team = next((t for t in teams if t.get("homeAway") == "away"), {})
 
-        spread_raw = str(odds.get("details") or "").strip().upper()
-        home_spread_current = None
-        if spread_raw in {"PK", "PICK", "PICKEM", "EVEN"}:
-            home_spread_current = 0.0
-        elif spread_raw:
-            match = re.search(r"([+-]?\d+(?:\.\d+)?)", spread_raw)
-            favored_team = re.sub(r"([+-]?\d.*)$", "", spread_raw).strip()
+        # Scan the full odds array for a DraftKings provider entry.
+        # ESPN returns odds from multiple sportsbooks; DK is identified by provider.name.
+        # This provides a free fallback when the DraftKings direct API is unavailable.
+        dk_odds_entry: dict = {}
+        for _o in all_odds:
+            _pname = str((_o.get("provider") or {}).get("name", "") or "").lower()
+            if "draftkings" in _pname:
+                dk_odds_entry = _o
+                break
 
-            def _norm_label(text: str) -> str:
-                return re.sub(r"[^A-Z0-9]+", " ", str(text or "").upper()).strip()
+        # Helpers used for both the primary odds entry and the DK provider entry.
+        def _norm_label(text: str) -> str:
+            return re.sub(r"[^A-Z0-9]+", " ", str(text or "").upper()).strip()
 
-            home_tokens = {
-                _norm_label(home_team.get("team", {}).get("abbreviation", "")),
-                _norm_label(home_team.get("team", {}).get("shortDisplayName", "")),
-                _norm_label(home_team.get("team", {}).get("displayName", "")),
-            }
-            away_tokens = {
-                _norm_label(away_team.get("team", {}).get("abbreviation", "")),
-                _norm_label(away_team.get("team", {}).get("shortDisplayName", "")),
-                _norm_label(away_team.get("team", {}).get("displayName", "")),
-            }
-            favored_token = _norm_label(favored_team)
-
-            def _matches(token: str, candidates: set[str]) -> bool:
-                token_clean = token.strip()
-                if not token_clean:
-                    return False
-                for cand in candidates:
-                    cand_clean = cand.strip()
-                    if not cand_clean:
-                        continue
-                    if token_clean == cand_clean or token_clean in cand_clean or cand_clean in token_clean:
-                        return True
+        def _matches(token: str, candidates: set[str]) -> bool:
+            token_clean = token.strip()
+            if not token_clean:
                 return False
+            for cand in candidates:
+                cand_clean = cand.strip()
+                if not cand_clean:
+                    continue
+                if token_clean == cand_clean or token_clean in cand_clean or cand_clean in token_clean:
+                    return True
+            return False
 
-            if match:
-                try:
-                    line_points = abs(float(match.group(1)))
-                    if _matches(favored_token, home_tokens):
-                        # Home favored -> negative home spread.
-                        home_spread_current = -line_points
-                    elif _matches(favored_token, away_tokens):
-                        # Away favored -> positive home spread.
-                        home_spread_current = line_points
-                    else:
-                        # Ambiguous label fallback.
-                        home_spread_current = float(match.group(1))
-                except ValueError:
-                    home_spread_current = None
+        home_tokens = {
+            _norm_label(home_team.get("team", {}).get("abbreviation", "")),
+            _norm_label(home_team.get("team", {}).get("shortDisplayName", "")),
+            _norm_label(home_team.get("team", {}).get("displayName", "")),
+        }
+        away_tokens = {
+            _norm_label(away_team.get("team", {}).get("abbreviation", "")),
+            _norm_label(away_team.get("team", {}).get("shortDisplayName", "")),
+            _norm_label(away_team.get("team", {}).get("displayName", "")),
+        }
+
+        def _parse_details_spread(details_raw: str) -> Optional[float]:
+            """Parse an ESPN odds 'details' string (e.g. 'DUKE -7.5') to a home spread."""
+            raw = str(details_raw or "").strip().upper()
+            if raw in {"PK", "PICK", "PICKEM", "EVEN"}:
+                return 0.0
+            if not raw:
+                return None
+            m = re.search(r"([+-]?\d+(?:\.\d+)?)", raw)
+            if not m:
+                return None
+            fav_label = re.sub(r"([+-]?\d.*)$", "", raw).strip()
+            try:
+                pts = abs(float(m.group(1)))
+                if _matches(_norm_label(fav_label), home_tokens):
+                    return -pts
+                if _matches(_norm_label(fav_label), away_tokens):
+                    return pts
+                return float(m.group(1))
+            except ValueError:
+                return None
+
+        spread_raw = str(odds.get("details") or "").strip().upper()
+        home_spread_current = _parse_details_spread(spread_raw)
 
         total_current = odds.get("overUnder")
         try:
             total_current = float(total_current) if total_current is not None else None
         except (TypeError, ValueError):
             total_current = None
+
+        # Extract DraftKings spread/total from the ESPN-embedded provider entry.
+        dk_spread: Optional[float] = None
+        dk_total: Optional[float] = None
+        if dk_odds_entry:
+            dk_spread = _parse_details_spread(str(dk_odds_entry.get("details") or ""))
+            try:
+                dk_total = float(dk_odds_entry.get("overUnder")) if dk_odds_entry.get("overUnder") is not None else None
+            except (TypeError, ValueError):
+                dk_total = None
 
         return {
             "event_id": str(event.get("id", "")).strip(),
@@ -638,6 +660,10 @@ def parse_espn_event(event: dict) -> Optional[dict]:
             "away_tickets_pct": None,
             "home_money_pct": None,
             "away_money_pct": None,
+            # DraftKings line extracted from ESPN's embedded provider odds array.
+            # Used as fallback when the DraftKings direct API is unavailable.
+            "dk_spread": dk_spread,
+            "dk_total": dk_total,
         }
     except Exception as exc:  # noqa: BLE001
         log.debug("Parse error on ESPN event: %s", exc)
@@ -1295,6 +1321,12 @@ def run_capture(
             if not dk_match and an_enrichment.get("dk_spread") is not None:
                 log.debug("Using DraftKings fallback for %s: %s", event_id, an_enrichment["dk_spread"])
                 dk_match = {"spread": an_enrichment["dk_spread"], "total": an_enrichment.get("dk_total")}
+
+        # Third-tier DK fallback: use odds embedded directly in the ESPN scoreboard response.
+        # Fires when both the DraftKings direct API and Action Network DK data are unavailable.
+        if not dk_match and parsed.get("dk_spread") is not None:
+            log.debug("Using ESPN-embedded DraftKings odds for %s: spread=%s", event_id, parsed["dk_spread"])
+            dk_match = {"spread": parsed["dk_spread"], "total": parsed.get("dk_total")}
 
         row = build_market_row(
             event_id,
