@@ -17,7 +17,7 @@ on:
         default: false
 
 concurrency:
-  group: march-madness-backtest
+  group: cbb-data-pipeline
   cancel-in-progress: true
 
 permissions:

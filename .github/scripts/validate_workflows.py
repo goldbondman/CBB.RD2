@@ -84,19 +84,30 @@ for wf in WORKFLOW_DIR.glob("*.yml"):
             context_block = content[start_search:end_search]
 
             if "upload-artifact" in context_block:
-                uploads[name] = wf.name
+                uploads.setdefault(name, set()).add(wf.name)
             if "download-artifact" in context_block:
-                downloads.setdefault(name, []).append(wf.name)
+                downloads.setdefault(name, set()).add(wf.name)
+
+        # Support helper-script-based downloads (used by cbb_analytics.yml)
+        helper_token = f'--artifact-name "{name}"'
+        if "download_latest_artifact.py" in content and helper_token in content:
+            downloads.setdefault(name, set()).add(wf.name)
 
 for name, contract in ARTIFACT_CONTRACTS.items():
-    if uploads.get(name) != contract["uploaded_by"]:
+    uploaders = uploads.get(name, set())
+    if contract["uploaded_by"] not in uploaders:
+        found = "NONE" if not uploaders else ", ".join(sorted(uploaders))
         errors.append(
             f"Artifact '{name}': expected upload from "
-            f"{contract['uploaded_by']}, found {uploads.get(name, 'NONE')}"
+            f"{contract['uploaded_by']}, found {found}"
+        )
+    elif len(uploaders) > 1:
+        warnings.append(
+            f"Artifact '{name}': multiple uploaders detected ({', '.join(sorted(uploaders))})"
         )
 
     for expected_downloader in contract["downloaded_by"]:
-        if expected_downloader not in downloads.get(name, []):
+        if expected_downloader not in downloads.get(name, set()):
             warnings.append(
                 f"Artifact '{name}': expected download by "
                 f"{expected_downloader}, but not found in file"

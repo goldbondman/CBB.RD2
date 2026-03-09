@@ -465,7 +465,7 @@ jobs:
         if: always() && steps.ensure_espn_inputs.outputs.used_fallback == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: INFRA-espn-data
+          name: INFRA-espn-data-fallback
           if-no-files-found: error
           retention-days: 30
           path: |
