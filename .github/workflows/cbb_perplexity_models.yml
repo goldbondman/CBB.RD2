@@ -181,14 +181,19 @@ jobs:
           echo "[DIAG] ls -la data/"
           ls -la data/ || true
           echo "[DIAG] find data candidate files"
-          find data -maxdepth 2 -type f \( -name "*advanced*" -o -name "*predictions*joint*" -o -name "*snapshots*" \) -print || true
+          find data -maxdepth 2 -type f \( -name "*advanced*" -o -name "*predictions*joint*" -o -name "*snapshots*" -o -name "games.csv" -o -name "market_lines*" \) -print || true
           echo "[DIAG] find repo candidate files"
-          find . -maxdepth 4 -type f \( -name "*advanced*" -o -name "*predictions*joint*" -o -name "*snapshots*" \) -print | sort || true
+          find . -maxdepth 4 -type f \( -name "*advanced*" -o -name "*predictions*joint*" -o -name "*snapshots*" -o -name "games.csv" -o -name "market_lines*" \) -print | sort || true
           python - <<'PY'
           from pathlib import Path
           import pandas as pd
 
           expected = [
+              Path("data/games.csv"),
+              Path("data/market_lines.csv"),
+              Path("data/market_lines_latest.csv"),
+              Path("data/market_lines_canonical.csv"),
+              Path("data/market_lines_latest_by_book.csv"),
               Path("data/advanced_metrics.csv"),
               Path("data/team_snapshot.csv"),
               Path("data/market_lines_latest_by_game.csv"),
@@ -223,13 +228,17 @@ jobs:
             --preflight-allow "${{ steps.preflight.outputs.allow_run }}" \
             --preflight-reason "${{ steps.preflight.outputs.reason }}" \
             --contract-exit-code "${{ steps.contract_runner.outputs.exit_code }}" \
-            --files data/advanced_metrics.csv data/team_snapshot.csv data/market_lines_latest_by_game.csv data/predictions_joint_latest.csv data/predictions_joint_snapshots.csv
+            --files data/games.csv data/market_lines.csv data/market_lines_latest.csv data/market_lines_canonical.csv data/market_lines_latest_by_book.csv data/market_lines_latest_by_game.csv data/advanced_metrics.csv data/team_snapshot.csv data/predictions_joint_latest.csv data/predictions_joint_snapshots.csv
 
       - name: Validate required outputs
         if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
         shell: bash
         run: |
           set -euo pipefail
+          bash .github/scripts/check_csv.sh data/games.csv 1 "game_id,game_datetime_utc"
+          bash .github/scripts/check_csv.sh data/market_lines_canonical.csv 0 "event_id,spread_line,total_line,source"
+          bash .github/scripts/check_csv.sh data/market_lines_latest_by_book.csv 0 "event_id,book,spread_line,total_line"
+          bash .github/scripts/check_csv.sh data/market_lines_latest_by_game.csv 0 "event_id,spread_line,total_line,line_source_used"
           bash .github/scripts/validate_perplexity_outputs.sh data/perplexity_contract_runner.log
           python .github/scripts/validate_joint_predictions.py \
             --input data/predictions_joint_latest.csv \
@@ -349,6 +358,9 @@ jobs:
           enforce_required = (preflight_allow == "true" and contract_exit == "0")
 
           required_files = [
+              Path("data/games.csv"),
+              Path("data/market_lines_canonical.csv"),
+              Path("data/market_lines_latest_by_book.csv"),
               Path("data/advanced_metrics.csv"),
               Path("data/team_snapshot.csv"),
               Path("data/market_lines_latest_by_game.csv"),
@@ -418,6 +430,9 @@ jobs:
           from pathlib import Path
 
           files = [
+              Path("data/games.csv"),
+              Path("data/market_lines_canonical.csv"),
+              Path("data/market_lines_latest_by_book.csv"),
               Path("data/advanced_metrics.csv"),
               Path("data/team_snapshot.csv"),
               Path("data/market_lines_latest_by_game.csv"),
@@ -499,6 +514,12 @@ jobs:
             debug/sample_*.csv
             debug/output_file_stats.json
             debug/artifact_upload_manifest.json
+            data/games.csv
+            data/market_lines.csv
+            data/market_lines_latest.csv
+            data/market_lines_canonical.csv
+            data/market_lines_latest_by_book.csv
+            data/market_lines_latest_by_game.csv
             data/internal/
             data/cbb_picks_today.csv
             data/cbb_trend_picks_today.csv
@@ -527,9 +548,13 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           COMMIT_PATHS=(
+            data/games.csv
+            data/market_lines.csv
+            data/market_lines_latest.csv
             data/advanced_metrics.csv
             data/team_snapshot.csv
             data/market_lines_canonical.csv
+            data/market_lines_latest_by_book.csv
             data/market_lines_latest_by_game.csv
             data/predictions_joint_latest.csv
             data/predictions_joint_snapshots.csv
