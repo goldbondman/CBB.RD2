@@ -1594,8 +1594,10 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
     ).reset_index()
 
     base["ats_sample"] = base["ats_wins"] + base["ats_losses"]
-    if "avg_opp_net_rtg" not in base.columns:
-        base["avg_opp_net_rtg"] = np.nan
+    for _opt_col in ("avg_opp_net_rtg", "ortg_l5", "ortg_l10", "drtg_l5", "drtg_l10",
+                     "net_rtg_l5", "net_rtg_l10", "net_rtg_std"):
+        if _opt_col not in base.columns:
+            base[_opt_col] = np.nan
     base["ats_pct"] = _safe_rate(base["ats_wins"], base["ats_sample"])
     base["avg_ou_margin"] = base["avg_total_scored"] - base["avg_ou_line"]
 
