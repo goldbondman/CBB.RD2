@@ -267,7 +267,7 @@ def main() -> int:
             is_upcoming = pd.isna(game.get(result_col))
         else:
             game_local_date = gdate.tz_convert(local_tz).date() if pd.notna(gdate) else None
-            is_upcoming = (not has_scores) and (game_local_date == today_local)
+            is_upcoming = (not has_scores) and (game_local_date is not None) and (game_local_date >= today_local)
 
         rows.append(
             {
@@ -319,6 +319,8 @@ def main() -> int:
         (out_dir / "skipped_games.json").write_text(json.dumps(skipped, indent=2), encoding="utf-8")
 
     upcoming = df_matchup[df_matchup["is_upcoming"] == True] if "is_upcoming" in df_matchup.columns else pd.DataFrame()
+    if len(upcoming) == 0:
+        print(f"[DIAG] No upcoming games found. today_local={today_local}, total_rows={len(df_matchup)}, skipped={len(skipped)}")
     spread_features = [
         "netrtg_L11_diff",
         "netrtg_trend_diff",
