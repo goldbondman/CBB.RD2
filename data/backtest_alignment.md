@@ -1,8 +1,8 @@
 # Signal Alignment Backtest: Model + CAGE + Trend
-_Generated 2026-03-08 23:09 UTC_
+_Generated 2026-03-09 14:56 UTC_
 
-**Dataset**: 185 games with model edge (|edge| ≥ 1.0 pts)  
-**Source**: `backtest_training_data.csv` (221 games with all signals)  
+**Dataset**: 217 games with model edge (|edge| ≥ 1.0 pts)  
+**Source**: `backtest_training_data.csv` (253 games with all signals)  
 **Signals**: Model (`pred_spread` vs `espn_spread`), CAGE (`cage_em_diff`), Trend (`net_rtg_trend_delta`)  
 **Sign convention**: model_sign=+1, trend_sign=+1
 
@@ -15,12 +15,12 @@ Trend threshold: |net_rtg_trend_delta| ≥ 1.5 + same direction as model.
 
 | Cohort | W | L | ATS% | ROI (−110) | n | |
 |--------|---|---|------|------------|---|-|
-| Model alone | 126 | 59 | 68.1% | +30.0% | 185 | ✓ |
-| Model + CAGE aligns | 79 | 27 | 74.5% | +42.3% | 106 | ✓ |
-| Model + Trend aligns | 61 | 26 | 70.1% | +33.9% | 87 | ✓ |
-| Model + CAGE + Trend | 42 | 13 | 76.4% | +45.8% | 55 | ✓ |
-| Model + CAGE (|EM|≥10) | 106 | 42 | 71.6% | +36.7% | 148 | ✓ |
-| Model + CAGE(≥10) + Trend | 50 | 19 | 72.5% | +38.3% | 69 | ✓ |
+| Model alone | 148 | 69 | 68.2% | +30.2% | 217 | ✓ |
+| Model + CAGE aligns | 90 | 34 | 72.6% | +38.6% | 124 | ✓ |
+| Model + Trend aligns | 77 | 34 | 69.4% | +32.4% | 111 | ✓ |
+| Model + CAGE + Trend | 51 | 18 | 73.9% | +41.1% | 69 | ✓ |
+| Model + CAGE (|EM|≥10) | 122 | 50 | 70.9% | +35.4% | 172 | ✓ |
+| Model + CAGE(≥10) + Trend | 62 | 25 | 71.3% | +36.1% | 87 | ✓ |
 
 > **Interpretation**: Does stacking CAGE and/or Trend confirmation lift ATS% above Model alone?
 
@@ -30,9 +30,9 @@ Trend threshold: |net_rtg_trend_delta| ≥ 1.5 + same direction as model.
 
 | CAGE status | W | L | ATS% | ROI | n | |
 |-------------|---|---|------|-----|---|-|
-| CAGE CONFIRMS model | 79 | 27 | 74.5% | +42.3% | 106 | ✓ |
-| CAGE NEUTRAL (small EM) | 6 | 2 | 75.0% | +43.2% | 8 | ✓ |
-| CAGE DIVERGES from model | 41 | 30 | 57.7% | +10.2% | 71 | ✓ |
+| CAGE CONFIRMS model | 90 | 34 | 72.6% | +38.6% | 124 | ✓ |
+| CAGE NEUTRAL (small EM) | 7 | 3 | 70.0% | +33.6% | 10 | ✓ |
+| CAGE DIVERGES from model | 51 | 32 | 61.4% | +17.3% | 83 | ✓ |
 
 ---
 
@@ -40,9 +40,9 @@ Trend threshold: |net_rtg_trend_delta| ≥ 1.5 + same direction as model.
 
 | Trend status | W | L | ATS% | ROI | n | |
 |--------------|---|---|------|-----|---|-|
-| Trend ALIGNS with model | 61 | 26 | 70.1% | +33.9% | 87 | ✓ |
-| Trend NEUTRAL (flat) | 16 | 5 | 76.2% | +45.5% | 21 | ✓ |
-| Trend OPPOSES model pick | 49 | 28 | 63.6% | +21.5% | 77 | ✓ |
+| Trend ALIGNS with model | 77 | 34 | 69.4% | +32.4% | 111 | ✓ |
+| Trend NEUTRAL (flat) | 18 | 6 | 75.0% | +43.2% | 24 | ✓ |
+| Trend OPPOSES model pick | 53 | 29 | 64.6% | +23.4% | 82 | ✓ |
 
 ---
 
@@ -50,10 +50,10 @@ Trend threshold: |net_rtg_trend_delta| ≥ 1.5 + same direction as model.
 
 | Model edge | All | +CAGE | +Trend | +Both | n_all | n_both |
 |------------|-----|-------|--------|-------|-------|--------|
-| 1–3 pts | 49.2% | 75.0% | 67.7% | 88.2% | 63 | 17 |
-| 3–6 pts | 68.2% | 79.5% | 96.6% | 95.5% | 66 | 22 |
-| 6–10 pts | 80.0% | 96.3% | 91.3% | 100.0% | 50 | 13 |
-| 10+ pts | 83.3% | —(3) | —(4) | —(3) | 6 | 3 |
+| 1–3 pts | 47.1% | 70.6% | 62.9% | 83.3% | 68 | 18 |
+| 3–6 pts | 71.8% | 79.6% | 94.6% | 92.3% | 78 | 26 |
+| 6–10 pts | 79.7% | 97.0% | 89.7% | 100.0% | 59 | 17 |
+| 10+ pts | 83.3% | 87.5% | 90.0% | 87.5% | 12 | 8 |
 
 ---
 
@@ -62,9 +62,9 @@ Trend threshold: |net_rtg_trend_delta| ≥ 1.5 + same direction as model.
 
 | Signal stack | ATS% | vs Model alone |
 |---|---|---|
-| Model alone | 65.4% | baseline |
-| + CAGE aligns | 83.0% | +17.6pp |
-| + Trend aligns | 85.1% | +19.7pp |
-| + CAGE + Trend | 94.5% | +29.1pp |
+| Model alone | 66.8% | baseline |
+| + CAGE aligns | 82.3% | +15.4pp |
+| + Trend aligns | 82.9% | +16.1pp |
+| + CAGE + Trend | 91.3% | +24.5pp |
 
 Signal thresholds: Model edge ≥ 1.0 pts, CAGE |EM| ≥ 3.0, Trend |delta| ≥ 1.5

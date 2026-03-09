@@ -1,64 +1,78 @@
 event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_name,book,opening_spread,closing_spread,spread_line,opening_total,closing_total,total_line,moneyline_home,moneyline_away,source,source_file,source_priority,captured_at_utc,line_timestamp_utc,market_status,line_source_used
-401808257,2026-02-25 02:00:00+00:00,142,2633,,,consensus,,-2.5,-2.5,,144.5,144.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:25+00:00,2026-02-24 23:50:25+00:00,OK,ESPN
-401808273,,8,251,Arkansas Razorbacks,Texas Longhorns,consensus,,-7.5,-7.5,,165.5,165.5,,,ESPN,market_lines.csv,2,2026-03-04 17:51:34.935916+00:00,2026-03-04 17:51:34.935916+00:00,OK,ESPN
+401808257,,142,2633,,,consensus,,-2.5,-2.5,,144.5,144.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:25+00:00,2026-02-24 23:50:25+00:00,OK,ESPN
+401808273,,8,251,Arkansas Razorbacks,Texas Longhorns,consensus,,-6.5,-6.5,,164.5,164.5,,,ESPN,market_lines.csv,2,2026-03-04 23:38:45.277914+00:00,2026-03-04 23:38:45.277914+00:00,OK,ESPN
 401808274,,57,344,Florida Gators,Mississippi State Bulldogs,consensus,,-20.5,-20.5,,160.5,160.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:55.700461+00:00,2026-03-03 23:35:55.700461+00:00,OK,ESPN
 401808277,,61,333,Georgia Bulldogs,Alabama Crimson Tide,consensus,,1.5,1.5,,180.5,180.5,,,ESPN,market_lines.csv,2,2026-03-03 22:39:16.940185+00:00,2026-03-03 22:39:16.940185+00:00,OK,ESPN
 401808278,,2579,2633,South Carolina Gamecocks,Tennessee Volunteers,consensus,,10.5,10.5,,141.5,141.5,,,ESPN,market_lines.csv,2,2026-03-03 22:39:16.357938+00:00,2026-03-03 22:39:16.357938+00:00,OK,ESPN
 401808279,,145,238,Ole Miss Rebels,Vanderbilt Commodores,consensus,,6.5,6.5,,155.5,155.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:58.928171+00:00,2026-03-03 23:35:58.928171+00:00,OK,ESPN
-401814583,2026-02-24 23:30:00+00:00,2199,193,,,consensus,8.5,8.5,8.5,151.5,151.5,151.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:18+00:00,2026-02-24 23:50:18+00:00,OK,ESPN
+401814583,,2199,193,,,consensus,8.5,8.5,8.5,151.5,151.5,151.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:18+00:00,2026-02-24 23:50:18+00:00,OK,ESPN
 401814597,,193,2649,Miami (OH) RedHawks,Toledo Rockets,consensus,,-7.5,-7.5,,162.5,162.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:54.654442+00:00,2026-03-03 23:35:54.654442+00:00,OK,ESPN
-401820763,2026-02-25 00:00:00+00:00,258,152,,,consensus,,-5.5,-5.5,,151.5,151.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:20+00:00,2026-02-24 23:50:20+00:00,OK,ESPN
-401820767,2026-02-25 00:00:00+00:00,87,150,,,consensus,,-17.5,-17.5,,142.5,142.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:19+00:00,2026-02-24 23:50:19+00:00,OK,ESPN
+401820763,,258,152,,,consensus,,-5.5,-5.5,,151.5,151.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:20+00:00,2026-02-24 23:50:20+00:00,OK,ESPN
+401820767,,87,150,,,consensus,,-17.5,-17.5,,142.5,142.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:19+00:00,2026-02-24 23:50:19+00:00,OK,ESPN
 401820779,,153,228,North Carolina Tar Heels,Clemson Tigers,consensus,,-2.5,-2.5,,141.5,141.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:52.476546+00:00,2026-03-03 23:35:52.476546+00:00,OK,ESPN
-401820784,,2567,2390,SMU Mustangs,Miami Hurricanes,consensus,,-1.5,-1.5,,159.5,159.5,,,ESPN,market_lines.csv,2,2026-03-04 17:51:36.476642+00:00,2026-03-04 17:51:36.476642+00:00,OK,ESPN
+401820784,,2567,2390,SMU Mustangs,Miami Hurricanes,consensus,,-1.5,-1.5,,156.5,156.5,,,ESPN,market_lines.csv,2,2026-03-04 23:38:46.447647+00:00,2026-03-04 23:38:46.447647+00:00,OK,ESPN
 401820785,,258,154,Virginia Cavaliers,Wake Forest Demon Deacons,consensus,,-13.5,-13.5,,149.5,149.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:51.413818+00:00,2026-03-03 23:35:51.413818+00:00,OK,ESPN
 401822967,,2599,46,St. John's Red Storm,Georgetown Hoyas,consensus,,-15.5,-15.5,,148.5,148.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:53.586966+00:00,2026-03-03 23:35:53.586966+00:00,OK,ESPN
-401825537,2026-02-25 01:30:00+00:00,130,135,,,consensus,,-21.5,-21.5,,145.5,145.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:23+00:00,2026-02-24 23:50:23+00:00,OK,ESPN
-401825543,2026-02-27 01:00:00+00:00,2509,127,Purdue Boilermakers,Michigan State Spartans,consensus,,-6.5,-6.5,,141.5,141.5,,,ESPN,market_lines_latest.csv,0,2026-02-26 22:42:14+00:00,2026-02-26 22:42:14+00:00,OK,ESPN
+401825537,,130,135,,,consensus,,-21.5,-21.5,,145.5,145.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:23+00:00,2026-02-24 23:50:23+00:00,OK,ESPN
+401825543,,2509,127,Purdue Boilermakers,Michigan State Spartans,consensus,,-6.5,-6.5,,141.5,141.5,,,ESPN,market_lines_latest.csv,0,2026-02-26 22:42:14+00:00,2026-02-26 22:42:14+00:00,OK,ESPN
 401825553,,356,2483,Illinois Fighting Illini,Oregon Ducks,consensus,,-18.5,-18.5,,145.5,145.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:56.846805+00:00,2026-03-03 23:35:56.846805+00:00,OK,ESPN
 401825554,,26,158,UCLA Bruins,Nebraska Cornhuskers,consensus,,-1.5,-1.5,,144.5,144.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:59.980094+00:00,2026-03-03 23:35:59.980094+00:00,OK,ESPN
-401825556,,77,2509,Northwestern Wildcats,Purdue Boilermakers,consensus,,11.5,11.5,,146.5,146.5,,,ESPN,market_lines.csv,2,2026-03-04 17:51:39.511563+00:00,2026-03-04 17:51:39.511563+00:00,OK,ESPN
+401825556,,77,2509,Northwestern Wildcats,Purdue Boilermakers,consensus,,12.5,12.5,,145.5,145.5,,,ESPN,market_lines.csv,2,2026-03-04 23:38:47.942321+00:00,2026-03-04 23:38:47.942321+00:00,OK,ESPN
 401825567,,120,356,Maryland Terrapins,Illinois Fighting Illini,consensus,,14.5,14.5,,145.5,145.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:53:58.511528+00:00,2026-03-08 18:53:58.511528+00:00,OK,ESPN
 401825568,,130,127,Michigan Wolverines,Michigan State Spartans,consensus,,-10.5,-10.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:39.347304+00:00,2026-03-08 20:36:39.347304+00:00,OK,ESPN
 401825569,,158,2294,Nebraska Cornhuskers,Iowa Hawkeyes,consensus,,-5.5,-5.5,,136.5,136.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 20:36:39.892350+00:00,2026-03-08 20:36:39.892350+00:00,OK,ESPN
 401825570,,164,213,Rutgers Scarlet Knights,Penn State Nittany Lions,consensus,,-4.5,-4.5,,149.5,149.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:39.439238+00:00,2026-03-08 15:32:39.439238+00:00,OK,ESPN
-401827700,2026-02-25 02:00:00+00:00,239,12,,,consensus,,-8.5,-8.5,,154.5,154.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:23+00:00,2026-02-24 23:50:23+00:00,OK,ESPN
-401827701,2026-02-25 04:00:00+00:00,252,2116,,,consensus,,-12.5,-12.5,,162.5,162.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:26+00:00,2026-02-24 23:50:26+00:00,OK,ESPN
-401827704,2026-02-25 00:00:00+00:00,2641,2132,,,consensus,,-6.5,-6.5,,142.5,142.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:21+00:00,2026-02-24 23:50:21+00:00,OK,ESPN
-401827705,2026-02-25 02:00:00+00:00,254,66,,,consensus,,-14.5,-14.5,,144.5,144.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:24+00:00,2026-02-24 23:50:24+00:00,OK,ESPN
+401827700,,239,12,,,consensus,,-8.5,-8.5,,154.5,154.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:23+00:00,2026-02-24 23:50:23+00:00,OK,ESPN
+401827701,,252,2116,,,consensus,,-12.5,-12.5,,162.5,162.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:26+00:00,2026-02-24 23:50:26+00:00,OK,ESPN
+401827704,,2641,2132,,,consensus,,-6.5,-6.5,,142.5,142.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:21+00:00,2026-02-24 23:50:21+00:00,OK,ESPN
+401827705,,254,66,,,consensus,,-14.5,-14.5,,144.5,144.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:24+00:00,2026-02-24 23:50:24+00:00,OK,ESPN
 401827715,,9,2305,Arizona State Sun Devils,Kansas Jayhawks,consensus,,5.5,5.5,,150.5,150.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:57.901453+00:00,2026-03-03 23:35:57.901453+00:00,OK,ESPN
 401827719,,2641,2628,Texas Tech Red Raiders,TCU Horned Frogs,consensus,,-8.5,-8.5,,147.5,147.5,,,ESPN,market_lines.csv,2,2026-03-03 23:35:50.360601+00:00,2026-03-03 23:35:50.360601+00:00,OK,ESPN
-401827721,,248,239,Houston Cougars,Baylor Bears,consensus,,-15.5,-15.5,,141.5,141.5,,,ESPN,market_lines.csv,2,2026-03-04 17:51:40.971805+00:00,2026-03-04 17:51:40.971805+00:00,OK,ESPN
+401827721,,248,239,Houston Cougars,Baylor Bears,consensus,,-13.5,-13.5,,143.5,143.5,,,ESPN,market_lines.csv,2,2026-03-04 23:38:48.852933+00:00,2026-03-04 23:38:48.852933+00:00,OK,ESPN
 401828262,,5,151,UAB Blazers,East Carolina Pirates,consensus,,-10.5,-10.5,,151.5,151.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:02.553587+00:00,2026-03-08 18:54:02.553587+00:00,OK,ESPN
 401828263,,58,2429,South Florida Bulls,Charlotte 49ers,consensus,,-16.5,-16.5,,156.5,156.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:36.056792+00:00,2026-03-08 17:31:36.056792+00:00,OK,ESPN
 401828264,,2655,235,Tulane Green Wave,Memphis Tigers,consensus,,2.5,2.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:35.378266+00:00,2026-03-08 17:31:35.378266+00:00,OK,ESPN
 401828265,,242,2636,Rice Owls,UTSA Roadrunners,consensus,,-11.5,-11.5,,150.5,150.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:01.587147+00:00,2026-03-08 18:54:01.587147+00:00,OK,ESPN
 401828266,,202,218,Tulsa Golden Hurricane,Temple Owls,consensus,,-11.5,-11.5,,150.5,150.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:54:00.587090+00:00,2026-03-08 18:54:00.587090+00:00,OK,ESPN
-401828443,2026-02-25 00:00:00+00:00,2168,139,,,consensus,,-4.5,-4.5,,156.5,156.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:22+00:00,2026-02-24 23:50:22+00:00,OK,ESPN
-401828461,,139,2350,Saint Louis Billikens,Loyola Chicago Ramblers,consensus,,-22.5,-22.5,,155.5,155.5,,,ESPN,market_lines.csv,2,2026-03-04 17:51:37.968942+00:00,2026-03-04 17:51:37.968942+00:00,OK,ESPN
+401828443,,2168,139,,,consensus,,-4.5,-4.5,,156.5,156.5,,,ESPN,market_lines_latest.csv,0,2026-02-24 23:50:22+00:00,2026-02-24 23:50:22+00:00,OK,ESPN
+401828461,,139,2350,Saint Louis Billikens,Loyola Chicago Ramblers,consensus,,-21.5,-21.5,,154.5,154.5,,,ESPN,market_lines.csv,2,2026-03-04 23:38:47.260114+00:00,2026-03-04 23:38:47.260114+00:00,OK,ESPN
 401851251,,2110,2511,Central Arkansas Bears,Queens University Royals,consensus,,-2.5,-2.5,,155.5,155.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:34.685553+00:00,2026-03-08 17:31:34.685553+00:00,OK,ESPN
-401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-5.5,-5.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:55.093682+00:00,2026-03-08 22:33:55.093682+00:00,OK,ESPN
-401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,1.5,1.5,,143.5,143.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:34:01.541108+00:00,2026-03-08 22:34:01.541108+00:00,OK,ESPN
+401851329,,2502,304,Portland State Vikings,Idaho State Bengals,consensus,,-5.5,-5.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 23:33:05.121679+00:00,2026-03-08 23:33:05.121679+00:00,OK,ESPN
+401851331,,147,70,Montana State Bobcats,Idaho Vandals,consensus,,1.5,1.5,,143.5,143.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 23:33:15.871058+00:00,2026-03-08 23:33:15.871058+00:00,OK,ESPN
+401851332,,149,2458,Montana Grizzlies,Northern Colorado Bears,consensus,,4.5,4.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 05:32:45.731961+00:00,2026-03-09 05:32:45.731961+00:00,OK,ESPN
+401851333,,331,2692,Eastern Washington Eagles,Weber State Wildcats,consensus,,-3.5,-3.5,,154.5,154.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 05:32:55.425176+00:00,2026-03-09 05:32:55.425176+00:00,OK,ESPN
 401851353,,2272,2737,High Point Panthers,Winthrop Eagles,consensus,,-6.5,-6.5,,157.5,157.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:37.933384+00:00,2026-03-08 15:32:37.933384+00:00,OK,ESPN
 401851431,,2739,94,Green Bay Phoenix,Northern Kentucky Norse,consensus,,3.5,3.5,,146.5,146.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:16.511156+00:00,2026-03-08 19:31:16.511156+00:00,OK,ESPN
+401851432,,2750,94,Wright State Raiders,Northern Kentucky Norse,consensus,,1.5,1.5,,158.5,158.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 05:32:44.139231+00:00,2026-03-09 05:32:44.139231+00:00,OK,ESPN
+401851433,,2523,2174,Robert Morris Colonials,Detroit Mercy Titans,consensus,,-5.5,-5.5,,147.5,147.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 05:32:53.835377+00:00,2026-03-09 05:32:53.835377+00:00,OK,ESPN
 401851465,,2771,2368,Merrimack Warriors,Marist Red Foxes,consensus,,-2.5,-2.5,,128.5,128.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:14.868264+00:00,2026-03-08 21:32:14.868264+00:00,OK,ESPN
-401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-1.5,-1.5,,137.5,137.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:59.747762+00:00,2026-03-08 22:33:59.747762+00:00,OK,ESPN
+401851466,,2561,2217,Siena Saints,Fairfield Stags,consensus,,-1.5,-1.5,,137.5,137.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 23:33:13.016181+00:00,2026-03-08 23:33:13.016181+00:00,OK,ESPN
 401851494,,82,2460,UIC Flames,Northern Iowa Panthers,consensus,,3.5,3.5,,124.5,124.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:36.509138+00:00,2026-03-08 15:32:36.509138+00:00,OK,ESPN
 401851547,,2329,2142,Lehigh Mountain Hawks,Colgate Raiders,consensus,,1.5,1.5,,146.5,146.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:34.947085+00:00,2026-03-08 15:32:34.947085+00:00,OK,ESPN
 401851548,,2426,104,Navy Midshipmen,Boston University Terriers,consensus,,-7.5,-7.5,,136.5,136.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 17:31:34.019761+00:00,2026-03-08 17:31:34.019761+00:00,OK,ESPN
 401851589,,2193,2717,East Tennessee State Buccaneers,Western Carolina Catamounts,consensus,,-3.5,-3.5,,146.5,146.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 19:31:16.986080+00:00,2026-03-08 19:31:16.986080+00:00,OK,ESPN
 401851591,,231,2430,Furman Paladins,UNC Greensboro Spartans,consensus,,-5.5,-5.5,,147.5,147.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:54.178106+00:00,2026-03-08 22:33:54.178106+00:00,OK,ESPN
+401851593,,2193,231,East Tennessee State Buccaneers,Furman Paladins,consensus,,-1.5,-1.5,,139.5,139.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 05:32:42.510330+00:00,2026-03-09 05:32:42.510330+00:00,OK,ESPN
 401851602,,2443,2277,New Orleans Privateers,Houston Christian Huskies,consensus,,-3.5,-3.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:14.385038+00:00,2026-03-08 21:32:14.385038+00:00,OK,ESPN
-401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:58.766709+00:00,2026-03-08 22:33:58.766709+00:00,OK,ESPN
-401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-11.5,-11.5,,147.5,147.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:34:00.651184+00:00,2026-03-08 22:34:00.651184+00:00,OK,ESPN
+401851604,,2447,2466,Nicholls Colonels,Northwestern State Demons,consensus,,-1.5,-1.5,,141.5,141.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 23:33:11.401031+00:00,2026-03-08 23:33:11.401031+00:00,OK,ESPN
+401851607,,357,2443,Texas A&M-Corpus Christi Islanders,New Orleans Privateers,consensus,,-1.5,-1.5,,143.5,143.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 05:32:39.170320+00:00,2026-03-09 05:32:39.170320+00:00,OK,ESPN
+401851608,,292,2447,UT Rio Grande Valley Vaqueros,Nicholls Colonels,consensus,,-8.5,-8.5,,146.5,146.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 05:32:50.566542+00:00,2026-03-09 05:32:50.566542+00:00,OK,ESPN
+401851629,,2449,155,North Dakota State Bison,North Dakota Fighting Hawks,consensus,,-11.5,-11.5,,147.5,147.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 23:33:14.489084+00:00,2026-03-08 23:33:14.489084+00:00,OK,ESPN
 401851704,,2653,2572,Troy Trojans,Southern Miss Golden Eagles,consensus,,-5.5,-5.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:13.768484+00:00,2026-03-08 21:32:13.768484+00:00,OK,ESPN
-401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-4.5,-4.5,,166.5,166.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:57.807183+00:00,2026-03-08 22:33:57.807183+00:00,OK,ESPN
-401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,145.5,145.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:56.896505+00:00,2026-03-08 22:33:56.896505+00:00,OK,ESPN
-401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-9.5,-9.5,,149.5,149.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:34:02.474086+00:00,2026-03-08 22:34:02.474086+00:00,OK,ESPN
+401851705,,276,290,Marshall Thundering Herd,Georgia Southern Eagles,consensus,,-3.5,-3.5,,166.5,166.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 23:33:09.986962+00:00,2026-03-08 23:33:09.986962+00:00,OK,ESPN
+401851706,,2653,290,Troy Trojans,Georgia Southern Eagles,consensus,,-5.5,-5.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 05:32:40.818654+00:00,2026-03-09 05:32:40.818654+00:00,OK,ESPN
+401851714,,2011,2016,Alabama State Hornets,Alcorn State Braves,consensus,,-6.5,-6.5,,142.5,142.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 05:32:35.509555+00:00,2026-03-09 05:32:35.509555+00:00,OK,ESPN
+401851715,,2755,2400,Grambling Tigers,Mississippi Valley State Delta Devils,consensus,,-12.5,-12.5,,135.5,135.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 05:32:48.880765+00:00,2026-03-09 05:32:48.880765+00:00,OK,ESPN
+401851756,,204,2539,Oregon State Beavers,San Francisco Dons,consensus,,3.5,3.5,,145.5,145.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 23:33:08.261561+00:00,2026-03-08 23:33:08.261561+00:00,OK,ESPN
+401851757,,2541,279,Santa Clara Broncos,Pacific Tigers,consensus,,-9.5,-9.5,,148.5,148.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 02:51:40.583221+00:00,2026-03-09 02:51:40.583221+00:00,OK,ESPN
+401851759,,2250,204,Gonzaga Bulldogs,Oregon State Beavers,consensus,,-18.5,-18.5,,145.5,145.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 05:32:52.288302+00:00,2026-03-09 05:32:52.288302+00:00,OK,ESPN
+401851760,,2608,2541,Saint Mary's Gaels,Santa Clara Broncos,consensus,,-3.5,-3.5,,147.5,147.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 05:32:57.087919+00:00,2026-03-09 05:32:57.087919+00:00,OK,ESPN
 401856427,,350,2097,UNC Wilmington Seahawks,Campbell Fighting Camels,consensus,,-7.5,-7.5,,149.5,149.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 15:32:33.280579+00:00,2026-03-08 15:32:33.280579+00:00,OK,ESPN
 401856428,,2405,2182,Monmouth Hawks,Drexel Dragons,consensus,,-3.5,-3.5,,136.5,136.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 18:53:59.474665+00:00,2026-03-08 18:53:59.474665+00:00,OK,ESPN
 401856429,,232,119,Charleston Cougars,Towson Tigers,consensus,,-3.5,-3.5,,138.5,138.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 21:32:13.235252+00:00,2026-03-08 21:32:13.235252+00:00,OK,ESPN
-401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-3.5,-3.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 22:33:55.997913+00:00,2026-03-08 22:33:55.997913+00:00,OK,ESPN
+401856430,,2275,2729,Hofstra Pride,William & Mary Tribe,consensus,,-3.5,-3.5,,152.5,152.5,,,ESPN,odds_snapshot.csv,1,2026-03-08 23:33:06.627645+00:00,2026-03-08 23:33:06.627645+00:00,OK,ESPN
+401856431,,2405,2097,Monmouth Hawks,Campbell Fighting Camels,consensus,,-1.5,-1.5,,151.5,151.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 05:32:37.409983+00:00,2026-03-09 05:32:37.409983+00:00,OK,ESPN
+401856432,,2275,119,Hofstra Pride,Towson Tigers,consensus,,-4.5,-4.5,,130.5,130.5,,,ESPN,odds_snapshot.csv,1,2026-03-09 05:32:47.305911+00:00,2026-03-09 05:32:47.305911+00:00,OK,ESPN
 401804830,2025-12-21 21:00:00+00:00,166,2534,New Mexico State Aggies,Sam Houston Bearkats,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401804831,2025-12-28 19:00:00+00:00,2229,2335,Florida International Panthers,Liberty Flames,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401804832,2025-12-30 00:00:00+00:00,55,98,Jacksonville State Gamecocks,Western Kentucky Hilltoppers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -166,12 +180,12 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401804954,2026-02-28 22:30:00+00:00,2534,2623,Sam Houston Bearkats,Missouri State Bears,,-7.5,-7.5,-7.5,154.5,154.5,154.5,,,espn_games,games.csv,90,,,OK,espn_games
 401804955,2026-02-28 23:00:00+00:00,55,2335,Jacksonville State Gamecocks,Liberty Flames,,3.5,3.5,3.5,140.5,140.5,140.5,,,espn_games,games.csv,90,,,OK,espn_games
 401804956,2026-02-28 22:00:00+00:00,338,48,Kennesaw State Owls,Delaware Blue Hens,,-11.5,-11.5,-11.5,144.5,144.5,144.5,,,espn_games,games.csv,90,,,OK,espn_games
-401804957,2026-03-06 00:00:00+00:00,48,2534,Delaware Blue Hens,Sam Houston Bearkats,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401804958,2026-03-06 00:00:00+00:00,2335,2348,Liberty Flames,Louisiana Tech Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401804959,2026-03-06 02:00:00+00:00,166,55,New Mexico State Aggies,Jacksonville State Gamecocks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401804960,2026-03-06 02:00:00+00:00,2638,338,UTEP Miners,Kennesaw State Owls,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401804961,2026-03-06 01:00:00+00:00,2623,98,Missouri State Bears,Western Kentucky Hilltoppers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401804962,2026-03-06 00:00:00+00:00,2229,2393,Florida International Panthers,Middle Tennessee Blue Raiders,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401804957,2026-03-06 00:00:00+00:00,48,2534,Delaware Blue Hens,Sam Houston Bearkats,,7.5,7.5,7.5,148.5,148.5,148.5,,,espn_games,games.csv,90,,,OK,espn_games
+401804958,2026-03-06 00:00:00+00:00,2335,2348,Liberty Flames,Louisiana Tech Bulldogs,,-8.5,-8.5,-8.5,137.5,137.5,137.5,,,espn_games,games.csv,90,,,OK,espn_games
+401804959,2026-03-06 02:00:00+00:00,166,55,New Mexico State Aggies,Jacksonville State Gamecocks,,-6.5,-6.5,-6.5,145.5,145.5,145.5,,,espn_games,games.csv,90,,,OK,espn_games
+401804960,2026-03-06 02:00:00+00:00,2638,338,UTEP Miners,Kennesaw State Owls,,2.5,2.5,2.5,149.5,149.5,149.5,,,espn_games,games.csv,90,,,OK,espn_games
+401804961,2026-03-06 01:00:00+00:00,2623,98,Missouri State Bears,Western Kentucky Hilltoppers,,1.5,1.5,1.5,153.5,153.5,153.5,,,espn_games,games.csv,90,,,OK,espn_games
+401804962,2026-03-06 00:00:00+00:00,2229,2393,Florida International Panthers,Middle Tennessee Blue Raiders,,1.5,1.5,1.5,153.5,153.5,153.5,,,espn_games,games.csv,90,,,OK,espn_games
 401804963,2026-03-07 19:00:00+00:00,2335,2534,Liberty Flames,Sam Houston Bearkats,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401804964,2026-03-07 17:00:00+00:00,48,2348,Delaware Blue Hens,Louisiana Tech Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401804965,2026-03-07 20:00:00+00:00,2638,55,UTEP Miners,Jacksonville State Gamecocks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -235,9 +249,9 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401805208,2026-02-28 21:00:00+00:00,3084,2000,Utah Valley Wolverines,Abilene Christian Wildcats,,-14.5,-14.5,-14.5,140.5,140.5,140.5,,,espn_games,games.csv,90,,,OK,espn_games
 401805209,2026-03-01 02:00:00+00:00,2856,2627,California Baptist Lancers,Tarleton State Texans,,-7.5,-7.5,-7.5,139.5,139.5,139.5,,,espn_games,games.csv,90,,,OK,espn_games
 401805210,2026-03-01 01:30:00+00:00,253,3101,Southern Utah Thunderbirds,Utah Tech Trailblazers,,1.5,1.5,1.5,156.5,156.5,156.5,,,espn_games,games.csv,90,,,OK,espn_games
-401805211,2026-03-06 03:00:00+00:00,2856,2000,California Baptist Lancers,Abilene Christian Wildcats,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401805212,2026-03-06 01:00:00+00:00,2627,250,Tarleton State Texans,UT Arlington Mavericks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401805213,2026-03-06 01:30:00+00:00,253,3084,Southern Utah Thunderbirds,Utah Valley Wolverines,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401805211,2026-03-06 03:00:00+00:00,2856,2000,California Baptist Lancers,Abilene Christian Wildcats,,-9.5,-9.5,-9.5,137.5,137.5,137.5,,,espn_games,games.csv,90,,,OK,espn_games
+401805212,2026-03-06 01:00:00+00:00,2627,250,Tarleton State Texans,UT Arlington Mavericks,,-1.5,-1.5,-1.5,136.5,136.5,136.5,,,espn_games,games.csv,90,,,OK,espn_games
+401805213,2026-03-06 01:30:00+00:00,253,3084,Southern Utah Thunderbirds,Utah Valley Wolverines,,9.5,9.5,9.5,150.5,150.5,150.5,,,espn_games,games.csv,90,,,OK,espn_games
 401805214,2026-03-08 00:00:00+00:00,2000,250,Abilene Christian Wildcats,UT Arlington Mavericks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401805215,2026-03-08 02:00:00+00:00,3101,3084,Utah Tech Trailblazers,Utah Valley Wolverines,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401805216,2026-03-08 01:30:00+00:00,253,2856,Southern Utah Thunderbirds,California Baptist Lancers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -987,7 +1001,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401809100,2026-02-22 03:00:00+00:00,300,28,UC Irvine Anteaters,UC San Diego Tritons,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809101,2026-02-27 03:00:00+00:00,28,2934,UC San Diego Tritons,Cal State Bakersfield Roadrunners,,-14.5,-14.5,-14.5,148.5,148.5,148.5,,,espn_games,games.csv,90,,,OK,espn_games
 401809102,2026-03-01 03:00:00+00:00,28,13,UC San Diego Tritons,Cal Poly Mustangs,,-6.5,-6.5,-6.5,162.5,162.5,162.5,,,espn_games,games.csv,90,,,OK,espn_games
-401809103,2026-03-06 03:00:00+00:00,2239,28,Cal State Fullerton Titans,UC San Diego Tritons,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401809103,2026-03-06 03:00:00+00:00,2239,28,Cal State Fullerton Titans,UC San Diego Tritons,,3.5,3.5,3.5,156.5,156.5,156.5,,,espn_games,games.csv,90,,,OK,espn_games
 401809104,2026-03-08 02:00:00+00:00,2540,28,UC Santa Barbara Gauchos,UC San Diego Tritons,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809105,2025-12-05 03:00:00+00:00,300,27,UC Irvine Anteaters,UC Riverside Highlanders,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809106,2025-12-07 03:00:00+00:00,300,2463,UC Irvine Anteaters,Cal State Northridge Matadors,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -1005,7 +1019,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401809118,2026-02-20 03:00:00+00:00,299,300,Long Beach State Beach,UC Irvine Anteaters,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809119,2026-02-27 03:00:00+00:00,2463,300,Cal State Northridge Matadors,UC Irvine Anteaters,,-1.5,-1.5,-1.5,154.5,154.5,154.5,,,espn_games,games.csv,90,,,OK,espn_games
 401809120,2026-03-01 03:30:00+00:00,300,2540,UC Irvine Anteaters,UC Santa Barbara Gauchos,,-3.5,-3.5,-3.5,139.5,139.5,139.5,,,espn_games,games.csv,90,,,OK,espn_games
-401809121,2026-03-06 03:00:00+00:00,300,13,UC Irvine Anteaters,Cal Poly Mustangs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401809121,2026-03-06 03:00:00+00:00,300,13,UC Irvine Anteaters,Cal Poly Mustangs,,-9.5,-9.5,-9.5,156.5,156.5,156.5,,,espn_games,games.csv,90,,,OK,espn_games
 401809122,2026-03-08 01:00:00+00:00,300,302,UC Irvine Anteaters,UC Davis Aggies,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809123,2025-12-05 04:59:00+00:00,62,302,Hawai'i Rainbow Warriors,UC Davis Aggies,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809124,2026-01-01 22:00:00+00:00,302,2463,UC Davis Aggies,Cal State Northridge Matadors,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -1022,7 +1036,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401809135,2026-02-20 03:00:00+00:00,2239,302,Cal State Fullerton Titans,UC Davis Aggies,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809136,2026-02-21 22:00:00+00:00,27,302,UC Riverside Highlanders,UC Davis Aggies,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809137,2026-02-27 02:00:00+00:00,302,62,UC Davis Aggies,Hawai'i Rainbow Warriors,,1.5,1.5,1.5,147.5,147.5,147.5,,,espn_games,games.csv,90,,,OK,espn_games
-401809138,2026-03-06 03:00:00+00:00,299,302,Long Beach State Beach,UC Davis Aggies,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401809138,2026-03-06 03:00:00+00:00,299,302,Long Beach State Beach,UC Davis Aggies,,2.5,2.5,2.5,150.5,150.5,150.5,,,espn_games,games.csv,90,,,OK,espn_games
 401809139,2025-12-07 04:59:00+00:00,62,2239,Hawai'i Rainbow Warriors,Cal State Fullerton Titans,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809140,2026-01-02 01:00:00+00:00,27,62,UC Riverside Highlanders,Hawai'i Rainbow Warriors,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809141,2026-01-16 03:00:00+00:00,13,62,Cal Poly Mustangs,Hawai'i Rainbow Warriors,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -1035,7 +1049,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401809148,2026-02-20 04:59:00+00:00,62,13,Hawai'i Rainbow Warriors,Cal Poly Mustangs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809149,2026-02-22 03:00:00+00:00,62,2540,Hawai'i Rainbow Warriors,UC Santa Barbara Gauchos,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809150,2026-03-01 00:00:00+00:00,2239,62,Cal State Fullerton Titans,Hawai'i Rainbow Warriors,,3.5,3.5,3.5,158.5,158.5,158.5,,,espn_games,games.csv,90,,,OK,espn_games
-401809151,2026-03-06 04:59:00+00:00,62,27,Hawai'i Rainbow Warriors,UC Riverside Highlanders,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401809151,2026-03-06 04:59:00+00:00,62,27,Hawai'i Rainbow Warriors,UC Riverside Highlanders,,-11.5,-11.5,-11.5,146.5,146.5,146.5,,,espn_games,games.csv,90,,,OK,espn_games
 401809152,2026-03-08 04:59:00+00:00,62,299,Hawai'i Rainbow Warriors,Long Beach State Beach,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809153,2025-12-05 03:00:00+00:00,2239,13,Cal State Fullerton Titans,Cal Poly Mustangs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401809154,2025-12-07 00:00:00+00:00,13,27,Cal Poly Mustangs,UC Riverside Highlanders,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -1541,7 +1555,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401812621,2026-02-14 23:30:00+00:00,108,43,Harvard Crimson,Yale Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401812622,2026-02-21 19:00:00+00:00,172,108,Cornell Big Red,Harvard Crimson,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401812623,2026-02-28 00:00:00+00:00,163,108,Princeton Tigers,Harvard Crimson,,4.5,4.5,4.5,129.5,129.5,129.5,,,espn_games,games.csv,90,,,OK,espn_games
-401812624,2026-03-07 00:00:00+00:00,108,171,Harvard Crimson,Columbia Lions,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401812624,2026-03-07 00:00:00+00:00,108,171,Harvard Crimson,Columbia Lions,,-3.5,-3.5,-3.5,132.5,132.5,132.5,,,espn_games,games.csv,90,,,OK,espn_games
 401812628,2025-11-19 02:00:00+00:00,251,2520,Texas Longhorns,Rider Broncs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401812629,2025-11-21 02:00:00+00:00,248,2520,Houston Cougars,Rider Broncs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401812630,2025-11-26 00:00:00+00:00,2520,2154,Rider Broncs,Coppin State Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -1870,12 +1884,12 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401814594,2026-03-03 23:30:00+00:00,2084,2199,Buffalo Bulls,Eastern Michigan Eagles,,-3.5,-3.5,-3.5,144.5,144.5,144.5,,,espn_games,games.csv,90,,,OK,espn_games
 401814595,2026-03-04 01:00:00+00:00,2459,2309,Northern Illinois Huskies,Kent State Golden Flashes,,9.5,9.5,9.5,148.5,148.5,148.5,,,espn_games,games.csv,90,,,OK,espn_games
 401814596,2026-03-04 00:00:00+00:00,113,195,Massachusetts Minutemen,Ohio Bobcats,,-2.5,-2.5,-2.5,156.5,156.5,156.5,,,espn_games,games.csv,90,,,OK,espn_games
-401814598,2026-03-06 23:30:00+00:00,2199,189,Eastern Michigan Eagles,Bowling Green Falcons,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401814599,2026-03-07 00:00:00+00:00,2649,2084,Toledo Rockets,Buffalo Bulls,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401814600,2026-03-07 00:00:00+00:00,2050,2117,Ball State Cardinals,Central Michigan Chippewas,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401814601,2026-03-07 02:10:00+00:00,195,193,Ohio Bobcats,Miami (OH) RedHawks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401814602,2026-03-06 23:00:00+00:00,2006,2459,Akron Zips,Northern Illinois Huskies,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401814603,2026-03-07 00:00:00+00:00,2309,2711,Kent State Golden Flashes,Western Michigan Broncos,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401814598,2026-03-06 23:30:00+00:00,2199,189,Eastern Michigan Eagles,Bowling Green Falcons,,3.5,3.5,3.5,141.5,141.5,141.5,,,espn_games,games.csv,90,,,OK,espn_games
+401814599,2026-03-07 00:00:00+00:00,2649,2084,Toledo Rockets,Buffalo Bulls,,-7.5,-7.5,-7.5,154.5,154.5,154.5,,,espn_games,games.csv,90,,,OK,espn_games
+401814600,2026-03-07 00:00:00+00:00,2050,2117,Ball State Cardinals,Central Michigan Chippewas,,-1.5,-1.5,-1.5,136.5,136.5,136.5,,,espn_games,games.csv,90,,,OK,espn_games
+401814601,2026-03-07 02:00:00+00:00,195,193,Ohio Bobcats,Miami (OH) RedHawks,,5.5,5.5,5.5,158.5,158.5,158.5,,,espn_games,games.csv,90,,,OK,espn_games
+401814602,2026-03-06 23:00:00+00:00,2006,2459,Akron Zips,Northern Illinois Huskies,,-21.5,-21.5,-21.5,154.5,154.5,154.5,,,espn_games,games.csv,90,,,OK,espn_games
+401814603,2026-03-07 00:00:00+00:00,2309,2711,Kent State Golden Flashes,Western Michigan Broncos,,-10.5,-10.5,-10.5,158.5,158.5,158.5,,,espn_games,games.csv,90,,,OK,espn_games
 401817143,2025-11-13 00:00:00+00:00,45,44,George Washington Revolutionaries,American University Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401817144,2025-11-15 23:00:00+00:00,45,295,George Washington Revolutionaries,Old Dominion Monarchs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401817145,2025-11-20 00:00:00+00:00,45,2378,George Washington Revolutionaries,UMBC Retrievers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -2276,7 +2290,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401818562,2026-02-14 23:00:00+00:00,159,225,Dartmouth Big Green,Brown Bears,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401818563,2026-02-21 00:00:00+00:00,225,163,Brown Bears,Princeton Tigers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401818564,2026-02-28 23:00:00+00:00,172,225,Cornell Big Red,Brown Bears,,-9.5,-9.5,-9.5,158.5,158.5,158.5,,,espn_games,games.csv,90,,,OK,espn_games
-401818565,2026-03-07 00:00:00+00:00,225,219,Brown Bears,Pennsylvania Quakers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401818565,2026-03-07 00:00:00+00:00,225,219,Brown Bears,Pennsylvania Quakers,,2.5,2.5,2.5,141.5,141.5,141.5,,,espn_games,games.csv,90,,,OK,espn_games
 401818792,2025-11-22 20:00:00+00:00,2198,2382,Eastern Kentucky Colonels,Mercer Bears,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401819814,2025-11-09 20:00:00+00:00,9,3101,Arizona State Sun Devils,Utah Tech Trailblazers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401819815,2025-11-15 04:00:00+00:00,9,2250,Arizona State Sun Devils,Gonzaga Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -2813,7 +2827,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401822777,2026-02-21 21:30:00+00:00,2154,2379,Coppin State Eagles,Maryland Eastern Shore Hawks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401822778,2026-02-28 21:55:00+00:00,2154,2450,Coppin State Eagles,Norfolk State Spartans,,8.5,8.5,8.5,142.5,142.5,142.5,,,espn_games,games.csv,90,,,OK,espn_games
 401822779,2026-03-03 00:00:00+00:00,47,2154,Howard Bison,Coppin State Eagles,,-18.5,-18.5,-18.5,137.5,137.5,137.5,,,espn_games,games.csv,90,,,OK,espn_games
-401822780,2026-03-06 01:00:00+00:00,2415,2154,Morgan State Bears,Coppin State Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401822780,2026-03-06 01:00:00+00:00,2415,2154,Morgan State Bears,Coppin State Eagles,,-5.5,-5.5,-5.5,149.5,149.5,149.5,,,espn_games,games.csv,90,,,OK,espn_games
 401822833,2025-11-18 00:00:00+00:00,2561,2142,Siena Saints,Colgate Raiders,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401822834,2025-11-22 00:00:00+00:00,2561,399,Siena Saints,UAlbany Great Danes,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401822835,2025-11-28 18:00:00+00:00,2561,2344,Siena Saints,Longwood Lancers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -2924,7 +2938,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401822969,2026-03-04 23:00:00+00:00,2086,156,Butler Bulldogs,Creighton Bluejays,,-2.5,-2.5,-2.5,155.5,155.5,155.5,,,espn_games,games.csv,90,,,OK,espn_games
 401822970,2026-03-05 01:00:00+00:00,305,222,DePaul Blue Demons,Villanova Wildcats,,2.5,2.5,2.5,135.5,135.5,135.5,,,espn_games,games.csv,90,,,OK,espn_games
 401822971,2026-03-05 00:00:00+00:00,2507,269,Providence Friars,Marquette Golden Eagles,,-5.5,-5.5,-5.5,161.5,161.5,161.5,,,espn_games,games.csv,90,,,OK,espn_games
-401822972,2026-03-07 02:00:00+00:00,2550,2599,Seton Hall Pirates,St. John's Red Storm,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401822972,2026-03-07 02:00:00+00:00,2550,2599,Seton Hall Pirates,St. John's Red Storm,,4.5,4.5,4.5,137.5,137.5,137.5,,,espn_games,games.csv,90,,,OK,espn_games
 401822973,2026-03-07 17:30:00+00:00,269,41,Marquette Golden Eagles,UConn Huskies,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401822974,2026-03-07 17:00:00+00:00,222,2752,Villanova Wildcats,Xavier Musketeers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401822975,2026-03-07 17:00:00+00:00,305,2086,DePaul Blue Demons,Butler Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -2970,7 +2984,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401823053,2026-02-17 00:00:00+00:00,2379,2450,Maryland Eastern Shore Hawks,Norfolk State Spartans,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401823054,2026-02-28 21:30:00+00:00,2379,2569,Maryland Eastern Shore Hawks,South Carolina State Bulldogs,,-6.5,-6.5,-6.5,136.5,136.5,136.5,,,espn_games,games.csv,90,,,OK,espn_games
 401823055,2026-03-03 00:00:00+00:00,2379,2428,Maryland Eastern Shore Hawks,North Carolina Central Eagles,,-1.5,-1.5,-1.5,133.5,133.5,133.5,,,espn_games,games.csv,90,,,OK,espn_games
-401823056,2026-03-06 00:00:00+00:00,2379,2169,Maryland Eastern Shore Hawks,Delaware State Hornets,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401823056,2026-03-06 00:00:00+00:00,2379,2169,Maryland Eastern Shore Hawks,Delaware State Hornets,,-5.5,-5.5,-5.5,124.5,124.5,124.5,,,espn_games,games.csv,90,,,OK,espn_games
 401823173,2025-11-23 19:00:00+00:00,2458,2239,Northern Colorado Bears,Cal State Fullerton Titans,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401823174,2025-11-29 22:00:00+00:00,2239,2492,Cal State Fullerton Titans,Pepperdine Waves,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401823176,2025-12-13 21:00:00+00:00,2172,2239,Denver Pioneers,Cal State Fullerton Titans,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -3019,7 +3033,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401823268,2026-02-20 02:00:00+00:00,2540,2463,UC Santa Barbara Gauchos,Cal State Northridge Matadors,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401823269,2026-02-22 02:00:00+00:00,299,2463,Long Beach State Beach,Cal State Northridge Matadors,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401823270,2026-03-01 01:00:00+00:00,27,2463,UC Riverside Highlanders,Cal State Northridge Matadors,,4.5,4.5,4.5,157.5,157.5,157.5,,,espn_games,games.csv,90,,,OK,espn_games
-401823271,2026-03-06 02:30:00+00:00,2934,2463,Cal State Bakersfield Roadrunners,Cal State Northridge Matadors,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401823271,2026-03-06 02:30:00+00:00,2934,2463,Cal State Bakersfield Roadrunners,Cal State Northridge Matadors,,7.5,7.5,7.5,165.5,165.5,165.5,,,espn_games,games.csv,90,,,OK,espn_games
 401823306,2025-11-13 03:00:00+00:00,279,299,Pacific Tigers,Long Beach State Beach,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401823308,2025-11-22 03:00:00+00:00,299,147,Long Beach State Beach,Montana State Bobcats,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401823309,2025-11-27 03:00:00+00:00,2501,299,Portland Pilots,Long Beach State Beach,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -3253,7 +3267,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401823784,2026-02-26 04:00:00+00:00,21,328,San Diego State Aztecs,Utah State Aggies,,-1.5,-1.5,-1.5,146.5,146.5,146.5,,,espn_games,games.csv,90,,,OK,espn_games
 401823785,2026-02-28 19:00:00+00:00,167,21,New Mexico Lobos,San Diego State Aztecs,,-2.5,-2.5,-2.5,149.5,149.5,149.5,,,espn_games,games.csv,90,,,OK,espn_games
 401823786,2026-03-04 02:00:00+00:00,68,21,Boise State Broncos,San Diego State Aztecs,,-1.5,-1.5,-1.5,144.5,144.5,144.5,,,espn_games,games.csv,90,,,OK,espn_games
-401823787,2026-03-07 03:00:00+00:00,21,2439,San Diego State Aztecs,UNLV Rebels,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401823787,2026-03-07 03:00:00+00:00,21,2439,San Diego State Aztecs,UNLV Rebels,,-10.5,-10.5,-10.5,154.5,154.5,154.5,,,espn_games,games.csv,90,,,OK,espn_games
 401823788,2025-11-22 02:00:00+00:00,2253,2466,Grand Canyon Lopes,Northwestern State Demons,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401823789,2025-12-03 02:00:00+00:00,2253,56,Grand Canyon Lopes,Stetson Hatters,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401823790,2025-12-14 01:00:00+00:00,2253,324,Grand Canyon Lopes,Coastal Carolina Chanticleers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -3711,8 +3725,8 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401825557,2026-03-05 00:30:00+00:00,213,194,Penn State Nittany Lions,Ohio State Buckeyes,,6.5,6.5,6.5,152.5,152.5,152.5,,,espn_games,games.csv,90,,,OK,espn_games
 401825558,2026-03-05 03:30:00+00:00,264,30,Washington Huskies,USC Trojans,,-6.5,-6.5,-6.5,150.5,150.5,150.5,,,espn_games,games.csv,90,,,OK,espn_games
 401825559,2026-03-05 01:00:00+00:00,275,120,Wisconsin Badgers,Maryland Terrapins,,-14.5,-14.5,-14.5,154.5,154.5,154.5,,,espn_games,games.csv,90,,,OK,espn_games
-401825560,2026-03-06 01:00:00+00:00,2294,130,Iowa Hawkeyes,Michigan Wolverines,,9.5,9.5,9.5,145.5,145.5,145.5,,,espn_games,games.csv,90,,,OK,espn_games
-401825561,2026-03-06 01:00:00+00:00,127,164,Michigan State Spartans,Rutgers Scarlet Knights,,-19.5,-19.5,-19.5,143.5,143.5,143.5,,,espn_games,games.csv,90,,,OK,espn_games
+401825560,2026-03-06 01:00:00+00:00,2294,130,Iowa Hawkeyes,Michigan Wolverines,,9.5,9.5,9.5,146.5,146.5,146.5,,,espn_games,games.csv,90,,,OK,espn_games
+401825561,2026-03-06 01:00:00+00:00,127,164,Michigan State Spartans,Rutgers Scarlet Knights,,-19.5,-19.5,-19.5,142.5,142.5,142.5,,,espn_games,games.csv,90,,,OK,espn_games
 401825562,2026-03-08 02:00:00+00:00,135,77,Minnesota Golden Gophers,Northwestern Wildcats,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401825563,2026-03-07 22:30:00+00:00,194,84,Ohio State Buckeyes,Indiana Hoosiers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401825564,2026-03-08 04:00:00+00:00,2483,264,Oregon Ducks,Washington Huskies,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -3958,7 +3972,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401827035,2026-02-27 01:30:00+00:00,2582,50,Southern Jaguars,Florida A&M Rattlers,,-8.5,-8.5,-8.5,147.5,147.5,147.5,,,espn_games,games.csv,90,,,OK,espn_games
 401827036,2026-02-28 20:30:00+00:00,2582,2065,Southern Jaguars,Bethune-Cookman Wildcats,,-1.5,-1.5,-1.5,151.5,151.5,151.5,,,espn_games,games.csv,90,,,OK,espn_games
 401827037,2026-03-04 02:00:00+00:00,2011,2582,Alabama State Hornets,Southern Jaguars,,-1.5,-1.5,-1.5,153.5,153.5,153.5,,,espn_games,games.csv,90,,,OK,espn_games
-401827038,2026-03-06 01:30:00+00:00,2010,2582,Alabama A&M Bulldogs,Southern Jaguars,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401827038,2026-03-06 01:30:00+00:00,2010,2582,Alabama A&M Bulldogs,Southern Jaguars,,1.5,1.5,1.5,144.5,144.5,144.5,,,espn_games,games.csv,90,,,OK,espn_games
 401827041,2025-11-18 01:00:00+00:00,142,2504,Missouri Tigers,Prairie View A&M Panthers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827042,2025-11-30 21:00:00+00:00,249,2504,North Texas Mean Green,Prairie View A&M Panthers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827045,2025-12-23 00:00:00+00:00,99,2504,LSU Tigers,Prairie View A&M Panthers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -3989,7 +4003,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401827078,2026-02-20 01:50:00+00:00,2400,2504,Mississippi Valley State Delta Devils,Prairie View A&M Panthers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827080,2026-02-27 02:30:00+00:00,2504,2296,Prairie View A&M Panthers,Jackson State Tigers,,-3.5,-3.5,-3.5,162.5,162.5,162.5,,,espn_games,games.csv,90,,,OK,espn_games
 401827081,2026-02-28 22:30:00+00:00,2504,2016,Prairie View A&M Panthers,Alcorn State Braves,,-5.5,-5.5,-5.5,154.5,154.5,154.5,,,espn_games,games.csv,90,,,OK,espn_games
-401827082,2026-03-06 01:00:00+00:00,2640,2504,Texas Southern Tigers,Prairie View A&M Panthers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401827082,2026-03-06 01:00:00+00:00,2640,2504,Texas Southern Tigers,Prairie View A&M Panthers,,-1.5,-1.5,-1.5,154.5,154.5,154.5,,,espn_games,games.csv,90,,,OK,espn_games
 401827088,2025-11-09 23:00:00+00:00,47,2755,Howard Bison,Grambling Tigers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827089,2025-11-14 00:30:00+00:00,2755,2572,Grambling Tigers,Southern Miss Golden Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827090,2025-12-09 01:00:00+00:00,2572,2755,Southern Miss Golden Eagles,Grambling Tigers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -4007,7 +4021,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401827103,2026-02-10 00:30:00+00:00,2755,2010,Grambling Tigers,Alabama A&M Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827104,2026-02-14 22:30:00+00:00,2640,2755,Texas Southern Tigers,Grambling Tigers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827105,2026-03-04 02:20:00+00:00,2010,2755,Alabama A&M Bulldogs,Grambling Tigers,,-1.5,-1.5,-1.5,138.5,138.5,138.5,,,espn_games,games.csv,90,,,OK,espn_games
-401827106,2026-03-06 01:00:00+00:00,2011,2755,Alabama State Hornets,Grambling Tigers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401827106,2026-03-06 01:00:00+00:00,2011,2755,Alabama State Hornets,Grambling Tigers,,-2.5,-2.5,-2.5,144.5,144.5,144.5,,,espn_games,games.csv,90,,,OK,espn_games
 401827107,2026-02-26 23:30:00+00:00,2755,2065,Grambling Tigers,Bethune-Cookman Wildcats,,1.5,1.5,1.5,141.5,141.5,141.5,,,espn_games,games.csv,90,,,OK,espn_games
 401827108,2026-02-28 22:55:00+00:00,2755,50,Grambling Tigers,Florida A&M Rattlers,,-5.5,-5.5,-5.5,139.5,139.5,139.5,,,espn_games,games.csv,90,,,OK,espn_games
 401827110,2025-11-20 00:00:00+00:00,195,2065,Ohio Bobcats,Bethune-Cookman Wildcats,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -4025,7 +4039,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401827123,2026-02-17 00:00:00+00:00,2296,2065,Jackson State Tigers,Bethune-Cookman Wildcats,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827124,2026-02-20 00:30:00+00:00,2065,2011,Bethune-Cookman Wildcats,Alabama State Hornets,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827125,2026-02-21 22:30:00+00:00,2065,2010,Bethune-Cookman Wildcats,Alabama A&M Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401827126,2026-03-06 00:30:00+00:00,50,2065,Florida A&M Rattlers,Bethune-Cookman Wildcats,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401827126,2026-03-06 00:30:00+00:00,50,2065,Florida A&M Rattlers,Bethune-Cookman Wildcats,,2.5,2.5,2.5,145.5,145.5,145.5,,,espn_games,games.csv,90,,,OK,espn_games
 401827129,2025-11-15 20:00:00+00:00,238,2029,Vanderbilt Commodores,Arkansas-Pine Bluff Golden Lions,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827130,2025-11-20 21:00:00+00:00,276,2029,Marshall Thundering Herd,Arkansas-Pine Bluff Golden Lions,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827131,2025-11-23 18:00:00+00:00,193,2029,Miami (OH) RedHawks,Arkansas-Pine Bluff Golden Lions,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -4043,7 +4057,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401827149,2026-02-21 23:30:00+00:00,2029,2504,Arkansas-Pine Bluff Golden Lions,Prairie View A&M Panthers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827150,2026-02-28 23:30:00+00:00,2029,2400,Arkansas-Pine Bluff Golden Lions,Mississippi Valley State Delta Devils,,-13.5,-13.5,-13.5,147.5,147.5,147.5,,,espn_games,games.csv,90,,,OK,espn_games
 401827151,2026-03-04 01:45:00+00:00,2296,2029,Jackson State Tigers,Arkansas-Pine Bluff Golden Lions,,-1.5,-1.5,-1.5,152.5,152.5,152.5,,,espn_games,games.csv,90,,,OK,espn_games
-401827152,2026-03-06 02:00:00+00:00,2016,2029,Alcorn State Braves,Arkansas-Pine Bluff Golden Lions,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401827152,2026-03-06 02:00:00+00:00,2016,2029,Alcorn State Braves,Arkansas-Pine Bluff Golden Lions,,1.5,1.5,1.5,146.5,146.5,146.5,,,espn_games,games.csv,90,,,OK,espn_games
 401827154,2025-11-23 18:00:00+00:00,2565,2011,SIU Edwardsville Cougars,Alabama State Hornets,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827155,2025-11-27 02:00:00+00:00,167,2011,New Mexico Lobos,Alabama State Hornets,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827156,2025-12-07 20:00:00+00:00,2630,2011,UT Martin Skyhawks,Alabama State Hornets,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -4255,7 +4269,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401827717,2026-03-04 02:00:00+00:00,2132,252,Cincinnati Bearcats,BYU Cougars,,-1.5,-1.5,-1.5,152.5,152.5,152.5,,,espn_games,games.csv,90,,,OK,espn_games
 401827718,2026-03-04 01:00:00+00:00,2306,277,Kansas State Wildcats,West Virginia Mountaineers,,1.5,1.5,1.5,143.5,143.5,143.5,,,espn_games,games.csv,90,,,OK,espn_games
 401827720,2026-03-04 02:00:00+00:00,254,38,Utah Utes,Colorado Buffaloes,,-1.5,-1.5,-1.5,149.5,149.5,149.5,,,espn_games,games.csv,90,,,OK,espn_games
-401827722,2026-03-07 01:00:00+00:00,277,2116,West Virginia Mountaineers,UCF Knights,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401827722,2026-03-07 01:00:00+00:00,277,2116,West Virginia Mountaineers,UCF Knights,,-3.5,-3.5,-3.5,141.5,141.5,141.5,,,espn_games,games.csv,90,,,OK,espn_games
 401827723,2026-03-07 22:00:00+00:00,239,254,Baylor Bears,Utah Utes,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827724,2026-03-08 03:30:00+00:00,252,2641,BYU Cougars,Texas Tech Red Raiders,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401827725,2026-03-08 04:00:00+00:00,38,12,Colorado Buffaloes,Arizona Wildcats,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -4379,10 +4393,10 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401828254,2026-03-01 17:00:00+00:00,58,2655,South Florida Bulls,Tulane Green Wave,,-14.5,-14.5,-14.5,155.5,155.5,155.5,,,espn_games,games.csv,90,,,OK,espn_games
 401828255,2026-03-02 01:00:00+00:00,2636,2724,UTSA Roadrunners,Wichita State Shockers,,15.5,15.5,15.5,151.5,151.5,151.5,,,espn_games,games.csv,90,,,OK,espn_games
 401828256,2026-03-05 00:00:00+00:00,2429,5,Charlotte 49ers,UAB Blazers,,1.5,1.5,1.5,144.5,144.5,144.5,,,espn_games,games.csv,90,,,OK,espn_games
-401828257,2026-03-06 00:00:00+00:00,151,202,East Carolina Pirates,Tulsa Golden Hurricane,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401828257,2026-03-06 00:00:00+00:00,151,202,East Carolina Pirates,Tulsa Golden Hurricane,,9.5,9.5,9.5,156.5,156.5,156.5,,,espn_games,games.csv,90,,,OK,espn_games
 401828258,2026-03-05 01:00:00+00:00,249,242,North Texas Mean Green,Rice Owls,,-7.5,-7.5,-7.5,137.5,137.5,137.5,,,espn_games,games.csv,90,,,OK,espn_games
-401828259,2026-03-06 00:00:00+00:00,218,2655,Temple Owls,Tulane Green Wave,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401828260,2026-03-06 02:00:00+00:00,235,58,Memphis Tigers,South Florida Bulls,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401828259,2026-03-06 00:00:00+00:00,218,2655,Temple Owls,Tulane Green Wave,,-4.5,-4.5,-4.5,144.5,144.5,144.5,,,espn_games,games.csv,90,,,OK,espn_games
+401828260,2026-03-06 02:00:00+00:00,235,58,Memphis Tigers,South Florida Bulls,,6.5,6.5,6.5,161.5,161.5,161.5,,,espn_games,games.csv,90,,,OK,espn_games
 401828261,2026-03-07 21:00:00+00:00,2724,2226,Wichita State Shockers,Florida Atlantic Owls,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401828269,2025-11-29 00:30:00+00:00,399,2142,UAlbany Great Danes,Colgate Raiders,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401828270,2025-11-30 00:30:00+00:00,2230,399,Fordham Rams,UAlbany Great Danes,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -4538,7 +4552,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401828458,2026-03-05 00:00:00+00:00,227,2184,Rhode Island Rams,Duquesne Dukes,,-2.5,-2.5,-2.5,143.5,143.5,143.5,,,espn_games,games.csv,90,,,OK,espn_games
 401828459,2026-03-04 23:30:00+00:00,2325,2230,La Salle Explorers,Fordham Rams,,2.5,2.5,2.5,132.5,132.5,132.5,,,espn_games,games.csv,90,,,OK,espn_games
 401828460,2026-03-05 00:00:00+00:00,45,179,George Washington Revolutionaries,St. Bonaventure Bonnies,,-9.5,-9.5,-9.5,159.5,159.5,159.5,,,espn_games,games.csv,90,,,OK,espn_games
-401828462,2026-03-07 00:00:00+00:00,2168,2670,Dayton Flyers,VCU Rams,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401828462,2026-03-07 00:00:00+00:00,2168,2670,Dayton Flyers,VCU Rams,,-1.5,-1.5,-1.5,149.5,149.5,149.5,,,espn_games,games.csv,90,,,OK,espn_games
 401828463,2026-03-07 17:00:00+00:00,179,2166,St. Bonaventure Bonnies,Davidson Wildcats,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401828464,2026-03-07 19:00:00+00:00,2184,257,Duquesne Dukes,Richmond Spiders,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401828465,2026-03-07 19:00:00+00:00,2230,227,Fordham Rams,Rhode Island Rams,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -4568,7 +4582,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401828667,2026-02-14 20:30:00+00:00,2296,50,Jackson State Tigers,Florida A&M Rattlers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401828668,2026-02-21 21:45:00+00:00,2016,2296,Alcorn State Braves,Jackson State Tigers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401828669,2026-02-28 22:45:00+00:00,2640,2296,Texas Southern Tigers,Jackson State Tigers,,-5.5,-5.5,-5.5,151.5,151.5,151.5,,,espn_games,games.csv,90,,,OK,espn_games
-401828670,2026-03-06 01:00:00+00:00,2296,2400,Jackson State Tigers,Mississippi Valley State Delta Devils,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401828670,2026-03-06 01:00:00+00:00,2296,2400,Jackson State Tigers,Mississippi Valley State Delta Devils,,-11.5,-11.5,-11.5,144.5,144.5,144.5,,,espn_games,games.csv,90,,,OK,espn_games
 401828673,2026-01-08 00:00:00+00:00,2142,44,Colgate Raiders,American University Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401828674,2026-01-22 00:00:00+00:00,44,2142,American University Eagles,Colgate Raiders,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401828675,2026-01-31 19:00:00+00:00,44,322,American University Eagles,Lafayette Leopards,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -4600,7 +4614,7 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401828729,2026-02-07 21:30:00+00:00,2450,2428,Norfolk State Spartans,North Carolina Central Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401828730,2026-02-14 21:30:00+00:00,2450,2169,Norfolk State Spartans,Delaware State Hornets,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401828731,2026-02-21 21:00:00+00:00,2450,2569,Norfolk State Spartans,South Carolina State Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401828732,2026-03-06 00:00:00+00:00,2450,47,Norfolk State Spartans,Howard Bison,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401828732,2026-03-06 01:00:00+00:00,2450,47,Norfolk State Spartans,Howard Bison,,5.5,5.5,5.5,149.5,149.5,149.5,,,espn_games,games.csv,90,,,OK,espn_games
 401828733,2025-12-20 00:30:00+00:00,2296,2450,Jackson State Tigers,Norfolk State Spartans,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401828737,2025-12-04 00:00:00+00:00,256,2428,James Madison Dukes,North Carolina Central Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401828738,2025-12-10 00:00:00+00:00,96,2428,Kentucky Wildcats,North Carolina Central Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
@@ -5088,52 +5102,57 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401845846,2026-02-07 20:00:00+00:00,2572,2309,Southern Miss Golden Eagles,Kent State Golden Flashes,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401845847,2026-02-07 20:00:00+00:00,326,2711,Texas State Bobcats,Western Michigan Broncos,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401845848,2026-02-07 23:00:00+00:00,2653,2006,Troy Trojans,Akron Zips,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851170,2026-03-10 18:00:00+00:00,24,221,Stanford Cardinal,Pittsburgh Panthers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851171,2026-03-10 20:30:00+00:00,2567,183,SMU Mustangs,Syracuse Orange,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851172,2026-03-10 23:00:00+00:00,259,154,Virginia Tech Hokies,Wake Forest Demon Deacons,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851198,2026-03-07 18:00:00+00:00,2378,160,UMBC Retrievers,New Hampshire Wildcats,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851199,2026-03-07 19:00:00+00:00,261,2803,Vermont Catamounts,Bryant Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851200,2026-03-07 18:00:00+00:00,2349,399,UMass Lowell River Hawks,UAlbany Great Danes,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851201,2026-03-07 21:00:00+00:00,2885,311,NJIT Highlanders,Maine Black Bears,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851202,2026-03-10 22:00:00+00:00,2378,2349,UMBC Retrievers,UMass Lowell River Hawks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851204,2026-03-10 23:00:00+00:00,261,2885,Vermont Catamounts,NJIT Highlanders,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851238,2026-03-04 17:00:00+00:00,91,294,Bellarmine Knights,Jacksonville Dolphins,,-1.5,-1.5,-1.5,147.5,147.5,147.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851239,2026-03-04 19:30:00+00:00,526,2453,Florida Gulf Coast Eagles,North Alabama Lions,,-6.5,-6.5,-6.5,144.5,144.5,144.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851241,2026-03-04 22:00:00+00:00,2198,56,Eastern Kentucky Colonels,Stetson Hatters,,-4.5,-4.5,-4.5,155.5,155.5,155.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851243,2026-03-05 00:30:00+00:00,2698,2454,West Georgia Wolves,North Florida Ospreys,,-3.5,-3.5,-3.5,160.5,160.5,160.5,,,espn_games,games.csv,90,,,OK,espn_games
-401851245,2026-03-06 17:00:00+00:00,2110,91,Central Arkansas Bears,Bellarmine Knights,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851246,2026-03-06 19:30:00+00:00,288,526,Lipscomb Bisons,Florida Gulf Coast Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851247,2026-03-06 22:00:00+00:00,2046,56,Austin Peay Governors,Stetson Hatters,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851248,2026-03-07 00:30:00+00:00,2511,2698,Queens University Royals,West Georgia Wolves,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851245,2026-03-06 17:00:00+00:00,2110,91,Central Arkansas Bears,Bellarmine Knights,,-5.5,-5.5,-5.5,158.5,158.5,158.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851246,2026-03-06 19:30:00+00:00,288,526,Lipscomb Bisons,Florida Gulf Coast Eagles,,-3.5,-3.5,-3.5,150.5,150.5,150.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851247,2026-03-06 22:00:00+00:00,2046,56,Austin Peay Governors,Stetson Hatters,,-9.5,-9.5,-9.5,150.5,150.5,150.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851248,2026-03-07 00:30:00+00:00,2511,2698,Queens University Royals,West Georgia Wolves,,-5.5,-5.5,-5.5,164.5,164.5,164.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851249,2026-03-07 22:00:00+00:00,2110,526,Central Arkansas Bears,Florida Gulf Coast Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851250,2026-03-08 00:45:00+00:00,2046,2511,Austin Peay Governors,Queens University Royals,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851282,2026-03-10 16:30:00+00:00,9,239,Arizona State Sun Devils,Baylor Bears,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851283,2026-03-10 19:00:00+00:00,2132,254,Cincinnati Bearcats,Utah Utes,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851285,2026-03-10 23:00:00+00:00,252,2306,BYU Cougars,Kansas State Wildcats,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851287,2026-03-11 01:30:00+00:00,38,197,Colorado Buffaloes,Oklahoma State Cowboys,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851325,2026-03-08 00:30:00+00:00,304,2464,Idaho State Bengals,Northern Arizona Lumberjacks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851326,2026-03-08 03:00:00+00:00,70,16,Idaho Vandals,Sacramento State Hornets,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851332,2026-03-09 23:30:00+00:00,149,2458,Montana Grizzlies,Northern Colorado Bears,,3.5,3.5,3.5,151.5,151.5,151.5,,,espn_games,games.csv,90,,,OK,espn_games
-401851333,2026-03-10 02:00:00+00:00,331,2692,Eastern Washington Eagles,Weber State Wildcats,,-2.5,-2.5,-2.5,157.5,157.5,157.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851346,2026-03-05 00:30:00+00:00,2908,2241,South Carolina Upstate Spartans,Gardner-Webb Runnin' Bulldogs,,-11.5,-11.5,-11.5,144.5,144.5,144.5,,,espn_games,games.csv,90,,,OK,espn_games
-401851347,2026-03-06 17:00:00+00:00,2272,2241,High Point Panthers,Gardner-Webb Runnin' Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851348,2026-03-06 19:30:00+00:00,2737,2127,Winthrop Eagles,Charleston Southern Buccaneers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851349,2026-03-06 23:00:00+00:00,2427,2344,UNC Asheville Bulldogs,Longwood Lancers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851350,2026-03-07 02:30:00+00:00,2515,2506,Radford Highlanders,Presbyterian Blue Hose,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851347,2026-03-06 17:00:00+00:00,2272,2241,High Point Panthers,Gardner-Webb Runnin' Bulldogs,,-25.5,-25.5,-25.5,161.5,161.5,161.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851348,2026-03-06 19:30:00+00:00,2737,2127,Winthrop Eagles,Charleston Southern Buccaneers,,-3.5,-3.5,-3.5,162.5,162.5,162.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851349,2026-03-06 23:00:00+00:00,2427,2344,UNC Asheville Bulldogs,Longwood Lancers,,1.5,1.5,1.5,140.5,140.5,140.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851350,2026-03-07 01:30:00+00:00,2515,2506,Radford Highlanders,Presbyterian Blue Hose,,-2.5,-2.5,-2.5,145.5,145.5,145.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851351,2026-03-07 17:00:00+00:00,2272,2427,High Point Panthers,UNC Asheville Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851352,2026-03-07 19:30:00+00:00,2737,2506,Winthrop Eagles,Presbyterian Blue Hose,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851362,2026-03-10 21:00:00+00:00,2483,120,Oregon Ducks,Maryland Terrapins,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851363,2026-03-10 23:30:00+00:00,77,213,Northwestern Wildcats,Penn State Nittany Lions,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851405,2026-03-10 22:30:00+00:00,2229,2623,Florida International Panthers,Missouri State Bears,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851406,2026-03-11 01:00:00+00:00,55,166,Jacksonville State Gamecocks,New Mexico State Aggies,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851421,2026-03-03 00:00:00+00:00,325,85,Cleveland State Vikings,IU Indianapolis Jaguars,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851423,2026-03-05 00:00:00+00:00,2750,325,Wright State Raiders,Cleveland State Vikings,,-14.5,-14.5,-14.5,162.5,162.5,162.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851424,2026-03-05 00:00:00+00:00,2523,2754,Robert Morris Colonials,Youngstown State Penguins,,-4.5,-4.5,-4.5,143.5,143.5,143.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851426,2026-03-05 00:00:00+00:00,2174,270,Detroit Mercy Titans,Milwaukee Panthers,,-1.5,-1.5,-1.5,151.5,151.5,151.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851428,2026-03-05 00:00:00+00:00,2473,94,Oakland Golden Grizzlies,Northern Kentucky Norse,,-2.5,-2.5,-2.5,162.5,162.5,162.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851430,2026-03-04 01:00:00+00:00,2739,2870,Green Bay Phoenix,Purdue Fort Wayne Mastodons,,-6.5,-6.5,-6.5,146.5,146.5,146.5,,,espn_games,games.csv,90,,,OK,espn_games
-401851432,2026-03-09 23:00:00+00:00,2750,94,Wright State Raiders,Northern Kentucky Norse,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851433,2026-03-10 01:30:00+00:00,2523,2174,Robert Morris Colonials,Detroit Mercy Titans,,-4.5,-4.5,-4.5,147.5,147.5,147.5,,,espn_games,games.csv,90,,,OK,espn_games
-401851454,2026-03-05 23:00:00+00:00,314,2529,Iona Gaels,Sacred Heart Pioneers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851456,2026-03-06 01:30:00+00:00,2217,2363,Fairfield Stags,Manhattan Jaspers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851457,2026-03-06 23:00:00+00:00,2771,2529,Merrimack Warriors,Sacred Heart Pioneers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851460,2026-03-07 01:30:00+00:00,2612,2217,Saint Peter's Peacocks,Fairfield Stags,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851454,2026-03-05 23:00:00+00:00,314,2529,Iona Gaels,Sacred Heart Pioneers,,-3.5,-3.5,-3.5,149.5,149.5,149.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851456,2026-03-06 01:30:00+00:00,2217,2363,Fairfield Stags,Manhattan Jaspers,,-5.5,-5.5,-5.5,148.5,148.5,148.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851462,2026-03-07 23:00:00+00:00,2514,2368,Quinnipiac Bobcats,Marist Red Foxes,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851464,2026-03-08 01:48:00+00:00,2561,116,Siena Saints,Mount St. Mary's Mountaineers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851467,2026-03-11 01:00:00+00:00,2771,2561,Merrimack Warriors,Siena Saints,,-2.5,-2.5,-2.5,130.5,130.5,130.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851485,2026-03-05 21:30:00+00:00,79,2181,Southern Illinois Salukis,Drake Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851486,2026-03-06 00:00:00+00:00,2674,282,Valparaiso Beacons,Indiana State Sycamores,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851487,2026-03-06 02:30:00+00:00,2460,339,Northern Iowa Panthers,Evansville Purple Aces,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851488,2026-03-06 18:00:00+00:00,2057,2181,Belmont Bruins,Drake Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851489,2026-03-06 20:30:00+00:00,93,82,Murray State Racers,UIC Flames,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851490,2026-03-07 00:00:00+00:00,71,2674,Bradley Braves,Valparaiso Beacons,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851491,2026-03-07 03:25:00+00:00,2287,2460,Illinois State Redbirds,Northern Iowa Panthers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851486,2026-03-06 00:00:00+00:00,2674,282,Valparaiso Beacons,Indiana State Sycamores,,-2.5,-2.5,-2.5,141.5,141.5,141.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851487,2026-03-06 02:30:00+00:00,2460,339,Northern Iowa Panthers,Evansville Purple Aces,,-14.5,-14.5,-14.5,126.5,126.5,126.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851489,2026-03-06 20:30:00+00:00,93,82,Murray State Racers,UIC Flames,,-1.5,-1.5,-1.5,149.5,149.5,149.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851492,2026-03-07 20:30:00+00:00,82,2181,UIC Flames,Drake Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851493,2026-03-07 23:00:00+00:00,71,2460,Bradley Braves,Northern Iowa Panthers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851513,2026-03-05 00:00:00+00:00,112358,2130,Long Island University Sharks,Chicago State Cougars,,-11.5,-11.5,-11.5,139.5,139.5,139.5,,,espn_games,games.csv,90,,,OK,espn_games
@@ -5142,51 +5161,48 @@ event_id,game_datetime_utc,home_team_id,away_team_id,home_team_name,away_team_na
 401851516,2026-03-05 00:00:00+00:00,2330,284,Le Moyne Dolphins,Stonehill Skyhawks,,-6.5,-6.5,-6.5,138.5,138.5,138.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851517,2026-03-07 17:00:00+00:00,2385,284,Mercyhurst Lakers,Stonehill Skyhawks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851519,2026-03-07 19:00:00+00:00,112358,2681,Long Island University Sharks,Wagner Seahawks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851521,2026-03-10 23:00:00+00:00,112358,2385,Long Island University Sharks,Mercyhurst Lakers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851523,2026-03-05 00:00:00+00:00,2565,2197,SIU Edwardsville Cougars,Eastern Illinois Panthers,,-4.5,-4.5,-4.5,128.5,128.5,128.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851524,2026-03-05 02:30:00+00:00,2815,2031,Lindenwood Lions,Little Rock Trojans,,-3.5,-3.5,-3.5,148.5,148.5,148.5,,,espn_games,games.csv,90,,,OK,espn_games
-401851530,2026-03-07 01:00:00+00:00,2634,2630,Tennessee State Tigers,UT Martin Skyhawks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851532,2026-03-07 03:30:00+00:00,2413,2546,Morehead State Eagles,Southeast Missouri State Redhawks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851526,2026-03-06 00:00:00+00:00,2630,2197,UT Martin Skyhawks,Eastern Illinois Panthers,,-7.5,-7.5,-7.5,126.5,126.5,126.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851528,2026-03-06 02:30:00+00:00,2546,2815,Southeast Missouri State Redhawks,Lindenwood Lions,,-3.5,-3.5,-3.5,147.5,147.5,147.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851534,2026-03-08 02:00:00+00:00,2634,2413,Tennessee State Tigers,Morehead State Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851541,2026-03-04 00:00:00+00:00,2083,349,Bucknell Bison,Army Black Knights,,-2.5,-2.5,-2.5,146.5,146.5,146.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851542,2026-03-04 00:00:00+00:00,322,107,Lafayette Leopards,Holy Cross Crusaders,,-3.5,-3.5,-3.5,141.5,141.5,141.5,,,espn_games,games.csv,90,,,OK,espn_games
-401851543,2026-03-06 00:00:00+00:00,2426,2083,Navy Midshipmen,Bucknell Bison,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851544,2026-03-06 00:00:00+00:00,104,44,Boston University Terriers,American University Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851545,2026-03-06 00:00:00+00:00,2142,2352,Colgate Raiders,Loyola Maryland Greyhounds,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851546,2026-03-06 00:00:00+00:00,2329,107,Lehigh Mountain Hawks,Holy Cross Crusaders,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851579,2026-03-06 22:00:00+00:00,236,2643,Chattanooga Mocs,The Citadel Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851580,2026-03-07 00:30:00+00:00,2430,2678,UNC Greensboro Spartans,VMI Keydets,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851543,2026-03-06 00:00:00+00:00,2426,2083,Navy Midshipmen,Bucknell Bison,,-15.5,-15.5,-15.5,133.5,133.5,133.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851544,2026-03-06 00:00:00+00:00,104,44,Boston University Terriers,American University Eagles,,-1.5,-1.5,-1.5,141.5,141.5,141.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851545,2026-03-06 00:00:00+00:00,2142,2352,Colgate Raiders,Loyola Maryland Greyhounds,,-6.5,-6.5,-6.5,154.5,154.5,154.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851546,2026-03-06 00:00:00+00:00,2329,107,Lehigh Mountain Hawks,Holy Cross Crusaders,,-5.5,-5.5,-5.5,142.5,142.5,142.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851579,2026-03-06 22:00:00+00:00,236,2643,Chattanooga Mocs,The Citadel Bulldogs,,-6.5,-6.5,-6.5,145.5,145.5,145.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851580,2026-03-07 00:30:00+00:00,2430,2678,UNC Greensboro Spartans,VMI Keydets,,-7.5,-7.5,-7.5,155.5,155.5,155.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851581,2026-03-07 17:00:00+00:00,2193,2643,East Tennessee State Buccaneers,The Citadel Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851582,2026-03-08 01:30:00+00:00,2382,2717,Mercer Bears,Western Carolina Catamounts,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851583,2026-03-07 19:30:00+00:00,2747,2430,Wofford Terriers,UNC Greensboro Spartans,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851586,2026-03-07 23:00:00+00:00,2535,231,Samford Bulldogs,Furman Paladins,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851619,2026-03-05 01:00:00+00:00,198,140,Oral Roberts Golden Eagles,Kansas City Roos,,-8.5,-8.5,-8.5,149.5,149.5,149.5,,,espn_games,games.csv,90,,,OK,espn_games
-401851621,2026-03-07 00:00:00+00:00,233,2437,South Dakota Coyotes,Omaha Mavericks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851622,2026-03-06 02:30:00+00:00,2900,2571,St. Thomas-Minnesota Tommies,South Dakota State Jackrabbits,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851624,2026-03-07 02:30:00+00:00,155,2172,North Dakota Fighting Hawks,Denver Pioneers,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851620,2026-03-06 00:00:00+00:00,2449,198,North Dakota State Bison,Oral Roberts Golden Eagles,,-11.5,-11.5,-11.5,147.5,147.5,147.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851621,2026-03-07 00:00:00+00:00,233,2437,South Dakota Coyotes,Omaha Mavericks,,2.5,2.5,2.5,151.5,151.5,151.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851622,2026-03-06 02:30:00+00:00,2900,2571,St. Thomas-Minnesota Tommies,South Dakota State Jackrabbits,,-5.5,-5.5,-5.5,148.5,148.5,148.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851624,2026-03-07 02:30:00+00:00,155,2172,North Dakota Fighting Hawks,Denver Pioneers,,3.5,3.5,3.5,161.5,161.5,161.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851626,2026-03-08 01:00:00+00:00,2449,2437,North Dakota State Bison,Omaha Mavericks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851627,2026-03-08 03:30:00+00:00,2900,155,St. Thomas-Minnesota Tommies,North Dakota Fighting Hawks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851633,2026-03-03 23:00:00+00:00,309,2247,Louisiana Ragin' Cajuns,Georgia State Panthers,,1.5,1.5,1.5,132.5,132.5,132.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851635,2026-03-04 01:30:00+00:00,295,2433,Old Dominion Monarchs,UL Monroe Warhawks,,-10.5,-10.5,-10.5,158.5,158.5,158.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851636,2026-03-04 23:00:00+00:00,256,309,James Madison Dukes,Louisiana Ragin' Cajuns,,-6.5,-6.5,-6.5,133.5,133.5,133.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851637,2026-03-05 01:30:00+00:00,290,295,Georgia Southern Eagles,Old Dominion Monarchs,,-2.5,-2.5,-2.5,157.5,157.5,157.5,,,espn_games,games.csv,90,,,OK,espn_games
-401851700,2026-03-06 23:00:00+00:00,326,2572,Texas State Bobcats,Southern Miss Golden Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851701,2026-03-07 01:50:00+00:00,6,290,South Alabama Jaguars,Georgia Southern Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851698,2026-03-05 23:00:00+00:00,2572,256,Southern Miss Golden Eagles,James Madison Dukes,,2.5,2.5,2.5,143.5,143.5,143.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851699,2026-03-06 01:30:00+00:00,2032,290,Arkansas State Red Wolves,Georgia Southern Eagles,,-7.5,-7.5,-7.5,167.5,167.5,167.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851702,2026-03-07 23:30:00+00:00,2026,2572,App State Mountaineers,Southern Miss Golden Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851703,2026-03-08 02:24:00+00:00,324,290,Coastal Carolina Chanticleers,Georgia Southern Eagles,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851714,2026-03-09 18:00:00+00:00,2011,2016,Alabama State Hornets,Alcorn State Braves,,-6.5,-6.5,-6.5,143.5,143.5,143.5,,,espn_games,games.csv,90,,,OK,espn_games
-401851715,2026-03-10 00:30:00+00:00,2755,2400,Grambling Tigers,Mississippi Valley State Delta Devils,,-12.5,-12.5,-12.5,134.5,134.5,134.5,,,espn_games,games.csv,90,,,OK,espn_games
-401851745,2026-03-06 02:00:00+00:00,2501,2492,Portland Pilots,Pepperdine Waves,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851746,2026-03-06 04:30:00+00:00,2351,301,Loyola Marymount Lions,San Diego Toreros,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851749,2026-03-07 02:00:00+00:00,265,2501,Washington State Cougars,Portland Pilots,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401851750,2026-03-07 04:30:00+00:00,2547,301,Seattle U Redhawks,San Diego Toreros,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401851745,2026-03-06 02:00:00+00:00,2501,2492,Portland Pilots,Pepperdine Waves,,-2.5,-2.5,-2.5,154.5,154.5,154.5,,,espn_games,games.csv,90,,,OK,espn_games
+401851746,2026-03-06 04:30:00+00:00,2351,301,Loyola Marymount Lions,San Diego Toreros,,-5.5,-5.5,-5.5,145.5,145.5,145.5,,,espn_games,games.csv,90,,,OK,espn_games
 401851753,2026-03-08 02:00:00+00:00,2539,2501,San Francisco Dons,Portland Pilots,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401851754,2026-03-08 04:40:00+00:00,279,2547,Pacific Tigers,Seattle U Redhawks,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401856422,2026-03-06 19:00:00+00:00,2448,111,North Carolina A&T Aggies,Northeastern Huskies,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
+401856422,2026-03-06 19:00:00+00:00,2448,111,North Carolina A&T Aggies,Northeastern Huskies,,-1.5,-1.5,-1.5,154.5,154.5,154.5,,,espn_games,games.csv,90,,,OK,espn_games
 401856423,2026-03-07 17:00:00+00:00,2619,2097,Stony Brook Seawolves,Campbell Fighting Camels,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401856424,2026-03-07 19:30:00+00:00,2182,111,Drexel Dragons,Northeastern Huskies,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401856425,2026-03-07 23:00:00+00:00,119,2261,Towson Tigers,Hampton Pirates,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401856426,2026-03-08 01:30:00+00:00,2729,2210,William & Mary Tribe,Elon Phoenix,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
-401856431,2026-03-09 22:00:00+00:00,2405,2097,Monmouth Hawks,Campbell Fighting Camels,,-1.5,-1.5,-1.5,152.5,152.5,152.5,,,espn_games,games.csv,90,,,OK,espn_games
 401857754,2026-02-28 19:00:00+00:00,85,2870,IU Indianapolis Jaguars,Purdue Fort Wayne Mastodons,,1.5,1.5,1.5,161.5,161.5,161.5,,,espn_games,games.csv,90,,,OK,espn_games
 401858319,2026-01-27 19:00:00+00:00,2504,2010,Prairie View A&M Panthers,Alabama A&M Bulldogs,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games
 401858320,2026-01-28 00:00:00+00:00,2320,2837,Lamar Cardinals,East Texas A&M Lions,,,,,,,,,,espn_games,games.csv,90,,,MISSING,espn_games

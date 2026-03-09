@@ -1,40 +1,40 @@
 game_date,home_team,away_team,actual_margin,market_spread,home_covered,cage_em_diff,cage_pick_home,cage_ats_correct,ats_source,pred_spread,ens_pick_home,ens_ats_correct
-20260225,Morehead State Eagles,Southern Indiana Screaming Eagles,1.0,-7.5,1,38.400000000000006,1,1,training_data (espn_spread),,0,0
-20260225,Missouri Tigers,Tennessee Volunteers,4.0,2.5,1,-68.60000000000001,0,0,training_data (espn_spread),,0,0
-20260225,South Carolina Gamecocks,Kentucky Wildcats,-9.0,7.5,0,-11.4,0,1,training_data (espn_spread),,0,1
-20260225,Oklahoma Sooners,Auburn Tigers,12.0,3.5,1,6.0,1,1,training_data (espn_spread),,0,0
-20260225,Georgia State Panthers,Coastal Carolina Chanticleers,-5.0,1.5,0,-2.1,0,1,training_data (espn_spread),,0,1
-20260225,Marshall Thundering Herd,Old Dominion Monarchs,9.0,-7.5,1,-36.5,0,0,training_data (espn_spread),,0,0
-20260225,Arkansas State Red Wolves,Southern Miss Golden Eagles,5.0,-9.5,1,14.7,1,1,training_data (espn_spread),,0,0
-20260225,Troy Trojans,Louisiana Ragin' Cajuns,19.0,-11.5,1,5.199999999999999,1,1,training_data (espn_spread),,0,0
+20260225,Morehead State Eagles,Southern Indiana Screaming Eagles,1.0,-7.5,1,38.400000000000006,1,1,training_data (espn_spread),-3.15,1,1
+20260225,Missouri Tigers,Tennessee Volunteers,4.0,2.5,1,-68.60000000000001,0,0,training_data (espn_spread),-3.15,0,0
+20260225,South Carolina Gamecocks,Kentucky Wildcats,-9.0,7.5,0,-11.4,0,1,training_data (espn_spread),-3.15,0,1
+20260225,Oklahoma Sooners,Auburn Tigers,12.0,3.5,1,6.0,1,1,training_data (espn_spread),-3.15,0,0
+20260225,Georgia State Panthers,Coastal Carolina Chanticleers,-5.0,1.5,0,-2.1,0,1,training_data (espn_spread),-3.15,0,1
+20260225,Marshall Thundering Herd,Old Dominion Monarchs,9.0,-7.5,1,-36.5,0,0,training_data (espn_spread),-3.15,1,1
+20260225,Arkansas State Red Wolves,Southern Miss Golden Eagles,5.0,-9.5,1,14.7,1,1,training_data (espn_spread),-3.15,1,1
+20260225,Troy Trojans,Louisiana Ragin' Cajuns,19.0,-11.5,1,5.199999999999999,1,1,training_data (espn_spread),-3.15,1,1
 20260225,Akron Zips,Buffalo Bulls,14.0,-15.5,1,5.4,1,1,training_data (espn_spread),,0,0
 20260225,Kent State Golden Flashes,Central Michigan Chippewas,2.0,-11.5,1,74.3,1,1,training_data (espn_spread),,0,0
 20260225,Ball State Cardinals,Massachusetts Minutemen,1.0,4.5,0,-15.4,0,1,training_data (espn_spread),,0,1
 20260224,Eastern Michigan Eagles,Miami (OH) RedHawks,-10.0,8.5,0,-12.0,0,1,training_data (espn_spread),,0,1
-20260225,Toledo Rockets,Northern Illinois Huskies,10.0,-12.5,1,25.2,1,1,training_data (espn_spread),,0,0
+20260225,Toledo Rockets,Northern Illinois Huskies,10.0,-12.5,1,25.2,1,1,training_data (espn_spread),-3.15,1,1
 20260225,Bowling Green Falcons,Western Michigan Broncos,-9.0,-11.5,1,21.5,1,1,training_data (espn_spread),,0,0
-20260225,Air Force Falcons,San José State Spartans,-6.0,6.5,0,-11.800000000000004,0,1,training_data (espn_spread),,0,1
+20260225,Air Force Falcons,San José State Spartans,-6.0,6.5,0,-11.800000000000004,0,1,training_data (espn_spread),-3.15,0,1
 20260225,Virginia Cavaliers,NC State Wolfpack,29.0,-5.5,1,45.7,1,1,training_data (espn_spread),,0,0
-20260225,Florida State Seminoles,Miami Hurricanes,-10.0,2.5,0,-27.8,0,1,training_data (espn_spread),,0,1
-20260225,Notre Dame Fighting Irish,Duke Blue Devils,-44.0,17.5,0,-35.4,0,1,training_data (espn_spread),,0,1
+20260225,Florida State Seminoles,Miami Hurricanes,-10.0,2.5,0,-27.8,0,1,training_data (espn_spread),-3.15,0,1
+20260225,Notre Dame Fighting Irish,Duke Blue Devils,-44.0,17.5,0,-35.4,0,1,training_data (espn_spread),-3.15,0,1
 20260225,Georgetown Hoyas,Marquette Golden Eagles,-16.0,-2.5,0,9.2,1,0,training_data (espn_spread),,0,1
-20260225,Boise State Broncos,Wyoming Cowboys,10.0,-8.5,1,7.7,1,1,training_data (espn_spread),,0,0
+20260225,Boise State Broncos,Wyoming Cowboys,10.0,-8.5,1,7.7,1,1,training_data (espn_spread),-3.15,1,1
 20260225,Indiana Hoosiers,Northwestern Wildcats,-4.0,-9.5,1,-18.300000000000004,0,0,training_data (espn_spread),,0,0
-20260225,Michigan Wolverines,Minnesota Golden Gophers,10.0,-21.5,1,5.6,1,1,training_data (espn_spread),,0,0
-20260225,UCLA Bruins,USC Trojans,19.0,-7.5,1,54.6,1,1,training_data (espn_spread),,0,0
-20260225,Baylor Bears,Arizona Wildcats,-7.0,8.5,1,-29.0,0,0,training_data (espn_spread),,0,0
-20260225,BYU Cougars,UCF Knights,-13.0,-12.5,0,-5.5,0,1,training_data (espn_spread),,0,1
-20260225,Oklahoma State Cowboys,West Virginia Mountaineers,7.0,-1.5,1,3.1,1,1,training_data (espn_spread),,0,0
-20260225,TCU Horned Frogs,Arizona State Sun Devils,12.0,-7.5,1,-15.0,0,0,training_data (espn_spread),,0,0
-20260225,Texas Tech Red Raiders,Cincinnati Bearcats,12.0,-6.5,1,-28.9,0,0,training_data (espn_spread),,0,0
-20260225,Utah Utes,Iowa State Cyclones,-16.0,14.5,0,-4.700000000000003,0,1,training_data (espn_spread),,0,1
+20260225,Michigan Wolverines,Minnesota Golden Gophers,10.0,-21.5,1,5.6,1,1,training_data (espn_spread),-3.15,1,1
+20260225,UCLA Bruins,USC Trojans,19.0,-7.5,1,54.6,1,1,training_data (espn_spread),-3.15,1,1
+20260225,Baylor Bears,Arizona Wildcats,-7.0,8.5,1,-29.0,0,0,training_data (espn_spread),-3.15,0,0
+20260225,BYU Cougars,UCF Knights,-13.0,-12.5,0,-5.5,0,1,training_data (espn_spread),-3.15,1,0
+20260225,Oklahoma State Cowboys,West Virginia Mountaineers,7.0,-1.5,1,3.1,1,1,training_data (espn_spread),-3.15,0,0
+20260225,TCU Horned Frogs,Arizona State Sun Devils,12.0,-7.5,1,-15.0,0,0,training_data (espn_spread),-3.15,1,1
+20260225,Texas Tech Red Raiders,Cincinnati Bearcats,12.0,-6.5,1,-28.9,0,0,training_data (espn_spread),-3.15,1,1
+20260225,Utah Utes,Iowa State Cyclones,-16.0,14.5,0,-4.700000000000003,0,1,training_data (espn_spread),-3.15,0,1
 20260225,Dayton Flyers,Saint Louis Billikens,15.0,4.5,1,-18.9,0,0,training_data (espn_spread),,0,0
 20260224,La Salle Explorers,George Washington Revolutionaries,-27.0,8.5,0,-10.8,0,1,training_data (espn_spread),,0,1
-20260225,Colorado State Rams,Fresno State Bulldogs,4.0,-8.5,1,-0.6000000000000001,0,0,training_data (espn_spread),,0,0
-20260225,Nevada Wolf Pack,New Mexico Lobos,7.0,-1.5,1,-31.8,0,0,training_data (espn_spread),,0,0
-20260225,UIC Flames,Bradley Braves,7.0,-1.5,1,-18.6,0,0,training_data (espn_spread),,0,0
+20260225,Colorado State Rams,Fresno State Bulldogs,4.0,-8.5,1,-0.6000000000000001,0,0,training_data (espn_spread),-3.15,1,1
+20260225,Nevada Wolf Pack,New Mexico Lobos,7.0,-1.5,1,-31.8,0,0,training_data (espn_spread),-3.15,0,0
+20260225,UIC Flames,Bradley Braves,7.0,-1.5,1,-18.6,0,0,training_data (espn_spread),-3.15,0,0
 20260226,Eastern Kentucky Colonels,Queens University Royals,-17.0,2.5,0,3.6999999999999993,1,0,training_data (espn_spread),,0,1
-20260226,North Alabama Lions,Bellarmine Knights,5.0,2.5,1,-35.5,0,0,training_data (espn_spread),,0,0
+20260226,North Alabama Lions,Bellarmine Knights,5.0,2.5,1,-13.2,0,0,training_data (espn_spread),,0,0
 20260226,Austin Peay Governors,Central Arkansas Bears,-5.0,-4.5,0,-25.800000000000004,0,1,training_data (espn_spread),,0,1
 20260226,West Georgia Wolves,Lipscomb Bisons,7.0,5.5,1,19.0,1,1,training_data (espn_spread),,0,0
 20260226,Ole Miss Rebels,LSU Tigers,-7.0,-1.5,0,28.0,1,0,training_data (espn_spread),,0,1
@@ -47,11 +47,11 @@ game_date,home_team,away_team,actual_margin,market_spread,home_covered,cage_em_d
 20260226,East Tennessee State Buccaneers,Wofford Terriers,-3.0,-7.5,1,-11.2,0,0,training_data (espn_spread),,0,0
 20260225,Furman Paladins,The Citadel Bulldogs,21.0,-15.5,1,-30.200000000000003,0,0,training_data (espn_spread),,0,0
 20260226,Western Carolina Catamounts,Mercer Bears,4.0,1.5,1,23.5,1,1,training_data (espn_spread),,0,0
-20260226,Cleveland State Vikings,Northern Kentucky Norse,-11.0,8.5,0,12.9,1,0,training_data (espn_spread),,0,1
-20260226,Purdue Fort Wayne Mastodons,Wright State Raiders,-4.0,1.5,0,-23.700000000000003,0,1,training_data (espn_spread),,0,1
-20260226,Robert Morris Colonials,Detroit Mercy Titans,11.0,-7.5,1,15.7,1,1,training_data (espn_spread),,0,0
+20260226,Cleveland State Vikings,Northern Kentucky Norse,-11.0,8.5,0,12.9,1,0,training_data (espn_spread),-3.46,0,1
+20260226,Purdue Fort Wayne Mastodons,Wright State Raiders,-4.0,1.5,0,-23.700000000000003,0,1,training_data (espn_spread),-5.45,0,1
+20260226,Robert Morris Colonials,Detroit Mercy Titans,11.0,-7.5,1,15.7,1,1,training_data (espn_spread),-4.23,1,1
 20260225,IU Indianapolis Jaguars,Oakland Golden Grizzlies,-12.0,5.5,0,-13.400000000000002,0,1,training_data (espn_spread),,0,1
-20260226,Milwaukee Panthers,Youngstown State Penguins,13.0,1.5,1,61.4,1,1,training_data (espn_spread),,0,0
+20260226,Milwaukee Panthers,Youngstown State Penguins,13.0,1.5,1,61.4,1,1,training_data (espn_spread),-0.79,0,0
 20260226,South Dakota Coyotes,Omaha Mavericks,17.0,1.5,1,33.1,1,1,training_data (espn_spread),,0,0
 20260226,Loyola Maryland Greyhounds,Navy Midshipmen,-27.0,6.5,0,6.699999999999999,1,0,training_data (espn_spread),,0,1
 20260225,Boston College Eagles,Wake Forest Demon Deacons,1.0,4.5,0,-6.600000000000001,0,1,training_data (espn_spread),,0,1
@@ -63,8 +63,8 @@ game_date,home_team,away_team,actual_margin,market_spread,home_covered,cage_em_d
 20260226,Villanova Wildcats,Butler Bulldogs,9.0,-10.5,1,-24.0,0,0,training_data (espn_spread),,0,0
 20260226,San Diego State Aztecs,Utah State Aggies,17.0,-1.5,1,29.9,1,1,training_data (espn_spread),,0,0
 20260226,Grand Canyon Lopes,UNLV Rebels,13.0,-7.5,1,13.9,1,1,training_data (espn_spread),,0,0
-20260226,Boston University Terriers,Holy Cross Crusaders,15.0,-8.5,1,-4.2,0,0,training_data (espn_spread),,0,0
-20260226,Iowa Hawkeyes,Ohio State Buckeyes,17.0,-6.5,1,-18.200000000000003,0,0,training_data (espn_spread),,0,0
+20260226,Boston University Terriers,Holy Cross Crusaders,15.0,-8.5,1,-4.2,0,0,training_data (espn_spread),-1.43,1,1
+20260226,Iowa Hawkeyes,Ohio State Buckeyes,17.0,-6.5,1,-18.200000000000003,0,0,training_data (espn_spread),-2.49,1,1
 20260226,Nebraska Cornhuskers,Maryland Terrapins,13.0,-17.5,1,-33.9,0,0,training_data (espn_spread),,0,0
 20260226,Oregon Ducks,Wisconsin Badgers,14.0,5.5,1,-74.3,0,0,training_data (espn_spread),,0,0
 20260225,Army Black Knights,Bucknell Bison,-2.0,-3.5,1,-22.1,0,0,training_data (espn_spread),,0,0
@@ -72,10 +72,10 @@ game_date,home_team,away_team,actual_margin,market_spread,home_covered,cage_em_d
 20260226,Charlotte 49ers,North Texas Mean Green,1.0,1.5,0,-9.8,0,1,training_data (espn_spread),,0,1
 20260226,UTSA Roadrunners,East Carolina Pirates,-1.0,4.5,0,-57.2,0,1,training_data (espn_spread),,0,1
 20260226,Rice Owls,South Florida Bulls,-19.0,11.5,0,-37.5,0,1,training_data (espn_spread),,0,1
-20260226,Tulane Green Wave,Tulsa Golden Hurricane,-34.0,5.5,0,-98.1,0,1,training_data (espn_spread),,0,1
+20260226,Tulane Green Wave,Tulsa Golden Hurricane,-34.0,5.5,0,-98.1,0,1,training_data (espn_spread),-1.33,0,1
 20260226,Duquesne Dukes,Davidson Wildcats,-11.0,-3.5,0,-41.0,0,1,training_data (espn_spread),,0,1
 20260226,Saint Joseph's Hawks,George Mason Patriots,18.0,1.5,1,29.9,1,1,training_data (espn_spread),,0,0
-20260226,American University Eagles,Lehigh Mountain Hawks,-5.0,-6.5,1,-39.1,0,0,training_data (espn_spread),,0,0
+20260226,American University Eagles,Lehigh Mountain Hawks,-5.0,-6.5,1,-39.1,0,0,training_data (espn_spread),-4.6,1,1
 20260226,Gonzaga Bulldogs,Portland Pilots,41.0,-26.5,1,-32.6,0,0,training_data (espn_spread),,0,0
 20260226,Oregon State Beavers,San Diego Toreros,10.0,-6.5,1,-17.900000000000002,0,0,training_data (espn_spread),,0,0
 20260226,Saint Mary's Gaels,Santa Clara Broncos,19.0,-5.5,1,-11.4,0,0,training_data (espn_spread),,0,0
@@ -101,8 +101,8 @@ game_date,home_team,away_team,actual_margin,market_spread,home_covered,cage_em_d
 20260227,Southeast Missouri State Redhawks,Tennessee State Tigers,-8.0,-3.5,0,-26.8,0,1,training_data (espn_spread),3.27,1,0
 20260227,SIU Edwardsville Cougars,Western Illinois Leathernecks,20.0,-13.5,1,75.69999999999999,1,1,training_data (espn_spread),-5.31,1,1
 20260227,UT Martin Skyhawks,Tennessee Tech Golden Eagles,15.0,-7.5,1,-27.500000000000004,0,0,training_data (espn_spread),-1.25,1,1
-20260227,North Florida Ospreys,Florida Gulf Coast Eagles,6.0,6.5,0,-7.300000000000004,0,1,training_data (espn_spread),1.29,0,1
-20260227,Jacksonville Dolphins,Stetson Hatters,4.0,-6.5,1,4.6000000000000005,1,1,training_data (espn_spread),-2.58,1,1
+20260227,North Florida Ospreys,Florida Gulf Coast Eagles,6.0,6.5,0,-38.5,0,1,training_data (espn_spread),1.29,0,1
+20260227,Jacksonville Dolphins,Stetson Hatters,4.0,-6.5,1,-46.7,0,0,training_data (espn_spread),-2.58,1,1
 20260227,Eastern Washington Eagles,Northern Colorado Bears,10.0,1.5,1,-48.1,0,0,training_data (espn_spread),-0.57,0,0
 20260227,Idaho Vandals,Northern Arizona Lumberjacks,20.0,-10.5,1,17.9,1,1,training_data (espn_spread),-1.78,1,1
 20260227,Montana Grizzlies,Sacramento State Hornets,8.0,-7.5,1,-60.5,0,0,training_data (espn_spread),-0.26,1,1
@@ -179,11 +179,11 @@ game_date,home_team,away_team,actual_margin,market_spread,home_covered,cage_em_d
 20260228,Little Rock Trojans,Southern Indiana Screaming Eagles,19.0,-6.5,1,65.0,1,1,training_data (espn_spread),-2.03,1,1
 20260228,Southeast Missouri State Redhawks,Tennessee Tech Golden Eagles,16.0,-7.5,1,39.0,1,1,training_data (espn_spread),-4.72,1,1
 20260228,UT Martin Skyhawks,Tennessee State Tigers,-25.0,-2.5,0,-93.3,0,1,training_data (espn_spread),-2.44,1,0
-20260228,Bellarmine Knights,Austin Peay Governors,14.0,4.5,1,56.400000000000006,1,1,training_data (espn_spread),3.43,0,0
-20260228,Stetson Hatters,Florida Gulf Coast Eagles,15.0,2.5,1,46.7,1,1,training_data (espn_spread),-0.05,0,0
-20260228,North Florida Ospreys,Jacksonville Dolphins,-24.0,1.5,0,-58.6,0,1,training_data (espn_spread),1.3,0,1
+20260228,Bellarmine Knights,Austin Peay Governors,14.0,4.5,1,43.5,1,1,training_data (espn_spread),3.43,0,0
+20260228,Stetson Hatters,Florida Gulf Coast Eagles,15.0,2.5,1,15.5,1,1,training_data (espn_spread),-0.05,0,0
+20260228,North Florida Ospreys,Jacksonville Dolphins,-24.0,1.5,0,-7.300000000000004,0,1,training_data (espn_spread),1.3,0,1
 20260228,Eastern Kentucky Colonels,Lipscomb Bisons,-3.0,2.5,0,0.3999999999999986,1,0,training_data (espn_spread),-2.82,0,1
-20260228,West Georgia Wolves,North Alabama Lions,12.0,-5.5,1,32.599999999999994,1,1,training_data (espn_spread),-3.82,1,1
+20260228,West Georgia Wolves,North Alabama Lions,12.0,-5.5,1,23.2,1,1,training_data (espn_spread),-3.82,1,1
 20260228,Central Arkansas Bears,Queens University Royals,5.0,-2.5,1,-5.399999999999999,0,0,training_data (espn_spread),-1.12,1,1
 20260301,Auburn Tigers,Ole Miss Rebels,-6.0,-9.5,1,23.1,1,1,training_data (espn_spread),-3.94,1,1
 20260301,Florida Gators,Arkansas Razorbacks,34.0,-9.5,1,88.6,1,1,training_data (espn_spread),-7.75,1,1
@@ -402,3 +402,4 @@ game_date,home_team,away_team,actual_margin,market_spread,home_covered,cage_em_d
 20260304,Lafayette Leopards,Holy Cross Crusaders,-5.0,-3.5,0,-14.7,0,1,training_data (espn_spread),,0,1
 20260303,Louisiana Ragin' Cajuns,Georgia State Panthers,9.0,1.5,1,24.0,1,1,training_data (espn_spread),,0,0
 20260304,Old Dominion Monarchs,UL Monroe Warhawks,7.0,-10.5,1,19.0,1,1,training_data (espn_spread),,0,0
+20260304,Bellarmine Knights,Jacksonville Dolphins,3.0,-1.5,1,31.7,1,1,training_data (espn_spread),,0,0

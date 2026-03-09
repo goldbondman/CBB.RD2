@@ -1,7 +1,7 @@
 # CAGE Standalone ATS Predictor Backtest
-_Generated 2026-03-08 23:09 UTC_
+_Generated 2026-03-09 14:56 UTC_
 
-**Dataset**: 3,297 games (SU), 403 games with market spread (ATS)  
+**Dataset**: 3,297 games (SU), 404 games with market spread (ATS)  
 **CAGE model**: `cagerankings_spread` sub-model (one of 7 ensemble components)  
 **Raw signal**: `cage_em_diff` = home_cage_em − away_cage_em
 
@@ -27,7 +27,7 @@ _Generated 2026-03-08 23:09 UTC_
 
 ## 2. ATS Performance (cagerankings_spread vs market line)
 
-**Sample size**: 403 games (training_data (espn_spread))
+**Sample size**: 404 games (training_data (espn_spread))
 **Pick signal**: `cage_em_diff` direction (home > 0 → pick home)
 **Conviction**: `|cage_em_diff|` magnitude buckets
 
@@ -35,28 +35,28 @@ _Generated 2026-03-08 23:09 UTC_
 
 | Model | W | L | ATS% | ROI (−110) |
 |-------|---|---|------|------------|
-| CAGE (EM direction) | 298 | 105 | 73.9% | +41.2% |
-| Ensemble (pred_spread) | 194 | 209 | 48.1% | -8.1% |
+| CAGE (EM direction) | 298 | 106 | 73.8% | +40.8% |
+| Ensemble (pred_spread) | 208 | 196 | 51.5% | -1.7% |
 
 ### ATS by CAGE Conviction (|cage_em_diff| magnitude)
 
 | EM magnitude | W | L | ATS% | ROI (−110) | n | Note |
 |--------------|---|---|------|------------|---|------|
 | 0–3 | 11 | 9 | 55.0% | +5.0% | 20 | ✓ VALUE |
-| 3.1–5 | 11 | 8 | 57.9% | +10.5% | 19 | ✓ VALUE |
+| 3.1–5 | 10 | 8 | 55.6% | +6.1% | 18 | ✓ VALUE |
 | 5.1–10 | 28 | 16 | 63.6% | +21.5% | 44 | ✓ VALUE |
-| 10–20 | 57 | 28 | 67.1% | +28.0% | 85 | ✓ VALUE |
+| 10–20 | 58 | 29 | 66.7% | +27.3% | 87 | ✓ VALUE |
 | 20+ | 191 | 44 | 81.3% | +55.2% | 235 | ✓ VALUE |
 
 ---
 
 ## 3. Market Underdog Picks
 
-**Total games**: 403
+**Total games**: 404
 
 | Pick type | Games | % of picks | ATS% | ROI (−110) |
 |-----------|-------|------------|------|------------|
-| CAGE picks market dog | 156 | 39% | 43.6% | -16.8% |
+| CAGE picks market dog | 157 | 39% | 43.3% | -17.3% |
 | CAGE picks market fav | 247 | 61% | 93.1% | +77.8% |
 
 > **Key finding**: CAGE metrics are efficiency-based and highly correlated with the Vegas line. When CAGE diverges and picks the market underdog, it is almost certainly not finding mispriced lines — it is over-extrapolating a team's raw efficiency advantage into a spread pick without accounting for line movement, sharp action, or public money. **Do not use CAGE alone to fade the market.**
@@ -65,12 +65,12 @@ _Generated 2026-03-08 23:09 UTC_
 
 ## 4. CAGE ↔ Ensemble Stacking
 
-Agreement rate: **53%** of games (215/403)
+Agreement rate: **53%** of games (214/404)
 
 | Filter | n | Ens ATS% | Ens ROI |
 |--------|---|----------|---------|
-| CAGE agrees with ens | 215 | 70.7% | +35.0% |
-| CAGE disagrees with ens | 188 | 22.3% | -57.4% |
+| CAGE agrees with ens | 214 | 73.8% | +41.0% |
+| CAGE disagrees with ens | 190 | 26.3% | -49.8% |
 
 > CAGE is a sub-model inside the ensemble (cagerankings_spread weight ~12%). When they agree it mostly means the ensemble already incorporated CAGE's signal. CAGE adds value as a **magnitude filter** (large EM gaps → high edge buckets) rather than as a directional override.
 
@@ -82,7 +82,7 @@ Agreement rate: **53%** of games (215/403)
 | Dimension | Finding |
 |-----------|---------|
 | SU accuracy (all games) | Directional predictor; strongest when |EM| > 10 |
-| ATS hit rate (403 games) | **73.9%** using cage_em_diff direction |
+| ATS hit rate (404 games) | **73.8%** using cage_em_diff direction |
 | Market underdog picks | CAGE picks dog ~43% of time; covers only ~0% — **avoid** |
 | Primary value | Validation signal alongside model/trend picks, not standalone |
 
