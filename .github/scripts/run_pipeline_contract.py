@@ -525,6 +525,33 @@ def main() -> int:
 
         print("Look at: data/perplexity_contract_runner.log and debug/*")
         print(f"[INFO] wrote failure map: {debug_path}")
+
+        # Always write the manifest even on failure so downstream jobs/artifacts
+        # that check for its existence don't fail with a misleading "missing file" error.
+        # Completed stages (if any) are included; failed + pending stages are absent.
+        error_manifest = {
+            "contract_name": contract.get("name", contract_path.name),
+            "contract_version": contract.get("version"),
+            "job": args.job,
+            "generated_at_utc": _utc_now(),
+            "dry_run": bool(args.dry_run),
+            "status": "failed",
+            "failed_stage": failed_name,
+            "context": context,
+            "stages": [
+                {
+                    "name": r.name,
+                    "command": r.command,
+                    "started_at_utc": r.started_at_utc,
+                    "finished_at_utc": r.finished_at_utc,
+                    "outputs": r.outputs,
+                }
+                for r in results
+            ],
+        }
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        manifest_path.write_text(json.dumps(error_manifest, indent=2), encoding="utf-8")
+        print(f"[INFO] wrote failure manifest: {manifest_path}")
         return 1
 
     manifest = {
