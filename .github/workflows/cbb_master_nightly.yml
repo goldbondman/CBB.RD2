@@ -19,7 +19,7 @@ on:
         options: ["tracker_only", "backtest_only", "both"]
 
 concurrency:
-  group: cbb-data-pipeline
+  group: cbb-data-pipeline-master-nightly
   cancel-in-progress: true
 
 permissions:
