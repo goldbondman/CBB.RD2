@@ -1312,21 +1312,21 @@ def run_capture(
             normalize_team_name(str(parsed.get("away_team_name", ""))),
         )
         pinn_match = pinnacle_by_team.get(team_key) or pinnacle_by_team.get((team_key[1], team_key[0]))
-        dk_match = dk_by_team.get(team_key) or dk_by_team.get((team_key[1], team_key[0]))
+
+        # DK line priority: ESPN-embedded (free, already fetched) → DK direct API → Action Network.
+        dk_match = None
+        if parsed.get("dk_spread") is not None:
+            dk_match = {"spread": parsed["dk_spread"], "total": parsed.get("dk_total")}
+        if not dk_match:
+            dk_match = dk_by_team.get(team_key) or dk_by_team.get((team_key[1], team_key[0]))
 
         if an_enrichment:
             if not pinn_match and an_enrichment.get("pinn_spread") is not None:
                 log.debug("Using Pinnacle fallback for %s: %s", event_id, an_enrichment["pinn_spread"])
                 pinn_match = {"spread": an_enrichment["pinn_spread"], "total": an_enrichment.get("pinn_total")}
             if not dk_match and an_enrichment.get("dk_spread") is not None:
-                log.debug("Using DraftKings fallback for %s: %s", event_id, an_enrichment["dk_spread"])
+                log.debug("Using Action Network DraftKings fallback for %s: %s", event_id, an_enrichment["dk_spread"])
                 dk_match = {"spread": an_enrichment["dk_spread"], "total": an_enrichment.get("dk_total")}
-
-        # Third-tier DK fallback: use odds embedded directly in the ESPN scoreboard response.
-        # Fires when both the DraftKings direct API and Action Network DK data are unavailable.
-        if not dk_match and parsed.get("dk_spread") is not None:
-            log.debug("Using ESPN-embedded DraftKings odds for %s: spread=%s", event_id, parsed["dk_spread"])
-            dk_match = {"spread": parsed["dk_spread"], "total": parsed.get("dk_total")}
 
         row = build_market_row(
             event_id,
