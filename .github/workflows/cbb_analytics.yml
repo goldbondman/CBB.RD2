@@ -892,18 +892,23 @@ jobs:
           fi
 
           git commit -m "analytics: $(date -u +'%Y-%m-%d %H:%M UTC') [skip ci]"
+          # Stash any remaining unstaged changes so rebase can proceed cleanly
+          git stash --include-untracked || true
           for i in 1 2 3; do
             if ! git pull --rebase origin main; then
               echo "[ERROR] rebase conflict while syncing main"
               git rebase --abort || true
+              git stash pop || true
               exit 1
             fi
             if git push origin HEAD:main; then
               echo "[OK] Push succeeded attempt $i"
+              git stash pop || true
               exit 0
             fi
             sleep $((i * 2))
           done
+          git stash pop || true
           echo "[ERROR] Push failed after 3 attempts"
           exit 1
 
