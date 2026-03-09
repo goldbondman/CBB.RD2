@@ -4,6 +4,7 @@ import json
 import time
 import random
 import logging
+import sys
 from datetime import datetime, date, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
@@ -11,6 +12,12 @@ from dataclasses import dataclass, field, asdict
 import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
+
+# Ensure repo-root imports work when invoked as "python ingestion/historical_backfill.py".
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from pipeline.id_utils import canonicalize_espn_game_id
 from pipeline.team_utils import TeamCanonicalizer, normalize_team_name, slugify
 

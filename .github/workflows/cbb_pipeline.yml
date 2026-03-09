@@ -18,7 +18,7 @@ on:
           - end_of_season
 
 concurrency:
-  group: cbb-pipeline-learning
+  group: cbb-data-pipeline
   cancel-in-progress: false
 
 permissions:

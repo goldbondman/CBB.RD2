@@ -436,7 +436,6 @@ jobs:
           validate_required_csv "data/games.csv" 1 "game_id" || true
           validate_required_csv "data/team_game_weighted.csv" 1 "team_id" || true
           validate_required_csv "data/team_pretournament_snapshot.csv" 1 "team_id" || true
-          validate_required_csv "data/team_pretournament_snapshot.csv" 1 "team_id" || true
 
           USED_FALLBACK="false"
           FALLBACK_REASON="none"
@@ -623,7 +622,7 @@ jobs:
       - name: Backfill historical market lines (rolling 14 days)
         if: steps.gate_inputs.outputs.blocked != 'true'
         continue-on-error: true
-        run: python ingestion/historical_backfill.py --days-back 14 --output data/market_lines.csv
+        run: python -m ingestion.historical_backfill --days-back 14
 
       - name: Run backtester
         if: steps.gate_inputs.outputs.blocked != 'true' && (steps.resolve_mode.outputs.run_mode == 'both' || steps.resolve_mode.outputs.run_mode == 'backtest_only')
@@ -640,7 +639,7 @@ jobs:
             BACKTEST_ARGS="$BACKTEST_ARGS --end-date ${{ steps.resolve_mode.outputs.end_date }}"
           fi
 
-          python ingestion/historical_backfill.py $BACKFILL_ARGS
+          python -m ingestion.historical_backfill $BACKFILL_ARGS
           python cbb_backtester.py $BACKTEST_ARGS
 
       - name: Validate backtester outputs
