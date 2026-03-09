@@ -325,7 +325,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: INFRA-espn-data
-          path: .
+          path: data
 
       - name: Validate update manifest and ranking inputs
         shell: bash
