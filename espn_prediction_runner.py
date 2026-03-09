@@ -61,10 +61,14 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pandas as pd
 from config.logging_config import get_logger
+from pipeline.market_canonical import merge_market_lines
 from config.model_version import compute_model_version, save_version_to_history
-from pipeline_csv_utils import add_conference_name, safe_write_csv
-from pipeline_csv_utils import normalize_numeric_dtypes, safe_write_csv
-from pipeline_csv_utils import normalize_column_names, safe_write_csv
+from pipeline_csv_utils import (
+    add_conference_name,
+    normalize_column_names,
+    normalize_numeric_dtypes,
+    safe_write_csv,
+)
 from models.alpha_evaluator import evaluate_alpha
 from cbb_situational import (
     detect_trap_game,
@@ -75,6 +79,19 @@ from cbb_situational import (
 )
 
 OUT_PREDICTIONS_LATEST = DATA_DIR / "predictions_latest.csv"
+MARKET_REQUIRED_COLUMNS = [
+    "opening_spread",
+    "closing_spread",
+    "spread_line",
+    "opening_total",
+    "closing_total",
+    "total_line",
+    "moneyline_home",
+    "moneyline_away",
+    "line_source_used",
+    "line_timestamp_utc",
+    "market_status",
+]
 
 # ── Local imports ──────────────────────────────────────────────────────────────
 try:
@@ -1261,6 +1278,57 @@ def _validate_prediction_output_schema(df: pd.DataFrame) -> None:
     validate_output(df, "predictions", strict=True)
 
 
+def _attach_canonical_market_context(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Ensure predictions_latest carries canonical market columns.
+    This aligns predictions_latest with the same market merge used by joint models.
+    """
+    if df.empty:
+        return df
+
+    stale_market_cols = [
+        "opening_spread",
+        "closing_spread",
+        "spread_line",
+        "opening_total",
+        "closing_total",
+        "total_line",
+        "moneyline_home",
+        "moneyline_away",
+        "line_source_used",
+        "line_timestamp_utc",
+        "market_status",
+    ]
+    base = df.drop(columns=[c for c in stale_market_cols if c in df.columns], errors="ignore")
+
+    merged = merge_market_lines(
+        base,
+        data_dir=DATA_DIR,
+        output_name="predictions_latest.csv",
+        required_columns=MARKET_REQUIRED_COLUMNS,
+        debug_dir=Path("debug"),
+    )
+
+    if "moneyline_home" in merged.columns:
+        home_ml = pd.to_numeric(merged["moneyline_home"], errors="coerce")
+        if "home_ml" in merged.columns:
+            merged["home_ml"] = pd.to_numeric(merged["home_ml"], errors="coerce").combine_first(home_ml)
+        else:
+            merged["home_ml"] = home_ml
+    if "moneyline_away" in merged.columns:
+        away_ml = pd.to_numeric(merged["moneyline_away"], errors="coerce")
+        if "away_ml" in merged.columns:
+            merged["away_ml"] = pd.to_numeric(merged["away_ml"], errors="coerce").combine_first(away_ml)
+        else:
+            merged["away_ml"] = away_ml
+
+    if "line_timestamp_utc" in merged.columns:
+        ts = pd.to_datetime(merged["line_timestamp_utc"], errors="coerce", utc=True)
+        merged["line_timestamp_utc"] = ts.dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    return merged
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # OUTPUT WRITERS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1304,6 +1372,7 @@ def write_predictions(df: pd.DataFrame, label: str) -> Path:
     out_df = add_conference_name(out_df)
 
     out_df = _coalesce_pred_spread(out_df)
+    out_df = _attach_canonical_market_context(out_df)
 
     if not out_df.empty:
         _validate_prediction_output_schema(out_df)

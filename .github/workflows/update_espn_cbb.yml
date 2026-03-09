@@ -179,6 +179,7 @@ jobs:
           bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "event_id,team_id,game_datetime_utc"
           bash .github/scripts/check_csv.sh data/team_pretournament_snapshot.csv 1 "team_id"
           bash .github/scripts/check_csv.sh data/advanced_metrics.csv 1 "event_id,team_id"
+          bash .github/scripts/check_csv.sh data/market_lines_latest_by_game.csv 0 "event_id,spread_line,total_line,line_source_used"
           bash .github/scripts/check_csv.sh data/predictions_joint_latest.csv 1 "game_id,pred_total,pred_margin"
           python .github/scripts/validate_joint_predictions.py \
             --input data/predictions_joint_latest.csv \
@@ -207,6 +208,13 @@ jobs:
             data/team_game_weighted.csv
             data/team_pretournament_snapshot.csv
             data/advanced_metrics.csv
+            data/market_lines.csv
+            data/market_lines_latest.csv
+            data/market_lines_closing.csv
+            data/market_lines_snapshots.csv
+            data/market_lines_canonical.csv
+            data/market_lines_latest_by_book.csv
+            data/market_lines_latest_by_game.csv
             data/predictions_joint_latest.csv
             data/predictions_joint_snapshots.csv
             data/rotation_features.csv
@@ -246,6 +254,13 @@ jobs:
             data/team_game_weighted.csv \
             data/team_pretournament_snapshot.csv \
             data/advanced_metrics.csv \
+            data/market_lines.csv \
+            data/market_lines_latest.csv \
+            data/market_lines_closing.csv \
+            data/market_lines_snapshots.csv \
+            data/market_lines_canonical.csv \
+            data/market_lines_latest_by_book.csv \
+            data/market_lines_latest_by_game.csv \
             data/predictions_joint_latest.csv \
             data/predictions_joint_snapshots.csv \
             data/rotation_features.csv \
@@ -408,6 +423,16 @@ jobs:
             data/games.csv \
             data/team_game_weighted.csv \
             data/team_pretournament_snapshot.csv \
+            data/advanced_metrics.csv \
+            data/market_lines.csv \
+            data/market_lines_latest.csv \
+            data/market_lines_closing.csv \
+            data/market_lines_snapshots.csv \
+            data/market_lines_canonical.csv \
+            data/market_lines_latest_by_book.csv \
+            data/market_lines_latest_by_game.csv \
+            data/predictions_joint_latest.csv \
+            data/predictions_joint_snapshots.csv \
             data/rotation_features.csv \
             data/situational_features.csv \
             data/luck_regression_features.csv \
