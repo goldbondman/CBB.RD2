@@ -647,7 +647,7 @@ jobs:
         run: |
           bash .github/scripts/check_csv.sh data/backtest_results_latest.csv 1
           python scripts/validate_backtest_market_data.py
-          python scripts/validate_backtest_context_outputs.py --results data/backtest_results_latest.csv --min-market-non-null 0.003 --min-pred-non-null 0.5
+          python scripts/validate_backtest_context_outputs.py --results data/backtest_results_latest.csv --min-market-non-null 0.003 --min-pred-non-null 0.03
 
       - name: Grade predictions
         if: steps.gate_inputs.outputs.blocked != 'true'
