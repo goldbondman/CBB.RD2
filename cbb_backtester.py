@@ -1509,11 +1509,12 @@ def build_team_backtest_csv(output_dir: Path) -> Optional[Path]:
     tgm["opp_rest_days"] = pd.to_numeric(tgm.get("opp_rest_days"), errors="coerce")
     tgm["rest_days"] = pd.to_numeric(tgm.get("rest_days"), errors="coerce")
     tgm["cover"] = pd.to_numeric(tgm.get("cover"), errors="coerce")
-    tgm["ats_push"] = pd.to_numeric(tgm.get("ats_push"), errors="coerce").fillna(0)
+    _idx = tgm.index
+    tgm["ats_push"] = pd.to_numeric(tgm.get("ats_push", pd.Series(0, index=_idx)), errors="coerce").fillna(0)
     tgm["game_datetime_utc"] = pd.to_datetime(tgm.get("game_datetime_utc"), errors="coerce", utc=True)
-    tgm["win"] = pd.to_numeric(tgm.get("win"), errors="coerce").fillna(0)
+    tgm["win"] = pd.to_numeric(tgm.get("win", pd.Series(0, index=_idx)), errors="coerce").fillna(0)
     tgm["loss_flag"] = (tgm["win"] == 0).astype(int)
-    tgm["neutral_site"] = pd.to_numeric(tgm.get("neutral_site"), errors="coerce").fillna(0)
+    tgm["neutral_site"] = pd.to_numeric(tgm.get("neutral_site", pd.Series(0, index=_idx)), errors="coerce").fillna(0)
 
     # Calculate win flags for aggregation (Q2)
     tgm["home_win_flag"] = ((tgm["home_away_norm"] == "home") & (tgm["win"] == 1)).astype(int)
