@@ -400,22 +400,6 @@ def fetch_pinnacle_lines() -> list[dict]:
         return []
 
 
-def fetch_draftkings_lines() -> list[dict]:
-    # NCAAB Event Group ID
-    event_group_id = 92483
-    url = f"https://sportsbook.draftkings.com/sites/US-SB/api/v1/eventgroups/{event_group_id}?format=json"
-    headers = {
-        **HEADERS,
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-    }
-    try:
-        payload = _http_get_json(url, headers=headers, source="DraftKings eventgroup")
-        if isinstance(payload, dict):
-            return payload.get("eventGroup", {}).get("events", [])
-        return []
-    except Exception as exc:  # noqa: BLE001
-        log.warning("DraftKings fetch failed: %s", exc)
-        return []
 
 
 def normalize_team_name(name: str) -> str:
@@ -1223,11 +1207,9 @@ def run_capture(
     pinnacle_games = fetch_pinnacle_lines()
     time.sleep(REQUEST_DELAY)
 
-    log.info("Fetching DraftKings...")
-    dk_games = fetch_draftkings_lines()
-
+    # DraftKings direct API is blocked on GitHub Actions (403). DK lines come
+    # from ESPN's embedded odds array (parsed per-event in parse_espn_event).
     pinnacle_by_team = build_book_index(pinnacle_games)
-    dk_by_team = build_book_index(dk_games)
 
     action_by_team: dict[tuple[str, str], dict] = {}
     for game in an_games:
@@ -1313,12 +1295,11 @@ def run_capture(
         )
         pinn_match = pinnacle_by_team.get(team_key) or pinnacle_by_team.get((team_key[1], team_key[0]))
 
-        # DK line priority: ESPN-embedded (free, already fetched) → DK direct API → Action Network.
+        # DK lines come from ESPN's embedded odds array (parsed per-event).
+        # Action Network book_id=68 is the fallback if ESPN has no DK entry.
         dk_match = None
         if parsed.get("dk_spread") is not None:
             dk_match = {"spread": parsed["dk_spread"], "total": parsed.get("dk_total")}
-        if not dk_match:
-            dk_match = dk_by_team.get(team_key) or dk_by_team.get((team_key[1], team_key[0]))
 
         if an_enrichment:
             if not pinn_match and an_enrichment.get("pinn_spread") is not None:
