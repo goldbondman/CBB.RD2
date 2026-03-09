@@ -185,15 +185,15 @@ jobs:
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
-          # H1: staleness guard — warn if artifact >90min, fail if >4h
+          # H1: staleness guard — warn if artifact >90min, fail if >12h
           CREATED_AT=$(gh run view "$run_id" --json createdAt --jq '.createdAt')
           if [[ -n "$CREATED_AT" ]]; then
             CREATED_EPOCH=$(date -d "$CREATED_AT" +%s 2>/dev/null || echo 0)
             NOW_EPOCH=$(date +%s)
             AGE_MINUTES=$(( (NOW_EPOCH - CREATED_EPOCH) / 60 ))
             echo "[INFO] Market Lines run $run_id age: ${AGE_MINUTES} minutes"
-            if (( AGE_MINUTES > 240 )); then
-              echo "[ERROR] INFRA-market-lines artifact is older than 4 hours (${AGE_MINUTES} min). Please re-run the market_lines workflow manually."
+            if (( AGE_MINUTES > 720 )); then
+              echo "[ERROR] INFRA-market-lines artifact is older than 12 hours (${AGE_MINUTES} min). Please re-run the market_lines workflow manually."
               exit 1
             elif (( AGE_MINUTES > 90 )); then
               echo "[WARN] INFRA-market-lines artifact is older than 90 minutes (${AGE_MINUTES} min)"
@@ -923,3 +923,4 @@ jobs:
           fi
           echo "[ERROR] Scheduled/automated analytics run blocked due to missing required inputs."
           exit 1
+

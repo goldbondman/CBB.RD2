@@ -74,8 +74,16 @@ def _run_subprocess(cmd: list[str]) -> int:
 
 
 def cmd_run(args: argparse.Namespace) -> int:
-    as_of = pd.Timestamp(args.date if args.date else _now_utc(), tz="UTC")
-    model_version = compute_model_version([ROOT / "cbb_prediction_model.py"], additional_context=args.mode)
+    if args.date:
+        as_of = pd.Timestamp(args.date)
+        if as_of.tzinfo is None:
+            as_of = as_of.tz_localize("UTC")
+        else:
+            as_of = as_of.tz_convert("UTC")
+    else:
+        as_of = pd.Timestamp(_now_utc())
+    model_version_snapshot = compute_model_version(DATA_DIR)
+    model_version = model_version_snapshot.get("model_version_hash", "unknown")
     ctx = RunContext.build(as_of=as_of.to_pydatetime(), model_version=model_version, feature_version="v1")
     run_dir = resolve_run_dir(ctx.run_id)
 
@@ -153,6 +161,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         "command": cmd,
         "return_code": rc,
         "artifact_run_dir": str(run_dir),
+        "model_version": model_version_snapshot,
         "backtest_outputs": backtest_meta if args.mode == "backtest" and rc == 0 else None,
     }
     write_json(manifest, run_dir / "manifest" / "run_manifest.json")
