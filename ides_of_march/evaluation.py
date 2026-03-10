@@ -79,9 +79,20 @@ def _compute_metrics(scored: pd.DataFrame) -> dict[str, float | str]:
         return {
             "sample_size": 0,
             "spread_mae": np.nan,
+            "spread_rmse": np.nan,
             "winner_accuracy": np.nan,
             "ats_accuracy": np.nan,
+            "ats_win_pct_edge_gt_1": np.nan,
+            "ats_win_pct_edge_gt_2": np.nan,
+            "ats_win_pct_edge_gt_3": np.nan,
+            "totals_mae": np.nan,
+            "over_under_win_pct_all": np.nan,
+            "total_win_pct_edge_gt_1": np.nan,
+            "total_win_pct_edge_gt_2": np.nan,
+            "total_win_pct_edge_gt_3": np.nan,
             "calibration_brier": np.nan,
+            "avg_spread_edge": np.nan,
+            "avg_total_edge": np.nan,
             "ats_edge_buckets": "{}",
             "situational_bucket_perf": "{}",
             "agreement_bucket_perf": "{}",
@@ -92,8 +103,10 @@ def _compute_metrics(scored: pd.DataFrame) -> dict[str, float | str]:
     total = pd.to_numeric(df.get("actual_total"), errors="coerce")
     home_won = pd.to_numeric(df.get("home_won"), errors="coerce")
     market_spread = pd.to_numeric(df.get("market_spread"), errors="coerce")
+    market_total = pd.to_numeric(df.get("market_total"), errors="coerce")
 
     pred_margin = pd.to_numeric(df.get("projected_margin_home"), errors="coerce")
+    pred_total = pd.to_numeric(df.get("projected_total_ctx"), errors="coerce")
     pred_win = pd.to_numeric(df.get("win_prob_home"), errors="coerce")
 
     predicted_home_win = pred_win >= 0.5
@@ -104,9 +117,26 @@ def _compute_metrics(scored: pd.DataFrame) -> dict[str, float | str]:
     ats_accuracy = float((predicted_home_cover == home_cover).mean()) if margin.notna().any() and market_spread.notna().any() else np.nan
 
     spread_mae = float((pred_margin - margin).abs().mean()) if margin.notna().any() else np.nan
+    spread_rmse = float(np.sqrt(np.mean((pred_margin - margin) ** 2))) if margin.notna().any() else np.nan
     brier = float(np.mean((pred_win - home_won) ** 2)) if home_won.notna().any() else np.nan
 
     edge_abs = pd.to_numeric(df.get("edge_home"), errors="coerce").abs()
+    ats_correct = (predicted_home_cover == home_cover).astype(float)
+    ats_win_pct_edge_gt_1 = float(ats_correct[edge_abs >= 1.0].mean()) if (edge_abs >= 1.0).any() else np.nan
+    ats_win_pct_edge_gt_2 = float(ats_correct[edge_abs >= 2.0].mean()) if (edge_abs >= 2.0).any() else np.nan
+    ats_win_pct_edge_gt_3 = float(ats_correct[edge_abs >= 3.0].mean()) if (edge_abs >= 3.0).any() else np.nan
+
+    over_prob = (1.0 / (1.0 + np.exp(-(pred_total - market_total) / 6.0))).clip(0.01, 0.99)
+    over_pick = over_prob >= 0.5
+    actual_over = total > market_total
+    ou_correct = (over_pick == actual_over).astype(float)
+    totals_mae = float((pred_total - total).abs().mean()) if total.notna().any() else np.nan
+    over_under_win_pct_all = float(ou_correct.mean()) if total.notna().any() and market_total.notna().any() else np.nan
+
+    total_edge_abs = (pred_total - market_total).abs()
+    total_win_pct_edge_gt_1 = float(ou_correct[total_edge_abs >= 1.0].mean()) if (total_edge_abs >= 1.0).any() else np.nan
+    total_win_pct_edge_gt_2 = float(ou_correct[total_edge_abs >= 2.0].mean()) if (total_edge_abs >= 2.0).any() else np.nan
+    total_win_pct_edge_gt_3 = float(ou_correct[total_edge_abs >= 3.0].mean()) if (total_edge_abs >= 3.0).any() else np.nan
     bucket = pd.cut(edge_abs, bins=[-np.inf, 1.5, 3.0, np.inf], labels=["0-1.5", "1.5-3", "3+"])
     edge_perf = (
         pd.DataFrame({"bucket": bucket, "ats_correct": (predicted_home_cover == home_cover).astype(float)})
@@ -129,9 +159,20 @@ def _compute_metrics(scored: pd.DataFrame) -> dict[str, float | str]:
     return {
         "sample_size": int(len(df)),
         "spread_mae": spread_mae,
+        "spread_rmse": spread_rmse,
         "winner_accuracy": winner_accuracy,
         "ats_accuracy": ats_accuracy,
+        "ats_win_pct_edge_gt_1": ats_win_pct_edge_gt_1,
+        "ats_win_pct_edge_gt_2": ats_win_pct_edge_gt_2,
+        "ats_win_pct_edge_gt_3": ats_win_pct_edge_gt_3,
+        "totals_mae": totals_mae,
+        "over_under_win_pct_all": over_under_win_pct_all,
+        "total_win_pct_edge_gt_1": total_win_pct_edge_gt_1,
+        "total_win_pct_edge_gt_2": total_win_pct_edge_gt_2,
+        "total_win_pct_edge_gt_3": total_win_pct_edge_gt_3,
         "calibration_brier": brier,
+        "avg_spread_edge": float(edge_abs.mean()) if edge_abs.notna().any() else np.nan,
+        "avg_total_edge": float(total_edge_abs.mean()) if total_edge_abs.notna().any() else np.nan,
         "ats_edge_buckets": json.dumps(edge_perf),
         "situational_bucket_perf": json.dumps(situ_perf),
         "agreement_bucket_perf": json.dumps(agreement_payload),
@@ -145,9 +186,20 @@ def run_variant_backtest(historical_games: pd.DataFrame) -> pd.DataFrame:
                 "variant_id",
                 "sample_size",
                 "spread_mae",
+                "spread_rmse",
                 "winner_accuracy",
                 "ats_accuracy",
+                "ats_win_pct_edge_gt_1",
+                "ats_win_pct_edge_gt_2",
+                "ats_win_pct_edge_gt_3",
+                "totals_mae",
+                "over_under_win_pct_all",
+                "total_win_pct_edge_gt_1",
+                "total_win_pct_edge_gt_2",
+                "total_win_pct_edge_gt_3",
                 "calibration_brier",
+                "avg_spread_edge",
+                "avg_total_edge",
                 "ats_edge_buckets",
                 "situational_bucket_perf",
                 "agreement_bucket_perf",

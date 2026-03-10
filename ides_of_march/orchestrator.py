@@ -538,26 +538,52 @@ class IDESOrchestrator:
             preds["spread_pick"] = np.where(_num(preds["spread_edge_team_a"]) >= 0, preds["team_a"], preds["team_b"])
             preds["total_pick"] = np.where(_num(preds["over_probability"]) >= 0.5, "over", "under")
             preds["total_confidence"] = (_num(preds["total_edge_over"]).abs() * 8.0).clip(0.0, 100.0)
-            preds = self._write_contract_csv("game_predictions_master.csv", preds, self.paths.game_predictions_master)
-            bets = preds[preds["final_bet_flag"].astype(bool)].copy()
-            bets["bet_type"] = "spread"
-            bets["bet_side"] = np.where(bets["spread_pick"] == bets["team_a"], "team_a", "team_b")
-            bets["market_line"] = np.where(bets["bet_side"].eq("team_a"), bets["market_spread_team_a"], bets["market_spread_team_b"])
-            bets["model_line"] = np.where(bets["bet_side"].eq("team_a"), bets["model_spread_team_a"], bets["model_spread_team_b"])
-            bets["edge"] = np.where(bets["bet_side"].eq("team_a"), bets["spread_edge_team_a"], bets["spread_edge_team_b"])
-            bets["win_probability"] = np.where(bets["bet_side"].eq("team_a"), bets["team_a_win_probability"], bets["team_b_win_probability"])
-            bets["cover_probability"] = np.where(bets["bet_side"].eq("team_a"), bets["team_a_cover_probability"], bets["team_b_cover_probability"])
-            bets["confidence"] = bets["spread_confidence"]
+            preds["spread_bet_flag"] = preds["final_bet_flag"].astype(bool)
+            total_recommend_mask = (
+                (_num(preds["total_edge_over"]).abs() >= 2.0)
+                & (_num(preds["total_confidence"]) >= 55.0)
+                & (_num(preds["over_probability"]).sub(0.5).abs() >= 0.03)
+            )
+            if mc_mode == "confidence_filter" and "mc_filter_pass" in preds.columns:
+                total_recommend_mask = total_recommend_mask & preds["mc_filter_pass"].astype(bool)
+            preds["total_bet_flag"] = total_recommend_mask.astype(bool)
+            preds["final_bet_flag"] = preds["spread_bet_flag"] | preds["total_bet_flag"]
+
+            spread_bets = preds[preds["spread_bet_flag"]].copy()
+            spread_bets["bet_type"] = "spread"
+            spread_bets["bet_side"] = np.where(spread_bets["spread_pick"] == spread_bets["team_a"], "team_a", "team_b")
+            spread_bets["market_line"] = np.where(spread_bets["bet_side"].eq("team_a"), spread_bets["market_spread_team_a"], spread_bets["market_spread_team_b"])
+            spread_bets["model_line"] = np.where(spread_bets["bet_side"].eq("team_a"), spread_bets["model_spread_team_a"], spread_bets["model_spread_team_b"])
+            spread_bets["edge"] = np.where(spread_bets["bet_side"].eq("team_a"), spread_bets["spread_edge_team_a"], spread_bets["spread_edge_team_b"])
+            spread_bets["win_probability"] = np.where(spread_bets["bet_side"].eq("team_a"), spread_bets["team_a_win_probability"], spread_bets["team_b_win_probability"])
+            spread_bets["cover_probability"] = np.where(spread_bets["bet_side"].eq("team_a"), spread_bets["team_a_cover_probability"], spread_bets["team_b_cover_probability"])
+            spread_bets["confidence"] = spread_bets["spread_confidence"]
+            spread_bets["bet_reason_short"] = "spread edge + confidence"
+
+            total_bets = preds[preds["total_bet_flag"]].copy()
+            total_bets["bet_type"] = "total"
+            total_bets["bet_side"] = total_bets["total_pick"].str.lower()
+            total_bets["market_line"] = _num(total_bets["market_total"])
+            total_bets["model_line"] = _num(total_bets["model_total"])
+            total_bets["edge"] = np.where(total_bets["bet_side"].eq("over"), _num(total_bets["total_edge_over"]), _num(total_bets["total_edge_under"]))
+            total_bets["win_probability"] = np.where(total_bets["bet_side"].eq("over"), _num(total_bets["over_probability"]), _num(total_bets["under_probability"]))
+            total_bets["cover_probability"] = np.nan
+            total_bets["confidence"] = _num(total_bets["total_confidence"])
+            total_bets["bet_reason_short"] = "total edge + confidence"
+
+            bets = pd.concat([spread_bets, total_bets], ignore_index=True, sort=False)
             bets["situational_support"] = bets["agreement_bucket"].astype(str).str.contains("Situational", na=False)
             bets["monte_carlo_support"] = bets["agreement_bucket"].astype(str).str.contains("Monte Carlo", na=False)
             bets["recommended_stake_units"] = ((_num(bets["confidence"]) - 50.0) / 20.0).clip(0.0, 3.0).round(2)
             bets = bets.sort_values(["confidence", "edge"], ascending=[False, False], kind="mergesort")
             bets["bet_rank"] = np.arange(1, len(bets) + 1)
-            bets["bet_reason_short"] = "model edge + confidence"
             bets["created_at_utc"] = now_utc
+
+            preds = self._write_contract_csv("game_predictions_master.csv", preds, self.paths.game_predictions_master)
             bets = self._write_contract_csv("bet_recommendations.csv", bets, self.paths.bet_recommendations)
 
-            watch = preds[(~preds["final_bet_flag"].astype(bool)) & ((_num(preds["spread_edge_team_a"]).abs() >= 1.0) | (_num(preds["total_edge_over"]).abs() >= 2.0))].copy()
+            bet_game_ids = set(bets["game_id"].astype(str)) if len(bets) else set()
+            watch = preds[(~preds["game_id"].astype(str).isin(bet_game_ids)) & ((_num(preds["spread_edge_team_a"]).abs() >= 1.0) | (_num(preds["total_edge_over"]).abs() >= 2.0))].copy()
             watch["watchlist_reason"] = "edge near threshold"
             watch["current_market_spread"] = watch["market_spread_team_a"]
             watch["current_market_total"] = watch["market_total"]
@@ -568,7 +594,7 @@ class IDESOrchestrator:
             watch["created_at_utc"] = now_utc
             watch = self._write_contract_csv("watchlist_games.csv", watch, self.paths.watchlist_games)
 
-            no_bet = preds[(~preds["final_bet_flag"].astype(bool)) & (~preds["game_id"].isin(watch["game_id"]))].copy()
+            no_bet = preds[(~preds["game_id"].astype(str).isin(bet_game_ids)) & (~preds["game_id"].isin(watch["game_id"]))].copy()
             no_bet["market_spread"] = no_bet["market_spread_team_a"]
             no_bet["model_spread"] = no_bet["model_spread_team_a"]
             no_bet["spread_edge"] = no_bet["spread_edge_team_a"]
@@ -587,14 +613,27 @@ class IDESOrchestrator:
                         "season": preds["season"].iloc[0] if len(preds) else np.nan,
                         "game_date_pst": preds["game_date_pst"].iloc[0] if len(preds) else np.nan,
                         "games_on_card": int(len(preds)),
-                        "spread_bets_count": int(len(bets)),
+                        "spread_bets_count": int((bets.get("bet_type", pd.Series(dtype=str)) == "spread").sum()) if len(bets) else 0,
                         "total_bets_count": int((bets.get("bet_type", pd.Series(dtype=str)) == "total").sum()) if len(bets) else 0,
                         "watchlist_count": int(len(watch)),
-                        "highest_confidence_bet": bets["team_a"].iloc[0] if len(bets) else np.nan,
-                        "highest_edge_bet": bets.sort_values("edge", ascending=False)["team_a"].iloc[0] if len(bets) else np.nan,
+                        "highest_confidence_bet": (
+                            (
+                                f"{bets.iloc[0]['team_a']} vs {bets.iloc[0]['team_b']} {bets.iloc[0]['bet_type']}:{bets.iloc[0]['bet_side']}"
+                            )
+                            if len(bets)
+                            else np.nan
+                        ),
+                        "highest_edge_bet": (
+                            (
+                                f"{bets.sort_values('edge', ascending=False).iloc[0]['team_a']} vs {bets.sort_values('edge', ascending=False).iloc[0]['team_b']} "
+                                f"{bets.sort_values('edge', ascending=False).iloc[0]['bet_type']}:{bets.sort_values('edge', ascending=False).iloc[0]['bet_side']}"
+                            )
+                            if len(bets)
+                            else np.nan
+                        ),
                         "avg_spread_edge": float(_num(preds["spread_edge_team_a"]).abs().mean()) if len(preds) else np.nan,
                         "avg_total_edge": float(_num(preds["total_edge_over"]).abs().mean()) if len(preds) else np.nan,
-                        "avg_confidence": float(_num(preds["spread_confidence"]).mean()) if len(preds) else np.nan,
+                        "avg_confidence": float(_num(bets["confidence"]).mean()) if len(bets) else np.nan,
                         "notes": "ides run summary",
                         "created_at_utc": now_utc,
                     }
@@ -699,36 +738,33 @@ class IDESOrchestrator:
                 return RunResult(ok=False, status="BLOCKED", stages=stages, outputs=outputs, error="no_historical_games")
 
             scorecard = run_variant_backtest(hist)
-            backtest = pd.DataFrame(
-                {
-                    "run_id": run_id,
-                    "model_version": MODEL_VERSION,
-                    "variant_name": scorecard.get("variant_id"),
-                    "phase": "all",
-                    "games_tested": scorecard.get("sample_size"),
-                    "spread_mae": scorecard.get("spread_mae"),
-                    "spread_rmse": np.nan,
-                    "winner_accuracy": scorecard.get("winner_accuracy"),
-                    "ats_win_pct_all": scorecard.get("ats_accuracy"),
-                    "ats_win_pct_edge_gt_1": np.nan,
-                    "ats_win_pct_edge_gt_2": np.nan,
-                    "ats_win_pct_edge_gt_3": np.nan,
-                    "totals_mae": np.nan,
-                    "over_under_win_pct_all": np.nan,
-                    "total_win_pct_edge_gt_1": np.nan,
-                    "total_win_pct_edge_gt_2": np.nan,
-                    "total_win_pct_edge_gt_3": np.nan,
-                    "win_probability_brier_score": scorecard.get("calibration_brier"),
-                    "win_probability_calibration_error": np.nan,
-                    "mc_probability_calibration_error": np.nan,
-                    "avg_spread_edge": np.nan,
-                    "avg_total_edge": np.nan,
-                    "roi_spread": np.nan,
-                    "roi_total": np.nan,
-                    "notes": "ides variant backtest",
-                    "created_at_utc": now_utc,
-                }
-            )
+            backtest = pd.DataFrame(index=scorecard.index)
+            backtest["run_id"] = run_id
+            backtest["model_version"] = MODEL_VERSION
+            backtest["variant_name"] = scorecard.get("variant_id")
+            backtest["phase"] = "all"
+            backtest["games_tested"] = scorecard.get("sample_size")
+            backtest["spread_mae"] = scorecard.get("spread_mae")
+            backtest["spread_rmse"] = scorecard.get("spread_rmse")
+            backtest["winner_accuracy"] = scorecard.get("winner_accuracy")
+            backtest["ats_win_pct_all"] = scorecard.get("ats_accuracy")
+            backtest["ats_win_pct_edge_gt_1"] = scorecard.get("ats_win_pct_edge_gt_1")
+            backtest["ats_win_pct_edge_gt_2"] = scorecard.get("ats_win_pct_edge_gt_2")
+            backtest["ats_win_pct_edge_gt_3"] = scorecard.get("ats_win_pct_edge_gt_3")
+            backtest["totals_mae"] = scorecard.get("totals_mae")
+            backtest["over_under_win_pct_all"] = scorecard.get("over_under_win_pct_all")
+            backtest["total_win_pct_edge_gt_1"] = scorecard.get("total_win_pct_edge_gt_1")
+            backtest["total_win_pct_edge_gt_2"] = scorecard.get("total_win_pct_edge_gt_2")
+            backtest["total_win_pct_edge_gt_3"] = scorecard.get("total_win_pct_edge_gt_3")
+            backtest["win_probability_brier_score"] = scorecard.get("calibration_brier")
+            backtest["win_probability_calibration_error"] = np.nan
+            backtest["mc_probability_calibration_error"] = np.nan
+            backtest["avg_spread_edge"] = scorecard.get("avg_spread_edge")
+            backtest["avg_total_edge"] = scorecard.get("avg_total_edge")
+            backtest["roi_spread"] = np.nan
+            backtest["roi_total"] = np.nan
+            backtest["notes"] = "ides variant backtest"
+            backtest["created_at_utc"] = now_utc
             backtest = self._write_contract_csv("backtest_model_summary.csv", backtest, self.paths.backtest_model_summary)
             outputs["backtest_model_summary"] = str(self.paths.backtest_model_summary)
 
