@@ -24,6 +24,43 @@ from .utils import ensure_dir, pretty_exception, utc_now_iso, write_json
 
 MODEL_VERSION = "ides_of_march_v1"
 
+HALF_ROUND_COLUMNS: dict[str, list[str]] = {
+    "game_predictions_master.csv": [
+        "market_spread_team_a",
+        "market_spread_team_b",
+        "market_spread",
+        "market_total",
+        "market_moneyline_team_a",
+        "market_moneyline_team_b",
+        "model_spread_team_a",
+        "model_spread_team_b",
+        "model_total",
+        "team_a_win_probability",
+        "team_b_win_probability",
+        "team_a_cover_probability",
+        "team_b_cover_probability",
+        "over_probability",
+        "under_probability",
+        "spread_edge_team_a",
+        "spread_edge_team_b",
+        "total_edge_over",
+        "total_edge_under",
+        "spread_confidence",
+        "total_confidence",
+    ],
+    "bet_recommendations.csv": [
+        "market_line",
+        "model_line",
+        "edge",
+        "win_probability",
+        "cover_probability",
+        "over_probability",
+        "under_probability",
+        "confidence",
+        "recommended_stake_units",
+    ],
+}
+
 
 @dataclass
 class StageRecord:
@@ -67,6 +104,19 @@ def _prob_to_fair_american(series: Any) -> pd.Series:
     dog = p < 0.5
     out.loc[fav] = -100.0 * p.loc[fav] / (1.0 - p.loc[fav])
     out.loc[dog] = 100.0 * (1.0 - p.loc[dog]) / p.loc[dog]
+    return out
+
+
+def _round_series_to_half(series: Any) -> pd.Series:
+    vals = pd.to_numeric(series, errors="coerce")
+    return np.round(vals * 2.0) / 2.0
+
+
+def _apply_half_rounding(file_name: str, frame: pd.DataFrame) -> pd.DataFrame:
+    out = frame.copy()
+    for col in HALF_ROUND_COLUMNS.get(file_name, []):
+        if col in out.columns:
+            out[col] = _round_series_to_half(out[col])
     return out
 
 
@@ -661,8 +711,16 @@ class IDESOrchestrator:
             bets["bet_rank"] = np.arange(1, len(bets) + 1)
             bets["created_at_utc"] = now_utc
 
-            preds = self._write_contract_csv("game_predictions_master.csv", preds, self.paths.game_predictions_master)
-            bets = self._write_contract_csv("bet_recommendations.csv", bets, self.paths.bet_recommendations)
+            preds = self._write_contract_csv(
+                "game_predictions_master.csv",
+                _apply_half_rounding("game_predictions_master.csv", preds),
+                self.paths.game_predictions_master,
+            )
+            bets = self._write_contract_csv(
+                "bet_recommendations.csv",
+                _apply_half_rounding("bet_recommendations.csv", bets),
+                self.paths.bet_recommendations,
+            )
 
             bet_game_ids = set(bets["game_id"].astype(str)) if len(bets) else set()
             watch = preds[(~preds["game_id"].astype(str).isin(bet_game_ids)) & ((_num(preds["spread_edge_team_a"]).abs() >= 1.0) | (_num(preds["total_edge_over"]).abs() >= 2.0))].copy()
