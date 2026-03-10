@@ -1,5 +1,5 @@
 # Fractional Kelly Backtest: Model + CAGE + Trend
-_Generated 2026-03-09 14:56 UTC_
+_Generated 2026-03-10 00:20 UTC_
 
 **Dataset**: 253 games with all signals  
 **Bets placed**: 177 / 253 (edge ≥ 2.0 pts)  

@@ -1,218 +1,218 @@
 game_date,home_team,away_team,espn_spread,pred_spread,cage_em_diff,net_rtg_trend_delta,home_covered_ats,model_raw_edge,cage_raw,trend_raw,model_picks_home,cage_aligns,trend_aligns,model_correct
-20260225,Morehead State Eagles,Southern Indiana Screaming Eagles,-7.5,-3.15,38.400000000000006,24.352783402786454,1.0,4.35,38.400000000000006,24.352783402786454,True,True,True,True
-20260225,Missouri Tigers,Tennessee Volunteers,2.5,-3.15,-68.60000000000001,-16.906512060045095,1.0,-5.65,-68.60000000000001,-16.906512060045095,False,True,True,False
-20260225,South Carolina Gamecocks,Kentucky Wildcats,7.5,-3.15,-11.4,-12.368725536662254,0.0,-10.65,-11.4,-12.368725536662254,False,True,True,True
-20260225,Oklahoma Sooners,Auburn Tigers,3.5,-3.15,6.0,1.194066743383198,1.0,-6.65,6.0,1.194066743383198,False,False,False,False
-20260225,Georgia State Panthers,Coastal Carolina Chanticleers,1.5,-3.15,-2.1,-11.87773362531486,0.0,-4.65,-2.1,-11.87773362531486,False,False,True,True
-20260225,Marshall Thundering Herd,Old Dominion Monarchs,-7.5,-3.15,-36.5,-13.349961635471454,1.0,4.35,-36.5,-13.349961635471454,True,False,False,True
-20260225,Arkansas State Red Wolves,Southern Miss Golden Eagles,-9.5,-3.15,14.7,24.398122929448306,1.0,6.35,14.7,24.398122929448306,True,True,True,True
-20260225,Troy Trojans,Louisiana Ragin' Cajuns,-11.5,-3.15,5.199999999999999,-0.3853607512038985,1.0,8.35,5.199999999999999,-0.3853607512038985,True,True,False,True
-20260225,Toledo Rockets,Northern Illinois Huskies,-12.5,-3.15,25.2,22.523784359302,1.0,9.35,25.2,22.523784359302,True,True,True,True
-20260225,Air Force Falcons,San José State Spartans,6.5,-3.15,-11.800000000000004,-30.04107135555101,0.0,-9.65,-11.800000000000004,-30.04107135555101,False,True,True,True
-20260225,Florida State Seminoles,Miami Hurricanes,2.5,-3.15,-27.8,5.361510985169808,0.0,-5.65,-27.8,5.361510985169808,False,True,False,True
-20260225,Notre Dame Fighting Irish,Duke Blue Devils,17.5,-3.15,-35.4,-25.973851348534744,0.0,-20.65,-35.4,-25.973851348534744,False,True,True,True
-20260225,Boise State Broncos,Wyoming Cowboys,-8.5,-3.15,7.7,-2.168073759789737,1.0,5.35,7.7,-2.168073759789737,True,True,False,True
-20260225,Michigan Wolverines,Minnesota Golden Gophers,-21.5,-3.15,5.6,13.218490629861527,1.0,18.35,5.6,13.218490629861527,True,True,True,True
-20260225,UCLA Bruins,USC Trojans,-7.5,-3.15,54.6,4.260132123527541,1.0,4.35,54.6,4.260132123527541,True,True,True,True
-20260225,Baylor Bears,Arizona Wildcats,8.5,-3.15,-29.0,-15.46224206771667,1.0,-11.65,-29.0,-15.46224206771667,False,True,True,False
-20260225,BYU Cougars,UCF Knights,-12.5,-3.15,-5.5,9.6023276120168,0.0,9.35,-5.5,9.6023276120168,True,False,True,False
-20260225,Oklahoma State Cowboys,West Virginia Mountaineers,-1.5,-3.15,3.1,-18.785589069636902,1.0,-1.65,3.1,-18.785589069636902,False,False,True,False
-20260225,TCU Horned Frogs,Arizona State Sun Devils,-7.5,-3.15,-15.0,3.3974230192694344,1.0,4.35,-15.0,3.3974230192694344,True,False,True,True
-20260225,Texas Tech Red Raiders,Cincinnati Bearcats,-6.5,-3.15,-28.9,2.2654176994892268,1.0,3.35,-28.9,2.2654176994892268,True,False,True,True
-20260225,Utah Utes,Iowa State Cyclones,14.5,-3.15,-4.700000000000003,-10.00316662344433,0.0,-17.65,-4.700000000000003,-10.00316662344433,False,True,True,True
-20260225,Colorado State Rams,Fresno State Bulldogs,-8.5,-3.15,-0.6000000000000001,18.108924147595697,1.0,5.35,-0.6000000000000001,18.108924147595697,True,False,True,True
-20260225,Nevada Wolf Pack,New Mexico Lobos,-1.5,-3.15,-31.8,-11.442053053329625,1.0,-1.65,-31.8,-11.442053053329625,False,True,True,False
-20260225,UIC Flames,Bradley Braves,-1.5,-3.15,-18.6,15.021119239979994,1.0,-1.65,-18.6,15.021119239979994,False,True,False,False
-20260226,Cleveland State Vikings,Northern Kentucky Norse,8.5,-3.46,12.9,-22.61180801282098,0.0,-11.96,12.9,-22.61180801282098,False,False,True,True
-20260226,Purdue Fort Wayne Mastodons,Wright State Raiders,1.5,-5.45,-23.700000000000003,-12.651692365357762,0.0,-6.95,-23.700000000000003,-12.651692365357762,False,True,True,True
-20260226,Robert Morris Colonials,Detroit Mercy Titans,-7.5,-4.23,15.7,19.540489894903704,1.0,3.2699999999999996,15.7,19.540489894903704,True,True,True,True
-20260226,Milwaukee Panthers,Youngstown State Penguins,1.5,-0.79,61.4,-12.554827566517154,1.0,-2.29,61.4,-12.554827566517154,False,False,True,False
-20260226,Boston University Terriers,Holy Cross Crusaders,-8.5,-1.43,-4.2,19.915847161294423,1.0,7.07,-4.2,19.915847161294423,True,False,True,True
-20260226,Iowa Hawkeyes,Ohio State Buckeyes,-6.5,-2.49,-18.200000000000003,-5.619116465258797,1.0,4.01,-18.200000000000003,-5.619116465258797,True,False,False,True
-20260226,Tulane Green Wave,Tulsa Golden Hurricane,5.5,-1.33,-98.1,1.046286526889464,0.0,-6.83,-98.1,1.046286526889464,False,True,False,True
-20260226,American University Eagles,Lehigh Mountain Hawks,-6.5,-4.6,-39.1,10.37772993236521,1.0,1.9000000000000004,-39.1,10.37772993236521,True,False,True,True
-20260227,Western Kentucky Hilltoppers,New Mexico State Aggies,-4.5,-1.25,53.8,1.9720085645041927,1.0,3.25,53.8,1.9720085645041927,True,True,True,True
-20260227,Middle Tennessee Blue Raiders,UTEP Miners,-8.5,-5.73,44.6,4.45791005681529,1.0,2.7699999999999996,44.6,4.45791005681529,True,True,True,True
-20260227,Sam Houston Bearkats,Florida International Panthers,-6.5,-11.13,-20.7,3.001070007250963,1.0,-4.630000000000001,-20.7,3.001070007250963,False,True,False,False
-20260227,Louisiana Tech Bulldogs,Missouri State Bears,-2.5,0.69,-1.1000000000000014,5.363033797400853,1.0,3.19,-1.1000000000000014,5.363033797400853,True,False,True,True
-20260227,Kennesaw State Owls,Liberty Flames,1.5,-5.24,-0.3999999999999999,-5.333258654260577,1.0,-6.74,-0.3999999999999999,-5.333258654260577,False,False,True,False
-20260227,Jacksonville State Gamecocks,Delaware Blue Hens,-7.5,-0.83,4.199999999999999,-0.4910866413260697,1.0,6.67,4.199999999999999,-0.4910866413260697,True,True,False,True
-20260227,Utah Valley Wolverines,Tarleton State Texans,-17.5,-8.45,33.2,23.42389206811588,1.0,9.05,33.2,23.42389206811588,True,True,True,True
-20260227,California Baptist Lancers,UT Arlington Mavericks,-6.5,-2.6,49.4,10.017248670452936,1.0,3.9,49.4,10.017248670452936,True,True,True,True
-20260227,Lindenwood Lions,Eastern Illinois Panthers,-7.5,-0.62,69.8,-7.628082875052009,1.0,6.88,69.8,-7.628082875052009,True,True,False,True
-20260227,Little Rock Trojans,Morehead State Eagles,-2.5,3.23,26.6,-13.6194412946024,0.0,5.73,26.6,-13.6194412946024,True,True,False,False
-20260227,Southeast Missouri State Redhawks,Tennessee State Tigers,-3.5,3.27,-26.8,-8.978719470892388,0.0,6.77,-26.8,-8.978719470892388,True,False,False,False
-20260227,SIU Edwardsville Cougars,Western Illinois Leathernecks,-13.5,-5.31,75.69999999999999,15.767625033528166,1.0,8.190000000000001,75.69999999999999,15.767625033528166,True,True,True,True
-20260227,UT Martin Skyhawks,Tennessee Tech Golden Eagles,-7.5,-1.25,-27.500000000000004,-8.36296348405274,1.0,6.25,-27.500000000000004,-8.36296348405274,True,False,False,True
-20260227,North Florida Ospreys,Florida Gulf Coast Eagles,6.5,1.29,-38.5,-11.110267164535294,0.0,-5.21,-38.5,-11.110267164535294,False,True,True,True
-20260227,Jacksonville Dolphins,Stetson Hatters,-6.5,-2.58,-46.7,-0.864162937956042,1.0,3.92,-46.7,-0.864162937956042,True,False,False,True
-20260227,Eastern Washington Eagles,Northern Colorado Bears,1.5,-0.57,-48.1,-0.3324534480081844,1.0,-2.07,-48.1,-0.3324534480081844,False,True,False,False
-20260227,Idaho Vandals,Northern Arizona Lumberjacks,-10.5,-1.78,17.9,5.216214693139886,1.0,8.72,17.9,5.216214693139886,True,True,True,True
-20260227,Montana Grizzlies,Sacramento State Hornets,-7.5,-0.26,-60.5,-0.3796354894890452,1.0,7.24,-60.5,-0.3796354894890452,True,False,False,True
-20260227,UC San Diego Tritons,Cal State Bakersfield Roadrunners,-14.5,-7.53,17.5,27.16596746278987,1.0,6.97,17.5,27.16596746278987,True,True,True,True
-20260227,Cal State Northridge Matadors,UC Irvine Anteaters,-1.5,-2.81,-11.0,8.519577387452866,1.0,-1.31,-11.0,8.519577387452866,False,True,False,False
-20260227,UC Davis Aggies,Hawai'i Rainbow Warriors,1.5,-1.16,3.6000000000000014,7.796787111837081,0.0,-2.66,3.6000000000000014,7.796787111837081,False,False,False,True
-20260227,Chattanooga Mocs,UNC Greensboro Spartans,-4.5,2.56,23.4,-3.852616944340961,0.0,7.0600000000000005,23.4,-3.852616944340961,True,True,False,False
-20260227,Samford Bulldogs,VMI Keydets,-16.5,-10.98,16.6,37.67897814235054,1.0,5.52,16.6,37.67897814235054,True,True,True,True
-20260227,William & Mary Tribe,Northeastern Huskies,-11.5,-12.52,23.9,34.45747979517107,1.0,-1.0199999999999996,23.9,34.45747979517107,False,False,False,False
-20260227,Monmouth Hawks,Stony Brook Seawolves,-3.5,1.25,15.4,-3.0811371191141825,1.0,4.75,15.4,-3.0811371191141825,True,True,False,True
-20260227,UNC Wilmington Seahawks,North Carolina A&T Aggies,-13.5,-6.98,47.0,16.66401989131211,1.0,6.52,47.0,16.66401989131211,True,True,True,True
-20260227,Towson Tigers,Elon Phoenix,-5.5,-0.97,55.8,14.915231590717308,1.0,4.53,55.8,14.915231590717308,True,True,True,True
-20260227,Drexel Dragons,Campbell Fighting Camels,-1.5,-3.15,-40.8,-5.809995037391481,1.0,-1.65,-40.8,-5.809995037391481,False,True,True,False
-20260226,UMBC Retrievers,Bryant Bulldogs,-11.5,-15.34,59.7,38.27315924181443,1.0,-3.84,59.7,38.27315924181443,False,False,False,False
-20260226,UAlbany Great Danes,Maine Black Bears,-6.5,-3.87,-3.1000000000000014,10.003550439418907,0.0,2.63,-3.1000000000000014,10.003550439418907,True,False,True,False
-20260227,Vermont Catamounts,UMass Lowell River Hawks,-9.5,-1.02,-10.7,1.6622939550532152,1.0,8.48,-10.7,1.6622939550532152,True,False,True,True
-20260226,Binghamton Bearcats,New Hampshire Wildcats,1.5,-3.79,8.8,17.94341431193333,1.0,-5.29,8.8,17.94341431193333,False,False,False,False
-20260227,Le Moyne Dolphins,Fairleigh Dickinson Knights,-5.5,0.13,17.5,5.857600781972929,1.0,5.63,17.5,5.857600781972929,True,True,True,True
-20260227,Long Island University Sharks,Chicago State Cougars,-11.5,-2.46,51.5,-0.0525014179214533,1.0,9.04,51.5,-0.0525014179214533,True,True,False,True
-20260227,Stonehill Skyhawks,Saint Francis Red Flash,-5.5,2.01,12.4,-5.571600864497498,1.0,7.51,12.4,-5.571600864497498,True,True,False,True
-20260227,Wagner Seahawks,New Haven Chargers,-2.5,2.02,16.799999999999997,-5.203130788332767,1.0,4.52,16.799999999999997,-5.203130788332767,True,True,False,True
-20260227,Central Connecticut Blue Devils,Mercyhurst Lakers,-3.5,2.39,-12.9,-1.8112474243215888,1.0,5.890000000000001,-12.9,-1.8112474243215888,True,False,False,True
-20260227,St. Thomas-Minnesota Tommies,North Dakota State Bison,-3.5,-8.75,-25.1,1.2019171943346976,1.0,-5.25,-25.1,1.2019171943346976,False,True,False,False
-20260227,Oral Roberts Golden Eagles,Denver Pioneers,2.5,8.4,68.2,-26.293452493617178,1.0,5.9,68.2,-26.293452493617178,True,True,False,True
-20260227,Presbyterian Blue Hose,High Point Panthers,12.5,6.68,-21.3,-24.804802423007565,0.0,-5.82,-21.3,-24.804802423007565,False,True,True,True
-20260227,Gardner-Webb Runnin' Bulldogs,UNC Asheville Bulldogs,12.5,4.93,16.400000000000002,-15.074844618170186,0.0,-7.57,16.400000000000002,-15.074844618170186,False,False,True,True
-20260227,Radford Highlanders,South Carolina Upstate Spartans,-7.5,-3.83,-31.6,10.346978774873715,1.0,3.67,-31.6,10.346978774873715,True,False,True,True
-20260227,Charleston Southern Buccaneers,Winthrop Eagles,7.5,-5.63,20.2,-7.296371150427442,0.0,-13.129999999999999,20.2,-7.296371150427442,False,False,True,True
-20260227,Purdue Boilermakers,Michigan State Spartans,-6.5,-10.29,-34.6,14.755500785073036,1.0,-3.789999999999999,-34.6,14.755500785073036,False,True,False,False
-20260227,UC Santa Barbara Gauchos,UC Riverside Highlanders,-10.5,-2.64,-8.399999999999999,3.3137502962352823,1.0,7.859999999999999,-8.399999999999999,3.3137502962352823,True,False,True,True
-20260227,Southern Jaguars,Florida A&M Rattlers,-8.5,-11.62,-8.399999999999999,11.251911342056156,0.0,-3.119999999999999,-8.399999999999999,11.251911342056156,False,True,False,True
-20260227,Prairie View A&M Panthers,Jackson State Tigers,-3.5,1.16,30.8,2.3348315342516544,1.0,4.66,30.8,2.3348315342516544,True,True,True,True
-20260226,Grambling Tigers,Bethune-Cookman Wildcats,1.5,-0.84,-25.200000000000003,-9.00946488320402,0.0,-2.34,-25.200000000000003,-9.00946488320402,False,True,True,True
-20260227,Florida Atlantic Owls,Temple Owls,-3.5,1.07,4.899999999999999,7.430279520648838,1.0,4.57,4.899999999999999,7.430279520648838,True,True,True,True
-20260227,Memphis Tigers,Wichita State Shockers,-1.5,-3.62,-40.1,-20.943448526945502,0.0,-2.12,-40.1,-20.943448526945502,False,True,True,True
-20260227,Texas Southern Tigers,Alcorn State Braves,-6.5,-1.09,25.5,0.3195058202437697,1.0,5.41,25.5,0.3195058202437697,True,True,False,True
-20260228,Georgia State Panthers,Old Dominion Monarchs,1.5,3.78,-14.6,-17.621470157546668,0.0,2.28,-14.6,-17.621470157546668,True,False,False,False
-20260228,Marshall Thundering Herd,Georgia Southern Eagles,-6.5,-12.89,-40.9,9.955932455108998,0.0,-6.390000000000001,-40.9,9.955932455108998,False,True,False,True
-20260228,Texas State Bobcats,App State Mountaineers,1.5,-0.47,8.899999999999999,3.1828441457852867,1.0,-1.97,8.899999999999999,3.1828441457852867,False,False,False,False
-20260228,South Alabama Jaguars,Southern Miss Golden Eagles,-4.5,-9.88,-36.6,8.564956404685956,0.0,-5.380000000000001,-36.6,8.564956404685956,False,True,False,True
-20260228,Troy Trojans,UL Monroe Warhawks,-19.5,-11.99,33.599999999999994,23.56703214876457,1.0,7.51,33.599999999999994,23.56703214876457,True,True,True,True
-20260228,Pennsylvania Quakers,Dartmouth Big Green,-7.5,-2.96,40.1,12.98531539636734,1.0,4.54,40.1,12.98531539636734,True,True,True,True
-20260228,Princeton Tigers,Harvard Crimson,4.5,2.66,38.6,-22.18284238674559,0.0,-1.8399999999999999,38.6,-22.18284238674559,False,False,True,True
-20260228,Saint Peter's Peacocks,Manhattan Jaspers,-7.5,1.9,25.8,-3.8029300878577423,1.0,9.4,25.8,-3.8029300878577423,True,True,False,True
-20260228,Canisius Golden Griffins,Merrimack Warriors,10.5,8.69,-14.0,-34.41143299951456,0.0,-1.8100000000000005,-14.0,-34.41143299951456,False,True,True,True
-20260227,Niagara Purple Eagles,Quinnipiac Bobcats,8.5,0.57,-23.7,-12.6199889186173,0.0,-7.93,-23.7,-12.6199889186173,False,True,True,True
-20260228,Sacred Heart Pioneers,Mount St. Mary's Mountaineers,-2.5,2.12,-4.0,-10.297685151270947,1.0,4.62,-4.0,-10.297685151270947,True,False,False,True
-20260228,Fairfield Stags,Siena Saints,1.5,-1.18,-50.3,7.24945555687165,1.0,-2.6799999999999997,-50.3,7.24945555687165,False,True,False,False
-20260228,Kent State Golden Flashes,Akron Zips,3.5,-4.19,26.4,-5.10162462845723,0.0,-7.69,26.4,-5.10162462845723,False,False,True,True
-20260227,Western Michigan Broncos,Miami (OH) RedHawks,11.5,5.1,12.1,-20.84293541570957,0.0,-6.4,12.1,-20.84293541570957,False,False,True,True
-20260227,Cornell Big Red,Yale Bulldogs,3.5,-5.58,12.5,-6.747814250082369,0.0,-9.08,12.5,-6.747814250082369,False,False,True,True
-20260228,Columbia Lions,Brown Bears,-5.5,-8.02,2.5,-6.739983728297192,1.0,-2.5199999999999996,2.5,-6.739983728297192,False,False,True,False
-20260228,Iona Gaels,Rider Broncs,-11.5,-3.79,18.9,14.688130527007726,1.0,7.71,18.9,14.688130527007726,True,True,True,True
-20260228,Illinois Fighting Illini,Michigan Wolverines,1.5,-8.6,26.700000000000003,-0.5548833367279933,0.0,-10.1,26.700000000000003,-0.5548833367279933,False,False,False,True
-20260228,Louisiana Tech Bulldogs,Florida International Panthers,-2.5,-4.98,-39.3,2.756142031467837,0.0,-2.4800000000000004,-39.3,2.756142031467837,False,True,False,True
-20260228,Sam Houston Bearkats,Missouri State Bears,-7.5,-14.17,17.5,17.573726838778928,1.0,-6.67,17.5,17.573726838778928,False,False,False,False
-20260228,Jacksonville State Gamecocks,Liberty Flames,3.5,-2.92,-23.2,-0.9966008866009072,0.0,-6.42,-23.2,-0.9966008866009072,False,True,False,True
-20260228,Kennesaw State Owls,Delaware Blue Hens,-11.5,-10.34,27.0,7.903320625969459,1.0,1.1600000000000001,27.0,7.903320625969459,True,True,True,True
-20260228,Utah Valley Wolverines,Abilene Christian Wildcats,-14.5,-12.44,21.8,14.831561731937978,1.0,2.0600000000000005,21.8,14.831561731937978,True,True,True,True
-20260301,California Baptist Lancers,Tarleton State Texans,-7.5,-9.23,52.6,8.79201740798422,1.0,-1.7300000000000004,52.6,8.79201740798422,False,False,False,False
-20260228,SIU Edwardsville Cougars,Eastern Illinois Panthers,-6.5,-2.26,86.8,0.0650458516400251,1.0,4.24,86.8,0.0650458516400251,True,True,False,True
-20260228,Western Illinois Leathernecks,Lindenwood Lions,10.5,1.17,-58.7,-7.069112989103969,0.0,-9.33,-58.7,-7.069112989103969,False,True,True,True
-20260228,Little Rock Trojans,Southern Indiana Screaming Eagles,-6.5,-2.03,65.0,3.290877559798431,1.0,4.470000000000001,65.0,3.290877559798431,True,True,True,True
-20260228,Southeast Missouri State Redhawks,Tennessee Tech Golden Eagles,-7.5,-4.72,39.0,-5.124821496519088,1.0,2.7800000000000002,39.0,-5.124821496519088,True,True,False,True
-20260228,Bellarmine Knights,Austin Peay Governors,4.5,3.43,43.5,-23.28962163852409,1.0,-1.0699999999999998,43.5,-23.28962163852409,False,False,True,False
-20260228,Stetson Hatters,Florida Gulf Coast Eagles,2.5,-0.05,15.5,-5.850555733553713,1.0,-2.55,15.5,-5.850555733553713,False,False,True,False
-20260228,Eastern Kentucky Colonels,Lipscomb Bisons,2.5,-2.82,0.3999999999999986,-17.05069959869723,0.0,-5.32,0.3999999999999986,-17.05069959869723,False,False,True,True
-20260228,West Georgia Wolves,North Alabama Lions,-5.5,-3.82,23.2,6.133918339156409,1.0,1.6800000000000002,23.2,6.133918339156409,True,True,True,True
-20260228,Central Arkansas Bears,Queens University Royals,-2.5,-1.12,-5.399999999999999,2.3971265817647733,1.0,1.38,-5.399999999999999,2.3971265817647733,True,False,True,True
-20260301,Auburn Tigers,Ole Miss Rebels,-9.5,-3.94,23.1,5.437861447034862,1.0,5.5600000000000005,23.1,5.437861447034862,True,True,True,True
-20260301,Florida Gators,Arkansas Razorbacks,-9.5,-7.75,88.6,7.032255090634617,1.0,1.75,88.6,7.032255090634617,True,True,True,True
-20260228,Georgia Bulldogs,South Carolina Gamecocks,-12.5,-6.43,31.3,4.653024529323854,1.0,6.07,31.3,4.653024529323854,True,True,True,True
-20260228,Kentucky Wildcats,Vanderbilt Commodores,-1.5,2.78,-24.0,-9.430503151372712,1.0,4.279999999999999,-24.0,-9.430503151372712,True,False,False,True
-20260228,LSU Tigers,Oklahoma Sooners,-1.5,4.63,-57.1,-13.99872126673666,0.0,6.13,-57.1,-13.99872126673666,True,False,False,False
-20260228,Mississippi State Bulldogs,Missouri Tigers,1.5,0.11,-6.5,0.8721259965859556,0.0,-1.39,-6.5,0.8721259965859556,False,True,False,True
-20260228,Tennessee Volunteers,Alabama Crimson Tide,-4.5,2.45,53.4,-3.778764686695887,1.0,6.95,53.4,-3.778764686695887,True,True,False,True
-20260228,Texas A&M Aggies,Texas Longhorns,-3.5,2.14,9.3,-7.674954855776162,0.0,5.640000000000001,9.3,-7.674954855776162,True,True,False,False
-20260228,Idaho Vandals,Northern Colorado Bears,-2.5,-5.88,-40.5,-0.4146068327641403,0.0,-3.38,-40.5,-0.4146068327641403,False,True,False,True
-20260228,Idaho State Bengals,Weber State Wildcats,-1.5,5.96,-3.899999999999999,-22.601140937760047,0.0,7.46,-3.899999999999999,-22.601140937760047,True,False,False,False
-20260228,Montana Grizzlies,Portland State Vikings,-1.5,-6.81,-72.9,-3.444940844464507,1.0,-5.31,-72.9,-3.444940844464507,False,True,True,False
-20260228,UT Rio Grande Valley Vaqueros,East Texas A&M Lions,-9.5,-12.61,29.4,19.764944780838704,1.0,-3.1099999999999994,29.4,19.764944780838704,False,False,False,False
-20260228,New Orleans Privateers,McNeese Cowboys,8.5,3.29,-8.5,-15.601732507671386,0.0,-5.21,-8.5,-15.601732507671386,False,True,True,True
-20260228,Nicholls Colonels,SE Louisiana Lions,-4.5,-0.35,-19.4,5.284657110738468,1.0,4.15,-19.4,5.284657110738468,True,False,True,True
-20260228,Texas A&M-Corpus Christi Islanders,Northwestern State Demons,-6.5,-0.36,44.5,-10.593797850440318,1.0,6.14,44.5,-10.593797850440318,True,True,False,True
-20260228,Houston Christian Huskies,Stephen F. Austin Lumberjacks,8.5,4.51,31.9,-12.323076530275356,0.0,-3.99,31.9,-12.323076530275356,False,False,True,True
-20260301,UC San Diego Tritons,Cal Poly Mustangs,-6.5,0.45,34.9,5.523150884875028,1.0,6.95,34.9,5.523150884875028,True,True,True,True
-20260301,Cal State Fullerton Titans,Hawai'i Rainbow Warriors,3.5,-2.78,6.200000000000001,8.000633007805398,0.0,-6.279999999999999,6.200000000000001,8.000633007805398,False,False,False,True
-20260228,Chattanooga Mocs,VMI Keydets,-11.5,-7.51,23.6,23.68481136830463,1.0,3.99,23.6,23.68481136830463,True,True,True,True
-20260228,Mercer Bears,East Tennessee State Buccaneers,-1.5,-0.09,25.4,-0.9571376753748316,1.0,1.41,25.4,-0.9571376753748316,True,True,False,True
-20260228,Samford Bulldogs,UNC Greensboro Spartans,-9.5,-11.07,16.4,11.15890354848629,1.0,-1.5700000000000003,16.4,11.15890354848629,False,False,False,False
-20260228,Western Carolina Catamounts,Furman Paladins,1.5,-11.66,69.7,16.208339056382012,1.0,-13.16,69.7,16.208339056382012,False,False,False,False
-20260228,Wofford Terriers,The Citadel Bulldogs,-12.5,-10.89,1.7999999999999972,23.53777194770068,1.0,1.6099999999999994,1.7999999999999972,23.53777194770068,True,False,True,True
-20260228,Towson Tigers,Campbell Fighting Camels,-4.5,-7.05,3.3000000000000007,-3.962963274805406,1.0,-2.55,3.3000000000000007,-3.962963274805406,False,False,True,False
-20260228,North Carolina A&T Aggies,William & Mary Tribe,6.5,5.08,-50.4,-15.219935628176708,0.0,-1.42,-50.4,-15.219935628176708,False,True,True,True
-20260301,Hofstra Pride,Stony Brook Seawolves,-12.5,-5.02,40.8,23.251871553308806,1.0,7.48,40.8,23.251871553308806,True,True,True,True
-20260228,Hampton Pirates,Northeastern Huskies,-4.5,-6.55,-11.3,5.160681573481426,1.0,-2.05,-11.3,5.160681573481426,False,True,False,False
-20260228,UAlbany Great Danes,New Hampshire Wildcats,-2.5,-8.35,-37.5,16.272897278433952,1.0,-5.85,-37.5,16.272897278433952,False,True,False,False
-20260228,Bryant Bulldogs,NJIT Highlanders,2.5,5.92,55.8,-19.35906274880364,1.0,3.42,55.8,-19.35906274880364,True,True,False,True
-20260228,New Haven Chargers,Le Moyne Dolphins,1.5,-0.26,13.6,-3.626657886735,1.0,-1.76,13.6,-3.626657886735,False,False,True,False
-20260228,Central Connecticut Blue Devils,Saint Francis Red Flash,-8.5,-6.12,19.9,10.456738640355058,1.0,2.38,19.9,10.456738640355058,True,True,True,True
-20260228,Stonehill Skyhawks,Mercyhurst Lakers,1.5,3.79,-20.4,-8.593503266967279,0.0,2.29,-20.4,-8.593503266967279,True,False,False,False
-20260228,Wagner Seahawks,Chicago State Cougars,-5.5,0.09,55.6,2.857743070952194,1.0,5.59,55.6,2.857743070952194,True,True,True,True
-20260228,Pennsylvania Quakers,Harvard Crimson,-1.5,-0.14,11.4,-5.479112254113319,1.0,1.3599999999999999,11.4,-5.479112254113319,True,True,False,True
-20260228,Northern Illinois Huskies,Ball State Cardinals,-1.5,1.21,-36.6,-7.694300489195481,0.0,2.71,-36.6,-7.694300489195481,True,False,False,False
-20260228,Buffalo Bulls,Central Michigan Chippewas,-5.5,0.88,42.5,-13.49648192121801,1.0,6.38,42.5,-13.49648192121801,True,True,False,True
-20260228,Bowling Green Falcons,Massachusetts Minutemen,-5.5,-7.22,13.8,5.920599789263645,1.0,-1.7199999999999998,13.8,5.920599789263645,False,False,False,False
-20260228,Ohio Bobcats,Toledo Rockets,-1.5,0.95,-4.399999999999999,-4.200783941534611,0.0,2.45,-4.399999999999999,-4.200783941534611,True,False,False,False
-20260301,Northern Kentucky Norse,Wright State Raiders,-2.5,0.89,-8.799999999999999,2.9587630166864227,1.0,3.39,-8.799999999999999,2.9587630166864227,True,False,True,True
-20260228,Oakland Golden Grizzlies,Detroit Mercy Titans,-7.5,-1.18,-9.8,-4.790405506067838,1.0,6.32,-9.8,-4.790405506067838,True,False,False,True
-20260228,Robert Morris Colonials,Cleveland State Vikings,-13.5,-11.61,9.6,43.615173556074005,1.0,1.8900000000000006,9.6,43.615173556074005,True,True,True,True
-20260228,Columbia Lions,Yale Bulldogs,5.5,-3.25,-31.2,-5.610666304043629,0.0,-8.75,-31.2,-5.610666304043629,False,True,True,True
-20260228,North Dakota State Bison,North Dakota Fighting Hawks,-12.5,-10.9,87.4,24.500396470464256,1.0,1.5999999999999996,87.4,24.500396470464256,True,True,True,True
-20260228,South Dakota Coyotes,South Dakota State Jackrabbits,2.5,1.04,18.0,-9.56751967634148,1.0,-1.46,18.0,-9.56751967634148,False,False,True,False
-20260301,St. Thomas-Minnesota Tommies,Omaha Mavericks,-12.5,-14.69,42.7,22.261182755981597,1.0,-2.1899999999999995,42.7,22.261182755981597,False,False,False,False
-20260301,Kansas City Roos,Oral Roberts Golden Eagles,4.5,9.36,-70.8,-33.92261395666331,0.0,4.859999999999999,-70.8,-33.92261395666331,True,False,False,False
-20260228,Cornell Big Red,Brown Bears,-9.5,-12.61,46.2,13.204407232403556,1.0,-3.1099999999999994,46.2,13.204407232403556,False,False,False,False
-20260228,Navy Midshipmen,Colgate Raiders,-6.5,-11.01,34.6,37.08764857119252,1.0,-4.51,34.6,37.08764857119252,False,False,False,False
-20260228,Holy Cross Crusaders,Loyola Maryland Greyhounds,-1.5,-0.25,-15.3,-3.9453048719226658,0.0,1.25,-15.3,-3.9453048719226658,True,False,False,False
-20260228,Incarnate Word Cardinals,Lamar Cardinals,1.5,-2.61,24.0,-0.561542260462975,1.0,-4.109999999999999,24.0,-0.561542260462975,False,False,False,False
-20260228,Clemson Tigers,Louisville Cardinals,1.5,-1.21,-31.1,-18.388158244530945,1.0,-2.71,-31.1,-18.388158244530945,False,True,True,False
-20260228,Georgia Tech Yellow Jackets,Florida State Seminoles,6.5,8.28,-31.8,-34.627663563288564,0.0,1.7799999999999994,-31.8,-34.627663563288564,True,False,False,False
-20260228,Miami Hurricanes,Boston College Eagles,-15.5,-9.7,61.7,21.99761003580056,1.0,5.800000000000001,61.7,21.99761003580056,True,True,True,True
-20260301,North Carolina Tar Heels,Virginia Tech Hokies,-6.5,-10.13,-14.1,-0.814751145373517,1.0,-3.630000000000001,-14.1,-0.814751145373517,False,True,False,False
-20260228,Notre Dame Fighting Irish,NC State Wolfpack,6.5,-0.92,48.2,-4.326387934316399,0.0,-7.42,48.2,-4.326387934316399,False,False,True,True
-20260228,Stanford Cardinal,SMU Mustangs,1.5,2.86,48.0,-5.512636813631998,1.0,1.3599999999999999,48.0,-5.512636813631998,True,True,False,True
-20260228,Wake Forest Demon Deacons,Syracuse Orange,-4.5,-6.31,17.2,19.614282060650343,1.0,-1.8099999999999996,17.2,19.614282060650343,False,False,False,False
-20260228,Coppin State Eagles,Norfolk State Spartans,8.5,4.76,-10.3,-4.53760140871222,0.0,-3.74,-10.3,-4.53760140871222,False,True,True,True
-20260301,St. John's Red Storm,Villanova Wildcats,-7.5,-1.76,42.8,-0.3621974450578596,1.0,5.74,42.8,-0.3621974450578596,True,True,False,True
-20260228,Creighton Bluejays,Providence Friars,-2.5,6.57,-20.0,-16.409217263106044,0.0,9.07,-20.0,-16.409217263106044,True,False,False,False
-20260228,Xavier Musketeers,Georgetown Hoyas,-4.5,-1.61,1.9000000000000004,9.603901520138946,1.0,2.8899999999999997,1.9000000000000004,9.603901520138946,True,False,True,True
-20260228,Maryland Eastern Shore Hawks,South Carolina State Bulldogs,-6.5,0.16,-28.3,-11.580585088542891,1.0,6.66,-28.3,-11.580585088542891,True,False,False,True
-20260301,UC Riverside Highlanders,Cal State Northridge Matadors,4.5,2.73,28.9,-14.43625766084465,1.0,-1.77,28.9,-14.43625766084465,False,False,True,False
-20260301,Cal State Bakersfield Roadrunners,Long Beach State Beach,4.5,1.54,-3.5,-7.47714773771242,0.0,-2.96,-3.5,-7.47714773771242,False,True,True,True
-20260228,New Mexico Lobos,San Diego State Aztecs,-2.5,-6.54,27.6,-1.0382184736313285,1.0,-4.04,27.6,-1.0382184736313285,False,False,False,False
-20260301,Utah State Aggies,Grand Canyon Lopes,-10.5,-9.25,-87.4,1.8856199588396807,1.0,1.25,-87.4,1.8856199588396807,True,False,True,True
-20260301,Fresno State Bulldogs,Boise State Broncos,7.5,2.02,-6.4,0.1689050908908784,0.0,-5.48,-6.4,0.1689050908908784,False,True,False,True
-20260228,UNC Asheville Bulldogs,Charleston Southern Buccaneers,-4.5,0.19,-50.2,-7.183756916542493,0.0,4.69,-50.2,-7.183756916542493,True,False,False,False
-20260228,South Carolina Upstate Spartans,Gardner-Webb Runnin' Bulldogs,-12.5,-1.01,19.3,7.012604918008972,1.0,11.49,19.3,7.012604918008972,True,True,True,True
-20260228,Winthrop Eagles,Presbyterian Blue Hose,-7.5,-4.55,17.9,11.251916933015524,1.0,2.95,17.9,11.251916933015524,True,True,True,True
-20260228,American University Eagles,Boston University Terriers,-2.5,-0.52,-24.3,-12.84498908726609,0.0,1.98,-24.3,-12.84498908726609,True,False,False,False
-20260228,Minnesota Golden Gophers,UCLA Bruins,1.5,-0.67,-33.3,13.185095292766931,1.0,-2.17,-33.3,13.185095292766931,False,True,False,False
-20260228,Northwestern Wildcats,Oregon Ducks,-3.5,0.94,50.1,-8.348490705445762,1.0,4.4399999999999995,50.1,-8.348490705445762,True,True,False,True
-20260228,Penn State Nittany Lions,Iowa Hawkeyes,9.5,4.96,15.6,-8.880525533626995,0.0,-4.54,15.6,-8.880525533626995,False,False,True,True
-20260228,USC Trojans,Nebraska Cornhuskers,4.5,5.53,23.5,-31.34292645021056,0.0,1.0300000000000002,23.5,-31.34292645021056,True,True,False,False
-20260228,Lafayette Leopards,Army Black Knights,-3.5,-1.01,5.600000000000001,1.2106908674895855,1.0,2.49,5.600000000000001,1.2106908674895855,True,True,False,True
-20260228,Southern Jaguars,Bethune-Cookman Wildcats,-1.5,-8.02,8.100000000000001,-2.3592374800683267,0.0,-6.52,8.100000000000001,-2.3592374800683267,False,False,True,True
-20260228,Prairie View A&M Panthers,Alcorn State Braves,-5.5,-4.36,19.7,1.1051106104770692,1.0,1.1399999999999997,19.7,1.1051106104770692,True,True,False,True
-20260228,Grambling Tigers,Florida A&M Rattlers,-5.5,-4.1,-41.7,-2.218533903192994,0.0,1.4000000000000004,-41.7,-2.218533903192994,True,False,False,False
-20260228,Arkansas-Pine Bluff Golden Lions,Mississippi Valley State Delta Devils,-13.5,-14.54,0.0,12.862837659549976,1.0,-1.0399999999999991,0.0,12.862837659549976,False,False,False,False
-20260228,Alabama A&M Bulldogs,Alabama State Hornets,-2.5,-0.89,43.5,-1.548361719161707,1.0,1.6099999999999999,43.5,-1.548361719161707,True,True,False,True
-20260228,Arizona State Sun Devils,Utah Utes,-6.5,-4.06,49.0,5.290985599820704,1.0,2.4400000000000004,49.0,5.290985599820704,True,True,True,True
-20260228,Cincinnati Bearcats,Oklahoma State Cowboys,-9.5,-4.48,21.0,26.49379797509109,1.0,5.02,21.0,26.49379797509109,True,True,True,True
-20260228,Houston Cougars,Colorado Buffaloes,-19.5,-8.51,34.3,4.220311384190355,1.0,10.99,34.3,4.220311384190355,True,True,True,True
-20260228,Iowa State Cyclones,Texas Tech Red Raiders,-9.5,-0.55,-15.499999999999996,-19.02804020715634,1.0,8.95,-15.499999999999996,-19.02804020715634,True,False,False,True
-20260228,Kansas State Wildcats,TCU Horned Frogs,3.5,6.76,5.8,-23.97243284300516,0.0,3.26,5.8,-23.97243284300516,True,True,False,False
-20260301,Saint Louis Billikens,Duquesne Dukes,-15.5,-12.01,47.2,14.760920682576486,1.0,3.49,47.2,14.760920682576486,True,True,True,True
-20260228,VCU Rams,Fordham Rams,-12.5,-8.62,41.9,9.484836771554257,1.0,3.880000000000001,41.9,9.484836771554257,True,True,True,True
-20260228,George Mason Patriots,St. Bonaventure Bonnies,-4.5,4.79,8.7,-17.664809724660763,1.0,9.29,8.7,-17.664809724660763,True,True,False,True
-20260228,Rhode Island Rams,Saint Joseph's Hawks,-3.5,4.28,-15.5,-20.50991478094215,0.0,7.78,-15.5,-20.50991478094215,True,False,False,False
-20260228,Texas Southern Tigers,Jackson State Tigers,-5.5,-11.21,36.6,14.883104053076211,1.0,-5.710000000000001,36.6,14.883104053076211,False,False,False,False
-20260228,Morgan State Bears,Howard Bison,9.5,3.58,-23.5,-20.61854035381093,0.0,-5.92,-23.5,-20.61854035381093,False,True,True,True
-20260301,Saint Mary's Gaels,Gonzaga Bulldogs,2.5,-6.31,34.3,-8.4707187128672,1.0,-8.809999999999999,34.3,-8.4707187128672,False,False,True,False
-20260301,Santa Clara Broncos,Oregon State Beavers,-16.5,-6.94,64.6,0.3783994509325139,1.0,9.559999999999999,64.6,0.3783994509325139,True,True,False,True
-20260228,Portland Pilots,San Diego Toreros,-3.5,5.38,33.6,-7.248683057378848,1.0,8.879999999999999,33.6,-7.248683057378848,True,True,False,True
-20260301,Loyola Marymount Lions,Seattle U Redhawks,-1.5,-5.67,-7.8,3.5450570978318425,0.0,-4.17,-7.8,3.5450570978318425,False,True,False,True
-20260301,Pepperdine Waves,Washington State Cougars,7.5,0.45,16.4,2.097097186219857,1.0,-7.05,16.4,2.097097186219857,False,False,False,False
-20260301,UNLV Rebels,Nevada Wolf Pack,1.5,-3.51,47.8,8.213195699528278,1.0,-5.01,47.8,8.213195699528278,False,False,False,False
-20260228,Evansville Purple Aces,Valparaiso Beacons,4.5,9.41,-11.1,-30.2767385864175,0.0,4.91,-11.1,-30.2767385864175,True,False,False,False
-20260228,Wyoming Cowboys,Air Force Falcons,-21.5,-8.47,39.2,31.12214519138248,1.0,13.03,39.2,31.12214519138248,True,True,True,True
-20260228,IU Indianapolis Jaguars,Purdue Fort Wayne Mastodons,1.5,-0.17,-1.5,-4.383641036070271,0.0,-1.67,-1.5,-4.383641036070271,False,False,True,True
+20260225.0,Morehead State Eagles,Southern Indiana Screaming Eagles,-7.5,-3.15,38.400000000000006,24.458898146314727,1.0,4.35,38.400000000000006,24.458898146314727,True,True,True,True
+20260225.0,Missouri Tigers,Tennessee Volunteers,2.5,-3.15,-68.60000000000001,-17.030382074925484,1.0,-5.65,-68.60000000000001,-17.030382074925484,False,True,True,False
+20260225.0,South Carolina Gamecocks,Kentucky Wildcats,7.5,-3.15,-11.4,-12.28192793785336,0.0,-10.65,-11.4,-12.28192793785336,False,True,True,True
+20260225.0,Oklahoma Sooners,Auburn Tigers,3.5,-3.15,6.0,1.1495183795948822,1.0,-6.65,6.0,1.1495183795948822,False,False,False,False
+20260225.0,Georgia State Panthers,Coastal Carolina Chanticleers,1.5,-3.15,-2.1,-11.858474704646042,0.0,-4.65,-2.1,-11.858474704646042,False,False,True,True
+20260225.0,Marshall Thundering Herd,Old Dominion Monarchs,-7.5,-3.15,-36.5,-13.342512076590028,1.0,4.35,-36.5,-13.342512076590028,True,False,False,True
+20260225.0,Arkansas State Red Wolves,Southern Miss Golden Eagles,-9.5,-3.15,14.7,24.44305053218788,1.0,6.35,14.7,24.44305053218788,True,True,True,True
+20260225.0,Troy Trojans,Louisiana Ragin' Cajuns,-11.5,-3.15,5.199999999999999,-0.4049655640259004,1.0,8.35,5.199999999999999,-0.4049655640259004,True,True,False,True
+20260225.0,Toledo Rockets,Northern Illinois Huskies,-12.5,-3.15,25.2,22.520781074175865,1.0,9.35,25.2,22.520781074175865,True,True,True,True
+20260225.0,Air Force Falcons,San José State Spartans,6.5,-3.15,-11.800000000000004,-29.898132596591896,0.0,-9.65,-11.800000000000004,-29.898132596591896,False,True,True,True
+20260225.0,Florida State Seminoles,Miami Hurricanes,2.5,-3.15,-27.8,5.289608098462487,0.0,-5.65,-27.8,5.289608098462487,False,True,False,True
+20260225.0,Notre Dame Fighting Irish,Duke Blue Devils,17.5,-3.15,-35.4,-25.983973622624628,0.0,-20.65,-35.4,-25.983973622624628,False,True,True,True
+20260225.0,Boise State Broncos,Wyoming Cowboys,-8.5,-3.15,7.7,-2.223716234848707,1.0,5.35,7.7,-2.223716234848707,True,True,False,True
+20260225.0,Michigan Wolverines,Minnesota Golden Gophers,-21.5,-3.15,5.6,13.226632097784218,1.0,18.35,5.6,13.226632097784218,True,True,True,True
+20260225.0,UCLA Bruins,USC Trojans,-7.5,-3.15,54.6,4.372599231754162,1.0,4.35,54.6,4.372599231754162,True,True,True,True
+20260225.0,Baylor Bears,Arizona Wildcats,8.5,-3.15,-29.0,-15.380952936524425,1.0,-11.65,-29.0,-15.380952936524425,False,True,True,False
+20260225.0,BYU Cougars,UCF Knights,-12.5,-3.15,-5.5,9.597816691956488,0.0,9.35,-5.5,9.597816691956488,True,False,True,False
+20260225.0,Oklahoma State Cowboys,West Virginia Mountaineers,-1.5,-3.15,3.1,-18.82497350398823,1.0,-1.65,3.1,-18.82497350398823,False,False,True,False
+20260225.0,TCU Horned Frogs,Arizona State Sun Devils,-7.5,-3.15,-15.0,3.475178005545678,1.0,4.35,-15.0,3.475178005545678,True,False,True,True
+20260225.0,Texas Tech Red Raiders,Cincinnati Bearcats,-6.5,-3.15,-28.9,2.2415408997433204,1.0,3.35,-28.9,2.2415408997433204,True,False,True,True
+20260225.0,Utah Utes,Iowa State Cyclones,14.5,-3.15,-4.700000000000003,-9.88808790537382,0.0,-17.65,-4.700000000000003,-9.88808790537382,False,True,True,True
+20260225.0,Colorado State Rams,Fresno State Bulldogs,-8.5,-3.15,-0.6000000000000001,17.969280607746683,1.0,5.35,-0.6000000000000001,17.969280607746683,True,False,True,True
+20260225.0,Nevada Wolf Pack,New Mexico Lobos,-1.5,-3.15,-31.8,-11.39947590870665,1.0,-1.65,-31.8,-11.39947590870665,False,True,True,False
+20260225.0,UIC Flames,Bradley Braves,-1.5,-3.15,-18.6,15.019245479871124,1.0,-1.65,-18.6,15.019245479871124,False,True,False,False
+20260226.0,Cleveland State Vikings,Northern Kentucky Norse,8.5,-3.46,12.9,-22.51178966215772,0.0,-11.96,12.9,-22.51178966215772,False,False,True,True
+20260226.0,Purdue Fort Wayne Mastodons,Wright State Raiders,1.5,-5.45,-23.700000000000003,-12.65119942162151,0.0,-6.95,-23.700000000000003,-12.65119942162151,False,True,True,True
+20260226.0,Robert Morris Colonials,Detroit Mercy Titans,-7.5,-4.23,15.7,19.524339392881803,1.0,3.2699999999999996,15.7,19.524339392881803,True,True,True,True
+20260226.0,Milwaukee Panthers,Youngstown State Penguins,1.5,-0.79,61.4,-12.529041133989043,1.0,-2.29,61.4,-12.529041133989043,False,False,True,False
+20260226.0,Boston University Terriers,Holy Cross Crusaders,-8.5,-1.43,-4.2,19.91714756611061,1.0,7.07,-4.2,19.91714756611061,True,False,True,True
+20260226.0,Iowa Hawkeyes,Ohio State Buckeyes,-6.5,-2.49,-18.200000000000003,-5.585392268668641,1.0,4.01,-18.200000000000003,-5.585392268668641,True,False,False,True
+20260226.0,Tulane Green Wave,Tulsa Golden Hurricane,5.5,-1.33,-98.1,1.0581990006067843,0.0,-6.83,-98.1,1.0581990006067843,False,True,False,True
+20260226.0,American University Eagles,Lehigh Mountain Hawks,-6.5,-4.6,-39.1,10.242613676390956,1.0,1.9000000000000004,-39.1,10.242613676390956,True,False,True,True
+20260227.0,Western Kentucky Hilltoppers,New Mexico State Aggies,-4.5,-1.25,53.8,1.9143524929051976,1.0,3.25,53.8,1.9143524929051976,True,True,True,True
+20260227.0,Middle Tennessee Blue Raiders,UTEP Miners,-8.5,-5.73,44.6,4.4837713123976926,1.0,2.7699999999999996,44.6,4.4837713123976926,True,True,True,True
+20260227.0,Sam Houston Bearkats,Florida International Panthers,-6.5,-11.13,-20.7,2.9657978242379337,1.0,-4.630000000000001,-20.7,2.9657978242379337,False,True,False,False
+20260227.0,Louisiana Tech Bulldogs,Missouri State Bears,-2.5,0.69,-1.1000000000000014,5.392693221892579,1.0,3.19,-1.1000000000000014,5.392693221892579,True,False,True,True
+20260227.0,Kennesaw State Owls,Liberty Flames,1.5,-5.24,-0.3999999999999999,-5.323361168314376,1.0,-6.74,-0.3999999999999999,-5.323361168314376,False,False,True,False
+20260227.0,Jacksonville State Gamecocks,Delaware Blue Hens,-7.5,-0.83,4.199999999999999,-0.4678918362403088,1.0,6.67,4.199999999999999,-0.4678918362403088,True,True,False,True
+20260227.0,Utah Valley Wolverines,Tarleton State Texans,-17.5,-8.45,33.2,23.425489958582155,1.0,9.05,33.2,23.425489958582155,True,True,True,True
+20260227.0,California Baptist Lancers,UT Arlington Mavericks,-6.5,-2.6,49.4,10.0059195868523,1.0,3.9,49.4,10.0059195868523,True,True,True,True
+20260227.0,Lindenwood Lions,Eastern Illinois Panthers,-7.5,-0.62,69.8,-7.658663424590838,1.0,6.88,69.8,-7.658663424590838,True,True,False,True
+20260227.0,Little Rock Trojans,Morehead State Eagles,-2.5,3.23,26.6,-13.597770957552823,0.0,5.73,26.6,-13.597770957552823,True,True,False,False
+20260227.0,Southeast Missouri State Redhawks,Tennessee State Tigers,-3.5,3.27,-26.8,-8.979114517849204,0.0,6.77,-26.8,-8.979114517849204,True,False,False,False
+20260227.0,SIU Edwardsville Cougars,Western Illinois Leathernecks,-13.5,-5.31,75.69999999999999,15.757584896147987,1.0,8.190000000000001,75.69999999999999,15.757584896147987,True,True,True,True
+20260227.0,UT Martin Skyhawks,Tennessee Tech Golden Eagles,-7.5,-1.25,-27.500000000000004,-8.357028449691406,1.0,6.25,-27.500000000000004,-8.357028449691406,True,False,False,True
+20260227.0,North Florida Ospreys,Florida Gulf Coast Eagles,6.5,1.29,-38.5,-11.13361207279798,0.0,-5.21,-38.5,-11.13361207279798,False,True,True,True
+20260227.0,Jacksonville Dolphins,Stetson Hatters,-6.5,-2.58,-46.7,-0.8018258820119684,1.0,3.92,-46.7,-0.8018258820119684,True,False,False,True
+20260227.0,Eastern Washington Eagles,Northern Colorado Bears,1.5,-0.57,-48.1,-0.3119095360588577,1.0,-2.07,-48.1,-0.3119095360588577,False,True,False,False
+20260227.0,Idaho Vandals,Northern Arizona Lumberjacks,-10.5,-1.78,17.9,5.152071020839512,1.0,8.72,17.9,5.152071020839512,True,True,True,True
+20260227.0,Montana Grizzlies,Sacramento State Hornets,-7.5,-0.26,-60.5,-0.4547634328041816,1.0,7.24,-60.5,-0.4547634328041816,True,False,False,True
+20260227.0,UC San Diego Tritons,Cal State Bakersfield Roadrunners,-14.5,-7.53,17.5,27.08367688503452,1.0,6.97,17.5,27.08367688503452,True,True,True,True
+20260227.0,Cal State Northridge Matadors,UC Irvine Anteaters,-1.5,-2.81,-11.0,8.500762660684382,1.0,-1.31,-11.0,8.500762660684382,False,True,False,False
+20260227.0,UC Davis Aggies,Hawai'i Rainbow Warriors,1.5,-1.16,3.6000000000000014,7.919645241174196,0.0,-2.66,3.6000000000000014,7.919645241174196,False,False,False,True
+20260227.0,Chattanooga Mocs,UNC Greensboro Spartans,-4.5,2.56,23.4,-3.861131510705108,0.0,7.0600000000000005,23.4,-3.861131510705108,True,True,False,False
+20260227.0,Samford Bulldogs,VMI Keydets,-16.5,-10.98,16.6,37.68205370946087,1.0,5.52,16.6,37.68205370946087,True,True,True,True
+20260227.0,William & Mary Tribe,Northeastern Huskies,-11.5,-12.52,23.9,34.54118076403659,1.0,-1.0199999999999996,23.9,34.54118076403659,False,False,False,False
+20260227.0,Monmouth Hawks,Stony Brook Seawolves,-3.5,1.25,15.4,-3.0577371900286576,1.0,4.75,15.4,-3.0577371900286576,True,True,False,True
+20260227.0,UNC Wilmington Seahawks,North Carolina A&T Aggies,-13.5,-6.98,47.0,16.685998593513126,1.0,6.52,47.0,16.685998593513126,True,True,True,True
+20260227.0,Towson Tigers,Elon Phoenix,-5.5,-0.97,55.8,14.794412703537416,1.0,4.53,55.8,14.794412703537416,True,True,True,True
+20260227.0,Drexel Dragons,Campbell Fighting Camels,-1.5,-3.15,-40.8,-5.821675332819215,1.0,-1.65,-40.8,-5.821675332819215,False,True,True,False
+20260226.0,UMBC Retrievers,Bryant Bulldogs,-11.5,-15.34,59.7,38.30224500047861,1.0,-3.84,59.7,38.30224500047861,False,False,False,False
+20260226.0,UAlbany Great Danes,Maine Black Bears,-6.5,-3.87,-3.1000000000000014,10.011914506093666,0.0,2.63,-3.1000000000000014,10.011914506093666,True,False,True,False
+20260227.0,Vermont Catamounts,UMass Lowell River Hawks,-9.5,-1.02,-10.7,1.666056132866311,1.0,8.48,-10.7,1.666056132866311,True,False,True,True
+20260226.0,Binghamton Bearcats,New Hampshire Wildcats,1.5,-3.79,8.8,17.994138797731992,1.0,-5.29,8.8,17.994138797731992,False,False,False,False
+20260227.0,Le Moyne Dolphins,Fairleigh Dickinson Knights,-5.5,0.13,17.5,5.894583025648615,1.0,5.63,17.5,5.894583025648615,True,True,True,True
+20260227.0,Long Island University Sharks,Chicago State Cougars,-11.5,-2.46,51.5,-0.0795255480661145,1.0,9.04,51.5,-0.0795255480661145,True,True,False,True
+20260227.0,Stonehill Skyhawks,Saint Francis Red Flash,-5.5,2.01,12.4,-5.533945902075205,1.0,7.51,12.4,-5.533945902075205,True,True,False,True
+20260227.0,Wagner Seahawks,New Haven Chargers,-2.5,2.02,16.799999999999997,-5.2237778963946,1.0,4.52,16.799999999999997,-5.2237778963946,True,True,False,True
+20260227.0,Central Connecticut Blue Devils,Mercyhurst Lakers,-3.5,2.39,-12.9,-1.804856357209907,1.0,5.890000000000001,-12.9,-1.804856357209907,True,False,False,True
+20260227.0,St. Thomas-Minnesota Tommies,North Dakota State Bison,-3.5,-8.75,-25.1,1.1850473015779937,1.0,-5.25,-25.1,1.1850473015779937,False,True,False,False
+20260227.0,Oral Roberts Golden Eagles,Denver Pioneers,2.5,8.4,68.2,-26.32542842404399,1.0,5.9,68.2,-26.32542842404399,True,True,False,True
+20260227.0,Presbyterian Blue Hose,High Point Panthers,12.5,6.68,-21.3,-24.844984431789072,0.0,-5.82,-21.3,-24.844984431789072,False,True,True,True
+20260227.0,Gardner-Webb Runnin' Bulldogs,UNC Asheville Bulldogs,12.5,4.93,16.400000000000002,-15.051399108469443,0.0,-7.57,16.400000000000002,-15.051399108469443,False,False,True,True
+20260227.0,Radford Highlanders,South Carolina Upstate Spartans,-7.5,-3.83,-31.6,10.350852549391435,1.0,3.67,-31.6,10.350852549391435,True,False,True,True
+20260227.0,Charleston Southern Buccaneers,Winthrop Eagles,7.5,-5.63,20.2,-7.268584853185888,0.0,-13.129999999999999,20.2,-7.268584853185888,False,False,True,True
+20260227.0,Purdue Boilermakers,Michigan State Spartans,-6.5,-10.29,-34.6,14.882940031661835,1.0,-3.789999999999999,-34.6,14.882940031661835,False,True,False,False
+20260227.0,UC Santa Barbara Gauchos,UC Riverside Highlanders,-10.5,-2.64,-8.399999999999999,3.40507277622151,1.0,7.859999999999999,-8.399999999999999,3.40507277622151,True,False,True,True
+20260227.0,Southern Jaguars,Florida A&M Rattlers,-8.5,-11.62,-8.399999999999999,11.297832167111869,0.0,-3.119999999999999,-8.399999999999999,11.297832167111869,False,True,False,True
+20260227.0,Prairie View A&M Panthers,Jackson State Tigers,-3.5,1.16,30.8,2.3094297010927405,1.0,4.66,30.8,2.3094297010927405,True,True,True,True
+20260226.0,Grambling Tigers,Bethune-Cookman Wildcats,1.5,-0.84,-25.200000000000003,-9.055005484932838,0.0,-2.34,-25.200000000000003,-9.055005484932838,False,True,True,True
+20260227.0,Florida Atlantic Owls,Temple Owls,-3.5,1.07,4.899999999999999,7.49137839870157,1.0,4.57,4.899999999999999,7.49137839870157,True,True,True,True
+20260227.0,Memphis Tigers,Wichita State Shockers,-1.5,-3.62,-40.1,-20.94495530941168,0.0,-2.12,-40.1,-20.94495530941168,False,True,True,True
+20260227.0,Texas Southern Tigers,Alcorn State Braves,-6.5,-1.09,25.5,0.2798823877829655,1.0,5.41,25.5,0.2798823877829655,True,True,False,True
+20260228.0,Georgia State Panthers,Old Dominion Monarchs,1.5,3.78,-14.6,-17.600687124473144,0.0,2.28,-14.6,-17.600687124473144,True,False,False,False
+20260228.0,Marshall Thundering Herd,Georgia Southern Eagles,-6.5,-12.89,-40.9,9.949901912210176,0.0,-6.390000000000001,-40.9,9.949901912210176,False,True,False,True
+20260228.0,Texas State Bobcats,App State Mountaineers,1.5,-0.47,8.899999999999999,3.1618533342310298,1.0,-1.97,8.899999999999999,3.1618533342310298,False,False,False,False
+20260228.0,South Alabama Jaguars,Southern Miss Golden Eagles,-4.5,-9.88,-36.6,8.414455875215836,0.0,-5.380000000000001,-36.6,8.414455875215836,False,True,False,True
+20260228.0,Troy Trojans,UL Monroe Warhawks,-19.5,-11.99,33.599999999999994,23.55160454899764,1.0,7.51,33.599999999999994,23.55160454899764,True,True,True,True
+20260228.0,Pennsylvania Quakers,Dartmouth Big Green,-7.5,-2.96,40.1,12.991121442658985,1.0,4.54,40.1,12.991121442658985,True,True,True,True
+20260228.0,Princeton Tigers,Harvard Crimson,4.5,2.66,38.6,-22.114140550785844,0.0,-1.8399999999999999,38.6,-22.114140550785844,False,False,True,True
+20260228.0,Saint Peter's Peacocks,Manhattan Jaspers,-7.5,1.9,25.8,-3.8321307822316313,1.0,9.4,25.8,-3.8321307822316313,True,True,False,True
+20260228.0,Canisius Golden Griffins,Merrimack Warriors,10.5,8.69,-14.0,-34.384322938785104,0.0,-1.8100000000000005,-14.0,-34.384322938785104,False,True,True,True
+20260227.0,Niagara Purple Eagles,Quinnipiac Bobcats,8.5,0.57,-23.7,-12.604549436348565,0.0,-7.93,-23.7,-12.604549436348565,False,True,True,True
+20260228.0,Sacred Heart Pioneers,Mount St. Mary's Mountaineers,-2.5,2.12,-4.0,-10.21803289762754,1.0,4.62,-4.0,-10.21803289762754,True,False,False,True
+20260228.0,Fairfield Stags,Siena Saints,1.5,-1.18,-50.3,7.286231108315437,1.0,-2.6799999999999997,-50.3,7.286231108315437,False,True,False,False
+20260228.0,Kent State Golden Flashes,Akron Zips,3.5,-4.19,26.4,-5.110600876960415,0.0,-7.69,26.4,-5.110600876960415,False,False,True,True
+20260227.0,Western Michigan Broncos,Miami (OH) RedHawks,11.5,5.1,12.1,-20.83262584405876,0.0,-6.4,12.1,-20.83262584405876,False,False,True,True
+20260227.0,Cornell Big Red,Yale Bulldogs,3.5,-5.58,12.5,-6.663290705984155,0.0,-9.08,12.5,-6.663290705984155,False,False,True,True
+20260228.0,Columbia Lions,Brown Bears,-5.5,-8.02,2.5,-6.746726541355152,1.0,-2.5199999999999996,2.5,-6.746726541355152,False,False,True,False
+20260228.0,Iona Gaels,Rider Broncs,-11.5,-3.79,18.9,14.70712998311574,1.0,7.71,18.9,14.70712998311574,True,True,True,True
+20260228.0,Illinois Fighting Illini,Michigan Wolverines,1.5,-8.6,26.700000000000003,-0.3945887711876885,0.0,-10.1,26.700000000000003,-0.3945887711876885,False,False,False,True
+20260228.0,Louisiana Tech Bulldogs,Florida International Panthers,-2.5,-4.98,-39.3,2.743172320645078,0.0,-2.4800000000000004,-39.3,2.743172320645078,False,True,False,True
+20260228.0,Sam Houston Bearkats,Missouri State Bears,-7.5,-14.17,17.5,17.581388061275597,1.0,-6.67,17.5,17.581388061275597,False,False,False,False
+20260228.0,Jacksonville State Gamecocks,Liberty Flames,3.5,-2.92,-23.2,-1.071959430029736,0.0,-6.42,-23.2,-1.071959430029736,False,True,False,True
+20260228.0,Kennesaw State Owls,Delaware Blue Hens,-11.5,-10.34,27.0,8.01258887875729,1.0,1.1600000000000001,27.0,8.01258887875729,True,True,True,True
+20260228.0,Utah Valley Wolverines,Abilene Christian Wildcats,-14.5,-12.44,21.8,14.802271258955598,1.0,2.0600000000000005,21.8,14.802271258955598,True,True,True,True
+20260301.0,California Baptist Lancers,Tarleton State Texans,-7.5,-9.23,52.6,8.79290817496452,1.0,-1.7300000000000004,52.6,8.79290817496452,False,False,False,False
+20260228.0,SIU Edwardsville Cougars,Eastern Illinois Panthers,-6.5,-2.26,86.8,0.0285724890058438,1.0,4.24,86.8,0.0285724890058438,True,True,False,True
+20260228.0,Western Illinois Leathernecks,Lindenwood Lions,10.5,1.17,-58.7,-7.06508746262325,0.0,-9.33,-58.7,-7.06508746262325,False,True,True,True
+20260228.0,Little Rock Trojans,Southern Indiana Screaming Eagles,-6.5,-2.03,65.0,3.4186094626245813,1.0,4.470000000000001,65.0,3.4186094626245813,True,True,True,True
+20260228.0,Southeast Missouri State Redhawks,Tennessee Tech Golden Eagles,-7.5,-4.72,39.0,-5.121311460449866,1.0,2.7800000000000002,39.0,-5.121311460449866,True,True,False,True
+20260228.0,Bellarmine Knights,Austin Peay Governors,4.5,3.43,43.5,-23.418000211499145,1.0,-1.0699999999999998,43.5,-23.418000211499145,False,False,True,False
+20260228.0,Stetson Hatters,Florida Gulf Coast Eagles,2.5,-0.05,15.5,-5.926405656165395,1.0,-2.55,15.5,-5.926405656165395,False,False,True,False
+20260228.0,Eastern Kentucky Colonels,Lipscomb Bisons,2.5,-2.82,0.3999999999999986,-17.0525965511157,0.0,-5.32,0.3999999999999986,-17.0525965511157,False,False,True,True
+20260228.0,West Georgia Wolves,North Alabama Lions,-5.5,-3.82,23.2,6.1297078025548135,1.0,1.6800000000000002,23.2,6.1297078025548135,True,True,True,True
+20260228.0,Central Arkansas Bears,Queens University Royals,-2.5,-1.12,-5.399999999999999,2.4206057681692394,1.0,1.38,-5.399999999999999,2.4206057681692394,True,False,True,True
+20260301.0,Auburn Tigers,Ole Miss Rebels,-9.5,-3.94,23.1,5.580578448521354,1.0,5.5600000000000005,23.1,5.580578448521354,True,True,True,True
+20260301.0,Florida Gators,Arkansas Razorbacks,-9.5,-7.75,88.6,7.087087542087541,1.0,1.75,88.6,7.087087542087541,True,True,True,True
+20260228.0,Georgia Bulldogs,South Carolina Gamecocks,-12.5,-6.43,31.3,4.556173431746027,1.0,6.07,31.3,4.556173431746027,True,True,True,True
+20260228.0,Kentucky Wildcats,Vanderbilt Commodores,-1.5,2.78,-24.0,-9.53774392666764,1.0,4.279999999999999,-24.0,-9.53774392666764,True,False,False,True
+20260228.0,LSU Tigers,Oklahoma Sooners,-1.5,4.63,-57.1,-14.100050201624994,0.0,6.13,-57.1,-14.100050201624994,True,False,False,False
+20260228.0,Mississippi State Bulldogs,Missouri Tigers,1.5,0.11,-6.5,1.0275821933645588,0.0,-1.39,-6.5,1.0275821933645588,False,True,False,True
+20260228.0,Tennessee Volunteers,Alabama Crimson Tide,-4.5,2.45,53.4,-3.811697528722888,1.0,6.95,53.4,-3.811697528722888,True,True,False,True
+20260228.0,Texas A&M Aggies,Texas Longhorns,-3.5,2.14,9.3,-7.683982934058689,0.0,5.640000000000001,9.3,-7.683982934058689,True,True,False,False
+20260228.0,Idaho Vandals,Northern Colorado Bears,-2.5,-5.88,-40.5,-0.4859531560399484,0.0,-3.38,-40.5,-0.4859531560399484,False,True,False,True
+20260228.0,Idaho State Bengals,Weber State Wildcats,-1.5,5.96,-3.899999999999999,-22.585200570888887,0.0,7.46,-3.899999999999999,-22.585200570888887,True,False,False,False
+20260228.0,Montana Grizzlies,Portland State Vikings,-1.5,-6.81,-72.9,-3.5584489975281475,1.0,-5.31,-72.9,-3.5584489975281475,False,True,True,False
+20260228.0,UT Rio Grande Valley Vaqueros,East Texas A&M Lions,-9.5,-12.61,29.4,19.78865929926049,1.0,-3.1099999999999994,29.4,19.78865929926049,False,False,False,False
+20260228.0,New Orleans Privateers,McNeese Cowboys,8.5,3.29,-8.5,-15.607469859394428,0.0,-5.21,-8.5,-15.607469859394428,False,True,True,True
+20260228.0,Nicholls Colonels,SE Louisiana Lions,-4.5,-0.35,-19.4,5.308831627456003,1.0,4.15,-19.4,5.308831627456003,True,False,True,True
+20260228.0,Texas A&M-Corpus Christi Islanders,Northwestern State Demons,-6.5,-0.36,44.5,-10.566272730075031,1.0,6.14,44.5,-10.566272730075031,True,True,False,True
+20260228.0,Houston Christian Huskies,Stephen F. Austin Lumberjacks,8.5,4.51,31.9,-12.28676233028406,0.0,-3.99,31.9,-12.28676233028406,False,False,True,True
+20260301.0,UC San Diego Tritons,Cal Poly Mustangs,-6.5,0.45,34.9,5.604575766747376,1.0,6.95,34.9,5.604575766747376,True,True,True,True
+20260301.0,Cal State Fullerton Titans,Hawai'i Rainbow Warriors,3.5,-2.78,6.200000000000001,8.145599287694866,0.0,-6.279999999999999,6.200000000000001,8.145599287694866,False,False,False,True
+20260228.0,Chattanooga Mocs,VMI Keydets,-11.5,-7.51,23.6,23.69062063800648,1.0,3.99,23.6,23.69062063800648,True,True,True,True
+20260228.0,Mercer Bears,East Tennessee State Buccaneers,-1.5,-0.09,25.4,-0.9678537289725258,1.0,1.41,25.4,-0.9678537289725258,True,True,False,True
+20260228.0,Samford Bulldogs,UNC Greensboro Spartans,-9.5,-11.07,16.4,11.147715443347082,1.0,-1.5700000000000003,16.4,11.147715443347082,False,False,False,False
+20260228.0,Western Carolina Catamounts,Furman Paladins,1.5,-11.66,69.7,16.220641583882053,1.0,-13.16,69.7,16.220641583882053,False,False,False,False
+20260228.0,Wofford Terriers,The Citadel Bulldogs,-12.5,-10.89,1.7999999999999972,23.533403237885587,1.0,1.6099999999999994,1.7999999999999972,23.533403237885587,True,False,True,True
+20260228.0,Towson Tigers,Campbell Fighting Camels,-4.5,-7.05,3.3000000000000007,-4.093754484441373,1.0,-2.55,3.3000000000000007,-4.093754484441373,False,False,True,False
+20260228.0,North Carolina A&T Aggies,William & Mary Tribe,6.5,5.08,-50.4,-15.199552018437434,0.0,-1.42,-50.4,-15.199552018437434,False,True,True,True
+20260301.0,Hofstra Pride,Stony Brook Seawolves,-12.5,-5.02,40.8,23.298859957748974,1.0,7.48,40.8,23.298859957748974,True,True,True,True
+20260228.0,Hampton Pirates,Northeastern Huskies,-4.5,-6.55,-11.3,5.283250269503629,1.0,-2.05,-11.3,5.283250269503629,False,True,False,False
+20260228.0,UAlbany Great Danes,New Hampshire Wildcats,-2.5,-8.35,-37.5,16.308429750594712,1.0,-5.85,-37.5,16.308429750594712,False,True,False,False
+20260228.0,Bryant Bulldogs,NJIT Highlanders,2.5,5.92,55.8,-19.35749545861217,1.0,3.42,55.8,-19.35749545861217,True,True,False,True
+20260228.0,New Haven Chargers,Le Moyne Dolphins,1.5,-0.26,13.6,-3.630507498541685,1.0,-1.76,13.6,-3.630507498541685,False,False,True,False
+20260228.0,Central Connecticut Blue Devils,Saint Francis Red Flash,-8.5,-6.12,19.9,10.489508502027032,1.0,2.38,19.9,10.489508502027032,True,True,True,True
+20260228.0,Stonehill Skyhawks,Mercyhurst Lakers,1.5,3.79,-20.4,-8.581927013093594,0.0,2.29,-20.4,-8.581927013093594,True,False,False,False
+20260228.0,Wagner Seahawks,Chicago State Cougars,-5.5,0.09,55.6,2.8359676152275384,1.0,5.59,55.6,2.8359676152275384,True,True,True,True
+20260228.0,Pennsylvania Quakers,Harvard Crimson,-1.5,-0.14,11.4,-5.413925449668405,1.0,1.3599999999999999,11.4,-5.413925449668405,True,True,False,True
+20260228.0,Northern Illinois Huskies,Ball State Cardinals,-1.5,1.21,-36.6,-7.733206052374818,0.0,2.71,-36.6,-7.733206052374818,True,False,False,False
+20260228.0,Buffalo Bulls,Central Michigan Chippewas,-5.5,0.88,42.5,-13.482609215756929,1.0,6.38,42.5,-13.482609215756929,True,True,False,True
+20260228.0,Bowling Green Falcons,Massachusetts Minutemen,-5.5,-7.22,13.8,5.984858496080148,1.0,-1.7199999999999998,13.8,5.984858496080148,False,False,False,False
+20260228.0,Ohio Bobcats,Toledo Rockets,-1.5,0.95,-4.399999999999999,-4.206902724363122,0.0,2.45,-4.399999999999999,-4.206902724363122,True,False,False,False
+20260301.0,Northern Kentucky Norse,Wright State Raiders,-2.5,0.89,-8.799999999999999,2.879624831942281,1.0,3.39,-8.799999999999999,2.879624831942281,True,False,True,True
+20260228.0,Oakland Golden Grizzlies,Detroit Mercy Titans,-7.5,-1.18,-9.8,-4.805223405725664,1.0,6.32,-9.8,-4.805223405725664,True,False,False,True
+20260228.0,Robert Morris Colonials,Cleveland State Vikings,-13.5,-11.61,9.6,43.60195208553077,1.0,1.8900000000000006,9.6,43.60195208553077,True,True,True,True
+20260228.0,Columbia Lions,Yale Bulldogs,5.5,-3.25,-31.2,-5.527422291360612,0.0,-8.75,-31.2,-5.527422291360612,False,True,True,True
+20260228.0,North Dakota State Bison,North Dakota Fighting Hawks,-12.5,-10.9,87.4,24.59019588134588,1.0,1.5999999999999996,87.4,24.59019588134588,True,True,True,True
+20260228.0,South Dakota Coyotes,South Dakota State Jackrabbits,2.5,1.04,18.0,-9.561517039219796,1.0,-1.46,18.0,-9.561517039219796,False,False,True,False
+20260301.0,St. Thomas-Minnesota Tommies,Omaha Mavericks,-12.5,-14.69,42.7,22.24888400865791,1.0,-2.1899999999999995,42.7,22.24888400865791,False,False,False,False
+20260301.0,Kansas City Roos,Oral Roberts Golden Eagles,4.5,9.36,-70.8,-34.03792458902753,0.0,4.859999999999999,-70.8,-34.03792458902753,True,False,False,False
+20260228.0,Cornell Big Red,Brown Bears,-9.5,-12.61,46.2,13.199513861095546,1.0,-3.1099999999999994,46.2,13.199513861095546,False,False,False,False
+20260228.0,Navy Midshipmen,Colgate Raiders,-6.5,-11.01,34.6,37.08525322746971,1.0,-4.51,34.6,37.08525322746971,False,False,False,False
+20260228.0,Holy Cross Crusaders,Loyola Maryland Greyhounds,-1.5,-0.25,-15.3,-4.053057147181532,0.0,1.25,-15.3,-4.053057147181532,True,False,False,False
+20260228.0,Incarnate Word Cardinals,Lamar Cardinals,1.5,-2.61,24.0,-0.590564321787495,1.0,-4.109999999999999,24.0,-0.590564321787495,False,False,False,False
+20260228.0,Clemson Tigers,Louisville Cardinals,1.5,-1.21,-31.1,-18.326453057236456,1.0,-2.71,-31.1,-18.326453057236456,False,True,True,False
+20260228.0,Georgia Tech Yellow Jackets,Florida State Seminoles,6.5,8.28,-31.8,-34.68960587657956,0.0,1.7799999999999994,-31.8,-34.68960587657956,True,False,False,False
+20260228.0,Miami Hurricanes,Boston College Eagles,-15.5,-9.7,61.7,22.11371814841938,1.0,5.800000000000001,61.7,22.11371814841938,True,True,True,True
+20260301.0,North Carolina Tar Heels,Virginia Tech Hokies,-6.5,-10.13,-14.1,-0.9253308365151848,1.0,-3.630000000000001,-14.1,-0.9253308365151848,False,True,False,False
+20260228.0,Notre Dame Fighting Irish,NC State Wolfpack,6.5,-0.92,48.2,-4.310902756049691,0.0,-7.42,48.2,-4.310902756049691,False,False,True,True
+20260228.0,Stanford Cardinal,SMU Mustangs,1.5,2.86,48.0,-5.529394125987958,1.0,1.3599999999999999,48.0,-5.529394125987958,True,True,False,True
+20260228.0,Wake Forest Demon Deacons,Syracuse Orange,-4.5,-6.31,17.2,19.56216049267852,1.0,-1.8099999999999996,17.2,19.56216049267852,False,False,False,False
+20260228.0,Coppin State Eagles,Norfolk State Spartans,8.5,4.76,-10.3,-4.5268328130924935,0.0,-3.74,-10.3,-4.5268328130924935,False,True,True,True
+20260301.0,St. John's Red Storm,Villanova Wildcats,-7.5,-1.76,42.8,-0.3528048844994327,1.0,5.74,42.8,-0.3528048844994327,True,True,False,True
+20260228.0,Creighton Bluejays,Providence Friars,-2.5,6.57,-20.0,-16.457510459624512,0.0,9.07,-20.0,-16.457510459624512,True,False,False,False
+20260228.0,Xavier Musketeers,Georgetown Hoyas,-4.5,-1.61,1.9000000000000004,9.692762572331922,1.0,2.8899999999999997,1.9000000000000004,9.692762572331922,True,False,True,True
+20260228.0,Maryland Eastern Shore Hawks,South Carolina State Bulldogs,-6.5,0.16,-28.3,-11.554935982329802,1.0,6.66,-28.3,-11.554935982329802,True,False,False,True
+20260301.0,UC Riverside Highlanders,Cal State Northridge Matadors,4.5,2.73,28.9,-14.528383607128047,1.0,-1.77,28.9,-14.528383607128047,False,False,True,False
+20260301.0,Cal State Bakersfield Roadrunners,Long Beach State Beach,4.5,1.54,-3.5,-7.493181155996433,0.0,-2.96,-3.5,-7.493181155996433,False,True,True,True
+20260228.0,New Mexico Lobos,San Diego State Aztecs,-2.5,-6.54,27.6,-0.9636104397681544,1.0,-4.04,27.6,-0.9636104397681544,False,False,False,False
+20260301.0,Utah State Aggies,Grand Canyon Lopes,-10.5,-9.25,-87.4,1.8613369207439217,1.0,1.25,-87.4,1.8613369207439217,True,False,True,True
+20260301.0,Fresno State Bulldogs,Boise State Broncos,7.5,2.02,-6.4,0.2590931759486192,0.0,-5.48,-6.4,0.2590931759486192,False,True,False,True
+20260228.0,UNC Asheville Bulldogs,Charleston Southern Buccaneers,-4.5,0.19,-50.2,-7.195613082362614,0.0,4.69,-50.2,-7.195613082362614,True,False,False,False
+20260228.0,South Carolina Upstate Spartans,Gardner-Webb Runnin' Bulldogs,-12.5,-1.01,19.3,6.977245459965394,1.0,11.49,19.3,6.977245459965394,True,True,True,True
+20260228.0,Winthrop Eagles,Presbyterian Blue Hose,-7.5,-4.55,17.9,11.246961052914427,1.0,2.95,17.9,11.246961052914427,True,True,True,True
+20260228.0,American University Eagles,Boston University Terriers,-2.5,-0.52,-24.3,-12.870609010132206,0.0,1.98,-24.3,-12.870609010132206,True,False,False,False
+20260228.0,Minnesota Golden Gophers,UCLA Bruins,1.5,-0.67,-33.3,13.057072279807436,1.0,-2.17,-33.3,13.057072279807436,False,True,False,False
+20260228.0,Northwestern Wildcats,Oregon Ducks,-3.5,0.94,50.1,-8.448240420764709,1.0,4.4399999999999995,50.1,-8.448240420764709,True,True,False,True
+20260228.0,Penn State Nittany Lions,Iowa Hawkeyes,9.5,4.96,15.6,-8.930622790652027,0.0,-4.54,15.6,-8.930622790652027,False,False,True,True
+20260228.0,USC Trojans,Nebraska Cornhuskers,4.5,5.53,23.5,-31.420718742669465,0.0,1.0300000000000002,23.5,-31.420718742669465,True,True,False,False
+20260228.0,Lafayette Leopards,Army Black Knights,-3.5,-1.01,5.600000000000001,1.1899679837619868,1.0,2.49,5.600000000000001,1.1899679837619868,True,True,False,True
+20260228.0,Southern Jaguars,Bethune-Cookman Wildcats,-1.5,-8.02,8.100000000000001,-2.4092026837165785,0.0,-6.52,8.100000000000001,-2.4092026837165785,False,False,True,True
+20260228.0,Prairie View A&M Panthers,Alcorn State Braves,-5.5,-4.36,19.7,1.0688417345861287,1.0,1.1399999999999997,19.7,1.0688417345861287,True,True,False,True
+20260228.0,Grambling Tigers,Florida A&M Rattlers,-5.5,-4.1,-41.7,-2.1686732023685,0.0,1.4000000000000004,-41.7,-2.1686732023685,True,False,False,False
+20260228.0,Arkansas-Pine Bluff Golden Lions,Mississippi Valley State Delta Devils,-13.5,-14.54,0.0,12.884535557450224,1.0,-1.0399999999999991,0.0,12.884535557450224,False,False,False,False
+20260228.0,Alabama A&M Bulldogs,Alabama State Hornets,-2.5,-0.89,43.5,-1.547279867594101,1.0,1.6099999999999999,43.5,-1.547279867594101,True,True,False,True
+20260228.0,Arizona State Sun Devils,Utah Utes,-6.5,-4.06,49.0,5.188676470588248,1.0,2.4400000000000004,49.0,5.188676470588248,True,True,True,True
+20260228.0,Cincinnati Bearcats,Oklahoma State Cowboys,-9.5,-4.48,21.0,26.52357769108147,1.0,5.02,21.0,26.52357769108147,True,True,True,True
+20260228.0,Houston Cougars,Colorado Buffaloes,-19.5,-8.51,34.3,4.330871215919437,1.0,10.99,34.3,4.330871215919437,True,True,True,True
+20260228.0,Iowa State Cyclones,Texas Tech Red Raiders,-9.5,-0.55,-15.499999999999996,-19.118749538671292,1.0,8.95,-15.499999999999996,-19.118749538671292,True,False,False,True
+20260228.0,Kansas State Wildcats,TCU Horned Frogs,3.5,6.76,5.8,-23.94157704990328,0.0,3.26,5.8,-23.94157704990328,True,True,False,False
+20260301.0,Saint Louis Billikens,Duquesne Dukes,-15.5,-12.01,47.2,14.610033627703814,1.0,3.49,47.2,14.610033627703814,True,True,True,True
+20260228.0,VCU Rams,Fordham Rams,-12.5,-8.62,41.9,9.448537213783249,1.0,3.880000000000001,41.9,9.448537213783249,True,True,True,True
+20260228.0,George Mason Patriots,St. Bonaventure Bonnies,-4.5,4.79,8.7,-17.60542749130944,1.0,9.29,8.7,-17.60542749130944,True,True,False,True
+20260228.0,Rhode Island Rams,Saint Joseph's Hawks,-3.5,4.28,-15.5,-20.51960240362525,0.0,7.78,-15.5,-20.51960240362525,True,False,False,False
+20260228.0,Texas Southern Tigers,Jackson State Tigers,-5.5,-11.21,36.6,14.854488518707392,1.0,-5.710000000000001,36.6,14.854488518707392,False,False,False,False
+20260228.0,Morgan State Bears,Howard Bison,9.5,3.58,-23.5,-20.53532678716022,0.0,-5.92,-23.5,-20.53532678716022,False,True,True,True
+20260301.0,Saint Mary's Gaels,Gonzaga Bulldogs,2.5,-6.31,34.3,-8.515720158299896,1.0,-8.809999999999999,34.3,-8.515720158299896,False,False,True,False
+20260301.0,Santa Clara Broncos,Oregon State Beavers,-16.5,-6.94,64.6,0.4128249998551397,1.0,9.559999999999999,64.6,0.4128249998551397,True,True,False,True
+20260228.0,Portland Pilots,San Diego Toreros,-3.5,5.38,33.6,-7.256359528350107,1.0,8.879999999999999,33.6,-7.256359528350107,True,True,False,True
+20260301.0,Loyola Marymount Lions,Seattle U Redhawks,-1.5,-5.67,-7.8,3.5729891792819664,0.0,-4.17,-7.8,3.5729891792819664,False,True,False,True
+20260301.0,Pepperdine Waves,Washington State Cougars,7.5,0.45,16.4,2.079640724631469,1.0,-7.05,16.4,2.079640724631469,False,False,False,False
+20260301.0,UNLV Rebels,Nevada Wolf Pack,1.5,-3.51,47.8,8.212859045316879,1.0,-5.01,47.8,8.212859045316879,False,False,False,False
+20260228.0,Evansville Purple Aces,Valparaiso Beacons,4.5,9.41,-11.1,-30.24722231932288,0.0,4.91,-11.1,-30.24722231932288,True,False,False,False
+20260228.0,Wyoming Cowboys,Air Force Falcons,-21.5,-8.47,39.2,31.09065155917949,1.0,13.03,39.2,31.09065155917949,True,True,True,True
+20260228.0,IU Indianapolis Jaguars,Purdue Fort Wayne Mastodons,1.5,-0.17,-1.5,-4.4677515155671,0.0,-1.67,-1.5,-4.4677515155671,False,False,True,True
