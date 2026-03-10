@@ -52,6 +52,75 @@ def _to_bool_completed(df: pd.DataFrame) -> pd.Series:
     return pd.Series(False, index=df.index)
 
 
+def _bool_series(df: pd.DataFrame, candidates: list[str], *, default: bool = False) -> pd.Series:
+    for col in candidates:
+        if col in df.columns:
+            return df[col].astype(str).str.lower().isin({"true", "1", "yes", "y"})
+    return pd.Series(default, index=df.index, dtype=bool)
+
+
+def _text_flag(df: pd.DataFrame, columns: list[str], patterns: list[str]) -> pd.Series:
+    if not columns:
+        return pd.Series(False, index=df.index, dtype=bool)
+    text = pd.Series("", index=df.index, dtype=object)
+    for col in columns:
+        if col in df.columns:
+            text = text + " " + df[col].fillna("").astype(str)
+    txt = text.str.lower()
+    out = pd.Series(False, index=df.index, dtype=bool)
+    for p in patterns:
+        out = out | txt.str.contains(p, regex=False)
+    return out
+
+
+def _derive_postseason_flags(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    dt = pd.to_datetime(out.get("game_datetime_utc"), utc=True, errors="coerce")
+    month = dt.dt.month
+    day = dt.dt.day
+
+    # Neutral-site signal from any known venue/site columns.
+    is_neutral = _bool_series(out, ["neutral_site", "neutral", "is_neutral"], default=False)
+    if "site_type" in out.columns:
+        is_neutral = is_neutral | out["site_type"].astype(str).str.lower().eq("neutral")
+
+    text_cols = [
+        c
+        for c in ["phase", "round_name", "tournament_type", "status_desc", "venue", "odds_details"]
+        if c in out.columns
+    ]
+    explicit_conf = _bool_series(out, ["conference_tournament_flag", "is_conference_tournament"], default=False)
+    explicit_ncaa = _bool_series(out, ["ncaa_tournament_flag", "is_ncaa_tournament"], default=False)
+    tag_conf = _text_flag(out, text_cols, ["conference tournament"])
+    tag_ncaa = _text_flag(
+        out,
+        text_cols,
+        ["ncaa tournament", "march madness", "first four", "sweet 16", "elite 8", "final four"],
+    )
+
+    # Conservative fallback when explicit tournament tags are absent.
+    heuristic_ncaa = is_neutral & month.isin([3, 4]) & (day >= 15)
+    heuristic_conf = is_neutral & month.eq(3) & (day < 15)
+
+    out["is_neutral"] = is_neutral.astype(bool)
+    out["is_ncaa_tournament"] = (explicit_ncaa | tag_ncaa | heuristic_ncaa).astype(bool)
+    out["is_conference_tournament"] = (explicit_conf | tag_conf | heuristic_conf) & (~out["is_ncaa_tournament"])
+    out["is_postseason"] = (out["is_conference_tournament"] | out["is_ncaa_tournament"]).astype(bool)
+
+    # Home-court can only apply in explicit non-neutral non-postseason context.
+    out["home_bonus_eligible"] = ((~out["is_neutral"]) & (~out["is_postseason"])).astype(bool)
+
+    phase = np.where(
+        out["is_ncaa_tournament"],
+        "ncaa_tournament",
+        np.where(out["is_conference_tournament"], "conference_tournament", "regular_season"),
+    )
+    out["phase"] = out.get("phase", pd.Series(phase, index=out.index)).fillna(pd.Series(phase, index=out.index))
+    if "round_name" not in out.columns:
+        out["round_name"] = np.nan
+    return out
+
+
 def _canonical_game_frame(games: pd.DataFrame) -> pd.DataFrame:
     out = games.copy()
     if "event_id" not in out.columns and "game_id" in out.columns:
@@ -66,6 +135,7 @@ def _canonical_game_frame(games: pd.DataFrame) -> pd.DataFrame:
     for col in ["home_team_id", "away_team_id"]:
         if col in out.columns:
             out[col] = out[col].map(canonical_id)
+    out = _derive_postseason_flags(out)
     return out
 
 
@@ -233,8 +303,12 @@ def _build_game_feature_frame(games: pd.DataFrame, market: pd.DataFrame, team_hi
     out["market_spread"] = pd.to_numeric(out.get("market_spread"), errors="coerce")
     out["market_total"] = pd.to_numeric(out.get("market_total"), errors="coerce")
 
-    neutral = out.get("neutral_site", pd.Series(False, index=out.index))
-    out["is_neutral"] = neutral.astype(str).str.lower().isin({"true", "1", "yes"})
+    # Preserve pre-derived venue/tournament flags from canonical game frame.
+    out["is_neutral"] = out.get("is_neutral", pd.Series(False, index=out.index)).astype(bool)
+    out["is_conference_tournament"] = out.get("is_conference_tournament", pd.Series(False, index=out.index)).astype(bool)
+    out["is_ncaa_tournament"] = out.get("is_ncaa_tournament", pd.Series(False, index=out.index)).astype(bool)
+    out["is_postseason"] = out.get("is_postseason", pd.Series(False, index=out.index)).astype(bool)
+    out["home_bonus_eligible"] = out.get("home_bonus_eligible", ((~out["is_neutral"]) & (~out["is_postseason"]))).astype(bool)
 
     out["rest_diff"] = pd.to_numeric(out.get("home_days_rest"), errors="coerce") - pd.to_numeric(out.get("away_days_rest"), errors="coerce")
     out["form_delta_diff"] = pd.to_numeric(out.get("home_Form_Delta"), errors="coerce") - pd.to_numeric(out.get("away_Form_Delta"), errors="coerce")

@@ -8,7 +8,13 @@ def apply_context_adjustments(game_frame: pd.DataFrame) -> pd.DataFrame:
     out = game_frame.copy()
 
     is_neutral = out.get("is_neutral", pd.Series(False, index=out.index)).astype(bool)
-    hca = np.where(is_neutral, 0.0, 2.7)
+    is_conf_tourney = out.get("is_conference_tournament", pd.Series(False, index=out.index)).astype(bool)
+    is_ncaa_tourney = out.get("is_ncaa_tournament", pd.Series(False, index=out.index)).astype(bool)
+    home_bonus_eligible = out.get(
+        "home_bonus_eligible",
+        ((~is_neutral) & (~is_conf_tourney) & (~is_ncaa_tourney)),
+    ).astype(bool)
+    hca = np.where(home_bonus_eligible, 2.7, 0.0)
 
     form_diff = pd.to_numeric(out.get("form_delta_diff"), errors="coerce").fillna(0.0)
     sos_diff = pd.to_numeric(out.get("sos_diff"), errors="coerce").fillna(0.0)
@@ -44,6 +50,8 @@ def apply_context_adjustments(game_frame: pd.DataFrame) -> pd.DataFrame:
 
     out["context_summary"] = (
         "hca=" + out["context_hca"].round(2).astype(str)
+        + "|home_ok=" + home_bonus_eligible.astype(int).astype(str)
+        + "|post=" + (is_conf_tourney | is_ncaa_tourney).astype(int).astype(str)
         + "|rest=" + out["context_rest"].round(2).astype(str)
         + "|form=" + out["context_form"].round(2).astype(str)
         + "|sos=" + out["context_sos"].round(2).astype(str)
