@@ -267,7 +267,7 @@ def main() -> int:
             is_upcoming = pd.isna(game.get(result_col))
         else:
             game_local_date = gdate.tz_convert(local_tz).date() if pd.notna(gdate) else None
-            is_upcoming = (not has_scores) and (game_local_date == today_local)
+            is_upcoming = (not has_scores) and (game_local_date is not None) and (game_local_date >= today_local)
 
         rows.append(
             {
