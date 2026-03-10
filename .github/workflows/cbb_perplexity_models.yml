@@ -228,6 +228,178 @@ jobs:
           echo "exit_code=${CONTRACT_EXIT_CODE}" >> "$GITHUB_OUTPUT"
           echo "[INFO] contract_runner_exit_code=${CONTRACT_EXIT_CODE}"
 
+      - name: Freshness and market-coverage hard gate
+        if: ${{ steps.preflight.outputs.allow_run == 'true' && steps.contract_runner.outputs.exit_code == '0' }}
+        shell: bash
+        env:
+          NOW_UTC: ${{ steps.resolve_inputs.outputs.now_utc }}
+          WINDOW_END_UTC: ${{ steps.resolve_inputs.outputs.window_end_utc }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import os
+          from datetime import datetime, timedelta, timezone
+          from pathlib import Path
+
+          import pandas as pd
+
+          MAX_PRED_AGE_HOURS = 30.0
+          MAX_LINES_AGE_HOURS = 30.0
+          HORIZON_BUFFER_HOURS = 2.0
+          COVERAGE_MIN = 0.90
+
+          def parse_iso(raw: str) -> datetime:
+              if not raw:
+                  raise ValueError("empty timestamp")
+              normalized = raw.replace("Z", "+00:00")
+              dt = datetime.fromisoformat(normalized)
+              if dt.tzinfo is None:
+                  dt = dt.replace(tzinfo=timezone.utc)
+              return dt.astimezone(timezone.utc)
+
+          def latest_ts(df: pd.DataFrame, cols: list[str]) -> datetime | None:
+              for col in cols:
+                  if col in df.columns:
+                      series = pd.to_datetime(df[col], errors="coerce", utc=True)
+                      if series.notna().any():
+                          return series.max().to_pydatetime()
+              return None
+
+          now_utc = parse_iso(os.environ["NOW_UTC"])
+          window_end_utc = parse_iso(os.environ["WINDOW_END_UTC"])
+          horizon_min = window_end_utc - timedelta(hours=HORIZON_BUFFER_HOURS)
+
+          paths = {
+              "games": Path("data/games.csv"),
+              "lines": Path("data/market_lines_latest_by_game.csv"),
+              "preds": Path("data/predictions_joint_latest.csv"),
+          }
+          for name, path in paths.items():
+              if not path.exists():
+                  raise SystemExit(f"[STOP] freshness gate: missing required file {path} ({name})")
+
+          games = pd.read_csv(paths["games"], low_memory=False)
+          lines = pd.read_csv(paths["lines"], low_memory=False)
+          preds = pd.read_csv(paths["preds"], low_memory=False)
+
+          if games.empty:
+              raise SystemExit("[STOP] freshness gate: games.csv is empty")
+          if lines.empty:
+              raise SystemExit("[STOP] freshness gate: market_lines_latest_by_game.csv is empty")
+          if preds.empty:
+              raise SystemExit("[STOP] freshness gate: predictions_joint_latest.csv is empty")
+
+          pred_generated_at = latest_ts(preds, ["generated_at_utc", "created_at_utc", "updated_at_utc"])
+          if pred_generated_at is None:
+              raise SystemExit("[STOP] freshness gate: predictions file missing generated timestamp column")
+          pred_age_h = (now_utc - pred_generated_at).total_seconds() / 3600.0
+          if pred_age_h > MAX_PRED_AGE_HOURS:
+              raise SystemExit(
+                  f"[STOP] freshness gate: predictions stale ({pred_age_h:.1f}h > {MAX_PRED_AGE_HOURS:.1f}h)"
+              )
+
+          lines_updated_at = latest_ts(lines, ["line_timestamp_utc", "captured_at_utc", "updated_at_utc"])
+          if lines_updated_at is None:
+              raise SystemExit("[STOP] freshness gate: market lines file missing timestamp column")
+          lines_age_h = (now_utc - lines_updated_at).total_seconds() / 3600.0
+          if lines_age_h > MAX_LINES_AGE_HOURS:
+              raise SystemExit(
+                  f"[STOP] freshness gate: market lines stale ({lines_age_h:.1f}h > {MAX_LINES_AGE_HOURS:.1f}h)"
+              )
+
+          games_horizon = latest_ts(games, ["game_datetime_utc", "game_date", "date"])
+          preds_horizon = latest_ts(preds, ["game_datetime_utc", "game_date", "date"])
+          lines_horizon = latest_ts(lines, ["game_datetime_utc", "game_date", "date"])
+          if games_horizon is None or preds_horizon is None or lines_horizon is None:
+              raise SystemExit("[STOP] freshness gate: unable to compute horizon coverage timestamps")
+          if games_horizon < horizon_min:
+              raise SystemExit("[STOP] freshness gate: games horizon does not reach requested window")
+          if preds_horizon < horizon_min:
+              raise SystemExit("[STOP] freshness gate: prediction horizon does not reach requested window")
+          if lines_horizon < horizon_min:
+              raise SystemExit("[STOP] freshness gate: market-lines horizon does not reach requested window")
+
+          if "game_datetime_utc" not in preds.columns:
+              raise SystemExit("[STOP] freshness gate: predictions missing game_datetime_utc")
+          if "game_datetime_utc" not in lines.columns:
+              raise SystemExit("[STOP] freshness gate: market lines missing game_datetime_utc")
+
+          pred_window = preds.copy()
+          pred_window["game_datetime_utc"] = pd.to_datetime(pred_window["game_datetime_utc"], errors="coerce", utc=True)
+          pred_window = pred_window[
+              pred_window["game_datetime_utc"].notna()
+              & (pred_window["game_datetime_utc"] >= now_utc)
+              & (pred_window["game_datetime_utc"] <= window_end_utc)
+          ].copy()
+          if pred_window.empty:
+              raise SystemExit("[STOP] freshness gate: no upcoming predictions inside requested window")
+
+          lines_window = lines.copy()
+          lines_window["game_datetime_utc"] = pd.to_datetime(lines_window["game_datetime_utc"], errors="coerce", utc=True)
+          lines_window = lines_window[
+              lines_window["game_datetime_utc"].notna()
+              & (lines_window["game_datetime_utc"] >= now_utc)
+              & (lines_window["game_datetime_utc"] <= window_end_utc)
+          ].copy()
+
+          has_spread = pd.Series(False, index=lines_window.index)
+          has_total = pd.Series(False, index=lines_window.index)
+          if "closing_spread" in lines_window.columns:
+              has_spread = has_spread | lines_window["closing_spread"].notna()
+          if "spread_line" in lines_window.columns:
+              has_spread = has_spread | lines_window["spread_line"].notna()
+          if "closing_total" in lines_window.columns:
+              has_total = has_total | lines_window["closing_total"].notna()
+          if "total_line" in lines_window.columns:
+              has_total = has_total | lines_window["total_line"].notna()
+          lines_window = lines_window[has_spread | has_total].copy()
+
+          if "event_id" in pred_window.columns and "event_id" in lines_window.columns:
+              pred_ids = set(pd.to_numeric(pred_window["event_id"], errors="coerce").dropna().astype("int64").tolist())
+              line_ids = set(pd.to_numeric(lines_window["event_id"], errors="coerce").dropna().astype("int64").tolist())
+          elif "game_id" in pred_window.columns and "game_id" in lines_window.columns:
+              pred_ids = set(pd.to_numeric(pred_window["game_id"], errors="coerce").dropna().astype("int64").tolist())
+              line_ids = set(pd.to_numeric(lines_window["game_id"], errors="coerce").dropna().astype("int64").tolist())
+          else:
+              raise SystemExit("[STOP] freshness gate: no common key (event_id/game_id) for coverage check")
+
+          if not pred_ids:
+              raise SystemExit("[STOP] freshness gate: no valid prediction IDs in upcoming window")
+          matched = pred_ids & line_ids
+          coverage = len(matched) / len(pred_ids)
+          required_coverage = 1.0 if len(pred_ids) < 5 else COVERAGE_MIN
+          if coverage < required_coverage:
+              raise SystemExit(
+                  "[STOP] freshness gate: market-line coverage too low "
+                  f"({coverage:.1%} < {required_coverage:.1%}; matched={len(matched)} of {len(pred_ids)})"
+              )
+
+          report = {
+              "now_utc": now_utc.isoformat(),
+              "window_end_utc": window_end_utc.isoformat(),
+              "pred_generated_at_utc": pred_generated_at.isoformat(),
+              "pred_age_hours": round(pred_age_h, 3),
+              "lines_updated_at_utc": lines_updated_at.isoformat(),
+              "lines_age_hours": round(lines_age_h, 3),
+              "games_horizon_utc": games_horizon.isoformat(),
+              "pred_horizon_utc": preds_horizon.isoformat(),
+              "lines_horizon_utc": lines_horizon.isoformat(),
+              "upcoming_predictions": len(pred_ids),
+              "upcoming_lines_with_market_data": len(line_ids),
+              "upcoming_coverage": coverage,
+              "required_coverage": required_coverage,
+          }
+          Path("debug").mkdir(parents=True, exist_ok=True)
+          Path("debug/perplexity_freshness_gate.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+          print(
+              "[OK] freshness gate passed "
+              f"(pred_age={pred_age_h:.1f}h, line_age={lines_age_h:.1f}h, coverage={coverage:.1%})"
+          )
+          PY
+
       - name: Pre-upload diagnostics
         if: always()
         shell: bash

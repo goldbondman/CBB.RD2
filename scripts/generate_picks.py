@@ -94,6 +94,81 @@ def _conf_tier(edge_abs: float, prob_dist: float) -> str:
     return "PASS"
 
 
+def _coerce_medians(medians_raw: object) -> dict[str, float]:
+    if not isinstance(medians_raw, dict):
+        return {}
+    out: dict[str, float] = {}
+    for key, value in medians_raw.items():
+        try:
+            val = float(value)
+        except (TypeError, ValueError):
+            val = 0.0
+        if not np.isfinite(val):
+            val = 0.0
+        out[str(key)] = val
+    return out
+
+
+def _build_inference_frame(
+    frame: pd.DataFrame,
+    expected_cols: list[str],
+    base_features: list[str] | None = None,
+    medians: dict[str, float] | None = None,
+) -> pd.DataFrame:
+    expected = list(expected_cols or [])
+    if not expected:
+        return pd.DataFrame(index=frame.index)
+
+    base = list(base_features or [])
+    med = medians or {}
+    uses_missing_flags = any(col.endswith("__missing") for col in expected)
+
+    if base and uses_missing_flags:
+        numeric = frame.reindex(columns=base).apply(pd.to_numeric, errors="coerce")
+        out = pd.DataFrame(index=frame.index)
+        for feat in base:
+            series = numeric[feat] if feat in numeric.columns else pd.Series(np.nan, index=frame.index)
+            median = float(med.get(feat, 0.0))
+            if not np.isfinite(median):
+                median = 0.0
+            out[feat] = series.fillna(median)
+            out[f"{feat}__missing"] = series.isna().astype(float)
+        for col in expected:
+            if col not in out.columns:
+                out[col] = 0.0
+        return out[expected]
+
+    # Backward-compatible path for legacy feature_lists payloads.
+    out = frame.reindex(columns=expected).apply(pd.to_numeric, errors="coerce")
+    return out.fillna(0.0)
+
+
+def _load_optional_calibrator(path: Path):
+    if not path.exists():
+        return None
+    try:
+        return joblib.load(path)
+    except Exception as exc:
+        print(f"[WARN] Failed to load calibrator at {path}: {exc}")
+        return None
+
+
+def _apply_optional_calibrator(probs: np.ndarray, calibrator) -> np.ndarray:
+    arr = np.asarray(probs, dtype=float)
+    arr = np.nan_to_num(arr, nan=0.5, posinf=1.0, neginf=0.0)
+    arr = np.clip(arr, 0.0, 1.0)
+    if calibrator is None:
+        return arr
+    try:
+        calibrated = calibrator.predict(arr)
+    except Exception as exc:
+        print(f"[WARN] Calibrator predict failed: {exc}; falling back to raw probabilities")
+        return arr
+    calibrated_arr = np.asarray(calibrated, dtype=float)
+    calibrated_arr = np.nan_to_num(calibrated_arr, nan=0.5, posinf=1.0, neginf=0.0)
+    return np.clip(calibrated_arr, 0.0, 1.0)
+
+
 # Edge bucket labels — mirrors backtest_cage_ats.py buckets.
 # The 5.1–8 bucket showed 36.4% ATS / −30.6% ROI in CAGE ATS backtest (n=11).
 # Flag it so users know CAGE's spread compression in this range is historically noisy.
@@ -252,16 +327,35 @@ def main() -> int:
     else:
         print("[WARN] CAGE EM not available — cage_validates will be NEUTRAL for all picks")
 
-    features = joblib.load("models/feature_lists.pkl")
+    features_payload = joblib.load("models/feature_lists.pkl")
     ridge_s = joblib.load("models/spread_ridge.pkl")
     ridge_t = joblib.load("models/total_ridge.pkl")
     logit_s = joblib.load("models/spread_logit.pkl")
     logit_t = joblib.load("models/total_logit.pkl")
     sc_s = joblib.load("models/spread_scaler.pkl")
     sc_t = joblib.load("models/total_scaler.pkl")
+    spread_calibrator = _load_optional_calibrator(Path("models/spread_calibrator.pkl"))
+    total_calibrator = _load_optional_calibrator(Path("models/total_calibrator.pkl"))
 
-    spread_features = list(features["spread"])
-    total_features = list(features["total"])
+    if isinstance(features_payload, dict):
+        spread_features = list(features_payload.get("spread", []))
+        total_features = list(features_payload.get("total", []))
+        spread_base = list(features_payload.get("spread_base", spread_features))
+        total_base = list(features_payload.get("total_base", total_features))
+        spread_medians = _coerce_medians(features_payload.get("spread_medians"))
+        total_medians = _coerce_medians(features_payload.get("total_medians"))
+    else:
+        # Legacy format fallback: single feature list used by both models.
+        spread_features = list(features_payload)
+        total_features = list(features_payload)
+        spread_base = spread_features
+        total_base = total_features
+        spread_medians = {}
+        total_medians = {}
+
+    if not spread_features or not total_features:
+        print("[STOP] feature_lists.pkl is missing spread/total feature definitions")
+        return 1
 
     df["is_upcoming"] = df["is_upcoming"].astype(str).str.lower().isin({"true", "1"})
     upcoming = df[df["is_upcoming"] == True].copy()
@@ -273,13 +367,33 @@ def main() -> int:
         if col in upcoming.columns:
             upcoming[col] = pd.to_numeric(upcoming[col], errors="coerce")
 
-    x_s = sc_s.transform(upcoming[spread_features].fillna(0.0))
-    x_t = sc_t.transform(upcoming[total_features].fillna(0.0))
+    x_s_df = _build_inference_frame(
+        upcoming,
+        expected_cols=spread_features,
+        base_features=spread_base,
+        medians=spread_medians,
+    )
+    x_t_df = _build_inference_frame(
+        upcoming,
+        expected_cols=total_features,
+        base_features=total_base,
+        medians=total_medians,
+    )
+    x_s = sc_s.transform(x_s_df)
+    x_t = sc_t.transform(x_t_df)
 
     upcoming["pred_margin"] = ridge_s.predict(x_s)
     upcoming["pred_total"] = ridge_t.predict(x_t)
-    upcoming["spread_prob"] = logit_s.predict_proba(x_s)[:, 1]
-    upcoming["total_prob"] = logit_t.predict_proba(x_t)[:, 1]
+    spread_prob_raw = logit_s.predict_proba(x_s)[:, 1]
+    total_prob_raw = logit_t.predict_proba(x_t)[:, 1]
+    upcoming["spread_prob"] = _apply_optional_calibrator(spread_prob_raw, spread_calibrator)
+    upcoming["total_prob"] = _apply_optional_calibrator(total_prob_raw, total_calibrator)
+
+    print(
+        "[INFO] probability calibration: "
+        f"spread={'ON' if spread_calibrator is not None else 'OFF'} "
+        f"total={'ON' if total_calibrator is not None else 'OFF'}"
+    )
 
     # spread_edge: how much model margin exceeds (or falls short of) the market-implied margin.
     # closing_spread is from the home team's perspective: negative = home favored.
