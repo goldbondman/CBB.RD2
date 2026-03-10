@@ -94,6 +94,12 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401804942,2026-02-21 21:00:00+00:00,Liberty Flames,Western Kentucky Hilltoppers,MISSING
 401804943,2026-02-21 20:00:00+00:00,Florida International Panthers,Missouri State Bears,MISSING
 401804944,2026-02-21 19:00:00+00:00,Middle Tennessee Blue Raiders,Delaware Blue Hens,MISSING
+401804963,2026-03-07 19:00:00+00:00,Liberty Flames,Sam Houston Bearkats,MISSING
+401804964,2026-03-07 17:00:00+00:00,Delaware Blue Hens,Louisiana Tech Bulldogs,MISSING
+401804965,2026-03-07 20:00:00+00:00,UTEP Miners,Jacksonville State Gamecocks,MISSING
+401804966,2026-03-07 21:00:00+00:00,New Mexico State Aggies,Kennesaw State Owls,MISSING
+401804967,2026-03-07 19:00:00+00:00,Florida International Panthers,Western Kentucky Hilltoppers,MISSING
+401804968,2026-03-07 20:00:00+00:00,Missouri State Bears,Middle Tennessee Blue Raiders,MISSING
 401805154,2025-12-30 01:00:00+00:00,UT Arlington Mavericks,Tarleton State Texans,MISSING
 401805155,2025-12-30 02:00:00+00:00,Utah Tech Trailblazers,Southern Utah Thunderbirds,MISSING
 401805156,2025-12-30 01:00:00+00:00,Utah Valley Wolverines,California Baptist Lancers,MISSING
@@ -145,6 +151,9 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401805202,2026-02-21 21:00:00+00:00,Abilene Christian Wildcats,Southern Utah Thunderbirds,MISSING
 401805203,2026-02-21 22:00:00+00:00,Tarleton State Texans,Utah Tech Trailblazers,MISSING
 401805204,2026-02-21 20:00:00+00:00,UT Arlington Mavericks,Utah Valley Wolverines,MISSING
+401805214,2026-03-08 00:00:00+00:00,Abilene Christian Wildcats,UT Arlington Mavericks,MISSING
+401805215,2026-03-08 02:00:00+00:00,Utah Tech Trailblazers,Utah Valley Wolverines,MISSING
+401805216,2026-03-08 01:30:00+00:00,Southern Utah Thunderbirds,California Baptist Lancers,MISSING
 401806343,2025-12-07 01:00:00+00:00,Eastern Illinois Panthers,Lindenwood Lions,MISSING
 401806344,2025-12-17 00:30:00+00:00,Morehead State Eagles,Little Rock Trojans,MISSING
 401806345,2025-12-18 23:30:00+00:00,Eastern Illinois Panthers,SIU Edwardsville Cougars,MISSING
@@ -466,6 +475,14 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401808254,2026-02-21 18:00:00+00:00,South Carolina Gamecocks,Mississippi State Bulldogs,MISSING
 401808255,2026-02-21 19:00:00+00:00,Vanderbilt Commodores,Tennessee Volunteers,MISSING
 401808256,2026-02-22 01:30:00+00:00,Oklahoma Sooners,Texas A&M Aggies,MISSING
+401808281,2026-03-07 21:00:00+00:00,Kentucky Wildcats,Florida Gators,MISSING
+401808282,2026-03-07 23:00:00+00:00,LSU Tigers,Texas A&M Aggies,MISSING
+401808283,2026-03-07 18:00:00+00:00,Ole Miss Rebels,South Carolina Gamecocks,MISSING
+401808284,2026-03-07 20:30:00+00:00,Mississippi State Bulldogs,Georgia Bulldogs,MISSING
+401808285,2026-03-07 17:00:00+00:00,Missouri Tigers,Arkansas Razorbacks,MISSING
+401808286,2026-03-07 19:00:00+00:00,Tennessee Volunteers,Vanderbilt Commodores,MISSING
+401808287,2026-03-08 01:30:00+00:00,Texas Longhorns,Oklahoma Sooners,MISSING
+401808288,2026-03-08 01:30:00+00:00,Alabama Crimson Tide,Auburn Tigers,MISSING
 401808453,2026-01-03 22:00:00+00:00,Idaho Vandals,Eastern Washington Eagles,MISSING
 401808454,2026-01-09 02:00:00+00:00,Eastern Washington Eagles,Montana State Bobcats,MISSING
 401808455,2026-01-10 22:00:00+00:00,Eastern Washington Eagles,Montana Grizzlies,MISSING
@@ -750,7 +767,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401808945,2026-02-24 00:30:00+00:00,Northwestern State Demons,Incarnate Word Cardinals,MISSING
 401808950,2025-11-11 02:00:00+00:00,Georgia Tech Yellow Jackets,SE Louisiana Lions,MISSING
 401808951,2025-11-15 20:00:00+00:00,Mississippi State Bulldogs,SE Louisiana Lions,MISSING
-401808952,2025-11-20 00:00:00+00:00,SE Louisiana Lions,William Carey Crusaders,MISSING
 401808953,2025-12-13 21:30:00+00:00,Houston Christian Huskies,SE Louisiana Lions,MISSING
 401808954,2025-12-20 01:00:00+00:00,LSU Tigers,SE Louisiana Lions,MISSING
 401808956,2026-01-03 21:30:00+00:00,SE Louisiana Lions,Stephen F. Austin Lumberjacks,MISSING
@@ -805,6 +821,7 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401809098,2026-02-13 03:00:00+00:00,UC San Diego Tritons,UC Davis Aggies,MISSING
 401809099,2026-02-15 03:00:00+00:00,UC San Diego Tritons,UC Riverside Highlanders,MISSING
 401809100,2026-02-22 03:00:00+00:00,UC Irvine Anteaters,UC San Diego Tritons,MISSING
+401809104,2026-03-08 02:00:00+00:00,UC Santa Barbara Gauchos,UC San Diego Tritons,MISSING
 401809105,2025-12-05 03:00:00+00:00,UC Irvine Anteaters,UC Riverside Highlanders,MISSING
 401809106,2025-12-07 03:00:00+00:00,UC Irvine Anteaters,Cal State Northridge Matadors,MISSING
 401809107,2026-01-01 22:00:00+00:00,Cal State Bakersfield Roadrunners,UC Irvine Anteaters,MISSING
@@ -819,6 +836,7 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401809116,2026-02-13 03:00:00+00:00,Cal Poly Mustangs,UC Irvine Anteaters,MISSING
 401809117,2026-02-15 03:00:00+00:00,UC Irvine Anteaters,Cal State Fullerton Titans,MISSING
 401809118,2026-02-20 03:00:00+00:00,Long Beach State Beach,UC Irvine Anteaters,MISSING
+401809122,2026-03-08 01:00:00+00:00,UC Irvine Anteaters,UC Davis Aggies,MISSING
 401809123,2025-12-05 04:59:00+00:00,Hawai'i Rainbow Warriors,UC Davis Aggies,MISSING
 401809124,2026-01-01 22:00:00+00:00,UC Davis Aggies,Cal State Northridge Matadors,MISSING
 401809125,2026-01-03 22:00:00+00:00,UC Davis Aggies,Cal State Bakersfield Roadrunners,MISSING
@@ -844,6 +862,7 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401809147,2026-02-15 01:00:00+00:00,Cal State Northridge Matadors,Hawai'i Rainbow Warriors,MISSING
 401809148,2026-02-20 04:59:00+00:00,Hawai'i Rainbow Warriors,Cal Poly Mustangs,MISSING
 401809149,2026-02-22 03:00:00+00:00,Hawai'i Rainbow Warriors,UC Santa Barbara Gauchos,MISSING
+401809152,2026-03-08 04:59:00+00:00,Hawai'i Rainbow Warriors,Long Beach State Beach,MISSING
 401809153,2025-12-05 03:00:00+00:00,Cal State Fullerton Titans,Cal Poly Mustangs,MISSING
 401809154,2025-12-07 00:00:00+00:00,Cal Poly Mustangs,UC Riverside Highlanders,MISSING
 401809155,2026-01-04 02:00:00+00:00,Long Beach State Beach,Cal Poly Mustangs,MISSING
@@ -854,6 +873,7 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401809160,2026-02-01 01:00:00+00:00,UC Riverside Highlanders,Cal Poly Mustangs,MISSING
 401809161,2026-02-06 03:00:00+00:00,Cal Poly Mustangs,Cal State Northridge Matadors,MISSING
 401809162,2026-02-15 00:00:00+00:00,Cal Poly Mustangs,UC Santa Barbara Gauchos,MISSING
+401809164,2026-03-08 00:00:00+00:00,Cal Poly Mustangs,Cal State Bakersfield Roadrunners,MISSING
 401809223,2025-12-31 17:00:00+00:00,Furman Paladins,Mercer Bears,MISSING
 401809224,2025-12-30 23:00:00+00:00,The Citadel Bulldogs,East Tennessee State Buccaneers,MISSING
 401809225,2025-12-31 18:00:00+00:00,Western Carolina Catamounts,Wofford Terriers,MISSING
@@ -962,7 +982,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401811098,2025-11-20 02:15:00+00:00,Illinois Fighting Illini,Alabama Crimson Tide,MISSING
 401811099,2025-12-07 01:00:00+00:00,Tennessee Volunteers,Illinois Fighting Illini,MISSING
 401811100,2025-12-23 01:00:00+00:00,Illinois Fighting Illini,Missouri Tigers,MISSING
-401811103,2025-11-09 19:00:00+00:00,South Dakota Coyotes,Ozark Christian Ambassadors,MISSING
 401811104,2025-11-13 01:00:00+00:00,South Dakota Coyotes,Southern Indiana Screaming Eagles,MISSING
 401811105,2025-11-16 19:00:00+00:00,South Dakota Coyotes,Western Michigan Broncos,MISSING
 401811106,2025-11-21 01:00:00+00:00,Missouri Tigers,South Dakota Coyotes,MISSING
@@ -971,12 +990,9 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401811110,2025-12-07 01:00:00+00:00,Northern Colorado Bears,South Dakota Coyotes,MISSING
 401811111,2025-12-10 01:30:00+00:00,Wyoming Cowboys,South Dakota Coyotes,MISSING
 401811112,2025-12-13 19:00:00+00:00,South Dakota Coyotes,Prairie View A&M Panthers,MISSING
-401811113,2025-12-18 01:00:00+00:00,South Dakota Coyotes,Dakota State Trojans,MISSING
 401811114,2025-12-20 17:00:00+00:00,Kansas State Wildcats,South Dakota Coyotes,MISSING
-401811115,2025-12-28 19:00:00+00:00,South Dakota Coyotes,Mount Marty College Lancers,MISSING
 401811967,2025-11-16 01:00:00+00:00,Oral Roberts Golden Eagles,Belmont Bruins,MISSING
 401811968,2025-11-20 01:30:00+00:00,Belmont Bruins,Lipscomb Bisons,MISSING
-401811969,2025-11-22 00:30:00+00:00,Belmont Bruins,Fisk Bulldogs,MISSING
 401811970,2025-11-30 20:30:00+00:00,Charleston Cougars,Belmont Bruins,MISSING
 401811971,2025-12-04 00:30:00+00:00,Belmont Bruins,Richmond Spiders,MISSING
 401811972,2025-12-07 21:30:00+00:00,Middle Tennessee Blue Raiders,Belmont Bruins,MISSING
@@ -1160,13 +1176,10 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401812276,2025-11-28 03:51:00+00:00,Northwestern Wildcats,Oklahoma State Cowboys,MISSING
 401812284,2025-11-13 01:00:00+00:00,Texas Longhorns,Fairleigh Dickinson Knights,MISSING
 401812285,2025-11-15 21:00:00+00:00,NJIT Highlanders,Fairleigh Dickinson Knights,MISSING
-401812286,2025-11-19 00:00:00+00:00,Fairleigh Dickinson Knights,St. Elizabeth Eagles,MISSING
 401812287,2025-11-24 17:00:00+00:00,Fairleigh Dickinson Knights,East Texas A&M Lions,MISSING
 401812288,2025-11-26 19:00:00+00:00,Fairleigh Dickinson Knights,Army Black Knights,MISSING
 401812289,2025-12-03 00:00:00+00:00,Providence Friars,Fairleigh Dickinson Knights,MISSING
-401812290,2025-12-04 21:00:00+00:00,Fairleigh Dickinson Knights,Manor College Blue Jays,MISSING
 401812291,2025-12-11 00:00:00+00:00,Fordham Rams,Fairleigh Dickinson Knights,MISSING
-401812292,2025-12-19 20:00:00+00:00,Fairleigh Dickinson Knights,Lehman College Bridges,MISSING
 401812313,2025-12-23 00:00:00+00:00,Boston College Eagles,Fairleigh Dickinson Knights,MISSING
 401812314,2025-12-30 02:00:00+00:00,Minnesota Golden Gophers,Fairleigh Dickinson Knights,MISSING
 401812315,2026-01-03 00:30:00+00:00,Mercyhurst Lakers,Fairleigh Dickinson Knights,MISSING
@@ -1226,8 +1239,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401812377,2026-02-21 19:00:00+00:00,Mercyhurst Lakers,Long Island University Sharks,MISSING
 401812380,2025-11-12 00:00:00+00:00,Saint Francis Red Flash,Mount St. Mary's Mountaineers,MISSING
 401812381,2025-11-19 00:00:00+00:00,Lehigh Mountain Hawks,Saint Francis Red Flash,MISSING
-401812382,2025-12-04 00:00:00+00:00,Saint Francis Red Flash,Penn State-Shenango Nittany Lions,MISSING
-401812383,2025-11-29 19:00:00+00:00,Saint Francis Red Flash,Franciscan University Barons,MISSING
 401812384,2025-12-02 00:00:00+00:00,Xavier Musketeers,Saint Francis Red Flash,MISSING
 401812385,2025-12-07 19:30:00+00:00,Radford Highlanders,Saint Francis Red Flash,MISSING
 401812386,2025-12-14 17:00:00+00:00,Temple Owls,Saint Francis Red Flash,MISSING
@@ -1303,7 +1314,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401812620,2026-02-14 00:00:00+00:00,Harvard Crimson,Brown Bears,MISSING
 401812621,2026-02-14 23:30:00+00:00,Harvard Crimson,Yale Bulldogs,MISSING
 401812622,2026-02-21 19:00:00+00:00,Cornell Big Red,Harvard Crimson,MISSING
-401812627,2025-11-16 00:00:00+00:00,Rider Broncs,Eastern University (PA) Eagles,MISSING
 401812628,2025-11-19 02:00:00+00:00,Texas Longhorns,Rider Broncs,MISSING
 401812629,2025-11-21 02:00:00+00:00,Houston Cougars,Rider Broncs,MISSING
 401812630,2025-11-26 00:00:00+00:00,Rider Broncs,Coppin State Eagles,MISSING
@@ -1313,7 +1323,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401812645,2025-11-16 19:00:00+00:00,Massachusetts Minutemen,Central Connecticut Blue Devils,MISSING
 401812646,2025-11-21 23:30:00+00:00,Rutgers Scarlet Knights,Central Connecticut Blue Devils,MISSING
 401812647,2025-11-25 00:00:00+00:00,Central Connecticut Blue Devils,Sacred Heart Pioneers,MISSING
-401812648,2025-11-30 18:00:00+00:00,Central Connecticut Blue Devils,Johnson & Wales (RI) Griffins,MISSING
 401812649,2025-12-04 00:00:00+00:00,Seton Hall Pirates,Central Connecticut Blue Devils,MISSING
 401812650,2025-12-07 18:00:00+00:00,Northeastern Huskies,Central Connecticut Blue Devils,MISSING
 401812651,2025-12-13 21:00:00+00:00,Binghamton Bearcats,Central Connecticut Blue Devils,MISSING
@@ -1328,10 +1337,8 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401812663,2025-11-19 00:00:00+00:00,Brown Bears,Holy Cross Crusaders,MISSING
 401812664,2025-11-22 00:00:00+00:00,Sacred Heart Pioneers,Holy Cross Crusaders,MISSING
 401812665,2025-11-24 23:00:00+00:00,Holy Cross Crusaders,Siena Saints,MISSING
-401812666,2025-11-26 19:00:00+00:00,Holy Cross Crusaders,Worcester State Lancers,MISSING
 401812667,2025-12-03 23:00:00+00:00,Holy Cross Crusaders,Northeastern Huskies,MISSING
 401812668,2025-12-06 19:00:00+00:00,Fordham Rams,Holy Cross Crusaders,MISSING
-401812669,2025-12-09 23:00:00+00:00,Holy Cross Crusaders,Regis Pride,MISSING
 401812670,2025-12-16 23:00:00+00:00,Holy Cross Crusaders,Dartmouth Big Green,MISSING
 401812787,2025-11-10 23:30:00+00:00,UConn Huskies,Columbia Lions,MISSING
 401812788,2025-11-16 00:00:00+00:00,UConn Huskies,BYU Cougars,MISSING
@@ -1351,7 +1358,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401813254,2025-11-09 19:00:00+00:00,Illinois State Redbirds,Cornell Big Red,MISSING
 401813255,2025-11-15 00:30:00+00:00,USC Trojans,Illinois State Redbirds,MISSING
 401813256,2025-11-17 00:00:00+00:00,Long Beach State Beach,Illinois State Redbirds,MISSING
-401813257,2025-11-21 01:00:00+00:00,Illinois State Redbirds,Rockford Regents,MISSING
 401813258,2025-11-23 22:00:00+00:00,Illinois State Redbirds,Coastal Carolina Chanticleers,MISSING
 401813259,2025-12-04 01:00:00+00:00,Illinois State Redbirds,Eastern Kentucky Colonels,MISSING
 401813260,2025-12-07 01:00:00+00:00,Illinois State Redbirds,Chicago State Cougars,MISSING
@@ -1367,7 +1373,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401813282,2025-12-20 03:00:00+00:00,California Golden Bears,Morgan State Bears,MISSING
 401813283,2025-12-21 23:00:00+00:00,San Francisco Dons,Morgan State Bears,MISSING
 401813284,2025-12-23 23:00:00+00:00,Loyola Marymount Lions,Morgan State Bears,MISSING
-401813285,2025-12-30 23:00:00+00:00,Morgan State Bears,Penn State (Brandywine) Lions,MISSING
 401813287,2025-11-09 19:00:00+00:00,Oklahoma State Cowboys,Texas A&M Aggies,MISSING
 401813288,2025-11-13 01:00:00+00:00,Oklahoma State Cowboys,Prairie View A&M Panthers,MISSING
 401813289,2025-11-16 19:00:00+00:00,Oklahoma State Cowboys,Texas A&M-Corpus Christi Islanders,MISSING
@@ -1398,7 +1403,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401813316,2026-02-13 23:30:00+00:00,Niagara Purple Eagles,Manhattan Jaspers,MISSING
 401813317,2026-02-15 18:00:00+00:00,Canisius Golden Griffins,Manhattan Jaspers,MISSING
 401813320,2025-11-09 19:00:00+00:00,Dartmouth Big Green,Marist Red Foxes,MISSING
-401813321,2025-11-13 00:00:00+00:00,Marist Red Foxes,Vassar Brewers,MISSING
 401813322,2025-11-22 00:00:00+00:00,Marist Red Foxes,Army Black Knights,MISSING
 401813323,2025-11-26 00:00:00+00:00,Marist Red Foxes,Lehigh Mountain Hawks,MISSING
 401813324,2025-12-06 00:00:00+00:00,Marist Red Foxes,Mount St. Mary's Mountaineers,MISSING
@@ -1451,7 +1455,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401813380,2025-12-06 00:00:00+00:00,Siena Saints,Niagara Purple Eagles,MISSING
 401813381,2025-12-07 19:00:00+00:00,Saint Peter's Peacocks,Niagara Purple Eagles,MISSING
 401813382,2025-12-16 00:00:00+00:00,VCU Rams,Niagara Purple Eagles,MISSING
-401813383,2025-12-20 18:00:00+00:00,Niagara Purple Eagles,Houghton Highlanders,MISSING
 401813384,2026-01-02 21:00:00+00:00,Niagara Purple Eagles,Sacred Heart Pioneers,MISSING
 401813385,2026-01-04 19:00:00+00:00,Niagara Purple Eagles,Fairfield Stags,MISSING
 401813386,2026-01-10 00:00:00+00:00,Iona Gaels,Niagara Purple Eagles,MISSING
@@ -1482,7 +1485,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401813415,2026-02-06 00:00:00+00:00,Mount St. Mary's Mountaineers,Merrimack Warriors,MISSING
 401813416,2026-02-08 00:00:00+00:00,Iona Gaels,Mount St. Mary's Mountaineers,MISSING
 401813417,2026-02-14 00:00:00+00:00,Rider Broncs,Mount St. Mary's Mountaineers,MISSING
-401813421,2025-12-21 17:00:00+00:00,Mount St. Mary's Mountaineers,Penn State (Brandywine) Lions,MISSING
 401813422,2026-01-03 00:00:00+00:00,Iona Gaels,Siena Saints,MISSING
 401813423,2026-01-04 19:00:00+00:00,Rider Broncs,Siena Saints,MISSING
 401813424,2026-01-10 00:00:00+00:00,Siena Saints,Merrimack Warriors,MISSING
@@ -1506,12 +1508,10 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401813447,2025-11-16 01:00:00+00:00,Villanova Wildcats,Duquesne Dukes,MISSING
 401813448,2025-11-20 00:00:00+00:00,Duquesne Dukes,Loyola Maryland Greyhounds,MISSING
 401813449,2025-11-22 21:00:00+00:00,Duquesne Dukes,Northeastern Huskies,MISSING
-401813450,2025-11-26 23:00:00+00:00,Duquesne Dukes,Central State (OH) Marauders,MISSING
 401813451,2025-12-03 00:00:00+00:00,Duquesne Dukes,William & Mary Tribe,MISSING
 401813452,2025-12-06 19:00:00+00:00,Duquesne Dukes,Stony Brook Seawolves,MISSING
 401813453,2025-12-11 02:00:00+00:00,Boise State Broncos,Duquesne Dukes,MISSING
 401813454,2025-12-14 03:00:00+00:00,Nevada Wolf Pack,Duquesne Dukes,MISSING
-401813455,2025-12-27 19:00:00+00:00,Duquesne Dukes,Cleary University Cougars,MISSING
 401813758,2025-11-11 03:00:00+00:00,UCLA Bruins,West Georgia Wolves,MISSING
 401813759,2025-11-15 03:00:00+00:00,UCLA Bruins,Arizona Wildcats,MISSING
 401813760,2025-11-19 03:30:00+00:00,UCLA Bruins,Sacramento State Hornets,MISSING
@@ -1623,7 +1623,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401817149,2025-12-06 23:00:00+00:00,George Washington Revolutionaries,William & Mary Tribe,MISSING
 401817150,2025-12-11 00:00:00+00:00,George Washington Revolutionaries,Delaware Blue Hens,MISSING
 401817151,2025-12-13 19:52:00+00:00,Florida Gators,George Washington Revolutionaries,MISSING
-401817152,2025-12-22 17:00:00+00:00,George Washington Revolutionaries,St. Mary's (MD) Seahawks,MISSING
 401817155,2025-11-14 00:30:00+00:00,Wichita State Shockers,Loyola Chicago Ramblers,MISSING
 401817156,2025-11-16 22:00:00+00:00,Loyola Chicago Ramblers,Colorado State Rams,MISSING
 401817157,2025-11-22 01:00:00+00:00,Loyola Chicago Ramblers,Northern Illinois Huskies,MISSING
@@ -1656,14 +1655,12 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401817190,2025-12-14 01:00:00+00:00,Saint Louis Billikens,San Francisco Dons,MISSING
 401817191,2025-12-18 01:00:00+00:00,Saint Louis Billikens,Bethune-Cookman Wildcats,MISSING
 401817192,2025-12-21 20:00:00+00:00,Saint Louis Billikens,New Hampshire Wildcats,MISSING
-401817193,2025-12-28 20:00:00+00:00,Saint Louis Billikens,Principia College PRINCIPIA,MISSING
 401817195,2025-11-13 00:00:00+00:00,St. Bonaventure Bonnies,Siena Saints,MISSING
 401817196,2025-11-15 21:00:00+00:00,St. Bonaventure Bonnies,Youngstown State Penguins,MISSING
 401817197,2025-11-20 23:00:00+00:00,St. Bonaventure Bonnies,Robert Morris Colonials,MISSING
 401817198,2025-11-25 23:00:00+00:00,North Carolina Tar Heels,St. Bonaventure Bonnies,MISSING
 401817199,2025-11-27 17:00:00+00:00,East Carolina Pirates,St. Bonaventure Bonnies,MISSING
 401817200,2025-11-30 20:30:00+00:00,Florida Atlantic Owls,St. Bonaventure Bonnies,MISSING
-401817201,2025-12-04 00:00:00+00:00,St. Bonaventure Bonnies,Bloomsburg Huskies,MISSING
 401817202,2025-12-06 19:00:00+00:00,Buffalo Bulls,St. Bonaventure Bonnies,MISSING
 401817203,2025-12-11 00:00:00+00:00,St. Bonaventure Bonnies,Colgate Raiders,MISSING
 401817204,2025-12-13 22:00:00+00:00,Ohio Bobcats,St. Bonaventure Bonnies,MISSING
@@ -1893,8 +1890,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401818300,2025-11-15 18:00:00+00:00,Yale Bulldogs,Stony Brook Seawolves,MISSING
 401818301,2025-11-21 17:30:00+00:00,Yale Bulldogs,Green Bay Phoenix,MISSING
 401818302,2025-11-30 19:00:00+00:00,Vermont Catamounts,Yale Bulldogs,MISSING
-401818303,2025-12-03 00:00:00+00:00,Yale Bulldogs,SUNY-Maritime Privateers,MISSING
-401818304,2025-12-04 00:30:00+00:00,Yale Bulldogs,Brandeis Judges,MISSING
 401818305,2025-12-07 19:00:00+00:00,Yale Bulldogs,UIC Flames,MISSING
 401818306,2025-12-10 21:30:00+00:00,Yale Bulldogs,UAlbany Great Danes,MISSING
 401818307,2026-01-06 00:00:00+00:00,Brown Bears,Yale Bulldogs,MISSING
@@ -1909,6 +1904,7 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401818332,2026-01-01 22:15:00+00:00,South Dakota State Jackrabbits,Omaha Mavericks,MISSING
 401818333,2026-02-10 00:00:00+00:00,Howard Bison,Yale Bulldogs,MISSING
 401818334,2026-02-14 00:00:00+00:00,Dartmouth Big Green,Yale Bulldogs,MISSING
+401818337,2026-03-07 19:00:00+00:00,Yale Bulldogs,Princeton Tigers,MISSING
 401818368,2025-11-14 00:00:00+00:00,Columbia Lions,UMass Lowell River Hawks,MISSING
 401818369,2025-11-19 00:00:00+00:00,Columbia Lions,Boston University Terriers,MISSING
 401818370,2025-11-21 23:00:00+00:00,Lehigh Mountain Hawks,Columbia Lions,MISSING
@@ -1973,12 +1969,10 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401818429,2026-02-22 01:00:00+00:00,Oral Roberts Golden Eagles,South Dakota Coyotes,MISSING
 401818430,2026-02-21 23:00:00+00:00,Denver Pioneers,St. Thomas-Minnesota Tommies,MISSING
 401818431,2026-02-21 19:00:00+00:00,North Dakota State Bison,Kansas City Roos,MISSING
-401818533,2025-11-29 19:00:00+00:00,Columbia Lions,Sarah Lawrence Gryphons,MISSING
 401818534,2025-12-04 00:00:00+00:00,Columbia Lions,Hofstra Pride,MISSING
 401818535,2025-12-06 22:30:00+00:00,Columbia Lions,UAlbany Great Danes,MISSING
 401818536,2025-12-10 00:00:00+00:00,Stony Brook Seawolves,Columbia Lions,MISSING
 401818537,2025-12-28 19:00:00+00:00,North Florida Ospreys,Columbia Lions,MISSING
-401818538,2025-12-31 19:00:00+00:00,Columbia Lions,Penn St Abington Nittany Lions,MISSING
 401818539,2026-01-05 22:00:00+00:00,Cornell Big Red,Columbia Lions,MISSING
 401818540,2026-01-17 19:00:00+00:00,Brown Bears,Columbia Lions,MISSING
 401818541,2026-01-24 19:00:00+00:00,Dartmouth Big Green,Columbia Lions,MISSING
@@ -1993,9 +1987,7 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401818552,2025-11-23 19:00:00+00:00,Maine Black Bears,Brown Bears,MISSING
 401818553,2025-11-26 18:00:00+00:00,New Hampshire Wildcats,Brown Bears,MISSING
 401818554,2025-12-06 00:00:00+00:00,Brown Bears,Bryant Bulldogs,MISSING
-401818555,2025-12-06 22:00:00+00:00,Brown Bears,Elms College Blazers,MISSING
 401818556,2025-12-10 00:30:00+00:00,Providence Friars,Brown Bears,MISSING
-401818558,2025-12-31 17:00:00+00:00,Brown Bears,Johnson & Wales (RI) Griffins,MISSING
 401818559,2026-01-19 19:00:00+00:00,Brown Bears,Cornell Big Red,MISSING
 401818560,2026-01-24 17:00:00+00:00,Princeton Tigers,Brown Bears,MISSING
 401818561,2026-01-31 23:00:00+00:00,Brown Bears,Dartmouth Big Green,MISSING
@@ -2020,7 +2012,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401819830,2025-12-10 17:00:00+00:00,Baylor Bears,Norfolk State Spartans,MISSING
 401819831,2025-12-20 01:00:00+00:00,Baylor Bears,Alcorn State Braves,MISSING
 401819832,2025-12-21 18:00:00+00:00,Baylor Bears,Southern Jaguars,MISSING
-401819833,2025-12-29 21:00:00+00:00,Baylor Bears,Arlington Baptist Patriots,MISSING
 401819835,2025-11-12 02:00:00+00:00,BYU Cougars,Delaware Blue Hens,MISSING
 401819836,2025-11-21 21:00:00+00:00,BYU Cougars,Wisconsin Badgers,MISSING
 401819837,2025-12-04 02:00:00+00:00,BYU Cougars,California Baptist Lancers,MISSING
@@ -2088,7 +2079,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401819921,2025-12-14 01:00:00+00:00,Ohio State Buckeyes,West Virginia Mountaineers,MISSING
 401819922,2025-12-23 00:00:00+00:00,West Virginia Mountaineers,Mississippi Valley State Delta Devils,MISSING
 401820150,2025-11-11 23:30:00+00:00,Penn State Nittany Lions,Navy Midshipmen,MISSING
-401820151,2025-11-14 23:00:00+00:00,Navy Midshipmen,Washington College (MD) Shoremen,MISSING
 401820152,2025-11-22 17:00:00+00:00,Navy Midshipmen,NJIT Highlanders,MISSING
 401820153,2025-11-26 21:00:00+00:00,Gardner-Webb Runnin' Bulldogs,Navy Midshipmen,MISSING
 401820154,2025-11-28 20:00:00+00:00,UNC Wilmington Seahawks,Navy Midshipmen,MISSING
@@ -2096,7 +2086,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401820156,2025-12-04 00:00:00+00:00,Delaware State Hornets,Navy Midshipmen,MISSING
 401820157,2025-12-07 17:00:00+00:00,Navy Midshipmen,Air Force Falcons,MISSING
 401820158,2025-12-19 22:00:00+00:00,Navy Midshipmen,Coppin State Eagles,MISSING
-401820159,2025-12-21 17:00:00+00:00,Navy Midshipmen,Rosemont Ravens,MISSING
 401820160,2025-12-31 18:00:00+00:00,Navy Midshipmen,Boston University Terriers,MISSING
 401820161,2026-01-03 19:00:00+00:00,Holy Cross Crusaders,Navy Midshipmen,MISSING
 401820162,2026-01-08 00:00:00+00:00,Navy Midshipmen,Bucknell Bison,MISSING
@@ -2117,7 +2106,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401820185,2025-11-15 19:00:00+00:00,Stonehill Skyhawks,Loyola Maryland Greyhounds,MISSING
 401820186,2025-11-16 19:00:00+00:00,Fairfield Stags,Loyola Maryland Greyhounds,MISSING
 401820187,2025-11-22 00:00:00+00:00,Kentucky Wildcats,Loyola Maryland Greyhounds,MISSING
-401820188,2025-11-25 23:00:00+00:00,Loyola Maryland Greyhounds,Washington College (MD) Shoremen,MISSING
 401820189,2025-11-30 23:00:00+00:00,Loyola Maryland Greyhounds,Coppin State Eagles,MISSING
 401820190,2025-12-04 00:00:00+00:00,Hampton Pirates,Loyola Maryland Greyhounds,MISSING
 401820191,2025-12-09 23:00:00+00:00,VMI Keydets,Loyola Maryland Greyhounds,MISSING
@@ -2140,7 +2128,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401820211,2025-11-21 00:00:00+00:00,Miami (OH) RedHawks,Mercyhurst Lakers,MISSING
 401820212,2025-11-24 00:00:00+00:00,Marshall Thundering Herd,Mercyhurst Lakers,MISSING
 401820213,2025-12-06 00:00:00+00:00,Lafayette Leopards,Mercyhurst Lakers,MISSING
-401820214,2025-12-07 19:00:00+00:00,Mercyhurst Lakers,Bethany (WV) Bison,MISSING
 401820215,2025-12-13 19:00:00+00:00,Davidson Wildcats,Mercyhurst Lakers,MISSING
 401820216,2025-12-20 19:00:00+00:00,Mercyhurst Lakers,Binghamton Bearcats,MISSING
 401820217,2026-01-23 18:00:00+00:00,New Haven Chargers,Mercyhurst Lakers,MISSING
@@ -2152,13 +2139,11 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401820226,2025-11-26 01:30:00+00:00,UC Irvine Anteaters,New Mexico State Aggies,MISSING
 401820227,2025-11-26 20:00:00+00:00,New Mexico State Aggies,Georgia State Panthers,MISSING
 401820294,2025-12-20 22:30:00+00:00,Arkansas Razorbacks,Houston Cougars,MISSING
-401820295,2025-12-10 03:00:00+00:00,California Golden Bears,Dominican (CA) Penguins,MISSING
 401820397,2025-11-12 03:00:00+00:00,UNLV Rebels,Montana Grizzlies,MISSING
 401820398,2025-11-16 22:10:00+00:00,Memphis Tigers,UNLV Rebels,MISSING
 401820399,2025-11-21 03:00:00+00:00,UNLV Rebels,Saint Joseph's Hawks,MISSING
 401820400,2025-11-25 04:59:00+00:00,Maryland Terrapins,UNLV Rebels,MISSING
 401820401,2025-12-14 02:30:00+00:00,UNLV Rebels,Tennessee State Tigers,MISSING
-401820402,2025-12-30 03:00:00+00:00,UNLV Rebels,La Sierra Golden Eagles,MISSING
 401820475,2025-12-16 01:00:00+00:00,Houston Christian Huskies,McNeese Cowboys,MISSING
 401820476,2026-01-03 22:00:00+00:00,Incarnate Word Cardinals,Houston Christian Huskies,MISSING
 401820477,2026-01-06 01:00:00+00:00,Houston Christian Huskies,Texas A&M-Corpus Christi Islanders,MISSING
@@ -2167,11 +2152,8 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401820480,2026-01-31 21:30:00+00:00,Texas A&M-Corpus Christi Islanders,Houston Christian Huskies,MISSING
 401820482,2025-11-20 17:30:00+00:00,Incarnate Word Cardinals,Southern Indiana Screaming Eagles,MISSING
 401820483,2025-11-20 19:30:00+00:00,UIC Flames,High Point Panthers,MISSING
-401820486,2025-11-22 19:00:00+00:00,Texas A&M-Corpus Christi Islanders,Howard Payne Yellow Jackets,MISSING
 401820487,2025-11-28 22:30:00+00:00,Xavier Musketeers,Texas A&M-Corpus Christi Islanders,MISSING
 401820488,2025-12-07 00:00:00+00:00,Lamar Cardinals,Texas A&M-Corpus Christi Islanders,MISSING
-401820489,2025-12-13 01:00:00+00:00,Texas A&M-Corpus Christi Islanders,Dallas Christian Crusaders,MISSING
-401820490,2025-12-21 01:30:00+00:00,Texas A&M-Corpus Christi Islanders,Southwestern Adventist Knights,MISSING
 401820491,2026-01-24 21:30:00+00:00,Incarnate Word Cardinals,Texas A&M-Corpus Christi Islanders,MISSING
 401820492,2026-02-03 02:00:00+00:00,Texas A&M-Corpus Christi Islanders,Incarnate Word Cardinals,MISSING
 401820493,2026-02-14 21:30:00+00:00,Texas A&M-Corpus Christi Islanders,Lamar Cardinals,MISSING
@@ -2182,7 +2164,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401820543,2025-11-15 00:00:00+00:00,Northern Iowa Panthers,Furman Paladins,MISSING
 401820544,2025-11-19 01:00:00+00:00,Northern Iowa Panthers,Northern Illinois Huskies,MISSING
 401820545,2025-11-23 03:30:00+00:00,UC Irvine Anteaters,Northern Iowa Panthers,MISSING
-401820546,2025-12-02 01:00:00+00:00,Northern Iowa Panthers,Coe Kohawks,MISSING
 401820547,2025-12-07 01:00:00+00:00,Northern Iowa Panthers,Wichita State Shockers,MISSING
 401820548,2025-12-13 23:00:00+00:00,Northern Iowa Panthers,Oakland Golden Grizzlies,MISSING
 401820549,2025-12-23 03:00:00+00:00,Saint Mary's Gaels,Northern Iowa Panthers,MISSING
@@ -2208,8 +2189,8 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401820570,2026-02-14 22:00:00+00:00,Fresno State Bulldogs,Air Force Falcons,MISSING
 401820571,2026-02-18 02:00:00+00:00,New Mexico Lobos,Air Force Falcons,MISSING
 401820572,2026-02-21 20:00:00+00:00,Air Force Falcons,UNLV Rebels,MISSING
+401820576,2026-03-08 03:00:00+00:00,Nevada Wolf Pack,Air Force Falcons,MISSING
 401820578,2025-11-16 19:00:00+00:00,Maine Black Bears,Quinnipiac Bobcats,MISSING
-401820579,2025-11-20 00:00:00+00:00,Quinnipiac Bobcats,City College NY Beavers,MISSING
 401820580,2025-11-26 00:00:00+00:00,UCF Knights,Quinnipiac Bobcats,MISSING
 401820581,2025-11-30 19:00:00+00:00,Quinnipiac Bobcats,Stonehill Skyhawks,MISSING
 401820582,2025-12-06 00:00:00+00:00,Iona Gaels,Quinnipiac Bobcats,MISSING
@@ -2224,28 +2205,22 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401820591,2026-02-01 19:00:00+00:00,Fairfield Stags,Quinnipiac Bobcats,MISSING
 401820592,2026-02-15 19:00:00+00:00,Quinnipiac Bobcats,Merrimack Warriors,MISSING
 401820593,2026-02-22 19:00:00+00:00,Quinnipiac Bobcats,Fairfield Stags,MISSING
-401820597,2025-11-13 00:00:00+00:00,Akron Zips,Penn State-Shenango Nittany Lions,MISSING
 401820598,2025-11-17 00:30:00+00:00,Purdue Boilermakers,Akron Zips,MISSING
 401820599,2025-11-21 22:30:00+00:00,Akron Zips,Iona Gaels,MISSING
 401820600,2025-11-30 00:00:00+00:00,Akron Zips,Milwaukee Panthers,MISSING
 401820601,2025-12-06 21:00:00+00:00,Tulane Green Wave,Akron Zips,MISSING
 401820602,2025-12-13 21:00:00+00:00,Akron Zips,Murray State Racers,MISSING
-401820603,2025-12-30 00:00:00+00:00,Akron Zips,Concord Mountain Lions,MISSING
 401820605,2025-11-12 23:30:00+00:00,Georgetown Hoyas,Binghamton Bearcats,MISSING
 401820606,2025-11-15 20:00:00+00:00,Longwood Lancers,Binghamton Bearcats,MISSING
-401820607,2025-11-19 23:07:00+00:00,Binghamton Bearcats,Misericordia Cougars,MISSING
 401820608,2025-11-22 20:00:00+00:00,Binghamton Bearcats,Maryland Eastern Shore Hawks,MISSING
 401820609,2025-12-03 00:00:00+00:00,Binghamton Bearcats,Lehigh Mountain Hawks,MISSING
 401820610,2025-12-06 21:00:00+00:00,Binghamton Bearcats,Le Moyne Dolphins,MISSING
 401820611,2025-12-23 17:00:00+00:00,Army Black Knights,Binghamton Bearcats,MISSING
-401820612,2025-12-29 21:00:00+00:00,Binghamton Bearcats,Elmira Soaring Eagles,MISSING
 401820615,2025-11-13 01:30:00+00:00,Bryant Bulldogs,Dartmouth Big Green,MISSING
 401820616,2025-11-16 18:00:00+00:00,Valparaiso Beacons,Bryant Bulldogs,MISSING
-401820617,2025-11-26 16:00:00+00:00,Bryant Bulldogs,Mercy Mavericks,MISSING
 401820618,2025-12-02 23:00:00+00:00,Bryant Bulldogs,Stonehill Skyhawks,MISSING
 401820619,2025-12-11 00:00:00+00:00,Iona Gaels,Bryant Bulldogs,MISSING
 401820620,2025-12-23 00:00:00+00:00,High Point Panthers,Bryant Bulldogs,MISSING
-401820621,2025-12-28 18:00:00+00:00,Bryant Bulldogs,Worcester State Lancers,MISSING
 401820623,2025-11-10 23:30:00+00:00,Rutgers Scarlet Knights,Maine Black Bears,MISSING
 401820624,2025-11-20 00:30:00+00:00,Merrimack Warriors,Maine Black Bears,MISSING
 401820626,2025-11-29 18:00:00+00:00,Longwood Lancers,Maine Black Bears,MISSING
@@ -2254,7 +2229,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401820629,2025-12-06 18:00:00+00:00,Miami (OH) RedHawks,Maine Black Bears,MISSING
 401820630,2025-12-11 00:00:00+00:00,Boston University Terriers,Maine Black Bears,MISSING
 401820631,2025-12-21 19:00:00+00:00,Drexel Dragons,Maine Black Bears,MISSING
-401820632,2025-12-30 19:00:00+00:00,Maine Black Bears,Maine-Fort Kent Bengals,MISSING
 401820634,2025-12-31 02:00:00+00:00,California Golden Bears,Louisville Cardinals,MISSING
 401820635,2025-12-31 02:00:00+00:00,Stanford Cardinal,Notre Dame Fighting Irish,MISSING
 401820636,2025-12-31 21:00:00+00:00,Duke Blue Devils,Georgia Tech Yellow Jackets,MISSING
@@ -2384,15 +2358,22 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401820760,2026-02-21 19:00:00+00:00,Virginia Cavaliers,Miami Hurricanes,MISSING
 401820761,2026-02-21 17:00:00+00:00,Virginia Tech Hokies,Wake Forest Demon Deacons,MISSING
 401820762,2026-02-24 00:00:00+00:00,North Carolina Tar Heels,Louisville Cardinals,MISSING
+401820787,2026-03-07 17:00:00+00:00,Clemson Tigers,Georgia Tech Yellow Jackets,MISSING
+401820788,2026-03-07 23:30:00+00:00,Duke Blue Devils,North Carolina Tar Heels,MISSING
+401820789,2026-03-07 19:00:00+00:00,Florida State Seminoles,SMU Mustangs,MISSING
+401820790,2026-03-07 19:00:00+00:00,Miami Hurricanes,Louisville Cardinals,MISSING
+401820791,2026-03-07 19:15:00+00:00,NC State Wolfpack,Stanford Cardinal,MISSING
+401820792,2026-03-07 21:30:00+00:00,Syracuse Orange,Pittsburgh Panthers,MISSING
+401820793,2026-03-07 17:00:00+00:00,Boston College Eagles,Notre Dame Fighting Irish,MISSING
+401820794,2026-03-07 17:00:00+00:00,Virginia Cavaliers,Virginia Tech Hokies,MISSING
+401820795,2026-03-07 21:00:00+00:00,Wake Forest Demon Deacons,California Golden Bears,MISSING
 401820798,2025-11-12 00:00:00+00:00,Charlotte 49ers,Davidson Wildcats,MISSING
 401820799,2025-11-21 23:30:00+00:00,App State Mountaineers,Charlotte 49ers,MISSING
-401820800,2025-11-23 19:00:00+00:00,Charlotte 49ers,Shaw Bears,MISSING
 401820801,2025-12-03 00:00:00+00:00,Charlotte 49ers,North Carolina A&T Aggies,MISSING
 401820802,2025-12-07 19:00:00+00:00,Charlotte 49ers,Utah State Aggies,MISSING
 401820803,2025-12-14 21:00:00+00:00,Charleston Cougars,Charlotte 49ers,MISSING
 401820804,2025-12-19 00:00:00+00:00,Charlotte 49ers,Lafayette Leopards,MISSING
 401820805,2025-12-21 19:00:00+00:00,Charlotte 49ers,UIC Flames,MISSING
-401820807,2025-11-14 00:00:00+00:00,East Carolina Pirates,Elizabeth City State Vikings,MISSING
 401820808,2025-11-19 00:00:00+00:00,UNC Wilmington Seahawks,East Carolina Pirates,MISSING
 401820809,2025-11-22 00:00:00+00:00,East Carolina Pirates,Charleston Southern Buccaneers,MISSING
 401820810,2025-11-25 18:00:00+00:00,East Carolina Pirates,Michigan State Spartans,MISSING
@@ -2423,22 +2404,18 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401820839,2025-11-14 01:00:00+00:00,Alabama A&M Bulldogs,Charleston Southern Buccaneers,MISSING
 401820840,2025-11-14 23:30:00+00:00,Charleston Southern Buccaneers,Lindenwood Lions,MISSING
 401820841,2025-11-19 00:00:00+00:00,Charleston Southern Buccaneers,IU Indianapolis Jaguars,MISSING
-401820842,2025-11-26 00:30:00+00:00,Charleston Southern Buccaneers,Piedmont Lions,MISSING
 401820843,2025-11-28 21:00:00+00:00,South Carolina Gamecocks,Charleston Southern Buccaneers,MISSING
 401820844,2025-12-02 17:00:00+00:00,UT Martin Skyhawks,Charleston Southern Buccaneers,MISSING
-401820845,2025-12-05 00:00:00+00:00,Charleston Southern Buccaneers,Warren Wilson Owls,MISSING
 401820846,2025-12-09 00:00:00+00:00,Charleston Southern Buccaneers,South Carolina State Bulldogs,MISSING
 401820847,2025-12-18 16:00:00+00:00,Charleston Southern Buccaneers,North Florida Ospreys,MISSING
 401820848,2025-12-21 19:00:00+00:00,Furman Paladins,Charleston Southern Buccaneers,MISSING
 401822167,2025-11-12 00:00:00+00:00,Fordham Rams,Wagner Seahawks,MISSING
 401822168,2025-11-15 00:00:00+00:00,Iona Gaels,Fordham Rams,MISSING
-401822169,2025-11-16 21:00:00+00:00,Fordham Rams,Manhattanville Valiants,MISSING
 401822170,2025-12-13 19:00:00+00:00,Fordham Rams,Manhattan Jaspers,MISSING
 401822171,2025-12-22 16:00:00+00:00,Fordham Rams,New Haven Chargers,MISSING
 401822178,2025-11-12 00:00:00+00:00,Temple Owls,La Salle Explorers,MISSING
 401822179,2025-11-15 18:00:00+00:00,La Salle Explorers,Penn State Nittany Lions,MISSING
 401822180,2025-11-20 00:00:00+00:00,La Salle Explorers,Villanova Wildcats,MISSING
-401822181,2025-11-22 22:00:00+00:00,La Salle Explorers,Lancasater Bible College Chargers,MISSING
 401822182,2025-11-28 19:00:00+00:00,La Salle Explorers,Hofstra Pride,MISSING
 401822183,2025-11-30 17:00:00+00:00,La Salle Explorers,Merrimack Warriors,MISSING
 401822184,2025-12-20 00:00:00+00:00,High Point Panthers,La Salle Explorers,MISSING
@@ -2446,7 +2423,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401822310,2025-11-11 01:00:00+00:00,Milwaukee Panthers,Little Rock Trojans,MISSING
 401822311,2025-11-13 00:00:00+00:00,Indiana Hoosiers,Milwaukee Panthers,MISSING
 401822312,2025-11-23 00:00:00+00:00,Wichita State Shockers,Milwaukee Panthers,MISSING
-401822313,2025-11-26 00:00:00+00:00,Milwaukee Panthers,Dominican (IL) Dominican,MISSING
 401822314,2025-12-14 19:00:00+00:00,Milwaukee Panthers,Indiana State Sycamores,MISSING
 401822315,2025-12-19 22:00:00+00:00,Milwaukee Panthers,South Dakota State Jackrabbits,MISSING
 401822316,2025-12-31 00:00:00+00:00,Wisconsin Badgers,Milwaukee Panthers,MISSING
@@ -2459,13 +2435,11 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401822325,2025-12-04 01:00:00+00:00,Evansville Purple Aces,Ball State Cardinals,MISSING
 401822326,2025-12-10 00:00:00+00:00,Ball State Cardinals,South Dakota State Jackrabbits,MISSING
 401822327,2025-12-14 19:00:00+00:00,Campbell Fighting Camels,Ball State Cardinals,MISSING
-401822328,2025-12-30 00:00:00+00:00,Ball State Cardinals,Earlham College Quakers,MISSING
 401822331,2025-11-13 01:00:00+00:00,Valparaiso Beacons,Nicholls Colonels,MISSING
 401822332,2025-11-20 00:00:00+00:00,Cleveland State Vikings,Valparaiso Beacons,MISSING
 401822333,2025-11-26 20:00:00+00:00,Valparaiso Beacons,Southern Indiana Screaming Eagles,MISSING
 401822334,2025-11-29 20:00:00+00:00,Valparaiso Beacons,Western Michigan Broncos,MISSING
 401822335,2025-12-03 01:00:00+00:00,Marquette Golden Eagles,Valparaiso Beacons,MISSING
-401822336,2025-12-06 20:00:00+00:00,Valparaiso Beacons,Calumet Crimson Wave,MISSING
 401822337,2025-12-13 20:00:00+00:00,Valparaiso Beacons,UNC Wilmington Seahawks,MISSING
 401822338,2025-12-17 01:00:00+00:00,Northwestern Wildcats,Valparaiso Beacons,MISSING
 401822340,2025-11-15 19:00:00+00:00,Chicago State Cougars,UIC Flames,MISSING
@@ -2480,24 +2454,17 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401822350,2025-11-15 00:00:00+00:00,Fairfield Stags,Stonehill Skyhawks,MISSING
 401822351,2025-11-21 23:00:00+00:00,Stonehill Skyhawks,Lafayette Leopards,MISSING
 401822352,2025-11-26 17:00:00+00:00,Stonehill Skyhawks,UMass Lowell River Hawks,MISSING
-401822353,2025-12-13 00:00:00+00:00,Stonehill Skyhawks,Vermont State - Johnson Badgers,MISSING
 401822354,2025-12-17 23:00:00+00:00,New Hampshire Wildcats,Stonehill Skyhawks,MISSING
 401822356,2025-11-15 00:00:00+00:00,Kentucky Wildcats,Eastern Illinois Panthers,MISSING
 401822358,2025-11-26 00:30:00+00:00,Central Arkansas Bears,Eastern Illinois Panthers,MISSING
 401822359,2025-11-28 17:00:00+00:00,Purdue Boilermakers,Eastern Illinois Panthers,MISSING
-401822362,2025-12-22 20:00:00+00:00,Eastern Illinois Panthers,East-West University Phantoms,MISSING
 401822363,2026-01-30 01:30:00+00:00,Eastern Illinois Panthers,UT Martin Skyhawks,MISSING
-401822367,2025-11-20 01:00:00+00:00,Eastern Illinois Panthers,Tiffin Dragons,MISSING
-401822368,2025-12-02 01:00:00+00:00,Eastern Illinois Panthers,Blackburn Beavers,MISSING
 401822371,2025-11-16 21:00:00+00:00,Alabama A&M Bulldogs,Lindenwood Lions,MISSING
 401822393,2025-11-25 00:00:00+00:00,Lindenwood Lions,Kansas City Roos,MISSING
 401822394,2025-12-03 01:00:00+00:00,Northern Illinois Huskies,Lindenwood Lions,MISSING
-401822395,2025-12-10 00:00:00+00:00,Lindenwood Lions,Culver-Stockton Wildcats,MISSING
-401822396,2025-12-20 19:00:00+00:00,Lindenwood Lions,Harris-Stowe State Hornets,MISSING
 401822397,2025-12-23 20:00:00+00:00,Missouri State Bears,Lindenwood Lions,MISSING
 401822398,2026-01-30 01:30:00+00:00,Southern Indiana Screaming Eagles,Lindenwood Lions,MISSING
 401822399,2025-11-20 23:00:00+00:00,Indiana Hoosiers,Lindenwood Lions,MISSING
-401822668,2025-11-26 00:00:00+00:00,Saint Joseph's Hawks,Rutgers-Camden Scarlet Raptors,MISSING
 401822669,2025-11-30 18:00:00+00:00,Princeton Tigers,Saint Joseph's Hawks,MISSING
 401822670,2025-12-10 00:00:00+00:00,Saint Joseph's Hawks,Coppin State Eagles,MISSING
 401822671,2025-12-19 00:00:00+00:00,Saint Joseph's Hawks,Delaware State Hornets,MISSING
@@ -2508,7 +2475,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401822730,2025-11-15 22:00:00+00:00,Cal State Fullerton Titans,Pacific Tigers,MISSING
 401822731,2025-11-22 03:00:00+00:00,Portland Pilots,Cal State Fullerton Titans,MISSING
 401822732,2025-11-22 22:30:00+00:00,Cal State Fullerton Titans,St. Thomas-Minnesota Tommies,MISSING
-401822733,2025-12-28 17:00:00+00:00,Saint Joseph's Hawks,Arcadia ARCADIA,MISSING
 401822736,2025-11-13 00:00:00+00:00,VCU Rams,Saint Peter's Peacocks,MISSING
 401822737,2025-11-23 00:30:00+00:00,VCU Rams,Coppin State Eagles,MISSING
 401822738,2025-11-26 19:53:00+00:00,VCU Rams,South Florida Bulls,MISSING
@@ -2519,7 +2485,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401822759,2025-11-13 00:00:00+00:00,South Florida Bulls,Coppin State Eagles,MISSING
 401822760,2025-11-14 16:00:00+00:00,Coppin State Eagles,Central Michigan Chippewas,MISSING
 401822761,2025-11-15 16:00:00+00:00,Coppin State Eagles,South Alabama Jaguars,MISSING
-401822762,2025-11-18 16:00:00+00:00,Coppin State Eagles,Central Penn Knights,MISSING
 401822763,2025-12-06 19:00:00+00:00,Liberty Flames,Coppin State Eagles,MISSING
 401822764,2025-12-14 19:30:00+00:00,Radford Highlanders,Coppin State Eagles,MISSING
 401822765,2025-12-22 23:30:00+00:00,Georgetown Hoyas,Coppin State Eagles,MISSING
@@ -2631,26 +2596,24 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401822954,2026-02-21 18:30:00+00:00,Butler Bulldogs,Xavier Musketeers,MISSING
 401822955,2026-02-22 01:15:00+00:00,DePaul Blue Demons,Providence Friars,MISSING
 401822956,2026-02-21 23:15:00+00:00,Seton Hall Pirates,Georgetown Hoyas,MISSING
+401822973,2026-03-07 17:30:00+00:00,Marquette Golden Eagles,UConn Huskies,MISSING
+401822974,2026-03-07 17:00:00+00:00,Villanova Wildcats,Xavier Musketeers,MISSING
+401822975,2026-03-07 17:00:00+00:00,DePaul Blue Demons,Butler Bulldogs,MISSING
+401822976,2026-03-08 01:00:00+00:00,Georgetown Hoyas,Providence Friars,MISSING
 401822995,2025-11-13 01:00:00+00:00,Evansville Purple Aces,Middle Tennessee Blue Raiders,MISSING
 401822996,2025-11-19 23:30:00+00:00,Michigan Wolverines,Middle Tennessee Blue Raiders,MISSING
 401822997,2025-11-24 00:30:00+00:00,Middle Tennessee Blue Raiders,Murray State Racers,MISSING
 401822998,2025-12-02 00:30:00+00:00,Middle Tennessee Blue Raiders,UAB Blazers,MISSING
 401822999,2025-12-18 00:30:00+00:00,Middle Tennessee Blue Raiders,Kennesaw State Owls,MISSING
-401823000,2025-12-21 19:00:00+00:00,Middle Tennessee Blue Raiders,Cumberland (TN) Phoenix,MISSING
 401823001,2025-12-30 01:00:00+00:00,Houston Cougars,Middle Tennessee Blue Raiders,MISSING
-401823003,2025-11-10 23:30:00+00:00,Youngstown State Penguins,Penn State-Shenango Nittany Lions,MISSING
 401823004,2025-11-20 00:00:00+00:00,Toledo Rockets,Youngstown State Penguins,MISSING
-401823005,2025-12-14 19:00:00+00:00,Youngstown State Penguins,Thiel Tomcats,MISSING
 401823006,2025-12-20 18:00:00+00:00,Youngstown State Penguins,South Carolina Upstate Spartans,MISSING
-401823007,2026-01-09 16:00:00+00:00,Youngstown State Penguins,Bryant & Stratton (Ohio) Bobcats,MISSING
 401823010,2025-11-11 00:00:00+00:00,Kent State Golden Flashes,UNC Wilmington Seahawks,MISSING
 401823011,2025-11-15 18:00:00+00:00,Cleveland State Vikings,Kent State Golden Flashes,MISSING
 401823012,2025-11-16 17:00:00+00:00,Kent State Golden Flashes,Wright State Raiders,MISSING
 401823013,2025-11-19 00:00:00+00:00,Kent State Golden Flashes,Eastern Kentucky Colonels,MISSING
 401823014,2025-11-22 19:00:00+00:00,Kent State Golden Flashes,Cleveland State Vikings,MISSING
-401823015,2025-11-30 00:00:00+00:00,Kent State Golden Flashes,Penn State-Shenango Nittany Lions,MISSING
 401823016,2025-12-04 00:00:00+00:00,Kent State Golden Flashes,Austin Peay Governors,MISSING
-401823017,2025-12-06 21:00:00+00:00,Kent State Golden Flashes,Roberts Wesleyan Redhawks,MISSING
 401823018,2025-12-14 22:00:00+00:00,Portland Pilots,Kent State Golden Flashes,MISSING
 401823019,2025-12-30 00:00:00+00:00,Purdue Boilermakers,Kent State Golden Flashes,MISSING
 401823022,2025-11-09 18:00:00+00:00,Marquette Golden Eagles,Indiana Hoosiers,MISSING
@@ -2678,7 +2641,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823053,2026-02-17 00:00:00+00:00,Maryland Eastern Shore Hawks,Norfolk State Spartans,MISSING
 401823173,2025-11-23 19:00:00+00:00,Northern Colorado Bears,Cal State Fullerton Titans,MISSING
 401823174,2025-11-29 22:00:00+00:00,Cal State Fullerton Titans,Pepperdine Waves,MISSING
-401823175,2025-12-11 03:00:00+00:00,Cal State Fullerton Titans,Bethesda University Flames,MISSING
 401823176,2025-12-13 21:00:00+00:00,Denver Pioneers,Cal State Fullerton Titans,MISSING
 401823177,2026-01-02 03:00:00+00:00,Cal State Fullerton Titans,UC Santa Barbara Gauchos,MISSING
 401823178,2026-01-11 00:00:00+00:00,Cal State Fullerton Titans,Cal State Northridge Matadors,MISSING
@@ -2689,16 +2651,15 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823183,2026-02-08 00:00:00+00:00,Cal State Fullerton Titans,Cal State Bakersfield Roadrunners,MISSING
 401823184,2026-02-13 03:00:00+00:00,Long Beach State Beach,Cal State Fullerton Titans,MISSING
 401823185,2026-02-22 02:30:00+00:00,Cal State Bakersfield Roadrunners,Cal State Fullerton Titans,MISSING
+401823186,2026-03-08 01:00:00+00:00,Cal State Northridge Matadors,Cal State Fullerton Titans,MISSING
 401823189,2025-11-11 00:00:00+00:00,Seton Hall Pirates,Fairfield Stags,MISSING
 401823190,2025-11-22 18:00:00+00:00,Le Moyne Dolphins,Fairfield Stags,MISSING
 401823191,2025-11-30 19:00:00+00:00,Fairfield Stags,New Hampshire Wildcats,MISSING
 401823192,2025-12-07 18:00:00+00:00,Merrimack Warriors,Fairfield Stags,MISSING
-401823214,2025-11-13 00:00:00+00:00,Bellarmine Knights,Hanover Panthers,MISSING
 401823215,2025-11-15 19:00:00+00:00,Bellarmine Knights,Wofford Terriers,MISSING
 401823216,2025-11-25 00:00:00+00:00,The Citadel Bulldogs,Bellarmine Knights,MISSING
 401823217,2025-11-26 00:00:00+00:00,Bellarmine Knights,Houston Christian Huskies,MISSING
 401823218,2025-11-29 20:00:00+00:00,Northern Illinois Huskies,Bellarmine Knights,MISSING
-401823219,2025-12-04 00:00:00+00:00,Bellarmine Knights,Midway University Eagles,MISSING
 401823220,2025-12-06 20:00:00+00:00,Murray State Racers,Bellarmine Knights,MISSING
 401823221,2025-12-13 19:00:00+00:00,Bellarmine Knights,Northern Kentucky Norse,MISSING
 401823222,2025-12-18 00:00:00+00:00,Bellarmine Knights,Chattanooga Mocs,MISSING
@@ -2712,7 +2673,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823232,2025-12-04 00:00:00+00:00,Florida International Panthers,Florida Gulf Coast Eagles,MISSING
 401823233,2025-12-07 19:00:00+00:00,Florida Gulf Coast Eagles,Florida Atlantic Owls,MISSING
 401823234,2025-12-14 21:00:00+00:00,New Mexico Lobos,Florida Gulf Coast Eagles,MISSING
-401823235,2025-12-28 19:00:00+00:00,Florida Gulf Coast Eagles,Fort Lauderdale Eagles,MISSING
 401823256,2025-11-09 19:00:00+00:00,North Dakota Fighting Hawks,Cal State Northridge Matadors,MISSING
 401823257,2025-11-12 01:00:00+00:00,North Dakota State Bison,Cal State Northridge Matadors,MISSING
 401823258,2025-11-17 01:00:00+00:00,Cal State Northridge Matadors,Troy Trojans,MISSING
@@ -2720,7 +2680,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823260,2025-11-28 23:30:00+00:00,Idaho State Bengals,Cal State Northridge Matadors,MISSING
 401823261,2025-12-05 03:00:00+00:00,Cal State Northridge Matadors,Cal State Bakersfield Roadrunners,MISSING
 401823262,2025-12-11 03:00:00+00:00,Cal State Northridge Matadors,Fresno State Bulldogs,MISSING
-401823263,2025-12-19 22:00:00+00:00,Cal State Northridge Matadors,La Sierra Golden Eagles,MISSING
 401823264,2025-12-23 03:00:00+00:00,Cal State Northridge Matadors,Sacramento State Hornets,MISSING
 401823265,2026-01-03 21:00:00+00:00,Cal State Northridge Matadors,UC Santa Barbara Gauchos,MISSING
 401823266,2026-01-18 01:00:00+00:00,Cal State Northridge Matadors,Long Beach State Beach,MISSING
@@ -2728,14 +2687,12 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823268,2026-02-20 02:00:00+00:00,UC Santa Barbara Gauchos,Cal State Northridge Matadors,MISSING
 401823269,2026-02-22 02:00:00+00:00,Long Beach State Beach,Cal State Northridge Matadors,MISSING
 401823306,2025-11-13 03:00:00+00:00,Pacific Tigers,Long Beach State Beach,MISSING
-401823307,2025-11-20 03:00:00+00:00,Long Beach State Beach,Nobel Knights,MISSING
 401823308,2025-11-22 03:00:00+00:00,Long Beach State Beach,Montana State Bobcats,MISSING
 401823309,2025-11-27 03:00:00+00:00,Portland Pilots,Long Beach State Beach,MISSING
 401823310,2025-11-30 22:00:00+00:00,Long Beach State Beach,San Diego Toreros,MISSING
 401823311,2025-12-05 02:00:00+00:00,UC Santa Barbara Gauchos,Long Beach State Beach,MISSING
 401823312,2025-12-10 03:00:00+00:00,San José State Spartans,Long Beach State Beach,MISSING
 401823313,2025-12-14 19:00:00+00:00,Fairfield Stags,Monmouth Hawks,MISSING
-401823314,2025-12-23 00:00:00+00:00,Fairfield Stags,City College NY Beavers,MISSING
 401823315,2025-12-30 00:00:00+00:00,Fairfield Stags,Saint Peter's Peacocks,MISSING
 401823316,2026-01-10 00:00:00+00:00,Fairfield Stags,Rider Broncs,MISSING
 401823317,2026-01-31 00:00:00+00:00,Iona Gaels,Fairfield Stags,MISSING
@@ -2745,14 +2702,11 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823323,2025-11-12 01:00:00+00:00,Missouri State Bears,Arkansas State Red Wolves,MISSING
 401823324,2025-11-15 23:00:00+00:00,UT Arlington Mavericks,Missouri State Bears,MISSING
 401823325,2025-11-22 22:00:00+00:00,Missouri State Bears,UT Rio Grande Valley Vaqueros,MISSING
-401823326,2025-11-30 20:00:00+00:00,Missouri State Bears,Northeastern State RiverHawks,MISSING
 401823327,2025-12-06 20:00:00+00:00,Tulsa Golden Hurricane,Missouri State Bears,MISSING
 401823328,2025-12-13 00:00:00+00:00,Xavier Musketeers,Missouri State Bears,MISSING
 401823329,2025-12-17 01:00:00+00:00,Missouri State Bears,Oral Roberts Golden Eagles,MISSING
 401823331,2025-11-20 00:30:00+00:00,Sam Houston Bearkats,Wyoming Cowboys,MISSING
-401823332,2025-11-22 20:30:00+00:00,Sam Houston Bearkats,Schreiner Mountaineers,MISSING
 401823333,2025-12-19 03:00:00+00:00,Long Beach State Beach,Pepperdine Waves,MISSING
-401823334,2025-12-31 03:00:00+00:00,Long Beach State Beach,Lincoln University (CA) Oaklanders,MISSING
 401823335,2026-01-11 00:00:00+00:00,Long Beach State Beach,Cal State Bakersfield Roadrunners,MISSING
 401823336,2026-01-16 03:00:00+00:00,Long Beach State Beach,UC Riverside Highlanders,MISSING
 401823337,2026-01-25 00:00:00+00:00,Long Beach State Beach,UC Santa Barbara Gauchos,MISSING
@@ -2763,7 +2717,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823344,2025-11-24 19:00:00+00:00,Bethune-Cookman Wildcats,Jacksonville Dolphins,MISSING
 401823345,2025-12-03 00:00:00+00:00,Jacksonville Dolphins,Florida A&M Rattlers,MISSING
 401823346,2025-12-06 19:00:00+00:00,Florida International Panthers,Jacksonville Dolphins,MISSING
-401823347,2025-12-12 00:00:00+00:00,Jacksonville Dolphins,Trinity College of Jacksonville Eagles,MISSING
 401823348,2025-12-15 00:00:00+00:00,Texas A&M Aggies,Jacksonville Dolphins,MISSING
 401823349,2025-12-18 00:00:00+00:00,Florida A&M Rattlers,Jacksonville Dolphins,MISSING
 401823350,2025-12-23 00:00:00+00:00,Florida State Seminoles,Jacksonville Dolphins,MISSING
@@ -2771,41 +2724,27 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823354,2025-11-29 02:00:00+00:00,Idaho Vandals,Sam Houston Bearkats,MISSING
 401823355,2025-12-06 22:00:00+00:00,Texas Southern Tigers,Sam Houston Bearkats,MISSING
 401823356,2025-12-18 02:30:00+00:00,Oregon State Beavers,Sam Houston Bearkats,MISSING
-401823357,2025-12-28 20:30:00+00:00,Sam Houston Bearkats,College Of Biblical Studies Ambassadors,MISSING
 401823359,2025-11-11 00:00:00+00:00,Eastern Kentucky Colonels,Western Kentucky Hilltoppers,MISSING
 401823360,2025-11-16 20:00:00+00:00,Western Kentucky Hilltoppers,Tennessee State Tigers,MISSING
-401823361,2025-11-19 00:30:00+00:00,Western Kentucky Hilltoppers,Bethel (TN) Wildcats,MISSING
 401823362,2025-11-26 17:00:00+00:00,Western Kentucky Hilltoppers,Vanderbilt Commodores,MISSING
 401823363,2025-12-06 21:00:00+00:00,Western Kentucky Hilltoppers,Evansville Purple Aces,MISSING
 401823364,2025-12-11 00:00:00+00:00,Marshall Thundering Herd,Western Kentucky Hilltoppers,MISSING
-401823365,2025-12-16 00:30:00+00:00,Western Kentucky Hilltoppers,Campbellsville Tigers,MISSING
 401823366,2025-12-20 00:30:00+00:00,Western Kentucky Hilltoppers,Tulsa Golden Hurricane,MISSING
-401823368,2025-11-12 00:00:00+00:00,Detroit Mercy Titans,Cleary University Cougars,MISSING
 401823369,2025-11-15 18:00:00+00:00,Toledo Rockets,Detroit Mercy Titans,MISSING
 401823370,2025-11-19 00:00:00+00:00,Detroit Mercy Titans,Eastern Michigan Eagles,MISSING
 401823371,2025-11-21 23:30:00+00:00,Michigan State Spartans,Detroit Mercy Titans,MISSING
 401823372,2025-11-23 23:00:00+00:00,DePaul Blue Demons,Detroit Mercy Titans,MISSING
-401823373,2025-12-20 18:00:00+00:00,Detroit Mercy Titans,Siena Heights Saints,MISSING
-401823375,2025-11-11 16:00:00+00:00,IU Indianapolis Jaguars,IU Columbus Crimson Pride,MISSING
 401823376,2025-11-14 23:30:00+00:00,Eastern Michigan Eagles,IU Indianapolis Jaguars,MISSING
 401823377,2025-11-21 19:00:00+00:00,Alabama State Hornets,IU Indianapolis Jaguars,MISSING
 401823378,2025-11-29 19:00:00+00:00,IU Indianapolis Jaguars,Morehead State Eagles,MISSING
-401823379,2025-12-16 23:30:00+00:00,IU Indianapolis Jaguars,Miami (OH)-Middletown ThunderHawks,MISSING
 401823380,2025-12-23 01:00:00+00:00,Grand Canyon Lopes,IU Indianapolis Jaguars,MISSING
-401823384,2025-11-16 18:00:00+00:00,Northern Kentucky Norse,Cumberland (KY) Patriots,MISSING
 401823385,2025-11-21 00:00:00+00:00,Central Michigan Chippewas,Northern Kentucky Norse,MISSING
 401823386,2025-11-25 00:00:00+00:00,Northern Kentucky Norse,Eastern Kentucky Colonels,MISSING
 401823387,2025-11-26 19:00:00+00:00,Northern Kentucky Norse,Wofford Terriers,MISSING
 401823388,2025-11-29 18:00:00+00:00,Northern Kentucky Norse,Boston University Terriers,MISSING
-401823389,2025-12-10 00:00:00+00:00,Northern Kentucky Norse,Brescia Bearcats,MISSING
 401823390,2025-12-21 17:00:00+00:00,Northern Kentucky Norse,Charleston Cougars,MISSING
-401823393,2025-11-09 19:00:00+00:00,Purdue Fort Wayne Mastodons,Dominican (IL) Dominican,MISSING
 401823394,2025-11-13 00:00:00+00:00,Western Michigan Broncos,Purdue Fort Wayne Mastodons,MISSING
-401823395,2025-11-15 19:00:00+00:00,Purdue Fort Wayne Mastodons,Boyce Bulldogs,MISSING
-401823396,2025-11-28 19:00:00+00:00,Purdue Fort Wayne Mastodons,Holy Cross College (IN) Saints,MISSING
 401823397,2025-12-11 01:00:00+00:00,Purdue Fort Wayne Mastodons,Eastern Michigan Eagles,MISSING
-401823400,2025-11-11 00:00:00+00:00,Robert Morris Colonials,Geneva Golden Tornadoes,MISSING
-401823401,2025-11-14 00:00:00+00:00,Robert Morris Colonials,Pittsburgh - Greensburg Bobcats,MISSING
 401823402,2025-11-23 20:00:00+00:00,Monmouth Hawks,Robert Morris Colonials,MISSING
 401823403,2025-11-26 19:00:00+00:00,Robert Morris Colonials,UIC Flames,MISSING
 401823404,2025-11-28 19:00:00+00:00,Robert Morris Colonials,Southern Utah Thunderbirds,MISSING
@@ -2813,7 +2752,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823406,2025-12-13 18:00:00+00:00,Robert Morris Colonials,Toledo Rockets,MISSING
 401823408,2025-11-12 00:00:00+00:00,Wright State Raiders,Toledo Rockets,MISSING
 401823409,2025-11-15 20:30:00+00:00,Radford Highlanders,Wright State Raiders,MISSING
-401823410,2025-11-21 00:00:00+00:00,Wright State Raiders,Ohio Wesleyan Battling Bishops,MISSING
 401823411,2025-11-26 00:00:00+00:00,Stetson Hatters,Wright State Raiders,MISSING
 401823412,2025-12-13 21:00:00+00:00,Marshall Thundering Herd,Wright State Raiders,MISSING
 401823413,2025-12-17 00:00:00+00:00,Wright State Raiders,Miami (OH) RedHawks,MISSING
@@ -2824,44 +2762,31 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823420,2025-11-24 17:00:00+00:00,Bowling Green Falcons,Bucknell Bison,MISSING
 401823421,2025-11-26 16:00:00+00:00,VMI Keydets,Bowling Green Falcons,MISSING
 401823422,2025-12-06 18:00:00+00:00,Bowling Green Falcons,Utah Valley Wolverines,MISSING
-401823423,2025-12-07 21:00:00+00:00,Bowling Green Falcons,Aquinas Saints,MISSING
-401823424,2025-12-22 19:00:00+00:00,Bowling Green Falcons,Siena Heights Saints,MISSING
 401823427,2025-11-12 01:00:00+00:00,DePaul Blue Demons,Buffalo Bulls,MISSING
-401823428,2025-11-15 16:00:00+00:00,Buffalo Bulls,RIT Tigers,MISSING
 401823429,2025-11-18 23:30:00+00:00,Buffalo Bulls,Vermont Catamounts,MISSING
 401823430,2025-11-24 19:30:00+00:00,Buffalo Bulls,VMI Keydets,MISSING
 401823431,2025-11-26 18:30:00+00:00,Bucknell Bison,Buffalo Bulls,MISSING
 401823432,2025-12-09 22:00:00+00:00,UMBC Retrievers,Buffalo Bulls,MISSING
 401823433,2025-11-12 00:00:00+00:00,North Alabama Lions,Northwestern State Demons,MISSING
 401823435,2025-11-22 21:30:00+00:00,Chattanooga Mocs,North Alabama Lions,MISSING
-401823436,2025-11-25 18:00:00+00:00,North Alabama Lions,Tennessee Southern Firehawks,MISSING
 401823437,2025-12-02 00:00:00+00:00,Jacksonville State Gamecocks,North Alabama Lions,MISSING
 401823438,2025-12-04 03:00:00+00:00,San Francisco Dons,North Alabama Lions,MISSING
 401823439,2025-12-16 01:00:00+00:00,Alabama A&M Bulldogs,North Alabama Lions,MISSING
 401823440,2025-12-20 03:00:00+00:00,Loyola Marymount Lions,North Alabama Lions,MISSING
 401823442,2025-11-13 00:00:00+00:00,Tennessee Volunteers,North Florida Ospreys,MISSING
-401823443,2025-11-15 19:00:00+00:00,North Florida Ospreys,New College (FL) Mighty Banyans,MISSING
 401823444,2025-11-20 00:00:00+00:00,Wofford Terriers,North Florida Ospreys,MISSING
 401823445,2025-11-23 01:00:00+00:00,Southern Miss Golden Eagles,North Florida Ospreys,MISSING
-401823446,2025-11-29 22:00:00+00:00,North Florida Ospreys,Trinity College of Jacksonville Eagles,MISSING
 401823447,2025-12-03 00:00:00+00:00,North Florida Ospreys,SIU Edwardsville Cougars,MISSING
 401823448,2025-12-08 02:00:00+00:00,Gonzaga Bulldogs,North Florida Ospreys,MISSING
 401823452,2025-11-15 20:00:00+00:00,Queens University Royals,Sacred Heart Pioneers,MISSING
-401823453,2025-12-22 23:30:00+00:00,Buffalo Bulls,Penn State-Behrend Lions,MISSING
-401823456,2025-11-26 00:00:00+00:00,Central Michigan Chippewas,Adrian Bulldogs,MISSING
 401823457,2025-12-13 17:00:00+00:00,Stony Brook Seawolves,Central Michigan Chippewas,MISSING
-401823458,2025-12-18 00:00:00+00:00,Central Michigan Chippewas,Olivet Comets,MISSING
 401823459,2025-12-23 01:00:00+00:00,Wisconsin Badgers,Central Michigan Chippewas,MISSING
 401823462,2025-11-11 02:00:00+00:00,Grand Canyon Lopes,Northern Illinois Huskies,MISSING
-401823463,2025-11-14 01:00:00+00:00,Northern Illinois Huskies,Benedictine University (IL) Eagles,MISSING
 401823464,2025-11-26 01:00:00+00:00,Austin Peay Governors,Northern Illinois Huskies,MISSING
 401823465,2025-12-07 01:00:00+00:00,Bradley Braves,Northern Illinois Huskies,MISSING
 401823466,2025-12-13 18:00:00+00:00,Elon Phoenix,Northern Illinois Huskies,MISSING
-401823467,2025-12-17 01:00:00+00:00,Northern Illinois Huskies,East-West University Phantoms,MISSING
-401823470,2025-12-01 23:30:00+00:00,Toledo Rockets,Central State (OH) Marauders,MISSING
 401823471,2025-12-06 20:00:00+00:00,Oakland Golden Grizzlies,Toledo Rockets,MISSING
 401823472,2025-12-16 23:30:00+00:00,Michigan State Spartans,Toledo Rockets,MISSING
-401823473,2025-12-20 17:00:00+00:00,Toledo Rockets,Lourdes University Gray Wolves,MISSING
 401823476,2025-11-12 01:00:00+00:00,Auburn Tigers,Wofford Terriers,MISSING
 401823477,2025-11-20 02:00:00+00:00,Auburn Tigers,Jackson State Tigers,MISSING
 401823478,2025-11-25 01:00:00+00:00,Oregon Ducks,Auburn Tigers,MISSING
@@ -2874,7 +2799,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823487,2025-11-26 19:00:00+00:00,Mercer Bears,App State Mountaineers,MISSING
 401823488,2025-11-29 21:00:00+00:00,Elon Phoenix,Mercer Bears,MISSING
 401823489,2025-12-03 00:00:00+00:00,Mercer Bears,Georgia State Panthers,MISSING
-401823490,2025-12-07 19:00:00+00:00,Mercer Bears,Oglethorpe Stormy Petrels,MISSING
 401823491,2025-12-18 00:00:00+00:00,UCF Knights,Mercer Bears,MISSING
 401823492,2025-12-20 22:00:00+00:00,Washington State Cougars,Mercer Bears,MISSING
 401823493,2025-11-21 00:00:00+00:00,Queens University Royals,UNC Greensboro Spartans,MISSING
@@ -2884,7 +2808,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823497,2025-12-17 02:00:00+00:00,Arkansas Razorbacks,Queens University Royals,MISSING
 401823498,2025-12-30 03:00:00+00:00,Auburn Tigers,Queens University Royals,MISSING
 401823500,2025-11-13 03:00:00+00:00,Seattle U Redhawks,Eastern Washington Eagles,MISSING
-401823501,2025-11-18 03:30:00+00:00,Eastern Washington Eagles,Eastern Oregon Mountaineers,MISSING
 401823502,2025-11-23 19:00:00+00:00,Central Arkansas Bears,Eastern Washington Eagles,MISSING
 401823503,2025-11-26 01:00:00+00:00,North Texas Mean Green,Eastern Washington Eagles,MISSING
 401823504,2025-12-04 02:00:00+00:00,Denver Pioneers,Eastern Washington Eagles,MISSING
@@ -2893,17 +2816,12 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823507,2025-12-18 03:00:00+00:00,Eastern Washington Eagles,Washington State Cougars,MISSING
 401823510,2025-11-13 02:00:00+00:00,San Diego Toreros,Idaho Vandals,MISSING
 401823511,2025-11-15 21:00:00+00:00,UC San Diego Tritons,Idaho Vandals,MISSING
-401823512,2025-11-23 02:00:00+00:00,Idaho Vandals,Eastern Oregon Mountaineers,MISSING
 401823515,2025-11-09 21:30:00+00:00,Missouri Tigers,VMI Keydets,MISSING
-401823516,2025-11-12 23:00:00+00:00,VMI Keydets,Virginia-Lynchburg Dragons,MISSING
 401823517,2025-11-23 00:00:00+00:00,Stetson Hatters,VMI Keydets,MISSING
 401823518,2025-11-29 18:00:00+00:00,UCF Knights,VMI Keydets,MISSING
-401823519,2025-12-06 00:30:00+00:00,VMI Keydets,Christendom Crusaders,MISSING
 401823520,2025-12-21 19:30:00+00:00,Radford Highlanders,VMI Keydets,MISSING
-401823523,2025-11-11 21:00:00+00:00,Abilene Christian Wildcats,Southwestern Adventist Knights,MISSING
 401823524,2025-11-15 02:00:00+00:00,Stephen F. Austin Lumberjacks,Abilene Christian Wildcats,MISSING
 401823525,2025-11-19 01:00:00+00:00,Texas State Bobcats,Abilene Christian Wildcats,MISSING
-401823526,2025-11-28 21:00:00+00:00,Abilene Christian Wildcats,Jarvis Christian Bulldogs,MISSING
 401823527,2025-12-03 02:00:00+00:00,Pepperdine Waves,Abilene Christian Wildcats,MISSING
 401823528,2025-12-06 21:00:00+00:00,Abilene Christian Wildcats,New Mexico State Aggies,MISSING
 401823529,2025-12-17 02:00:00+00:00,Arizona Wildcats,Abilene Christian Wildcats,MISSING
@@ -2914,13 +2832,10 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823536,2025-11-30 03:00:00+00:00,Oregon State Beavers,California Baptist Lancers,MISSING
 401823537,2025-12-17 03:00:00+00:00,California Baptist Lancers,Southern Jaguars,MISSING
 401823538,2025-12-21 01:00:00+00:00,California Baptist Lancers,Sacramento State Hornets,MISSING
-401823540,2025-11-12 01:30:00+00:00,Southern Utah Thunderbirds,Bethesda University Flames,MISSING
 401823541,2025-11-16 01:00:00+00:00,Omaha Mavericks,Southern Utah Thunderbirds,MISSING
 401823542,2025-11-18 02:00:00+00:00,Gonzaga Bulldogs,Southern Utah Thunderbirds,MISSING
 401823543,2025-11-20 04:00:00+00:00,Washington State Cougars,Southern Utah Thunderbirds,MISSING
-401823544,2025-11-23 01:30:00+00:00,Southern Utah Thunderbirds,Nobel Knights,MISSING
 401823545,2025-11-29 19:00:00+00:00,Stetson Hatters,Southern Utah Thunderbirds,MISSING
-401823546,2025-12-02 01:30:00+00:00,Southern Utah Thunderbirds,West Coast Baptist Eagles,MISSING
 401823547,2025-12-06 22:00:00+00:00,Oregon State Beavers,Southern Utah Thunderbirds,MISSING
 401823548,2025-12-13 23:00:00+00:00,Washington Huskies,Southern Utah Thunderbirds,MISSING
 401823549,2025-12-19 00:00:00+00:00,Northern Arizona Lumberjacks,Southern Utah Thunderbirds,MISSING
@@ -2929,7 +2844,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823555,2025-11-09 22:00:00+00:00,San Diego State Aztecs,Idaho State Bengals,MISSING
 401823556,2025-11-16 03:00:00+00:00,Seattle U Redhawks,Idaho State Bengals,MISSING
 401823557,2025-11-19 03:00:00+00:00,Santa Clara Broncos,Idaho State Bengals,MISSING
-401823558,2025-11-21 20:00:00+00:00,Idaho State Bengals,Justice College Lions,MISSING
 401823559,2025-11-11 01:30:00+00:00,Xavier Musketeers,Santa Clara Broncos,MISSING
 401823560,2025-11-15 01:00:00+00:00,Iowa Hawkeyes,Xavier Musketeers,MISSING
 401823561,2025-11-19 00:00:00+00:00,Xavier Musketeers,Old Dominion Monarchs,MISSING
@@ -2940,7 +2854,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823567,2025-12-20 01:00:00+00:00,Villanova Wildcats,Wisconsin Badgers,MISSING
 401823568,2025-12-04 02:00:00+00:00,Idaho Vandals,North Dakota Fighting Hawks,MISSING
 401823569,2025-12-06 20:00:00+00:00,South Dakota State Jackrabbits,Idaho Vandals,MISSING
-401823570,2025-12-14 22:00:00+00:00,Idaho Vandals,Evergreen State Geoducks,MISSING
 401823571,2025-12-22 00:00:00+00:00,Cal Poly Mustangs,Idaho Vandals,MISSING
 401823572,2025-12-23 22:00:00+00:00,Cal State Bakersfield Roadrunners,Idaho Vandals,MISSING
 401823589,2025-11-16 00:00:00+00:00,UNC Wilmington Seahawks,South Carolina Upstate Spartans,MISSING
@@ -2950,7 +2863,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823593,2025-11-29 20:00:00+00:00,UNC Wilmington Seahawks,Gardner-Webb Runnin' Bulldogs,MISSING
 401823594,2025-12-04 00:00:00+00:00,UNC Wilmington Seahawks,Marshall Thundering Herd,MISSING
 401823595,2025-12-06 21:00:00+00:00,Louisiana Ragin' Cajuns,UNC Wilmington Seahawks,MISSING
-401823596,2025-12-27 17:00:00+00:00,UNC Wilmington Seahawks,Columbia College (SC) Fighting Koalas,MISSING
 401823636,2025-11-20 23:00:00+00:00,Purdue Boilermakers,Memphis Tigers,MISSING
 401823637,2025-11-22 02:30:00+00:00,Purdue Boilermakers,Texas Tech Red Raiders,MISSING
 401823638,2025-11-22 00:00:00+00:00,Memphis Tigers,Wake Forest Demon Deacons,MISSING
@@ -2973,7 +2885,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823737,2025-12-07 02:00:00+00:00,UC Santa Barbara Gauchos,Cal State Bakersfield Roadrunners,MISSING
 401823738,2025-12-12 02:30:00+00:00,Cal State Bakersfield Roadrunners,North Dakota State Bison,MISSING
 401823739,2025-12-14 02:30:00+00:00,Cal State Bakersfield Roadrunners,Pepperdine Waves,MISSING
-401823740,2025-12-19 02:30:00+00:00,Cal State Bakersfield Roadrunners,Nobel Knights,MISSING
 401823741,2026-01-09 02:30:00+00:00,Cal State Bakersfield Roadrunners,UC Riverside Highlanders,MISSING
 401823742,2026-01-16 02:30:00+00:00,Cal State Bakersfield Roadrunners,UC Santa Barbara Gauchos,MISSING
 401823743,2026-02-20 03:00:00+00:00,UC Riverside Highlanders,Cal State Bakersfield Roadrunners,MISSING
@@ -2992,7 +2903,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823766,2025-12-04 03:00:00+00:00,San Diego State Aztecs,Utah Valley Wolverines,MISSING
 401823767,2025-12-11 03:00:00+00:00,San Diego State Aztecs,Lamar Cardinals,MISSING
 401823768,2025-12-21 03:30:00+00:00,Arizona Wildcats,San Diego State Aztecs,MISSING
-401823769,2025-12-22 21:00:00+00:00,San Diego State Aztecs,Whittier Poets,MISSING
 401823770,2025-12-31 03:00:00+00:00,San José State Spartans,San Diego State Aztecs,MISSING
 401823771,2026-01-04 03:00:00+00:00,San Diego State Aztecs,Boise State Broncos,MISSING
 401823772,2026-01-07 04:00:00+00:00,Nevada Wolf Pack,San Diego State Aztecs,MISSING
@@ -3021,11 +2931,11 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823801,2026-02-12 03:00:00+00:00,Grand Canyon Lopes,New Mexico Lobos,MISSING
 401823802,2026-02-14 22:00:00+00:00,San José State Spartans,Grand Canyon Lopes,MISSING
 401823803,2026-02-22 01:00:00+00:00,Grand Canyon Lopes,Wyoming Cowboys,MISSING
+401823806,2026-03-08 01:00:00+00:00,Grand Canyon Lopes,Fresno State Bulldogs,MISSING
 401823808,2025-11-09 23:00:00+00:00,Colorado State Rams,Omaha Mavericks,MISSING
 401823809,2025-11-13 02:00:00+00:00,Colorado State Rams,Cal Poly Mustangs,MISSING
 401823810,2025-11-22 02:00:00+00:00,Colorado State Rams,Denver Pioneers,MISSING
 401823811,2025-12-10 02:00:00+00:00,Colorado State Rams,Dartmouth Big Green,MISSING
-401823812,2025-12-14 20:00:00+00:00,Colorado State Rams,Northern New Mexico Eagles,MISSING
 401823815,2025-11-12 02:00:00+00:00,Boise State Broncos,UT Rio Grande Valley Vaqueros,MISSING
 401823816,2025-11-15 21:00:00+00:00,Boise State Broncos,Montana State Bobcats,MISSING
 401823817,2025-11-19 02:00:00+00:00,Boise State Broncos,Wichita State Shockers,MISSING
@@ -3042,6 +2952,7 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823829,2026-02-14 03:00:00+00:00,Boise State Broncos,UNLV Rebels,MISSING
 401823830,2026-02-19 03:30:00+00:00,Utah State Aggies,Boise State Broncos,MISSING
 401823831,2026-02-21 21:00:00+00:00,Boise State Broncos,San José State Spartans,MISSING
+401823834,2026-03-07 21:00:00+00:00,Colorado State Rams,Boise State Broncos,MISSING
 401823846,2026-01-11 19:00:00+00:00,Saint Peter's Peacocks,Merrimack Warriors,MISSING
 401823847,2026-01-17 19:00:00+00:00,Saint Peter's Peacocks,Rider Broncs,MISSING
 401823848,2026-01-19 19:00:00+00:00,Saint Peter's Peacocks,Iona Gaels,MISSING
@@ -3058,7 +2969,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823861,2025-11-29 18:00:00+00:00,Army Black Knights,Manhattan Jaspers,MISSING
 401823862,2025-12-19 00:00:00+00:00,Manhattan Jaspers,Furman Paladins,MISSING
 401823863,2025-12-21 19:00:00+00:00,Manhattan Jaspers,Presbyterian Blue Hose,MISSING
-401823866,2025-11-11 01:00:00+00:00,UT Arlington Mavericks,Arlington Baptist Patriots,MISSING
 401823867,2025-11-19 01:00:00+00:00,Evansville Purple Aces,UT Arlington Mavericks,MISSING
 401823868,2025-11-21 20:00:00+00:00,UT Arlington Mavericks,Campbell Fighting Camels,MISSING
 401823869,2025-11-23 02:00:00+00:00,Weber State Wildcats,UT Arlington Mavericks,MISSING
@@ -3130,11 +3040,9 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401823955,2026-02-21 22:05:00+00:00,South Carolina Upstate Spartans,Presbyterian Blue Hose,MISSING
 401823956,2026-02-21 21:30:00+00:00,UNC Asheville Bulldogs,Radford Highlanders,MISSING
 401823957,2026-02-21 21:00:00+00:00,High Point Panthers,Winthrop Eagles,MISSING
-401824025,2025-11-22 02:00:00+00:00,Utah Tech Trailblazers,Nobel Knights,MISSING
 401824026,2025-11-26 02:00:00+00:00,Utah Tech Trailblazers,Portland State Vikings,MISSING
 401824027,2025-11-29 22:00:00+00:00,Utah Tech Trailblazers,UC Riverside Highlanders,MISSING
 401824028,2025-12-04 03:00:00+00:00,Santa Clara Broncos,Utah Tech Trailblazers,MISSING
-401824029,2025-12-14 02:00:00+00:00,Utah Tech Trailblazers,Justice College Lions,MISSING
 401824030,2025-12-21 02:00:00+00:00,Weber State Wildcats,Utah Tech Trailblazers,MISSING
 401824033,2025-11-26 02:30:00+00:00,Gonzaga Bulldogs,Maryland Terrapins,MISSING
 401824034,2025-12-06 00:00:00+00:00,Kentucky Wildcats,Gonzaga Bulldogs,MISSING
@@ -3154,9 +3062,7 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401824063,2025-11-21 00:00:00+00:00,Florida Atlantic Owls,Pacific Tigers,MISSING
 401824064,2025-11-24 16:30:00+00:00,Pacific Tigers,Stony Brook Seawolves,MISSING
 401824065,2025-11-30 03:00:00+00:00,Pacific Tigers,Sacramento State Hornets,MISSING
-401824066,2025-12-14 00:00:00+00:00,Pacific Tigers,Simpson University (CA) Red Hawks,MISSING
 401824067,2025-12-22 00:00:00+00:00,Pacific Tigers,Nicholls Colonels,MISSING
-401824069,2025-11-12 02:00:00+00:00,Pepperdine Waves,Lincoln University (CA) Oaklanders,MISSING
 401824070,2025-11-16 02:00:00+00:00,Pepperdine Waves,Northern Colorado Bears,MISSING
 401824071,2025-11-22 02:00:00+00:00,Pepperdine Waves,Stephen F. Austin Lumberjacks,MISSING
 401824072,2025-11-27 00:00:00+00:00,Fresno State Bulldogs,Pepperdine Waves,MISSING
@@ -3165,7 +3071,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401824089,2025-11-09 22:00:00+00:00,Portland Pilots,UC Davis Aggies,MISSING
 401824090,2025-11-23 01:00:00+00:00,Portland Pilots,Northern Colorado Bears,MISSING
 401824091,2025-11-23 21:00:00+00:00,Portland Pilots,St. Thomas-Minnesota Tommies,MISSING
-401824092,2025-12-06 00:00:00+00:00,Portland Pilots,Lewis & Clark Pioneers,MISSING
 401824093,2025-12-18 04:00:00+00:00,Oregon Ducks,Portland Pilots,MISSING
 401824094,2025-12-22 22:00:00+00:00,UC Santa Barbara Gauchos,Portland Pilots,MISSING
 401824111,2025-11-19 02:00:00+00:00,San Diego Toreros,Grambling Tigers,MISSING
@@ -3181,15 +3086,12 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401824123,2025-12-18 02:00:00+00:00,Santa Clara Broncos,North Texas Mean Green,MISSING
 401824124,2025-12-20 22:00:00+00:00,Santa Clara Broncos,Loyola Chicago Ramblers,MISSING
 401824127,2025-11-28 19:00:00+00:00,Seattle U Redhawks,Texas State Bobcats,MISSING
-401824128,2025-12-04 03:00:00+00:00,Seattle U Redhawks,Puget Sound Loggers,MISSING
 401824129,2025-12-08 01:00:00+00:00,Seattle U Redhawks,UTEP Miners,MISSING
-401824130,2025-12-14 01:00:00+00:00,Seattle U Redhawks,Warner Pacific Knights,MISSING
 401824131,2025-12-18 02:00:00+00:00,UC Davis Aggies,Seattle U Redhawks,MISSING
 401824132,2025-12-20 04:30:00+00:00,Seattle U Redhawks,Washington Huskies,MISSING
 401824133,2025-12-22 20:00:00+00:00,UTSA Roadrunners,Seattle U Redhawks,MISSING
 401824135,2025-11-11 02:30:00+00:00,Washington State Cougars,St. Thomas-Minnesota Tommies,MISSING
 401824136,2025-11-15 04:00:00+00:00,Washington State Cougars,Washington Huskies,MISSING
-401824137,2025-11-25 02:00:00+00:00,Chaminade Silverswords,Washington State Cougars,MISSING
 401824138,2025-12-03 01:00:00+00:00,Bradley Braves,Washington State Cougars,MISSING
 401824139,2025-12-07 22:00:00+00:00,Washington State Cougars,Nevada Wolf Pack,MISSING
 401824140,2025-12-15 00:30:00+00:00,USC Trojans,Washington State Cougars,MISSING
@@ -3202,7 +3104,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401824312,2026-02-22 18:00:00+00:00,Merrimack Warriors,Iona Gaels,MISSING
 401824358,2025-11-15 18:00:00+00:00,Boston University Terriers,Merrimack Warriors,MISSING
 401824359,2025-11-26 00:00:00+00:00,Penn State Nittany Lions,Boston University Terriers,MISSING
-401824360,2025-12-03 23:00:00+00:00,Boston University Terriers,Vermont State - Johnson Badgers,MISSING
 401824361,2025-12-07 00:00:00+00:00,New Hampshire Wildcats,Boston University Terriers,MISSING
 401824362,2025-12-13 19:00:00+00:00,Dartmouth Big Green,Boston University Terriers,MISSING
 401824363,2025-12-21 17:00:00+00:00,Boston University Terriers,UMass Lowell River Hawks,MISSING
@@ -3241,11 +3142,9 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401824829,2025-12-20 22:00:00+00:00,UCF Knights,Florida Gulf Coast Eagles,MISSING
 401824830,2025-12-23 19:00:00+00:00,UCF Knights,Florida Atlantic Owls,MISSING
 401824848,2025-11-13 04:59:00+00:00,Hawai'i Rainbow Warriors,Mississippi Valley State Delta Devils,MISSING
-401824853,2025-11-29 21:00:00+00:00,Maryland Eastern Shore Hawks,Gwynedd-Mercy Griffins,MISSING
 401824855,2025-12-04 01:00:00+00:00,Kansas City Roos,Idaho State Bengals,MISSING
 401824856,2025-12-06 23:00:00+00:00,Idaho State Bengals,Denver Pioneers,MISSING
 401824857,2025-12-11 01:00:00+00:00,Utah Valley Wolverines,Idaho State Bengals,MISSING
-401824858,2025-12-19 02:00:00+00:00,Idaho State Bengals,Montana-Western Bulldogs,MISSING
 401824859,2025-12-21 23:00:00+00:00,Idaho State Bengals,UC Davis Aggies,MISSING
 401824861,2025-11-14 00:00:00+00:00,Seton Hall Pirates,Monmouth Hawks,MISSING
 401824862,2025-11-29 19:00:00+00:00,Le Moyne Dolphins,Monmouth Hawks,MISSING
@@ -3253,25 +3152,19 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401824864,2025-12-04 01:00:00+00:00,Monmouth Hawks,Princeton Tigers,MISSING
 401824865,2025-12-06 17:00:00+00:00,Georgia Tech Yellow Jackets,Monmouth Hawks,MISSING
 401824866,2025-12-21 18:00:00+00:00,Monmouth Hawks,Lehigh Mountain Hawks,MISSING
-401824869,2025-11-10 23:30:00+00:00,Furman Paladins,Columbia International Rams,MISSING
-401824870,2025-11-19 23:30:00+00:00,Furman Paladins,Ohio Christian Trailblazers,MISSING
 401824871,2025-12-04 00:00:00+00:00,Elon Phoenix,Furman Paladins,MISSING
-401824872,2025-12-09 23:30:00+00:00,Furman Paladins,Bob Jones Bruins,MISSING
 401824886,2025-11-13 00:00:00+00:00,East Tennessee State Buccaneers,Northern Kentucky Norse,MISSING
 401824887,2025-11-15 20:00:00+00:00,North Alabama Lions,East Tennessee State Buccaneers,MISSING
 401824888,2025-11-22 00:00:00+00:00,East Tennessee State Buccaneers,Morehead State Eagles,MISSING
 401824889,2025-11-23 21:00:00+00:00,East Tennessee State Buccaneers,UL Monroe Warhawks,MISSING
 401824890,2025-11-29 21:00:00+00:00,East Tennessee State Buccaneers,Central Arkansas Bears,MISSING
 401824891,2025-12-06 00:00:00+00:00,East Tennessee State Buccaneers,South Alabama Jaguars,MISSING
-401824892,2025-12-07 19:00:00+00:00,East Tennessee State Buccaneers,Tusculum Pioneers,MISSING
 401824893,2025-12-13 01:00:00+00:00,Austin Peay Governors,East Tennessee State Buccaneers,MISSING
 401824894,2025-12-20 21:00:00+00:00,East Tennessee State Buccaneers,Jacksonville State Gamecocks,MISSING
 401824896,2025-11-10 06:00:00+00:00,Hawai'i Rainbow Warriors,East Texas A&M Lions,MISSING
 401824897,2025-11-15 04:59:00+00:00,Hawai'i Rainbow Warriors,Manhattan Jaspers,MISSING
 401824898,2025-11-16 04:59:00+00:00,Hawai'i Rainbow Warriors,Utah Tech Trailblazers,MISSING
-401824899,2025-11-25 04:59:00+00:00,Hawai'i Rainbow Warriors,Hawai'i Pacific Sea Warriors,MISSING
 401824900,2025-11-29 04:59:00+00:00,Hawai'i Rainbow Warriors,North Dakota Fighting Hawks,MISSING
-401824901,2025-12-11 04:59:00+00:00,Hawai'i Rainbow Warriors,Hawai'i Hilo Vulcans,MISSING
 401824902,2025-12-14 04:59:00+00:00,Hawai'i Rainbow Warriors,UTEP Miners,MISSING
 401824935,2025-11-12 01:00:00+00:00,Arkansas Razorbacks,Central Arkansas Bears,MISSING
 401824936,2025-11-16 19:00:00+00:00,Central Arkansas Bears,Samford Bulldogs,MISSING
@@ -3279,24 +3172,19 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401824938,2025-12-04 00:30:00+00:00,Central Arkansas Bears,Little Rock Trojans,MISSING
 401824939,2025-12-07 23:00:00+00:00,East Texas A&M Lions,Central Arkansas Bears,MISSING
 401824940,2025-12-13 23:30:00+00:00,Vanderbilt Commodores,Central Arkansas Bears,MISSING
-401824941,2025-12-17 17:00:00+00:00,Central Arkansas Bears,Kansas Christian Falcons,MISSING
 401824947,2025-11-11 23:30:00+00:00,UNC Asheville Bulldogs,Lipscomb Bisons,MISSING
-401824948,2025-11-15 22:00:00+00:00,Lipscomb Bisons,Bryan (TN) Lions,MISSING
 401824949,2025-11-22 22:00:00+00:00,Lipscomb Bisons,Western Carolina Catamounts,MISSING
 401824950,2025-11-26 21:00:00+00:00,Marshall Thundering Herd,Lipscomb Bisons,MISSING
 401824951,2025-11-29 20:00:00+00:00,Southeast Missouri State Redhawks,Lipscomb Bisons,MISSING
 401824952,2025-12-03 17:00:00+00:00,Lipscomb Bisons,Tennessee Tech Golden Eagles,MISSING
 401824953,2025-12-07 22:00:00+00:00,Lipscomb Bisons,Alabama A&M Bulldogs,MISSING
-401824954,2025-12-20 19:00:00+00:00,Lipscomb Bisons,Blue Mountain Toppers,MISSING
 401825186,2025-11-19 01:00:00+00:00,Murray State Racers,Little Rock Trojans,MISSING
 401825187,2025-11-22 01:00:00+00:00,Texas State Bobcats,Little Rock Trojans,MISSING
 401825188,2025-11-30 00:00:00+00:00,Southern Illinois Salukis,Little Rock Trojans,MISSING
 401825189,2025-12-07 02:33:00+00:00,Little Rock Trojans,Arkansas State Red Wolves,MISSING
-401825190,2025-12-23 01:00:00+00:00,Little Rock Trojans,Williams Baptist Eagles,MISSING
 401825205,2025-11-16 18:00:00+00:00,Western Carolina Catamounts,Stetson Hatters,MISSING
 401825206,2025-11-20 00:00:00+00:00,Stetson Hatters,Howard Bison,MISSING
 401825207,2025-12-06 19:00:00+00:00,South Carolina Gamecocks,Stetson Hatters,MISSING
-401825208,2025-12-16 00:00:00+00:00,Stetson Hatters,Rhodes Lynx,MISSING
 401825209,2025-12-23 02:00:00+00:00,Oklahoma Sooners,Stetson Hatters,MISSING
 401825383,2025-11-15 00:00:00+00:00,West Georgia Wolves,The Citadel Bulldogs,MISSING
 401825384,2025-11-18 00:00:00+00:00,Tennessee Tech Golden Eagles,West Georgia Wolves,MISSING
@@ -3305,7 +3193,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401825387,2025-12-02 00:00:00+00:00,Troy Trojans,West Georgia Wolves,MISSING
 401825388,2025-12-06 19:00:00+00:00,West Georgia Wolves,Tennessee Tech Golden Eagles,MISSING
 401825389,2025-12-14 00:00:00+00:00,West Georgia Wolves,Georgia Southern Eagles,MISSING
-401825390,2025-12-18 00:00:00+00:00,West Georgia Wolves,Brewton-Parker Wildcats,MISSING
 401825391,2025-12-22 19:00:00+00:00,Georgia Bulldogs,West Georgia Wolves,MISSING
 401825392,2025-12-03 00:00:00+00:00,Michigan State Spartans,Iowa Hawkeyes,MISSING
 401825393,2025-12-03 01:00:00+00:00,Rutgers Scarlet Knights,Purdue Boilermakers,MISSING
@@ -3452,49 +3339,44 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401825534,2026-02-22 18:00:00+00:00,Michigan State Spartans,Ohio State Buckeyes,MISSING
 401825535,2026-02-22 21:00:00+00:00,Wisconsin Badgers,Iowa Hawkeyes,MISSING
 401825538,2026-02-24 23:30:00+00:00,Rutgers Scarlet Knights,Washington Huskies,MISSING
+401825562,2026-03-08 02:00:00+00:00,Minnesota Golden Gophers,Northwestern Wildcats,MISSING
+401825563,2026-03-07 22:30:00+00:00,Ohio State Buckeyes,Indiana Hoosiers,MISSING
+401825564,2026-03-08 04:00:00+00:00,Oregon Ducks,Washington Huskies,MISSING
+401825565,2026-03-07 21:00:00+00:00,Purdue Boilermakers,Wisconsin Badgers,MISSING
+401825566,2026-03-08 02:00:00+00:00,USC Trojans,UCLA Bruins,MISSING
 401825571,2025-11-15 01:30:00+00:00,DePaul Blue Demons,Northwestern Wildcats,MISSING
 401825572,2025-11-19 01:00:00+00:00,DePaul Blue Demons,Gardner-Webb Runnin' Bulldogs,MISSING
 401825573,2025-11-29 00:00:00+00:00,DePaul Blue Demons,Georgia Tech Yellow Jackets,MISSING
 401825574,2025-12-07 02:00:00+00:00,DePaul Blue Demons,Arkansas-Pine Bluff Golden Lions,MISSING
 401825575,2025-12-13 17:00:00+00:00,Wichita State Shockers,DePaul Blue Demons,MISSING
 401825577,2025-11-09 20:00:00+00:00,Montana State Bobcats,Denver Pioneers,MISSING
-401825578,2025-11-20 23:00:00+00:00,Montana State Bobcats,Nobel Knights,MISSING
 401825579,2025-11-29 21:00:00+00:00,Utah State Aggies,Montana State Bobcats,MISSING
 401825580,2025-12-04 02:00:00+00:00,Montana State Bobcats,St. Thomas-Minnesota Tommies,MISSING
 401825581,2025-12-07 01:00:00+00:00,Oral Roberts Golden Eagles,Montana State Bobcats,MISSING
 401825582,2025-12-17 03:00:00+00:00,Cal Poly Mustangs,Montana State Bobcats,MISSING
-401825583,2025-12-22 20:00:00+00:00,Montana State Bobcats,Northwest University Eagles,MISSING
 401825588,2025-11-12 02:00:00+00:00,Arizona Wildcats,Northern Arizona Lumberjacks,MISSING
-401825589,2025-11-19 01:00:00+00:00,Northern Arizona Lumberjacks,Embry-Riddle (AZ) Eagles,MISSING
 401825590,2025-11-25 01:00:00+00:00,Northern Arizona Lumberjacks,Cal Poly Mustangs,MISSING
 401825591,2025-11-27 01:00:00+00:00,Northern Arizona Lumberjacks,Southeast Missouri State Redhawks,MISSING
 401825592,2025-12-04 01:00:00+00:00,Northern Arizona Lumberjacks,South Dakota State Jackrabbits,MISSING
 401825593,2025-12-07 01:00:00+00:00,North Dakota State Bison,Northern Arizona Lumberjacks,MISSING
-401825594,2025-12-30 01:00:00+00:00,Northern Arizona Lumberjacks,Benedictine (AZ) Redhawks,MISSING
 401826043,2025-11-12 02:00:00+00:00,New Mexico Lobos,UC Riverside Highlanders,MISSING
 401826044,2025-11-15 22:00:00+00:00,UC Riverside Highlanders,North Dakota Fighting Hawks,MISSING
 401826045,2025-11-24 20:00:00+00:00,UC Riverside Highlanders,Grambling Tigers,MISSING
-401826046,2025-12-17 03:00:00+00:00,UC Riverside Highlanders,Stanton Elks,MISSING
 401826047,2025-12-21 01:00:00+00:00,St. Thomas-Minnesota Tommies,UC Riverside Highlanders,MISSING
 401826048,2026-02-13 03:00:00+00:00,UC Riverside Highlanders,UC Santa Barbara Gauchos,MISSING
 401826053,2025-11-16 17:00:00+00:00,UMBC Retrievers,Wagner Seahawks,MISSING
-401826054,2025-11-24 23:00:00+00:00,UMBC Retrievers,Notre Dame (MD) Gators,MISSING
 401826055,2025-11-29 19:00:00+00:00,UMBC Retrievers,Delaware State Hornets,MISSING
 401826056,2025-12-12 23:00:00+00:00,UMBC Retrievers,Army Black Knights,MISSING
 401826057,2025-12-21 20:00:00+00:00,South Florida Bulls,UMBC Retrievers,MISSING
 401826070,2025-11-16 19:30:00+00:00,Cleveland State Vikings,Radford Highlanders,MISSING
 401826071,2025-11-19 00:00:00+00:00,South Carolina Gamecocks,Radford Highlanders,MISSING
-401826072,2025-11-29 19:30:00+00:00,Radford Highlanders,Notre Dame (MD) Gators,MISSING
 401826073,2025-12-04 00:00:00+00:00,Radford Highlanders,Southern Miss Golden Eagles,MISSING
 401826074,2025-12-19 00:00:00+00:00,William & Mary Tribe,Radford Highlanders,MISSING
-401826075,2025-12-28 19:30:00+00:00,Radford Highlanders,Shenandoah Hornets,MISSING
 401826084,2025-12-30 00:00:00+00:00,Michigan Wolverines,McNeese Cowboys,MISSING
 401826087,2025-11-15 02:00:00+00:00,UC Davis Aggies,Sacramento State Hornets,MISSING
 401826088,2025-11-19 03:00:00+00:00,Nevada Wolf Pack,UC Davis Aggies,MISSING
 401826089,2025-11-25 02:00:00+00:00,UC Davis Aggies,Louisiana Ragin' Cajuns,MISSING
 401826090,2025-12-13 21:00:00+00:00,Oregon Ducks,UC Davis Aggies,MISSING
-401826091,2025-12-28 22:00:00+00:00,UC Davis Aggies,Pacific Union PACIFIC UNION,MISSING
-401826699,2025-11-12 00:00:00+00:00,George Mason Patriots,Catawba Chiefs,MISSING
 401826700,2025-11-15 19:00:00+00:00,George Mason Patriots,New Hampshire Wildcats,MISSING
 401826701,2025-11-24 23:00:00+00:00,Ohio Bobcats,George Mason Patriots,MISSING
 401826702,2025-11-29 19:00:00+00:00,George Mason Patriots,James Madison Dukes,MISSING
@@ -3517,38 +3399,27 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401826733,2025-11-11 23:30:00+00:00,Ohio State Buckeyes,App State Mountaineers,MISSING
 401826734,2025-11-24 23:30:00+00:00,App State Mountaineers,Elon Phoenix,MISSING
 401826735,2025-11-30 18:30:00+00:00,UNC Asheville Bulldogs,App State Mountaineers,MISSING
-401826736,2025-12-03 23:30:00+00:00,App State Mountaineers,Virginia-Lynchburg Dragons,MISSING
 401826737,2025-12-14 19:00:00+00:00,App State Mountaineers,High Point Panthers,MISSING
 401826739,2025-11-15 19:00:00+00:00,Denver Pioneers,UTSA Roadrunners,MISSING
 401826740,2025-11-25 03:30:00+00:00,Arizona Wildcats,Denver Pioneers,MISSING
-401826741,2025-12-10 02:00:00+00:00,Denver Pioneers,Colorado Christian Cougars,MISSING
-401826742,2025-12-12 02:00:00+00:00,Denver Pioneers,Alaska Anchorage Seawolves,MISSING
-401826743,2025-12-17 02:00:00+00:00,Denver Pioneers,Colorado-Colorado Springs Mountain Lions,MISSING
 401826744,2025-12-20 20:00:00+00:00,Northern Colorado Bears,Denver Pioneers,MISSING
 401826745,2025-12-22 20:00:00+00:00,Tulsa Golden Hurricane,Denver Pioneers,MISSING
 401826747,2025-11-15 22:30:00+00:00,Murray State Racers,Nicholls Colonels,MISSING
 401826748,2025-11-28 20:00:00+00:00,Tulane Green Wave,Nicholls Colonels,MISSING
-401826749,2025-12-11 00:30:00+00:00,Nicholls Colonels,College Of Biblical Studies Ambassadors,MISSING
-401826750,2025-11-14 01:15:00+00:00,Western Carolina Catamounts,Voorhees Tigers,MISSING
 401826751,2025-11-20 00:50:00+00:00,Western Carolina Catamounts,UNC Asheville Bulldogs,MISSING
 401826752,2025-11-29 19:00:00+00:00,High Point Panthers,Western Carolina Catamounts,MISSING
-401826753,2025-12-02 16:00:00+00:00,Western Carolina Catamounts,Virginia-Lynchburg Dragons,MISSING
 401826754,2025-12-06 19:00:00+00:00,South Carolina Upstate Spartans,Western Carolina Catamounts,MISSING
 401826755,2025-12-20 19:00:00+00:00,Georgia Tech Yellow Jackets,Lafayette Leopards,MISSING
 401826756,2025-12-28 19:30:00+00:00,Georgia Tech Yellow Jackets,Florida A&M Rattlers,MISSING
-401826758,2025-11-13 00:00:00+00:00,New Hampshire Wildcats,Emmanuel (MA) Lions,MISSING
 401826759,2025-11-19 00:00:00+00:00,Providence Friars,New Hampshire Wildcats,MISSING
 401826761,2025-11-10 23:00:00+00:00,UMass Lowell River Hawks,New Haven Chargers,MISSING
 401826762,2025-11-20 01:00:00+00:00,Bradley Braves,UMass Lowell River Hawks,MISSING
 401826763,2025-11-22 19:00:00+00:00,Saint Peter's Peacocks,UMass Lowell River Hawks,MISSING
 401826764,2025-12-06 21:00:00+00:00,Massachusetts Minutemen,UMass Lowell River Hawks,MISSING
-401826765,2025-12-10 23:00:00+00:00,UMass Lowell River Hawks,Fisher College Eagles,MISSING
 401826768,2025-11-15 18:00:00+00:00,Northeastern Huskies,Vermont Catamounts,MISSING
 401826769,2025-12-14 19:00:00+00:00,Vermont Catamounts,Merrimack Warriors,MISSING
 401826770,2025-12-30 18:00:00+00:00,Princeton Tigers,Vermont Catamounts,MISSING
 401826772,2025-11-09 23:00:00+00:00,Liberty Flames,Florida Atlantic Owls,MISSING
-401826773,2025-11-18 00:00:00+00:00,Florida Atlantic Owls,Coastal Georgia Mariner,MISSING
-401826774,2025-12-11 00:00:00+00:00,Florida Atlantic Owls,Saint Leo Monarchs,MISSING
 401826775,2025-12-19 00:00:00+00:00,Georgia Bulldogs,Western Carolina Catamounts,MISSING
 401826776,2025-12-31 02:00:00+00:00,Nebraska Cornhuskers,New Hampshire Wildcats,MISSING
 401826777,2025-11-12 01:00:00+00:00,Oklahoma Sooners,Arkansas-Pine Bluff Golden Lions,MISSING
@@ -3578,11 +3449,8 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401826808,2025-11-21 01:00:00+00:00,Rice Owls,Tarleton State Texans,MISSING
 401826809,2025-12-04 02:00:00+00:00,Rice Owls,Texas State Bobcats,MISSING
 401826810,2025-12-13 20:00:00+00:00,Rice Owls,Arkansas State Red Wolves,MISSING
-401826811,2025-12-17 17:15:00+00:00,Rice Owls,Southwestern Christian Eagles,MISSING
 401826813,2025-11-16 19:00:00+00:00,Kennesaw State Owls,South Florida Bulls,MISSING
-401826814,2025-12-29 21:30:00+00:00,South Florida Bulls,Georgia College Bobcats,MISSING
 401826815,2025-11-25 19:00:00+00:00,Army Black Knights,East Texas A&M Lions,MISSING
-401826816,2025-12-07 17:00:00+00:00,Army Black Knights,Gallaudet Bison,MISSING
 401826817,2025-12-31 17:00:00+00:00,Lehigh Mountain Hawks,Army Black Knights,MISSING
 401826818,2026-01-03 18:00:00+00:00,Army Black Knights,Colgate Raiders,MISSING
 401826819,2026-01-18 18:00:00+00:00,Army Black Knights,American University Eagles,MISSING
@@ -3591,39 +3459,31 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401826822,2026-02-07 17:00:00+00:00,Army Black Knights,Lafayette Leopards,MISSING
 401826823,2026-02-14 19:00:00+00:00,American University Eagles,Army Black Knights,MISSING
 401826827,2026-01-28 23:00:00+00:00,Army Black Knights,Lehigh Mountain Hawks,MISSING
-401826829,2025-11-11 00:00:00+00:00,Tennessee Tech Golden Eagles,Virginia-Lynchburg Dragons,MISSING
-401826830,2025-11-14 00:00:00+00:00,Tennessee Tech Golden Eagles,Berea Mountaineers,MISSING
 401826831,2025-11-20 00:00:00+00:00,South Carolina Upstate Spartans,Tennessee Tech Golden Eagles,MISSING
 401826832,2025-11-27 00:00:00+00:00,Kentucky Wildcats,Tennessee Tech Golden Eagles,MISSING
 401826833,2025-11-29 19:00:00+00:00,Georgia Bulldogs,Tennessee Tech Golden Eagles,MISSING
-401826834,2025-12-13 21:00:00+00:00,Tennessee Tech Golden Eagles,Bethel (TN) Wildcats,MISSING
 401826835,2025-12-05 00:00:00+00:00,South Florida Bulls,Utah State Aggies,MISSING
 401826836,2025-12-11 00:00:00+00:00,South Florida Bulls,Charleston Cougars,MISSING
 401826838,2025-11-20 00:00:00+00:00,Temple Owls,Hofstra Pride,MISSING
-401826839,2025-12-10 00:00:00+00:00,Temple Owls,Georgian Court Lions,MISSING
 401826840,2025-12-19 00:00:00+00:00,Davidson Wildcats,Temple Owls,MISSING
 401826841,2025-12-23 00:00:00+00:00,Temple Owls,Princeton Tigers,MISSING
 401826844,2025-11-12 01:00:00+00:00,Louisiana Ragin' Cajuns,Tulane Green Wave,MISSING
 401826845,2025-12-03 00:30:00+00:00,Tulane Green Wave,Grambling Tigers,MISSING
-401826846,2025-12-11 00:30:00+00:00,Tulane Green Wave,Tougaloo Bulldogs,MISSING
 401826847,2025-12-14 04:59:00+00:00,UC San Diego Tritons,Tulane Green Wave,MISSING
 401826848,2025-12-18 00:30:00+00:00,Tulane Green Wave,Louisiana Tech Bulldogs,MISSING
 401826849,2025-12-21 00:30:00+00:00,Tulane Green Wave,Portland State Vikings,MISSING
 401826851,2025-11-12 00:30:00+00:00,UAB Blazers,Alabama State Hornets,MISSING
 401826852,2025-11-15 00:30:00+00:00,UAB Blazers,High Point Panthers,MISSING
-401826853,2025-11-18 00:30:00+00:00,UAB Blazers,Rhodes Lynx,MISSING
 401826854,2025-11-22 00:30:00+00:00,UAB Blazers,South Alabama Jaguars,MISSING
 401826856,2025-11-14 00:00:00+00:00,Massachusetts Minutemen,Le Moyne Dolphins,MISSING
 401826857,2025-11-28 21:30:00+00:00,Lafayette Leopards,Le Moyne Dolphins,MISSING
 401826858,2025-12-17 01:00:00+00:00,Texas Longhorns,Le Moyne Dolphins,MISSING
 401826861,2025-12-03 01:00:00+00:00,Murray State Racers,Morehead State Eagles,MISSING
-401826862,2025-11-14 00:00:00+00:00,Princeton Tigers,John Jay College Bloodhounds,MISSING
 401826863,2025-11-21 00:00:00+00:00,Princeton Tigers,Northeastern Huskies,MISSING
 401826864,2025-12-10 22:00:00+00:00,Princeton Tigers,Merrimack Warriors,MISSING
 401826865,2026-01-19 23:00:00+00:00,Dartmouth Big Green,Princeton Tigers,MISSING
 401826866,2026-01-30 23:00:00+00:00,Cornell Big Red,Princeton Tigers,MISSING
 401826867,2026-02-14 00:00:00+00:00,Princeton Tigers,Cornell Big Red,MISSING
-401826870,2025-11-15 20:00:00+00:00,Oakland Golden Grizzlies,Defiance Yellow Jackets,MISSING
 401826871,2025-11-21 23:30:00+00:00,Eastern Michigan Eagles,Oakland Golden Grizzlies,MISSING
 401826872,2025-11-24 21:00:00+00:00,Lamar Cardinals,Oakland Golden Grizzlies,MISSING
 401826873,2025-11-26 02:00:00+00:00,Montana Grizzlies,Oakland Golden Grizzlies,MISSING
@@ -3633,7 +3493,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401826877,2025-12-18 00:30:00+00:00,UAB Blazers,Cleveland State Vikings,MISSING
 401826878,2025-12-21 20:00:00+00:00,UAB Blazers,UNC Asheville Bulldogs,MISSING
 401826881,2025-11-27 01:00:00+00:00,Wichita State Shockers,Saint Mary's Gaels,MISSING
-401826882,2025-12-03 00:30:00+00:00,Wichita State Shockers,Mount Marty College Lancers,MISSING
 401826883,2025-12-18 00:30:00+00:00,Wichita State Shockers,Wofford Terriers,MISSING
 401826884,2025-12-21 22:00:00+00:00,Wichita State Shockers,Eastern Kentucky Colonels,MISSING
 401826886,2025-11-29 21:00:00+00:00,Arizona Wildcats,Norfolk State Spartans,MISSING
@@ -3643,32 +3502,24 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401826890,2025-11-27 23:00:00+00:00,Wisconsin Badgers,Providence Friars,MISSING
 401826893,2025-11-19 00:00:00+00:00,Seton Hall Pirates,New Haven Chargers,MISSING
 401826894,2025-12-14 01:00:00+00:00,Seton Hall Pirates,Rutgers Scarlet Knights,MISSING
-401826896,2025-11-09 20:00:00+00:00,Louisiana Tech Bulldogs,Lyon Scots,MISSING
 401826897,2025-11-16 00:00:00+00:00,Louisiana Tech Bulldogs,Jackson State Tigers,MISSING
 401826898,2025-11-20 00:00:00+00:00,Indiana State Sycamores,Louisiana Tech Bulldogs,MISSING
 401826899,2025-11-27 00:30:00+00:00,Louisiana Tech Bulldogs,Indiana State Sycamores,MISSING
 401826900,2025-11-29 18:00:00+00:00,Louisiana Tech Bulldogs,Alcorn State Braves,MISSING
 401826901,2025-12-04 00:00:00+00:00,Georgia Southern Eagles,Louisiana Tech Bulldogs,MISSING
-401826902,2025-12-07 20:00:00+00:00,Louisiana Tech Bulldogs,Ecclesia Royals,MISSING
 401826903,2025-12-13 20:00:00+00:00,Louisiana Tech Bulldogs,Louisiana Ragin' Cajuns,MISSING
-401826904,2025-12-22 19:00:00+00:00,Louisiana Tech Bulldogs,Dallas Christian Crusaders,MISSING
 401826905,2025-11-29 19:00:00+00:00,Hofstra Pride,Merrimack Warriors,MISSING
 401826908,2025-11-13 02:00:00+00:00,Fresno State Bulldogs,UC San Diego Tritons,MISSING
 401826909,2025-12-03 03:00:00+00:00,Nevada Wolf Pack,UC San Diego Tritons,MISSING
-401826910,2025-12-29 00:00:00+00:00,UC San Diego Tritons,Stanton Elks,MISSING
 401826912,2025-11-18 01:00:00+00:00,Wisconsin Badgers,SIU Edwardsville Cougars,MISSING
 401826913,2025-11-11 01:30:00+00:00,Northwestern Wildcats,Cleveland State Vikings,MISSING
 401826914,2025-11-23 22:00:00+00:00,Northwestern Wildcats,South Carolina Gamecocks,MISSING
 401826915,2025-11-15 23:00:00+00:00,St. John's Red Storm,William & Mary Tribe,MISSING
 401826916,2025-12-07 01:00:00+00:00,St. John's Red Storm,Ole Miss Rebels,MISSING
 401826919,2025-11-22 00:30:00+00:00,St. Thomas-Minnesota Tommies,Northern Colorado Bears,MISSING
-401826920,2025-11-30 01:00:00+00:00,Northern Colorado Bears,Regis (CO) REGIS UNIVERSITY,MISSING
 401826921,2025-12-04 01:00:00+00:00,Omaha Mavericks,Northern Colorado Bears,MISSING
-401826923,2025-11-20 03:00:00+00:00,Portland State Vikings,Evergreen State Geoducks,MISSING
 401826924,2025-12-06 22:00:00+00:00,Portland State Vikings,Omaha Mavericks,MISSING
-401826925,2025-12-13 22:00:00+00:00,Portland State Vikings,George Fox Bruins,MISSING
 401826928,2025-11-12 03:00:00+00:00,Sacramento State Hornets,UC Santa Barbara Gauchos,MISSING
-401826929,2025-11-26 03:00:00+00:00,Sacramento State Hornets,San Francisco State Gators,MISSING
 401826931,2025-11-13 02:00:00+00:00,Utah State Aggies,Weber State Wildcats,MISSING
 401826932,2025-11-16 03:00:00+00:00,UC Irvine Anteaters,Weber State Wildcats,MISSING
 401826933,2025-11-20 03:00:00+00:00,Weber State Wildcats,Campbell Fighting Camels,MISSING
@@ -3678,57 +3529,37 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401826938,2025-11-11 00:00:00+00:00,Georgia State Panthers,Presbyterian Blue Hose,MISSING
 401826939,2025-11-13 00:00:00+00:00,South Carolina Gamecocks,Presbyterian Blue Hose,MISSING
 401826940,2025-11-16 21:00:00+00:00,Sacramento State Hornets,Presbyterian Blue Hose,MISSING
-401826941,2025-11-26 18:00:00+00:00,Presbyterian Blue Hose,Columbia International Rams,MISSING
 401826942,2025-11-30 21:00:00+00:00,The Citadel Bulldogs,Presbyterian Blue Hose,MISSING
 401826943,2025-12-04 00:00:00+00:00,Wofford Terriers,Presbyterian Blue Hose,MISSING
 401826944,2025-12-06 19:00:00+00:00,Presbyterian Blue Hose,Morehead State Eagles,MISSING
-401826945,2025-12-28 21:00:00+00:00,Presbyterian Blue Hose,Truett-McConnell Bears,MISSING
-401826947,2025-11-13 01:00:00+00:00,Utah Valley Wolverines,Westminster (UT) Griffins,MISSING
 401826948,2025-11-16 03:00:00+00:00,Fresno State Bulldogs,Utah Valley Wolverines,MISSING
 401826949,2025-11-20 01:00:00+00:00,Utah Valley Wolverines,UC Irvine Anteaters,MISSING
 401826950,2025-11-25 23:00:00+00:00,South Dakota State Jackrabbits,Utah Valley Wolverines,MISSING
 401826951,2025-11-26 23:00:00+00:00,Utah Valley Wolverines,Samford Bulldogs,MISSING
 401826952,2025-12-13 19:00:00+00:00,Utah Valley Wolverines,UC Santa Barbara Gauchos,MISSING
 401826953,2025-12-18 01:00:00+00:00,Utah Valley Wolverines,Weber State Wildcats,MISSING
-401826954,2025-12-20 22:00:00+00:00,Utah Valley Wolverines,Bethesda University Flames,MISSING
 401826955,2025-12-04 02:00:00+00:00,Weber State Wildcats,Oral Roberts Golden Eagles,MISSING
 401826956,2025-12-07 18:00:00+00:00,St. Thomas-Minnesota Tommies,Weber State Wildcats,MISSING
 401826957,2025-12-11 01:00:00+00:00,Kansas City Roos,Weber State Wildcats,MISSING
-401826958,2025-12-22 21:00:00+00:00,Weber State Wildcats,Lincoln University (CA) Oaklanders,MISSING
-401826968,2025-11-11 00:00:00+00:00,Gardner-Webb Runnin' Bulldogs,North Greenville Crusaders,MISSING
 401826969,2025-11-16 01:00:00+00:00,Elon Phoenix,Gardner-Webb Runnin' Bulldogs,MISSING
 401826970,2025-12-06 19:00:00+00:00,Gardner-Webb Runnin' Bulldogs,Georgia Southern Eagles,MISSING
-401826971,2025-12-13 00:00:00+00:00,Gardner-Webb Runnin' Bulldogs,Brevard Tornados,MISSING
 401826972,2025-12-16 00:00:00+00:00,Gardner-Webb Runnin' Bulldogs,Wofford Terriers,MISSING
-401826973,2025-12-18 16:00:00+00:00,Gardner-Webb Runnin' Bulldogs,Toccoa Falls Eagles,MISSING
 401826974,2025-12-21 20:00:00+00:00,Tennessee Volunteers,Gardner-Webb Runnin' Bulldogs,MISSING
 401826978,2025-12-04 00:00:00+00:00,High Point Panthers,Southern Illinois Salukis,MISSING
 401826979,2025-12-06 00:00:00+00:00,High Point Panthers,NJIT Highlanders,MISSING
-401826980,2025-12-17 00:00:00+00:00,High Point Panthers,Mary Baldwin Fighting Squirrels,MISSING
-401826981,2025-12-28 19:00:00+00:00,High Point Panthers,Pfeiffer Falcons,MISSING
 401826992,2025-11-13 00:00:00+00:00,Longwood Lancers,James Madison Dukes,MISSING
 401826993,2025-11-30 21:00:00+00:00,American University Eagles,Longwood Lancers,MISSING
-401826994,2025-12-04 00:00:00+00:00,Longwood Lancers,Pfeiffer Falcons,MISSING
 401826996,2025-11-12 01:00:00+00:00,Tarleton State Texans,Merrimack Warriors,MISSING
-401826997,2025-11-18 01:00:00+00:00,Tarleton State Texans,Angelo State Rams,MISSING
-401826998,2025-11-28 22:00:00+00:00,Tarleton State Texans,Midwestern State Mustangs,MISSING
-401826999,2025-12-04 01:00:00+00:00,Tarleton State Texans,Howard Payne Yellow Jackets,MISSING
-401827000,2025-12-07 22:30:00+00:00,Tarleton State Texans,Cameron Aggies,MISSING
 401827001,2025-12-17 00:00:00+00:00,Mississippi Valley State Delta Devils,Tarleton State Texans,MISSING
 401827002,2025-12-20 01:00:00+00:00,Tarleton State Texans,Florida A&M Rattlers,MISSING
 401827004,2025-11-13 01:30:00+00:00,Texas Southern Tigers,Samford Bulldogs,MISSING
 401827005,2025-11-15 22:00:00+00:00,Texas State Bobcats,Texas Southern Tigers,MISSING
 401827006,2025-11-21 00:00:00+00:00,Vanderbilt Commodores,Texas Southern Tigers,MISSING
-401827007,2025-11-27 00:30:00+00:00,Texas Southern Tigers,College Of Biblical Studies Ambassadors,MISSING
 401827008,2025-12-14 18:00:00+00:00,Minnesota Golden Gophers,Texas Southern Tigers,MISSING
 401827009,2025-12-22 22:00:00+00:00,Texas Southern Tigers,Abilene Christian Wildcats,MISSING
-401827010,2025-12-31 00:30:00+00:00,Texas Southern Tigers,Huston-Tillotson Rams,MISSING
-401827011,2025-11-10 17:00:00+00:00,Southern Jaguars,Ecclesia Royals,MISSING
-401827012,2025-11-16 00:30:00+00:00,Southern Jaguars,Champion Christian Tigers,MISSING
 401827013,2025-11-19 02:30:00+00:00,Washington Huskies,Southern Jaguars,MISSING
 401827014,2025-11-22 03:00:00+00:00,San José State Spartans,Southern Jaguars,MISSING
 401827015,2025-11-29 19:00:00+00:00,Northwestern State Demons,Southern Jaguars,MISSING
-401827016,2025-12-01 17:00:00+00:00,Southern Jaguars,Louisiana Christian Wildcats,MISSING
 401827017,2025-12-09 01:00:00+00:00,Texas Longhorns,Southern Jaguars,MISSING
 401827018,2025-12-11 01:30:00+00:00,Texas State Bobcats,Southern Jaguars,MISSING
 401827020,2025-12-29 20:00:00+00:00,Illinois Fighting Illini,Southern Jaguars,MISSING
@@ -3748,8 +3579,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401827034,2026-02-21 23:00:00+00:00,Southern Jaguars,Grambling Tigers,MISSING
 401827041,2025-11-18 01:00:00+00:00,Missouri Tigers,Prairie View A&M Panthers,MISSING
 401827042,2025-11-30 21:00:00+00:00,North Texas Mean Green,Prairie View A&M Panthers,MISSING
-401827043,2025-12-06 21:00:00+00:00,Prairie View A&M Panthers,Champion Christian Tigers,MISSING
-401827044,2025-12-20 19:00:00+00:00,Prairie View A&M Panthers,Paul Quinn Tigers,MISSING
 401827045,2025-12-23 00:00:00+00:00,LSU Tigers,Prairie View A&M Panthers,MISSING
 401827046,2025-12-30 01:00:00+00:00,Texas A&M Aggies,Prairie View A&M Panthers,MISSING
 401827047,2026-01-03 22:30:00+00:00,Grambling Tigers,Prairie View A&M Panthers,MISSING
@@ -3762,22 +3591,16 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401827054,2026-01-31 22:30:00+00:00,Prairie View A&M Panthers,Texas Southern Tigers,MISSING
 401827055,2025-12-13 20:00:00+00:00,Longwood Lancers,Delaware State Hornets,MISSING
 401827056,2025-12-20 19:00:00+00:00,North Carolina Central Eagles,Longwood Lancers,MISSING
-401827057,2025-12-28 20:00:00+00:00,Longwood Lancers,Averett Cougars,MISSING
-401827060,2025-11-13 00:00:00+00:00,South Carolina Upstate Spartans,Bob Jones Bruins,MISSING
 401827061,2025-11-26 00:00:00+00:00,South Carolina Upstate Spartans,North Carolina Central Eagles,MISSING
 401827062,2025-11-29 19:00:00+00:00,Nebraska Cornhuskers,South Carolina Upstate Spartans,MISSING
 401827063,2025-12-04 00:00:00+00:00,South Carolina Upstate Spartans,Coastal Carolina Chanticleers,MISSING
 401827064,2025-12-16 23:00:00+00:00,South Carolina State Bulldogs,South Carolina Upstate Spartans,MISSING
-401827065,2025-12-18 00:00:00+00:00,South Carolina Upstate Spartans,Southern Wesleyan Warriors,MISSING
 401827066,2025-11-12 00:00:00+00:00,Coastal Carolina Chanticleers,Winthrop Eagles,MISSING
 401827067,2025-11-24 01:00:00+00:00,Jackson State Tigers,Winthrop Eagles,MISSING
 401827068,2025-11-26 01:30:00+00:00,Nebraska Cornhuskers,Winthrop Eagles,MISSING
 401827069,2025-11-29 21:00:00+00:00,Winthrop Eagles,South Carolina State Bulldogs,MISSING
 401827070,2025-12-06 19:00:00+00:00,Winthrop Eagles,Coastal Carolina Chanticleers,MISSING
-401827071,2025-12-09 23:30:00+00:00,Winthrop Eagles,Toccoa Falls Eagles,MISSING
-401827072,2025-12-13 23:30:00+00:00,Winthrop Eagles,Bob Jones Bruins,MISSING
 401827073,2025-12-19 01:00:00+00:00,North Dakota Fighting Hawks,Winthrop Eagles,MISSING
-401827074,2025-12-21 17:00:00+00:00,Winthrop Eagles,Clinton College Golden Bears,MISSING
 401827075,2026-02-07 22:30:00+00:00,Bethune-Cookman Wildcats,Prairie View A&M Panthers,MISSING
 401827076,2026-02-10 00:00:00+00:00,Florida A&M Rattlers,Prairie View A&M Panthers,MISSING
 401827077,2026-02-17 00:00:00+00:00,Prairie View A&M Panthers,Grambling Tigers,MISSING
@@ -3788,7 +3611,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401827091,2025-12-19 22:00:00+00:00,Hampton Pirates,Grambling Tigers,MISSING
 401827092,2025-12-19 00:30:00+00:00,Grambling Tigers,Norfolk State Spartans,MISSING
 401827093,2025-12-23 19:00:00+00:00,Ohio State Buckeyes,Grambling Tigers,MISSING
-401827094,2025-12-30 18:00:00+00:00,Grambling Tigers,Centenary (LA) Gentlemen,MISSING
 401827095,2026-01-06 00:30:00+00:00,Grambling Tigers,Texas Southern Tigers,MISSING
 401827096,2026-01-10 22:30:00+00:00,Bethune-Cookman Wildcats,Grambling Tigers,MISSING
 401827097,2026-01-13 00:00:00+00:00,Florida A&M Rattlers,Grambling Tigers,MISSING
@@ -3799,7 +3621,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401827102,2026-02-07 22:30:00+00:00,Grambling Tigers,Alabama State Hornets,MISSING
 401827103,2026-02-10 00:30:00+00:00,Grambling Tigers,Alabama A&M Bulldogs,MISSING
 401827104,2026-02-14 22:30:00+00:00,Texas Southern Tigers,Grambling Tigers,MISSING
-401827109,2025-11-11 23:20:00+00:00,Bethune-Cookman Wildcats,Coastal Georgia Mariner,MISSING
 401827110,2025-11-20 00:00:00+00:00,Ohio Bobcats,Bethune-Cookman Wildcats,MISSING
 401827111,2025-11-29 17:00:00+00:00,Indiana Hoosiers,Bethune-Cookman Wildcats,MISSING
 401827112,2025-12-06 00:00:00+00:00,Bethune-Cookman Wildcats,South Carolina State Bulldogs,MISSING
@@ -3820,8 +3641,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401827131,2025-11-23 18:00:00+00:00,Miami (OH) RedHawks,Arkansas-Pine Bluff Golden Lions,MISSING
 401827132,2025-12-03 17:00:00+00:00,UIC Flames,Arkansas-Pine Bluff Golden Lions,MISSING
 401827133,2025-12-11 01:00:00+00:00,Tulsa Golden Hurricane,Arkansas-Pine Bluff Golden Lions,MISSING
-401827134,2025-12-16 00:00:00+00:00,Arkansas-Pine Bluff Golden Lions,Ecclesia Royals,MISSING
-401827135,2025-12-17 18:00:00+00:00,Arkansas-Pine Bluff Golden Lions,Champion Christian Tigers,MISSING
 401827136,2026-01-03 23:30:00+00:00,Arkansas-Pine Bluff Golden Lions,Alabama A&M Bulldogs,MISSING
 401827137,2026-01-05 23:30:00+00:00,Arkansas-Pine Bluff Golden Lions,Alabama State Hornets,MISSING
 401827138,2026-01-10 22:30:00+00:00,Texas Southern Tigers,Arkansas-Pine Bluff Golden Lions,MISSING
@@ -3832,7 +3651,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401827147,2026-02-17 01:00:00+00:00,Alabama A&M Bulldogs,Arkansas-Pine Bluff Golden Lions,MISSING
 401827148,2026-02-20 02:00:00+00:00,Arkansas-Pine Bluff Golden Lions,Texas Southern Tigers,MISSING
 401827149,2026-02-21 23:30:00+00:00,Arkansas-Pine Bluff Golden Lions,Prairie View A&M Panthers,MISSING
-401827153,2025-11-15 00:00:00+00:00,Alabama State Hornets,Virginia-Lynchburg Dragons,MISSING
 401827154,2025-11-23 18:00:00+00:00,SIU Edwardsville Cougars,Alabama State Hornets,MISSING
 401827155,2025-11-27 02:00:00+00:00,New Mexico Lobos,Alabama State Hornets,MISSING
 401827156,2025-12-07 20:00:00+00:00,UT Martin Skyhawks,Alabama State Hornets,MISSING
@@ -3853,10 +3671,8 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401827181,2025-11-25 01:00:00+00:00,Illinois Fighting Illini,UT Rio Grande Valley Vaqueros,MISSING
 401827189,2025-11-16 22:30:00+00:00,Indiana Hoosiers,Incarnate Word Cardinals,MISSING
 401827195,2025-12-04 01:00:00+00:00,Alabama A&M Bulldogs,Tennessee State Tigers,MISSING
-401827196,2025-12-13 22:00:00+00:00,Alabama A&M Bulldogs,Arkansas Baptist Buffaloes,MISSING
 401827197,2025-12-18 01:00:00+00:00,Ole Miss Rebels,Alabama A&M Bulldogs,MISSING
 401827198,2025-12-21 20:00:00+00:00,Alabama A&M Bulldogs,Chattanooga Mocs,MISSING
-401827199,2025-12-30 23:00:00+00:00,Alabama A&M Bulldogs,Fisk Bulldogs,MISSING
 401827201,2026-01-06 01:00:00+00:00,Mississippi Valley State Delta Devils,Alabama A&M Bulldogs,MISSING
 401827202,2026-01-10 22:30:00+00:00,Alabama A&M Bulldogs,Alcorn State Braves,MISSING
 401827203,2026-01-13 01:00:00+00:00,Alabama A&M Bulldogs,Jackson State Tigers,MISSING
@@ -3865,11 +3681,8 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401827206,2026-02-14 22:00:00+00:00,Alabama A&M Bulldogs,Mississippi Valley State Delta Devils,MISSING
 401827207,2026-02-20 02:15:00+00:00,Florida A&M Rattlers,Alabama A&M Bulldogs,MISSING
 401827208,2025-12-14 00:45:00+00:00,Kentucky Wildcats,Indiana Hoosiers,MISSING
-401827209,2025-11-12 00:00:00+00:00,Troy Trojans,Pensacola Christian College PENSACOLA CHRISTIAN,MISSING
 401827210,2025-11-21 03:00:00+00:00,USC Trojans,Troy Trojans,MISSING
-401827211,2025-12-06 21:30:00+00:00,Troy Trojans,LaGrange Panthers,MISSING
 401827213,2025-11-13 01:00:00+00:00,Texas State Bobcats,UTSA Roadrunners,MISSING
-401827214,2025-11-25 00:00:00+00:00,Texas State Bobcats,Texas Lutheran Bulldogs,MISSING
 401827216,2025-11-12 00:00:00+00:00,Maryland Terrapins,Alcorn State Braves,MISSING
 401827217,2025-12-03 01:00:00+00:00,Maryland Terrapins,Wagner Seahawks,MISSING
 401827218,2025-12-28 23:00:00+00:00,Maryland Terrapins,Old Dominion Monarchs,MISSING
@@ -3883,12 +3696,10 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401827239,2025-12-22 01:00:00+00:00,Nebraska Cornhuskers,North Dakota Fighting Hawks,MISSING
 401827255,2025-11-21 01:00:00+00:00,Ohio State Buckeyes,Western Michigan Broncos,MISSING
 401827257,2025-11-09 23:30:00+00:00,South Carolina Gamecocks,Southern Miss Golden Eagles,MISSING
-401827258,2025-11-19 01:30:00+00:00,Southern Miss Golden Eagles,William Carey Crusaders,MISSING
 401827259,2025-12-13 20:00:00+00:00,Ole Miss Rebels,Southern Miss Golden Eagles,MISSING
 401827260,2025-12-30 01:00:00+00:00,LSU Tigers,Southern Miss Golden Eagles,MISSING
 401827262,2025-11-13 00:00:00+00:00,Marshall Thundering Herd,Elon Phoenix,MISSING
 401827263,2025-12-06 21:00:00+00:00,Ohio Bobcats,Marshall Thundering Herd,MISSING
-401827264,2025-12-24 00:00:00+00:00,Marshall Thundering Herd,WVU Tech Golden Bears,MISSING
 401827265,2025-11-13 02:30:00+00:00,Oregon Ducks,South Dakota State Jackrabbits,MISSING
 401827266,2025-12-29 01:00:00+00:00,Oregon Ducks,Omaha Mavericks,MISSING
 401827267,2025-12-04 00:00:00+00:00,Dartmouth Big Green,New Hampshire Wildcats,MISSING
@@ -3904,20 +3715,14 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401827451,2025-11-18 00:00:00+00:00,Charleston Cougars,Drake Bulldogs,MISSING
 401827452,2025-11-21 20:00:00+00:00,Charleston Cougars,Massachusetts Minutemen,MISSING
 401827453,2025-12-18 00:00:00+00:00,Charleston Cougars,The Citadel Bulldogs,MISSING
-401827485,2025-11-26 00:00:00+00:00,Cleveland State Vikings,Waynesburg Yellow Jackets,MISSING
 401827486,2025-11-28 19:00:00+00:00,Missouri Tigers,Cleveland State Vikings,MISSING
-401827487,2025-12-14 19:00:00+00:00,Cleveland State Vikings,Oakland City Mighty Oaks,MISSING
 401827489,2025-11-22 00:00:00+00:00,Florida Gators,Merrimack Warriors,MISSING
 401827490,2026-02-13 00:00:00+00:00,Merrimack Warriors,Marist Red Foxes,MISSING
-401827495,2025-11-11 23:30:00+00:00,Stony Brook Seawolves,Saint Josephs Long Island Golden Eagles,MISSING
 401827496,2025-12-18 00:00:00+00:00,Stony Brook Seawolves,UAlbany Great Danes,MISSING
-401827497,2025-11-12 00:30:00+00:00,Towson Tigers,Wilson College WILSON,MISSING
 401827498,2025-11-15 00:00:00+00:00,Towson Tigers,Norfolk State Spartans,MISSING
 401827499,2025-11-19 00:00:00+00:00,James Madison Dukes,Towson Tigers,MISSING
 401827500,2025-12-04 00:00:00+00:00,Towson Tigers,Cornell Big Red,MISSING
-401827501,2025-12-19 23:00:00+00:00,Towson Tigers,Notre Dame (MD) Gators,MISSING
 401827502,2025-12-20 19:00:00+00:00,UNC Wilmington Seahawks,Howard Bison,MISSING
-401827505,2025-11-21 16:00:00+00:00,William & Mary Tribe,Regent Royals,MISSING
 401827506,2025-11-24 21:00:00+00:00,UTEP Miners,William & Mary Tribe,MISSING
 401827507,2025-11-25 23:30:00+00:00,Abilene Christian Wildcats,William & Mary Tribe,MISSING
 401827508,2025-11-30 19:00:00+00:00,William & Mary Tribe,Old Dominion Monarchs,MISSING
@@ -3927,16 +3732,12 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401827515,2025-12-04 00:00:00+00:00,American University Eagles,Drexel Dragons,MISSING
 401827516,2025-12-16 16:00:00+00:00,Drexel Dragons,Howard Bison,MISSING
 401827519,2025-12-06 21:00:00+00:00,Wofford Terriers,Elon Phoenix,MISSING
-401827520,2025-12-22 21:00:00+00:00,Elon Phoenix,Greensboro College Pride,MISSING
 401827522,2025-11-22 01:00:00+00:00,Norfolk State Spartans,Hampton Pirates,MISSING
-401827523,2025-12-02 00:00:00+00:00,Hampton Pirates,Apprentice School Builders,MISSING
 401827524,2025-12-13 20:00:00+00:00,Howard Bison,Hampton Pirates,MISSING
 401827526,2025-11-11 00:00:00+00:00,North Carolina A&T Aggies,South Carolina State Bulldogs,MISSING
-401827527,2025-11-14 00:00:00+00:00,North Carolina A&T Aggies,Washington Adventist Shock,MISSING
 401827528,2025-12-06 21:00:00+00:00,North Carolina Central Eagles,North Carolina A&T Aggies,MISSING
 401827529,2025-12-10 00:00:00+00:00,Howard Bison,North Carolina A&T Aggies,MISSING
 401827530,2025-12-17 00:00:00+00:00,UNC Greensboro Spartans,North Carolina A&T Aggies,MISSING
-401827531,2025-12-20 21:30:00+00:00,North Carolina A&T Aggies,Mid-Atlantic Christian Mustangs,MISSING
 401827592,2026-01-03 02:00:00+00:00,Iowa State Cyclones,West Virginia Mountaineers,MISSING
 401827593,2026-01-03 22:10:00+00:00,Arizona State Sun Devils,Colorado Buffaloes,MISSING
 401827594,2026-01-03 19:00:00+00:00,UCF Knights,Kansas Jayhawks,MISSING
@@ -4045,12 +3846,17 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401827697,2026-02-21 22:00:00+00:00,TCU Horned Frogs,West Virginia Mountaineers,MISSING
 401827698,2026-02-21 19:30:00+00:00,Texas Tech Red Raiders,Kansas State Wildcats,MISSING
 401827699,2026-02-22 02:00:00+00:00,Utah Utes,UCF Knights,MISSING
+401827723,2026-03-07 22:00:00+00:00,Baylor Bears,Utah Utes,MISSING
+401827724,2026-03-08 03:30:00+00:00,BYU Cougars,Texas Tech Red Raiders,MISSING
+401827725,2026-03-08 04:00:00+00:00,Colorado Buffaloes,Arizona Wildcats,MISSING
+401827726,2026-03-07 19:00:00+00:00,Iowa State Cyclones,Arizona State Sun Devils,MISSING
+401827727,2026-03-07 19:00:00+00:00,Kansas Jayhawks,Kansas State Wildcats,MISSING
+401827728,2026-03-07 17:00:00+00:00,Oklahoma State Cowboys,Houston Cougars,MISSING
+401827729,2026-03-07 19:00:00+00:00,TCU Horned Frogs,Cincinnati Bearcats,MISSING
 401827731,2025-11-24 18:30:00+00:00,Southern Illinois Salukis,UAB Blazers,MISSING
 401827732,2025-11-25 21:00:00+00:00,UAB Blazers,UTEP Miners,MISSING
 401827733,2025-11-28 21:00:00+00:00,Davidson Wildcats,North Carolina A&T Aggies,MISSING
 401827755,2025-11-28 21:00:00+00:00,Eastern Michigan Eagles,NJIT Highlanders,MISSING
-401827756,2025-12-06 00:30:00+00:00,Eastern Michigan Eagles,Cleary University Cougars,MISSING
-401827758,2025-12-22 17:00:00+00:00,Massachusetts Minutemen,Massachusetts-Boston Beacons,MISSING
 401827911,2025-11-15 21:00:00+00:00,Utah State Aggies,UTEP Miners,MISSING
 401827913,2025-12-20 19:00:00+00:00,Utah State Aggies,Colorado State Rams,MISSING
 401827914,2025-12-31 02:00:00+00:00,Fresno State Bulldogs,Utah State Aggies,MISSING
@@ -4150,57 +3956,44 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401828241,2026-02-22 21:00:00+00:00,North Texas Mean Green,Florida Atlantic Owls,MISSING
 401828242,2026-02-22 19:00:00+00:00,Tulane Green Wave,Rice Owls,MISSING
 401828243,2026-02-22 21:00:00+00:00,Tulsa Golden Hurricane,UTSA Roadrunners,MISSING
-401828267,2025-11-11 23:30:00+00:00,UAlbany Great Danes,SUNY Delhi Broncos,MISSING
-401828268,2025-11-18 23:30:00+00:00,UAlbany Great Danes,Paul Smith's Bobcats,MISSING
+401828261,2026-03-07 21:00:00+00:00,Wichita State Shockers,Florida Atlantic Owls,MISSING
 401828269,2025-11-29 00:30:00+00:00,UAlbany Great Danes,Colgate Raiders,MISSING
 401828270,2025-11-30 00:30:00+00:00,Fordham Rams,UAlbany Great Danes,MISSING
-401828271,2025-11-30 18:00:00+00:00,UAlbany Great Danes,SUNY-Oneonta Red Dragons,MISSING
 401828272,2025-12-21 20:00:00+00:00,UAlbany Great Danes,Cornell Big Red,MISSING
 401828273,2025-12-30 23:00:00+00:00,South Carolina Gamecocks,UAlbany Great Danes,MISSING
 401828276,2025-11-09 22:00:00+00:00,Loyola Chicago Ramblers,North Texas Mean Green,MISSING
 401828277,2025-11-15 03:00:00+00:00,Saint Mary's Gaels,North Texas Mean Green,MISSING
 401828278,2025-12-03 01:00:00+00:00,North Texas Mean Green,Houston Christian Huskies,MISSING
 401828279,2025-12-14 22:30:00+00:00,South Alabama Jaguars,North Texas Mean Green,MISSING
-401828280,2025-12-22 19:00:00+00:00,North Texas Mean Green,Science & Arts (OK) Drovers,MISSING
 401828282,2025-11-13 01:00:00+00:00,Oral Roberts Golden Eagles,Tulsa Golden Hurricane,MISSING
 401828283,2025-11-22 01:00:00+00:00,Tulsa Golden Hurricane,Austin Peay Governors,MISSING
 401828284,2025-11-25 18:30:00+00:00,San José State Spartans,Tulsa Golden Hurricane,MISSING
-401828285,2025-12-03 01:00:00+00:00,Tulsa Golden Hurricane,Manhattan Christian Thunder,MISSING
 401828286,2025-12-13 20:00:00+00:00,New Mexico State Aggies,Tulsa Golden Hurricane,MISSING
 401828289,2025-11-15 02:00:00+00:00,Montana Grizzlies,Cal Poly Mustangs,MISSING
 401828290,2025-11-19 01:00:00+00:00,Texas A&M Aggies,Montana Grizzlies,MISSING
 401828291,2025-11-23 21:00:00+00:00,Montana Grizzlies,Lamar Cardinals,MISSING
 401828292,2025-12-04 02:00:00+00:00,Montana Grizzlies,North Dakota State Bison,MISSING
 401828293,2025-12-07 01:00:00+00:00,North Dakota Fighting Hawks,Montana Grizzlies,MISSING
-401828294,2025-12-11 03:45:00+00:00,Montana Grizzlies,Salish Kootenai Bison,MISSING
-401828295,2025-12-18 02:00:00+00:00,Montana Grizzlies,Montana Tech Orediggers,MISSING
 401828296,2025-11-09 17:30:00+00:00,Campbell Fighting Camels,Western Michigan Broncos,MISSING
-401828297,2025-11-14 00:00:00+00:00,Campbell Fighting Camels,Mid-Atlantic Christian Mustangs,MISSING
-401828298,2025-12-07 21:00:00+00:00,Campbell Fighting Camels,Virginia-Lynchburg Dragons,MISSING
 401828299,2025-12-23 17:00:00+00:00,Campbell Fighting Camels,Green Bay Phoenix,MISSING
 401828300,2025-12-18 22:00:00+00:00,Jackson State Tigers,Hampton Pirates,MISSING
 401828302,2025-11-19 00:00:00+00:00,Delaware Blue Hens,Saint Peter's Peacocks,MISSING
 401828303,2025-11-23 20:00:00+00:00,Delaware Blue Hens,Southern Illinois Salukis,MISSING
 401828304,2025-11-25 18:30:00+00:00,Delaware Blue Hens,UNC Greensboro Spartans,MISSING
 401828305,2025-12-06 19:00:00+00:00,Delaware State Hornets,Delaware Blue Hens,MISSING
-401828307,2025-11-10 17:00:00+00:00,Jacksonville State Gamecocks,Reinhardt Eagles,MISSING
 401828308,2025-11-15 00:00:00+00:00,Jacksonville State Gamecocks,Coastal Carolina Chanticleers,MISSING
 401828309,2025-11-20 00:00:00+00:00,Jacksonville State Gamecocks,South Alabama Jaguars,MISSING
 401828310,2025-11-25 01:00:00+00:00,Arkansas State Red Wolves,Jacksonville State Gamecocks,MISSING
 401828311,2025-11-26 20:00:00+00:00,Jacksonville State Gamecocks,North Dakota State Bison,MISSING
-401828312,2025-12-07 22:00:00+00:00,Jacksonville State Gamecocks,Auburn-Montgomery Senators,MISSING
 401828313,2025-12-13 19:00:00+00:00,Georgia State Panthers,Jacksonville State Gamecocks,MISSING
 401828314,2025-12-18 00:00:00+00:00,Jacksonville State Gamecocks,Eastern Kentucky Colonels,MISSING
 401828331,2025-11-14 01:00:00+00:00,Houston Christian Huskies,UL Monroe Warhawks,MISSING
-401828332,2025-11-21 01:00:00+00:00,Houston Christian Huskies,College Of Biblical Studies Ambassadors,MISSING
 401828333,2025-11-27 00:00:00+00:00,The Citadel Bulldogs,Houston Christian Huskies,MISSING
 401828334,2025-11-29 19:00:00+00:00,Georgia Southern Eagles,Houston Christian Huskies,MISSING
-401828337,2025-11-13 00:00:00+00:00,Kennesaw State Owls,Point University Skyhawks,MISSING
 401828338,2025-11-24 21:30:00+00:00,Kennesaw State Owls,Rice Owls,MISSING
 401828339,2025-11-25 21:30:00+00:00,Oral Roberts Golden Eagles,Kennesaw State Owls,MISSING
 401828340,2025-12-03 00:00:00+00:00,Kennesaw State Owls,Jackson State Tigers,MISSING
 401828341,2025-12-06 20:00:00+00:00,Kennesaw State Owls,Georgia State Panthers,MISSING
-401828342,2025-12-08 17:00:00+00:00,Kennesaw State Owls,Southern Wesleyan Warriors,MISSING
 401828343,2025-12-31 00:00:00+00:00,Davidson Wildcats,Duquesne Dukes,MISSING
 401828344,2025-12-31 19:00:00+00:00,Dayton Flyers,Fordham Rams,MISSING
 401828345,2025-12-31 19:00:00+00:00,La Salle Explorers,George Mason Patriots,MISSING
@@ -4301,31 +4094,25 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401828440,2026-02-21 19:30:00+00:00,La Salle Explorers,Rhode Island Rams,MISSING
 401828441,2026-02-21 17:00:00+00:00,Saint Joseph's Hawks,Loyola Chicago Ramblers,MISSING
 401828442,2026-02-21 23:00:00+00:00,Richmond Spiders,St. Bonaventure Bonnies,MISSING
-401828470,2025-11-18 00:00:00+00:00,Liberty Flames,Carolina University Bruins,MISSING
-401828471,2025-12-16 23:00:00+00:00,Liberty Flames,Midway University Eagles,MISSING
-401828474,2025-11-20 02:00:00+00:00,UTEP Miners,St. Thomas (TX) Celts,MISSING
+401828463,2026-03-07 17:00:00+00:00,St. Bonaventure Bonnies,Davidson Wildcats,MISSING
+401828464,2026-03-07 19:00:00+00:00,Duquesne Dukes,Richmond Spiders,MISSING
+401828465,2026-03-07 19:00:00+00:00,Fordham Rams,Rhode Island Rams,MISSING
+401828466,2026-03-07 21:00:00+00:00,George Mason Patriots,Saint Louis Billikens,MISSING
+401828467,2026-03-07 19:00:00+00:00,Loyola Chicago Ramblers,George Washington Revolutionaries,MISSING
+401828468,2026-03-07 18:00:00+00:00,Saint Joseph's Hawks,La Salle Explorers,MISSING
 401828475,2025-12-22 02:30:00+00:00,UTEP Miners,Norfolk State Spartans,MISSING
-401828476,2025-11-10 17:00:00+00:00,Green Bay Phoenix,Ripon Red Hawks,MISSING
 401828477,2025-11-14 01:00:00+00:00,St. Thomas-Minnesota Tommies,Green Bay Phoenix,MISSING
-401828478,2025-11-29 19:00:00+00:00,Green Bay Phoenix,Haskell Jayhawks,MISSING
 401828479,2025-12-18 00:00:00+00:00,Green Bay Phoenix,UC Santa Barbara Gauchos,MISSING
 401828493,2025-11-19 01:00:00+00:00,Ole Miss Rebels,Austin Peay Governors,MISSING
 401828494,2025-12-30 01:00:00+00:00,Ole Miss Rebels,Alcorn State Braves,MISSING
-401828496,2025-11-11 23:00:00+00:00,Incarnate Word Cardinals,Southwestern Christian Eagles,MISSING
-401828497,2025-11-26 20:00:00+00:00,Incarnate Word Cardinals,Texas Lutheran Bulldogs,MISSING
 401828512,2025-11-18 00:30:00+00:00,UL Monroe Warhawks,Lamar Cardinals,MISSING
-401828513,2025-11-30 00:00:00+00:00,Lamar Cardinals,Our Lady Of The Lake Saints,MISSING
 401828514,2025-12-04 00:00:00+00:00,Lamar Cardinals,Louisiana Ragin' Cajuns,MISSING
 401828515,2025-12-21 00:00:00+00:00,Lamar Cardinals,Omaha Mavericks,MISSING
-401828527,2025-11-19 01:00:00+00:00,Oral Roberts Golden Eagles,Haskell Jayhawks,MISSING
-401828528,2025-12-14 01:00:00+00:00,Oral Roberts Golden Eagles,Ecclesia Royals,MISSING
 401828544,2025-11-13 01:00:00+00:00,Vanderbilt Commodores,Eastern Kentucky Colonels,MISSING
 401828545,2025-11-29 22:00:00+00:00,Eastern Kentucky Colonels,Wofford Terriers,MISSING
-401828546,2025-12-06 21:00:00+00:00,Eastern Kentucky Colonels,Indiana University East IU EAST,MISSING
 401828547,2025-12-11 01:00:00+00:00,Eastern Illinois Panthers,Eastern Kentucky Colonels,MISSING
 401828548,2025-12-13 20:00:00+00:00,Eastern Kentucky Colonels,Miami (OH) RedHawks,MISSING
 401828576,2025-11-09 19:00:00+00:00,Georgia Bulldogs,Morehead State Eagles,MISSING
-401828577,2025-11-16 17:30:00+00:00,Morehead State Eagles,Kentucky Christian Knights,MISSING
 401828643,2025-12-05 00:00:00+00:00,Davidson Wildcats,The Citadel Bulldogs,MISSING
 401828644,2025-12-07 19:00:00+00:00,Davidson Wildcats,Saint Mary's Gaels,MISSING
 401828662,2025-11-29 01:00:00+00:00,Louisiana Ragin' Cajuns,Jackson State Tigers,MISSING
@@ -4335,8 +4122,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401828666,2026-02-09 23:30:00+00:00,Arkansas-Pine Bluff Golden Lions,Jackson State Tigers,MISSING
 401828667,2026-02-14 20:30:00+00:00,Jackson State Tigers,Florida A&M Rattlers,MISSING
 401828668,2026-02-21 21:45:00+00:00,Alcorn State Braves,Jackson State Tigers,MISSING
-401828671,2025-11-15 21:00:00+00:00,American University Eagles,Central Penn Knights,MISSING
-401828672,2025-11-25 00:00:00+00:00,American University Eagles,Marywood Pacers,MISSING
 401828673,2026-01-08 00:00:00+00:00,Colgate Raiders,American University Eagles,MISSING
 401828674,2026-01-22 00:00:00+00:00,American University Eagles,Colgate Raiders,MISSING
 401828675,2026-01-31 19:00:00+00:00,American University Eagles,Lafayette Leopards,MISSING
@@ -4345,9 +4130,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401828678,2026-02-19 00:00:00+00:00,Bucknell Bison,American University Eagles,MISSING
 401828679,2026-02-22 17:00:00+00:00,Lafayette Leopards,American University Eagles,MISSING
 401828681,2025-11-15 18:00:00+00:00,New Haven Chargers,Delaware State Hornets,MISSING
-401828682,2025-11-22 18:00:00+00:00,New Haven Chargers,Vermont State - Lyndon Hornets,MISSING
-401828683,2025-11-26 00:00:00+00:00,New Haven Chargers,Salve Regina Seahawks,MISSING
-401828684,2025-11-30 18:00:00+00:00,New Haven Chargers,Mitchell College Mariners,MISSING
 401828685,2025-12-11 00:00:00+00:00,NJIT Highlanders,New Haven Chargers,MISSING
 401828686,2025-12-30 00:00:00+00:00,Vanderbilt Commodores,New Haven Chargers,MISSING
 401828688,2026-01-10 21:50:00+00:00,Morgan State Bears,South Carolina State Bulldogs,MISSING
@@ -4359,38 +4141,27 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401828694,2026-02-17 00:00:00+00:00,North Carolina Central Eagles,Morgan State Bears,MISSING
 401828715,2026-02-21 22:00:00+00:00,Morgan State Bears,Delaware State Hornets,MISSING
 401828720,2025-11-12 00:00:00+00:00,Old Dominion Monarchs,Norfolk State Spartans,MISSING
-401828721,2025-11-26 00:00:00+00:00,Norfolk State Spartans,Virginia-Lynchburg Dragons,MISSING
 401828722,2025-12-06 19:00:00+00:00,James Madison Dukes,Norfolk State Spartans,MISSING
 401828723,2025-12-28 20:00:00+00:00,Louisiana Ragin' Cajuns,Norfolk State Spartans,MISSING
 401828724,2026-01-03 21:30:00+00:00,North Carolina Central Eagles,Norfolk State Spartans,MISSING
 401828725,2026-01-10 21:30:00+00:00,Delaware State Hornets,Norfolk State Spartans,MISSING
 401828726,2026-01-17 21:30:00+00:00,South Carolina State Bulldogs,Norfolk State Spartans,MISSING
-401828727,2026-01-20 00:00:00+00:00,Norfolk State Spartans,Elizabeth City State Vikings,MISSING
 401828728,2026-01-31 21:00:00+00:00,Howard Bison,Norfolk State Spartans,MISSING
 401828729,2026-02-07 21:30:00+00:00,Norfolk State Spartans,North Carolina Central Eagles,MISSING
 401828730,2026-02-14 21:30:00+00:00,Norfolk State Spartans,Delaware State Hornets,MISSING
 401828731,2026-02-21 21:00:00+00:00,Norfolk State Spartans,South Carolina State Bulldogs,MISSING
 401828733,2025-12-20 00:30:00+00:00,Jackson State Tigers,Norfolk State Spartans,MISSING
-401828734,2025-11-13 00:00:00+00:00,North Carolina Central Eagles,Bluefield State Big Blues,MISSING
-401828735,2025-11-19 00:30:00+00:00,North Carolina Central Eagles,Toccoa Falls Eagles,MISSING
-401828736,2025-11-29 19:00:00+00:00,North Carolina Central Eagles,Carolina University Bruins,MISSING
 401828737,2025-12-04 00:00:00+00:00,James Madison Dukes,North Carolina Central Eagles,MISSING
 401828738,2025-12-10 00:00:00+00:00,Kentucky Wildcats,North Carolina Central Eagles,MISSING
-401828739,2025-12-18 00:00:00+00:00,North Carolina Central Eagles,Mid-Atlantic Christian Mustangs,MISSING
 401828753,2025-11-13 01:30:00+00:00,Bradley Braves,UT Martin Skyhawks,MISSING
-401828905,2025-11-11 00:30:00+00:00,Drake Bulldogs,Simpson College (IA) Storm,MISSING
 401828906,2025-11-15 00:30:00+00:00,Drake Bulldogs,SIU Edwardsville Cougars,MISSING
-401828907,2025-11-22 00:30:00+00:00,Drake Bulldogs,Buena Vista Beavers,MISSING
 401828908,2025-11-29 02:46:00+00:00,Drake Bulldogs,LSU Tigers,MISSING
 401828909,2025-12-03 00:30:00+00:00,Drake Bulldogs,Western Illinois Leathernecks,MISSING
 401828910,2025-12-13 19:00:00+00:00,Drake Bulldogs,North Dakota State Bison,MISSING
-401828912,2025-11-09 21:00:00+00:00,Evansville Purple Aces,Oakland City Mighty Oaks,MISSING
 401828914,2025-11-11 00:00:00+00:00,SIU Edwardsville Cougars,Indiana State Sycamores,MISSING
 401828915,2025-11-28 19:00:00+00:00,Alcorn State Braves,Indiana State Sycamores,MISSING
 401828918,2025-11-13 03:00:00+00:00,Nevada Wolf Pack,Southern Illinois Salukis,MISSING
 401828919,2025-11-18 01:00:00+00:00,North Dakota State Bison,Southern Illinois Salukis,MISSING
-401828920,2025-11-12 01:00:00+00:00,UIC Flames,St. Francis (IL) Fighting Saints,MISSING
-401828921,2025-12-29 21:00:00+00:00,UIC Flames,Illinois Tech Scarlet Hawks,MISSING
 401828923,2025-11-19 02:00:00+00:00,Fresno State Bulldogs,Stephen F. Austin Lumberjacks,MISSING
 401828924,2025-12-21 00:00:00+00:00,UNLV Rebels,Fresno State Bulldogs,MISSING
 401828925,2026-01-04 00:00:00+00:00,Fresno State Bulldogs,Nevada Wolf Pack,MISSING
@@ -4404,13 +4175,9 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401828933,2026-02-18 01:30:00+00:00,Wyoming Cowboys,Fresno State Bulldogs,MISSING
 401828934,2026-02-22 01:00:00+00:00,Fresno State Bulldogs,New Mexico Lobos,MISSING
 401829043,2025-11-14 01:00:00+00:00,LSU Tigers,Florida International Panthers,MISSING
-401829044,2025-11-19 00:00:00+00:00,Florida International Panthers,Fort Lauderdale Eagles,MISSING
 401829045,2025-11-25 00:00:00+00:00,Florida International Panthers,James Madison Dukes,MISSING
 401829046,2025-11-26 19:00:00+00:00,Florida International Panthers,Omaha Mavericks,MISSING
-401829047,2025-12-22 17:00:00+00:00,Florida International Panthers,Trinity College of Jacksonville Eagles,MISSING
 401829049,2025-11-12 03:00:00+00:00,Saint Mary's Gaels,Ohio Bobcats,MISSING
-401829050,2025-12-17 00:00:00+00:00,Ohio Bobcats,Ohio Wesleyan Battling Bishops,MISSING
-401829051,2025-12-22 17:00:00+00:00,Ohio Bobcats,Miami (OH)-Hamilton Harriers,MISSING
 401829054,2025-12-04 00:00:00+00:00,Western Michigan Broncos,Southern Indiana Screaming Eagles,MISSING
 401829163,2025-12-29 01:00:00+00:00,Pepperdine Waves,Gonzaga Bulldogs,MISSING
 401829164,2025-12-28 23:00:00+00:00,San Diego Toreros,Pacific Tigers,MISSING
@@ -4510,15 +4277,12 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401829258,2026-02-22 03:07:00+00:00,Washington State Cougars,Saint Mary's Gaels,MISSING
 401829259,2026-02-22 03:00:00+00:00,San Francisco Dons,Santa Clara Broncos,MISSING
 401829275,2025-12-06 19:00:00+00:00,SIU Edwardsville Cougars,Western Michigan Broncos,MISSING
-401829276,2025-12-22 18:00:00+00:00,Western Michigan Broncos,Defiance Yellow Jackets,MISSING
 401829278,2025-11-20 00:00:00+00:00,South Carolina State Bulldogs,Chattanooga Mocs,MISSING
 401829279,2025-11-23 19:00:00+00:00,South Dakota Coyotes,South Carolina State Bulldogs,MISSING
 401829280,2025-11-26 01:00:00+00:00,Missouri Tigers,South Carolina State Bulldogs,MISSING
-401829281,2025-12-19 17:00:00+00:00,South Carolina State Bulldogs,Brewton-Parker Wildcats,MISSING
 401829282,2025-12-22 21:00:00+00:00,South Carolina Gamecocks,South Carolina State Bulldogs,MISSING
 401829283,2025-12-31 01:00:00+00:00,Tennessee Volunteers,South Carolina State Bulldogs,MISSING
 401829284,2026-01-03 21:30:00+00:00,South Carolina State Bulldogs,Howard Bison,MISSING
-401829285,2026-01-21 00:00:00+00:00,South Carolina State Bulldogs,Mid-Atlantic Christian Mustangs,MISSING
 401829286,2026-01-26 23:00:00+00:00,South Carolina State Bulldogs,Delaware State Hornets,MISSING
 401829287,2026-01-31 21:30:00+00:00,South Carolina State Bulldogs,North Carolina Central Eagles,MISSING
 401829288,2026-02-07 21:30:00+00:00,Howard Bison,South Carolina State Bulldogs,MISSING
@@ -4532,7 +4296,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401829317,2026-01-31 03:00:00+00:00,Nevada Wolf Pack,UNLV Rebels,MISSING
 401829318,2026-02-18 03:00:00+00:00,San José State Spartans,Nevada Wolf Pack,MISSING
 401829319,2026-02-22 03:00:00+00:00,Nevada Wolf Pack,Utah State Aggies,MISSING
-401829325,2025-11-18 03:00:00+00:00,San José State Spartans,Bethesda University Flames,MISSING
 401829326,2025-11-30 22:00:00+00:00,San José State Spartans,UC Irvine Anteaters,MISSING
 401829327,2025-12-21 02:00:00+00:00,New Mexico Lobos,San José State Spartans,MISSING
 401829328,2026-01-17 22:00:00+00:00,San José State Spartans,UNLV Rebels,MISSING
@@ -4540,30 +4303,19 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401829330,2026-02-01 03:00:00+00:00,San José State Spartans,New Mexico Lobos,MISSING
 401829331,2026-02-08 02:00:00+00:00,Colorado State Rams,San José State Spartans,MISSING
 401829332,2026-02-11 04:00:00+00:00,UNLV Rebels,San José State Spartans,MISSING
+401829334,2026-03-07 22:00:00+00:00,San José State Spartans,Wyoming Cowboys,MISSING
 401829337,2026-02-05 04:15:00+00:00,New Mexico Lobos,Utah State Aggies,MISSING
 401829338,2026-02-08 01:00:00+00:00,Wyoming Cowboys,Utah State Aggies,MISSING
-401829343,2025-11-28 21:00:00+00:00,SIU Edwardsville Cougars,Missouri Baptist Spartans,MISSING
-401829344,2025-12-14 19:00:00+00:00,SIU Edwardsville Cougars,Eureka Red Devils,MISSING
-401829346,2025-11-13 00:30:00+00:00,Southeast Missouri State Redhawks,Webster Gorloks,MISSING
+401829340,2026-03-07 21:00:00+00:00,Utah State Aggies,New Mexico Lobos,MISSING
 401829347,2025-11-15 20:00:00+00:00,Southeast Missouri State Redhawks,St. Thomas-Minnesota Tommies,MISSING
 401829348,2025-11-26 01:00:00+00:00,Cal Poly Mustangs,Southeast Missouri State Redhawks,MISSING
-401829349,2025-12-03 00:30:00+00:00,Southeast Missouri State Redhawks,Saint Mary of the Woods College Pomeroys,MISSING
 401829350,2025-12-06 21:30:00+00:00,Chattanooga Mocs,Southeast Missouri State Redhawks,MISSING
-401829351,2025-12-14 20:00:00+00:00,Southeast Missouri State Redhawks,St. Xavier  (IL) Cougars,MISSING
-401829352,2025-11-16 21:00:00+00:00,Southern Indiana Screaming Eagles,Loras Duhawks,MISSING
-401829353,2025-11-29 21:00:00+00:00,Southern Indiana Screaming Eagles,Kentucky State Thorobreds,MISSING
 401829354,2025-12-07 18:00:00+00:00,Indiana State Sycamores,Southern Indiana Screaming Eagles,MISSING
-401829375,2025-12-16 01:00:00+00:00,Southern Indiana Screaming Eagles,East-West University Phantoms,MISSING
-401829385,2025-11-12 01:00:00+00:00,Tennessee State Tigers,Oakwood Ambassadors,MISSING
 401829386,2025-11-21 00:00:00+00:00,Tennessee Volunteers,Tennessee State Tigers,MISSING
 401829387,2025-11-25 23:30:00+00:00,UNC Asheville Bulldogs,Tennessee State Tigers,MISSING
 401829388,2025-11-30 19:00:00+00:00,Chattanooga Mocs,Tennessee State Tigers,MISSING
-401829389,2025-11-29 19:00:00+00:00,Tennessee State Tigers,Tennessee Wesleyan Bulldogs,MISSING
-401829390,2025-11-10 00:30:00+00:00,UT Martin Skyhawks,Kentucky Christian Knights,MISSING
 401829391,2025-11-22 22:00:00+00:00,Prairie View A&M Panthers,UT Martin Skyhawks,MISSING
-401829392,2025-11-26 00:00:00+00:00,UT Martin Skyhawks,Brescia Bearcats,MISSING
 401829393,2025-12-11 01:00:00+00:00,Southern Illinois Salukis,UT Martin Skyhawks,MISSING
-401829394,2025-12-14 22:30:00+00:00,UT Martin Skyhawks,Champion Christian Tigers,MISSING
 401829395,2025-11-28 21:00:00+00:00,American University Eagles,Maine Black Bears,MISSING
 401829396,2026-01-03 22:00:00+00:00,Bucknell Bison,Lehigh Mountain Hawks,MISSING
 401829397,2026-01-15 00:30:00+00:00,Bucknell Bison,Lafayette Leopards,MISSING
@@ -4571,16 +4323,13 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401829399,2026-02-07 22:00:00+00:00,Bucknell Bison,Colgate Raiders,MISSING
 401829401,2026-01-17 19:00:00+00:00,Colgate Raiders,Bucknell Bison,MISSING
 401829402,2025-11-21 00:00:00+00:00,Cornell Big Red,Colgate Raiders,MISSING
-401829403,2025-11-29 22:00:00+00:00,Colgate Raiders,SUNY-Oneonta Red Dragons,MISSING
 401829404,2025-11-30 20:30:00+00:00,Colgate Raiders,Fordham Rams,MISSING
-401829405,2025-12-06 19:00:00+00:00,Colgate Raiders,St. John Fisher Cardinals,MISSING
 401829406,2025-12-21 17:00:00+00:00,Florida Gators,Colgate Raiders,MISSING
 401829407,2025-12-31 20:00:00+00:00,Lafayette Leopards,Colgate Raiders,MISSING
 401829408,2026-01-10 19:00:00+00:00,Colgate Raiders,Lehigh Mountain Hawks,MISSING
 401829409,2026-01-31 19:00:00+00:00,Lehigh Mountain Hawks,Colgate Raiders,MISSING
 401829413,2025-11-13 23:00:00+00:00,Lafayette Leopards,Cornell Big Red,MISSING
 401829415,2025-11-28 21:30:00+00:00,Lehigh Mountain Hawks,UC Santa Barbara Gauchos,MISSING
-401829416,2025-12-19 00:00:00+00:00,Lehigh Mountain Hawks,Penn State Hazleton Nittany Lions,MISSING
 401829417,2026-01-25 00:00:00+00:00,Lehigh Mountain Hawks,Lafayette Leopards,MISSING
 401829418,2026-02-14 22:00:00+00:00,Lafayette Leopards,Lehigh Mountain Hawks,MISSING
 401829419,2025-12-29 23:00:00+00:00,Florida Gators,Dartmouth Big Green,MISSING
@@ -4591,65 +4340,29 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401829425,2025-11-15 18:00:00+00:00,Texas Longhorns,Kansas City Roos,MISSING
 401829427,2025-11-26 01:00:00+00:00,Texas A&M Aggies,Mississippi Valley State Delta Devils,MISSING
 401829428,2025-12-21 21:00:00+00:00,Texas A&M Aggies,East Texas A&M Lions,MISSING
-401829431,2025-11-28 19:00:00+00:00,Chattanooga Mocs,Tennessee Wesleyan Bulldogs,MISSING
-401829432,2025-12-10 00:00:00+00:00,Chattanooga Mocs,Oakwood Ambassadors,MISSING
 401829433,2025-11-25 20:00:00+00:00,Georgia State Panthers,Samford Bulldogs,MISSING
 401829434,2025-12-08 00:00:00+00:00,Samford Bulldogs,Cornell Big Red,MISSING
-401829435,2025-12-15 18:00:00+00:00,Samford Bulldogs,Bryan (TN) Lions,MISSING
-401829436,2025-12-19 18:00:00+00:00,Samford Bulldogs,Reinhardt Eagles,MISSING
-401829438,2025-11-20 00:00:00+00:00,The Citadel Bulldogs,North Greenville Crusaders,MISSING
-401829439,2025-12-10 00:00:00+00:00,The Citadel Bulldogs,Southern Wesleyan Warriors,MISSING
-401829440,2025-11-22 00:00:00+00:00,Wofford Terriers,Erskine Flying Fleet,MISSING
-401829441,2025-12-28 19:00:00+00:00,Wofford Terriers,Union (KY) Bulldogs,MISSING
-401829443,2025-11-11 00:30:00+00:00,McNeese Cowboys,College Of Biblical Studies Ambassadors,MISSING
 401829444,2025-11-15 00:00:00+00:00,McNeese Cowboys,Louisiana Ragin' Cajuns,MISSING
-401829445,2025-11-14 18:00:00+00:00,Northwestern State Demons,Ecclesia Royals,MISSING
-401829446,2025-12-20 19:00:00+00:00,Northwestern State Demons,Southern-New Orleans Knights,MISSING
 401829449,2025-12-07 20:00:00+00:00,Stephen F. Austin Lumberjacks,UL Monroe Warhawks,MISSING
-401829450,2025-12-21 19:00:00+00:00,Stephen F. Austin Lumberjacks,Dallas Crusaders,MISSING
-401829452,2025-12-14 01:00:00+00:00,Kansas City Roos,Spurgeon College Knights,MISSING
 401829453,2025-12-21 23:00:00+00:00,Kansas City Roos,Austin Peay Governors,MISSING
-401829454,2025-12-28 23:00:00+00:00,Kansas City Roos,McPherson Mcpherson,MISSING
-401829455,2025-11-12 01:00:00+00:00,North Dakota Fighting Hawks,Mayville St Comets,MISSING
 401829456,2025-11-24 00:00:00+00:00,Western Illinois Leathernecks,North Dakota Fighting Hawks,MISSING
 401829457,2025-11-23 00:00:00+00:00,North Dakota Fighting Hawks,Coastal Carolina Chanticleers,MISSING
-401829458,2025-12-11 01:00:00+00:00,North Dakota Fighting Hawks,Crown College Polars,MISSING
 401829459,2025-12-13 19:00:00+00:00,North Dakota Fighting Hawks,Western Illinois Leathernecks,MISSING
-401829460,2025-12-28 19:00:00+00:00,North Dakota Fighting Hawks,Dakota State Trojans,MISSING
-401829461,2025-11-13 01:00:00+00:00,North Dakota State Bison,St. Scholastica Saints,MISSING
-401829462,2025-11-20 01:00:00+00:00,North Dakota State Bison,Jamestown Jimmies,MISSING
 401829463,2025-11-28 20:00:00+00:00,Arkansas State Red Wolves,North Dakota State Bison,MISSING
-401829464,2025-12-16 01:00:00+00:00,North Dakota State Bison,Minnesota Crookston Golden Eagles,MISSING
 401829465,2025-12-22 00:00:00+00:00,North Dakota State Bison,UC Irvine Anteaters,MISSING
-401829466,2025-11-20 01:00:00+00:00,Omaha Mavericks,Concordia-Nebraska Clippers,MISSING
 401829467,2025-11-26 00:00:00+00:00,James Madison Dukes,Omaha Mavericks,MISSING
-401829468,2025-11-30 01:00:00+00:00,Omaha Mavericks,Mid-America Christian Evangels,MISSING
-401829469,2025-12-10 01:00:00+00:00,Omaha Mavericks,Doane Tigers,MISSING
-401829470,2025-12-17 01:00:00+00:00,Omaha Mavericks,York College Nebraska Panthers,MISSING
-401829473,2025-11-18 01:00:00+00:00,South Dakota State Jackrabbits,Peru State Bobcats,MISSING
 401829474,2025-11-22 01:00:00+00:00,South Dakota State Jackrabbits,Georgia State Panthers,MISSING
 401829475,2025-11-27 01:30:00+00:00,UC Irvine Anteaters,South Dakota State Jackrabbits,MISSING
-401829476,2025-12-13 01:00:00+00:00,South Dakota State Jackrabbits,Dakota Wesleyan Tigers,MISSING
-401829478,2025-11-30 01:00:00+00:00,St. Thomas-Minnesota Tommies,Lawrence University Vikings,MISSING
-401829479,2025-12-12 01:00:00+00:00,St. Thomas-Minnesota Tommies,Saint John's (MN) Johnnies,MISSING
 401829480,2025-12-13 19:00:00+00:00,UNC Asheville Bulldogs,St. Thomas-Minnesota Tommies,MISSING
-401829481,2025-12-28 19:00:00+00:00,St. Thomas-Minnesota Tommies,North Central (MN) Rams,MISSING
 401829482,2026-02-01 19:00:00+00:00,St. Thomas-Minnesota Tommies,Kansas City Roos,MISSING
-401829483,2025-11-16 01:00:00+00:00,Arkansas State Red Wolves,Christian Brothers Buccaneers,MISSING
 401829484,2025-11-20 03:00:00+00:00,Saint Mary's Gaels,Arkansas State Red Wolves,MISSING
-401829485,2025-12-31 01:00:00+00:00,Arkansas State Red Wolves,Arkansas Tech Wonder Boys,MISSING
 401829487,2025-11-22 00:00:00+00:00,Western Illinois Leathernecks,Coastal Carolina Chanticleers,MISSING
-401829489,2025-11-14 23:00:00+00:00,Georgia Southern Eagles,Johnson C Smith Golden Bulls,MISSING
 401829490,2025-11-24 23:30:00+00:00,Youngstown State Penguins,Georgia Southern Eagles,MISSING
 401829491,2025-11-26 02:00:00+00:00,Georgia Southern Eagles,UTSA Roadrunners,MISSING
-401829492,2025-12-12 00:00:00+00:00,Georgia Southern Eagles,Coastal Georgia Mariner,MISSING
-401829493,2025-11-14 00:00:00+00:00,Georgia State Panthers,Fort Valley State Wildcats,MISSING
-401829494,2025-12-28 22:00:00+00:00,Georgia State Panthers,Columbia College (SC) Fighting Koalas,MISSING
 401829500,2026-01-13 01:00:00+00:00,Texas Southern Tigers,Mississippi Valley State Delta Devils,MISSING
 401829501,2026-01-17 21:00:00+00:00,Alcorn State Braves,Texas Southern Tigers,MISSING
 401829502,2026-02-07 23:00:00+00:00,Florida A&M Rattlers,Texas Southern Tigers,MISSING
 401829503,2026-02-22 00:30:00+00:00,Mississippi Valley State Delta Devils,Texas Southern Tigers,MISSING
-401829505,2025-11-23 03:30:00+00:00,Saint Mary's Gaels,UC Merced Bobcats,MISSING
 401829616,2025-11-26 21:30:00+00:00,Rice Owls,Oral Roberts Golden Eagles,MISSING
 401829680,2025-11-24 16:00:00+00:00,Troy Trojans,Toledo Rockets,MISSING
 401829681,2025-11-24 18:30:00+00:00,Belmont Bruins,Saint Francis Red Flash,MISSING
@@ -4658,24 +4371,15 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401829688,2026-02-07 23:30:00+00:00,Arkansas-Pine Bluff Golden Lions,Alcorn State Braves,MISSING
 401829689,2026-02-10 01:00:00+00:00,Mississippi Valley State Delta Devils,Alcorn State Braves,MISSING
 401829690,2026-02-17 01:00:00+00:00,Alcorn State Braves,Florida A&M Rattlers,MISSING
-401830009,2025-11-26 17:00:00+00:00,Cornell Big Red,Misericordia Cougars,MISSING
-401830010,2026-01-02 19:00:00+00:00,Cornell Big Red,Alfred State Pioneers,MISSING
 401830011,2026-01-10 19:00:00+00:00,Cornell Big Red,Dartmouth Big Green,MISSING
-401830112,2025-12-29 21:00:00+00:00,NJIT Highlanders,SUNY-Canton Roos,MISSING
-401830114,2025-11-11 03:00:00+00:00,UC Irvine Anteaters,Lincoln University (CA) Oaklanders,MISSING
+401830012,2026-03-07 19:00:00+00:00,Dartmouth Big Green,Cornell Big Red,MISSING
 401830115,2025-11-15 19:00:00+00:00,UNC Greensboro Spartans,Austin Peay Governors,MISSING
 401830116,2025-11-23 22:30:00+00:00,UNC Greensboro Spartans,Youngstown State Penguins,MISSING
 401830117,2025-11-26 19:00:00+00:00,UNC Greensboro Spartans,Miami (OH) RedHawks,MISSING
 401830118,2025-12-03 00:00:00+00:00,UNC Asheville Bulldogs,UNC Greensboro Spartans,MISSING
-401830119,2025-12-13 00:00:00+00:00,UNC Greensboro Spartans,William Peace Pacers,MISSING
-401830120,2025-12-21 19:00:00+00:00,UNC Greensboro Spartans,Virginia-Lynchburg Dragons,MISSING
-401830121,2025-11-18 00:30:00+00:00,UT Rio Grande Valley Vaqueros,Southwestern Adventist Knights,MISSING
 401830122,2025-12-07 19:00:00+00:00,UT Rio Grande Valley Vaqueros,Austin Peay Governors,MISSING
-401830123,2025-12-20 20:00:00+00:00,UT Rio Grande Valley Vaqueros,College Of Biblical Studies Ambassadors,MISSING
-401830124,2025-11-11 00:30:00+00:00,UL Monroe Warhawks,Rust Bearcats,MISSING
 401830125,2025-11-23 00:00:00+00:00,UL Monroe Warhawks,Morehead State Eagles,MISSING
 401830126,2025-12-04 00:30:00+00:00,UL Monroe Warhawks,Mississippi Valley State Delta Devils,MISSING
-401830127,2025-12-09 18:00:00+00:00,UL Monroe Warhawks,Arkansas Baptist Buffaloes,MISSING
 401830198,2025-12-13 21:00:00+00:00,Belmont Bruins,UIC Flames,MISSING
 401830199,2025-12-17 00:00:00+00:00,Evansville Purple Aces,Belmont Bruins,MISSING
 401830200,2025-12-30 00:00:00+00:00,Indiana State Sycamores,Belmont Bruins,MISSING
@@ -4710,11 +4414,8 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401830233,2026-01-10 23:00:00+00:00,Bradley Braves,Northern Iowa Panthers,MISSING
 401830234,2026-01-08 02:00:00+00:00,Bradley Braves,Drake Bulldogs,MISSING
 401830235,2026-01-04 22:00:00+00:00,Murray State Racers,Bradley Braves,MISSING
-401830237,2025-11-26 19:00:00+00:00,Howard Bison,St. Mary's (MD) Seahawks,MISSING
-401830238,2025-12-06 23:00:00+00:00,Howard Bison,Bowie State Bulldogs,MISSING
 401830239,2026-01-13 00:00:00+00:00,Howard Bison,Delaware State Hornets,MISSING
 401830240,2026-01-17 21:30:00+00:00,North Carolina Central Eagles,Howard Bison,MISSING
-401830241,2026-01-19 21:00:00+00:00,Howard Bison,Morehouse Maroon Tigers,MISSING
 401830242,2026-02-17 00:00:00+00:00,Delaware State Hornets,Howard Bison,MISSING
 401830243,2026-02-21 17:00:00+00:00,Howard Bison,North Carolina Central Eagles,MISSING
 401830244,2026-01-24 21:30:00+00:00,North Carolina Central Eagles,Delaware State Hornets,MISSING
@@ -4784,7 +4485,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401830309,2026-02-21 21:00:00+00:00,Murray State Racers,Evansville Purple Aces,MISSING
 401830310,2026-02-21 23:00:00+00:00,Northern Iowa Panthers,Southern Illinois Salukis,MISSING
 401830311,2026-02-21 20:00:00+00:00,UIC Flames,Valparaiso Beacons,MISSING
-401830319,2025-12-02 02:00:00+00:00,New Mexico Lobos,New Mexico Highlands Cowboys,MISSING
 401830320,2026-01-04 01:00:00+00:00,New Mexico Lobos,Wyoming Cowboys,MISSING
 401830321,2026-01-07 02:00:00+00:00,Colorado State Rams,New Mexico Lobos,MISSING
 401830322,2026-01-28 04:00:00+00:00,UNLV Rebels,New Mexico Lobos,MISSING
@@ -4793,24 +4493,9 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401830344,2026-01-20 01:00:00+00:00,Mississippi Valley State Delta Devils,Florida A&M Rattlers,MISSING
 401830347,2025-11-25 02:00:00+00:00,Abilene Christian Wildcats,UTSA Roadrunners,MISSING
 401830348,2025-11-13 02:30:00+00:00,Utah Tech Trailblazers,Manhattan Jaspers,MISSING
-401830410,2025-11-25 02:00:00+00:00,UC Santa Barbara Gauchos,Nobel Knights,MISSING
-401830412,2025-11-30 00:00:00+00:00,Cal Poly Mustangs,Redlands Bulldogs,MISSING
-401830421,2025-11-13 23:30:00+00:00,UNC Asheville Bulldogs,Bryan (TN) Lions,MISSING
 401830422,2025-12-10 23:00:00+00:00,UNC Asheville Bulldogs,Miami (OH) RedHawks,MISSING
-401830423,2025-12-16 23:30:00+00:00,UNC Asheville Bulldogs,Kentucky Christian Knights,MISSING
-401830424,2025-12-18 23:30:00+00:00,UNC Asheville Bulldogs,Morris College Hornets,MISSING
-401830628,2025-12-28 22:30:00+00:00,Austin Peay Governors,Fisk Bulldogs,MISSING
-401830630,2025-11-12 02:30:00+00:00,New Mexico State Aggies,New Mexico Highlands Cowboys,MISSING
 401830631,2025-12-03 00:00:00+00:00,South Alabama Jaguars,New Mexico State Aggies,MISSING
-401830632,2025-12-28 21:00:00+00:00,New Mexico State Aggies,University of The Southwest Mustangs,MISSING
-401830633,2025-11-18 01:30:00+00:00,Western Illinois Leathernecks,Coe Kohawks,MISSING
-401830634,2025-12-06 19:00:00+00:00,Western Illinois Leathernecks,Hannibal-Lagrange Trojans,MISSING
-401830656,2025-11-20 00:30:00+00:00,East Texas A&M Lions,Dallas Christian Crusaders,MISSING
-401830739,2025-12-11 00:00:00+00:00,Hofstra Pride,Old Westbury Panthers,MISSING
-401830740,2025-12-03 00:00:00+00:00,Indiana State Sycamores,Eureka Red Devils,MISSING
-401830741,2025-11-28 22:00:00+00:00,Fordham Rams,Franklin Pierce Ravens,MISSING
 401830742,2025-11-16 17:00:00+00:00,Dartmouth Big Green,App State Mountaineers,MISSING
-401830743,2025-11-10 16:30:00+00:00,Hofstra Pride,Molloy Lions,MISSING
 401830744,2025-11-27 02:30:00+00:00,Grand Canyon Lopes,Iowa Hawkeyes,MISSING
 401830745,2025-11-27 04:59:00+00:00,Ole Miss Rebels,Utah Utes,MISSING
 401830746,2025-11-26 19:00:00+00:00,Loyola Chicago Ramblers,San José State Spartans,MISSING
@@ -4833,9 +4518,6 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401830829,2026-01-24 03:15:00+00:00,Colorado State Rams,Utah State Aggies,MISSING
 401830830,2026-01-29 03:30:00+00:00,San Diego State Aztecs,Colorado State Rams,MISSING
 401830831,2026-02-19 04:00:00+00:00,UNLV Rebels,Colorado State Rams,MISSING
-401830834,2025-11-19 00:00:00+00:00,Delaware State Hornets,Cheyney (PA) Wolves,MISSING
-401830835,2025-11-21 00:00:00+00:00,Delaware State Hornets,Kean Cougars,MISSING
-401830836,2025-12-21 19:00:00+00:00,Delaware State Hornets,Holy Family University Tigers,MISSING
 401830875,2025-11-27 22:30:00+00:00,Western Kentucky Hilltoppers,South Florida Bulls,MISSING
 401830876,2025-11-28 21:30:00+00:00,South Florida Bulls,Colorado State Rams,MISSING
 401830877,2025-11-29 00:00:00+00:00,Western Kentucky Hilltoppers,Wichita State Shockers,MISSING
@@ -4859,19 +4541,14 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401830915,2025-11-26 22:00:00+00:00,Princeton Tigers,Vermont Catamounts,MISSING
 401830916,2025-11-28 20:00:00+00:00,Illinois State Redbirds,Furman Paladins,MISSING
 401830917,2025-11-28 17:30:00+00:00,Charlotte 49ers,Richmond Spiders,MISSING
-401831072,2025-12-03 00:00:00+00:00,Miami (OH) RedHawks,Indiana University East IU EAST,MISSING
-401831073,2025-12-22 18:00:00+00:00,Miami (OH) RedHawks,Milligan Buffaloes,MISSING
-401831190,2025-12-28 19:00:00+00:00,Morehead State Eagles,Alice Lloyd College Eagles,MISSING
 401831194,2025-11-22 00:00:00+00:00,New Mexico Lobos,Mississippi State Bulldogs,MISSING
 401831195,2025-11-22 02:30:00+00:00,Nebraska Cornhuskers,Kansas State Wildcats,MISSING
 401831196,2025-11-25 22:24:00+00:00,USC Trojans,Seton Hall Pirates,MISSING
 401831197,2025-11-26 01:22:00+00:00,Arizona State Sun Devils,Washington State Cougars,MISSING
 401831198,2025-11-25 19:30:00+00:00,Boise State Broncos,NC State Wolfpack,MISSING
-401831199,2025-11-26 04:05:00+00:00,Chaminade Silverswords,Texas Longhorns,MISSING
 401831200,2025-11-26 19:30:00+00:00,Arizona State Sun Devils,USC Trojans,MISSING
 401831201,2025-11-26 22:30:00+00:00,Washington State Cougars,Seton Hall Pirates,MISSING
 401831202,2025-11-27 02:30:00+00:00,Texas Longhorns,NC State Wolfpack,MISSING
-401831203,2025-11-27 04:59:00+00:00,Chaminade Silverswords,Boise State Broncos,MISSING
 401831204,2025-11-23 22:30:00+00:00,Charleston Cougars,Yale Bulldogs,MISSING
 401831205,2025-11-24 01:00:00+00:00,Evansville Purple Aces,Akron Zips,MISSING
 401831206,2025-11-22 20:00:00+00:00,Massachusetts Minutemen,Green Bay Phoenix,MISSING
@@ -4909,28 +4586,8 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401831238,2025-12-06 19:00:00+00:00,La Salle Explorers,Drexel Dragons,MISSING
 401831239,2025-12-06 21:30:00+00:00,Temple Owls,Saint Joseph's Hawks,MISSING
 401831240,2025-12-07 00:30:00+00:00,Villanova Wildcats,Pennsylvania Quakers,MISSING
-401831241,2025-12-05 22:00:00+00:00,Florida A&M Rattlers,Barber Scotia BARBER SCOTIA,MISSING
-401831242,2025-12-06 22:30:00+00:00,Florida A&M Rattlers,Florida Memorial FLORIDA MEMORIAL,MISSING
-401831275,2025-11-29 18:00:00+00:00,UMass Lowell River Hawks,Emerson Lions,MISSING
 401831276,2025-11-29 19:00:00+00:00,Saint Peter's Peacocks,Dartmouth Big Green,MISSING
-401831277,2025-11-19 00:00:00+00:00,Dartmouth Big Green,Maine-Augusta Moose,MISSING
-401831278,2026-01-01 18:00:00+00:00,Dartmouth Big Green,Elms College Blazers,MISSING
-401831279,2025-12-22 17:00:00+00:00,Saint Peter's Peacocks,Centenary (NJ) Cyclones,MISSING
-401831375,2025-11-18 17:00:00+00:00,UTSA Roadrunners,Southwestern Christian Eagles,MISSING
 401831376,2025-11-30 19:00:00+00:00,UTSA Roadrunners,South Alabama Jaguars,MISSING
-401831378,2025-11-26 19:30:00+00:00,Delaware State Hornets,Virginia St Trojans,MISSING
-401831380,2025-11-30 21:00:00+00:00,Western Illinois Leathernecks,St. Ambrose Fighting Bees,MISSING
-401831529,2025-12-06 18:00:00+00:00,Wagner Seahawks,Bryant Str-Alb Bobcats,MISSING
-401831530,2025-12-12 00:00:00+00:00,Wagner Seahawks,Bloomfield Deacons,MISSING
-401831531,2025-12-22 17:00:00+00:00,Wagner Seahawks,Manor College Blue Jays,MISSING
-401831555,2025-12-30 01:00:00+00:00,South Alabama Jaguars,Mobile Rams,MISSING
-401831990,2026-01-17 23:00:00+00:00,San Diego Toreros,Bethesda University Flames,MISSING
-401832162,2025-12-14 19:00:00+00:00,Bradley Braves,North Central College Cardinals,MISSING
-401832544,2025-12-28 19:00:00+00:00,Mercer Bears,Baptist (Fl) Eagles,MISSING
-401837346,2025-12-01 17:00:00+00:00,Chicago State Cougars,St. Xavier  (IL) Cougars,MISSING
-401842364,2025-12-21 21:00:00+00:00,USC Trojans,UC Santa Cruz Banana Slugs,MISSING
-401842404,2025-12-16 00:00:00+00:00,Florida A&M Rattlers,Albany St (GA) Golden Rams,MISSING
-401843145,2026-01-18 20:00:00+00:00,Eastern Illinois Panthers,Blackburn Beavers,MISSING
 401845836,2026-02-07 18:00:00+00:00,App State Mountaineers,Eastern Michigan Eagles,MISSING
 401845837,2026-02-07 20:00:00+00:00,Arkansas State Red Wolves,Bowling Green Falcons,MISSING
 401845838,2026-02-07 18:00:00+00:00,Coastal Carolina Chanticleers,Massachusetts Minutemen,MISSING
@@ -4944,20 +4601,54 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401845846,2026-02-07 20:00:00+00:00,Southern Miss Golden Eagles,Kent State Golden Flashes,MISSING
 401845847,2026-02-07 20:00:00+00:00,Texas State Bobcats,Western Michigan Broncos,MISSING
 401845848,2026-02-07 23:00:00+00:00,Troy Trojans,Akron Zips,MISSING
+401851175,2026-03-11 23:00:00+00:00,Florida State Seminoles,California Golden Bears,MISSING
+401851198,2026-03-07 18:00:00+00:00,UMBC Retrievers,New Hampshire Wildcats,MISSING
+401851199,2026-03-07 19:00:00+00:00,Vermont Catamounts,Bryant Bulldogs,MISSING
+401851200,2026-03-07 18:00:00+00:00,UMass Lowell River Hawks,UAlbany Great Danes,MISSING
+401851201,2026-03-07 21:00:00+00:00,NJIT Highlanders,Maine Black Bears,MISSING
+401851221,2026-03-11 23:00:00+00:00,Memphis Tigers,Tulane Green Wave,MISSING
+401851222,2026-03-12 01:00:00+00:00,Florida Atlantic Owls,Temple Owls,MISSING
+401851249,2026-03-07 22:00:00+00:00,Central Arkansas Bears,Florida Gulf Coast Eagles,MISSING
+401851250,2026-03-08 00:45:00+00:00,Austin Peay Governors,Queens University Royals,MISSING
+401851258,2026-03-11 15:30:00+00:00,La Salle Explorers,St. Bonaventure Bonnies,MISSING
+401851260,2026-03-11 18:00:00+00:00,Richmond Spiders,Loyola Chicago Ramblers,MISSING
+401851325,2026-03-08 00:30:00+00:00,Idaho State Bengals,Northern Arizona Lumberjacks,MISSING
+401851326,2026-03-08 03:00:00+00:00,Idaho Vandals,Sacramento State Hornets,MISSING
+401851351,2026-03-07 17:00:00+00:00,High Point Panthers,UNC Asheville Bulldogs,MISSING
+401851352,2026-03-07 19:30:00+00:00,Winthrop Eagles,Presbyterian Blue Hose,MISSING
+401851367,2026-03-11 18:30:00+00:00,Washington Huskies,USC Trojans,MISSING
+401851370,2026-03-12 01:00:00+00:00,Minnesota Golden Gophers,Rutgers Scarlet Knights,MISSING
+401851391,2026-03-12 01:00:00+00:00,UC San Diego Tritons,Cal Poly Mustangs,MISSING
+401851392,2026-03-12 03:30:00+00:00,UC Davis Aggies,UC Santa Barbara Gauchos,MISSING
 401851421,2026-03-03 00:00:00+00:00,Cleveland State Vikings,IU Indianapolis Jaguars,MISSING
-401851457,2026-03-06 23:00:00+00:00,Merrimack Warriors,TBD,MISSING
-401851460,2026-03-07 01:30:00+00:00,Saint Peter's Peacocks,TBD,MISSING
+401851462,2026-03-07 23:00:00+00:00,Quinnipiac Bobcats,Marist Red Foxes,MISSING
+401851464,2026-03-08 01:48:00+00:00,Siena Saints,Mount St. Mary's Mountaineers,MISSING
+401851472,2026-03-11 22:00:00+00:00,Morgan State Bears,Delaware State Hornets,MISSING
 401851485,2026-03-05 21:30:00+00:00,Southern Illinois Salukis,Drake Bulldogs,MISSING
-401851488,2026-03-06 18:00:00+00:00,Belmont Bruins,TBD,MISSING
-401851490,2026-03-07 00:00:00+00:00,Bradley Braves,TBD,MISSING
-401851491,2026-03-07 02:30:00+00:00,Illinois State Redbirds,TBD,MISSING
-401851530,2026-03-07 01:00:00+00:00,Tennessee State Tigers,TBD,MISSING
-401851532,2026-03-07 03:30:00+00:00,Morehead State Eagles,TBD,MISSING
-401851700,2026-03-06 23:00:00+00:00,Texas State Bobcats,TBD,MISSING
-401851701,2026-03-07 01:30:00+00:00,South Alabama Jaguars,TBD,MISSING
-401851749,2026-03-07 02:00:00+00:00,Washington State Cougars,TBD,MISSING
-401851750,2026-03-07 04:30:00+00:00,Seattle U Redhawks,TBD,MISSING
-401856166,2026-01-20 23:30:00+00:00,Morgan State Bears,Virginia-Lynchburg Dragons,MISSING
+401851492,2026-03-07 20:30:00+00:00,UIC Flames,Drake Bulldogs,MISSING
+401851493,2026-03-07 23:00:00+00:00,Bradley Braves,Northern Iowa Panthers,MISSING
+401851495,2026-03-11 19:00:00+00:00,UNLV Rebels,Wyoming Cowboys,MISSING
+401851496,2026-03-11 21:30:00+00:00,Nevada Wolf Pack,Air Force Falcons,MISSING
+401851497,2026-03-12 01:00:00+00:00,Colorado State Rams,Fresno State Bulldogs,MISSING
+401851498,2026-03-12 03:30:00+00:00,Boise State Broncos,San José State Spartans,MISSING
+401851517,2026-03-07 17:00:00+00:00,Mercyhurst Lakers,Stonehill Skyhawks,MISSING
+401851519,2026-03-07 19:00:00+00:00,Long Island University Sharks,Wagner Seahawks,MISSING
+401851534,2026-03-08 02:00:00+00:00,Tennessee State Tigers,Morehead State Eagles,MISSING
+401851581,2026-03-07 17:00:00+00:00,East Tennessee State Buccaneers,The Citadel Bulldogs,MISSING
+401851582,2026-03-08 01:30:00+00:00,Mercer Bears,Western Carolina Catamounts,MISSING
+401851583,2026-03-07 19:30:00+00:00,Wofford Terriers,UNC Greensboro Spartans,MISSING
+401851586,2026-03-07 23:00:00+00:00,Samford Bulldogs,Furman Paladins,MISSING
+401851626,2026-03-08 01:00:00+00:00,North Dakota State Bison,Omaha Mavericks,MISSING
+401851627,2026-03-08 03:30:00+00:00,St. Thomas-Minnesota Tommies,North Dakota Fighting Hawks,MISSING
+401851702,2026-03-07 23:30:00+00:00,App State Mountaineers,Southern Miss Golden Eagles,MISSING
+401851703,2026-03-08 02:24:00+00:00,Coastal Carolina Chanticleers,Georgia Southern Eagles,MISSING
+401851733,2026-03-12 00:30:00+00:00,Abilene Christian Wildcats,Tarleton State Texans,MISSING
+401851753,2026-03-08 02:00:00+00:00,San Francisco Dons,Portland Pilots,MISSING
+401851754,2026-03-08 04:40:00+00:00,Pacific Tigers,Seattle U Redhawks,MISSING
+401856423,2026-03-07 17:00:00+00:00,Stony Brook Seawolves,Campbell Fighting Camels,MISSING
+401856424,2026-03-07 19:30:00+00:00,Drexel Dragons,Northeastern Huskies,MISSING
+401856425,2026-03-07 23:00:00+00:00,Towson Tigers,Hampton Pirates,MISSING
+401856426,2026-03-08 01:30:00+00:00,William & Mary Tribe,Elon Phoenix,MISSING
 401858319,2026-01-27 19:00:00+00:00,Prairie View A&M Panthers,Alabama A&M Bulldogs,MISSING
 401858320,2026-01-28 00:00:00+00:00,Lamar Cardinals,East Texas A&M Lions,MISSING
 401858634,2026-02-02 23:00:00+00:00,Coppin State Eagles,Howard Bison,MISSING
@@ -4966,6 +4657,5 @@ event_id,game_datetime_utc,home_team_name,away_team_name,missing_reason
 401858739,2026-02-24 23:00:00+00:00,New Haven Chargers,Saint Francis Red Flash,MISSING
 401858742,2026-02-17 01:00:00+00:00,Tarleton State Texans,Abilene Christian Wildcats,MISSING
 401858744,2026-02-10 01:00:00+00:00,North Carolina Central Eagles,Delaware State Hornets,MISSING
-401858786,2026-02-10 00:00:00+00:00,Davidson Wildcats,Mid-Atlantic Christian Mustangs,MISSING
 401858787,2026-02-19 01:00:00+00:00,South Carolina State Bulldogs,North Carolina Central Eagles,MISSING
 401859836,2026-02-17 00:00:00+00:00,Long Island University Sharks,Wagner Seahawks,MISSING

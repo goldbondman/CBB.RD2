@@ -1121,17 +1121,25 @@ def main() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     CSV_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Drop stale MC columns if input already includes prior MC output.
+    # Without this, merge creates *_x/*_y columns and downstream lookups fail.
+    base_df = df.copy()
+    stale_mc_cols = [c for c in base_df.columns if c.startswith("mc_")]
+    if stale_mc_cols:
+        log.info("[MC] Dropping %d stale MC columns from input before merge", len(stale_mc_cols))
+        base_df = base_df.drop(columns=stale_mc_cols, errors="ignore")
+
     # Merge MC columns into combined predictions
-    if "game_id" in df.columns and "game_id" in mc_df.columns:
-        df["game_id"] = df["game_id"].astype(str)
+    if "game_id" in base_df.columns and "game_id" in mc_df.columns:
+        base_df["game_id"] = base_df["game_id"].astype(str)
         mc_df["game_id"] = mc_df["game_id"].astype(str)
-        enriched = df.merge(mc_df, on="game_id", how="left")
+        enriched = base_df.merge(mc_df, on="game_id", how="left")
 
         missing_mc = enriched["mc_n_sims"].isna().sum()
         if missing_mc > 0:
             log.warning(f"[MC] {missing_mc} games missing MC results after join")
     else:
-        enriched = pd.concat([df.reset_index(drop=True), mc_df.reset_index(drop=True)], axis=1)
+        enriched = pd.concat([base_df.reset_index(drop=True), mc_df.reset_index(drop=True)], axis=1)
 
     generated_at_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     if "game_datetime_utc" in enriched.columns:
@@ -1165,7 +1173,7 @@ def main() -> None:
     print(f"[OK] Frontend copy → {csv_mc_path}")
 
     # Build game cards
-    cards = build_game_cards(df, mc_df)
+    cards = build_game_cards(base_df, mc_df)
     if not cards.empty:
         cards_path = CSV_DIR / "mc_game_cards.csv"
         cards.to_csv(cards_path, index=False)

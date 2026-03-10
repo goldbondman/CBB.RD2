@@ -898,12 +898,33 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
         team_logs_for_poss = df_metrics_out if team_rows else pd.DataFrame()
         df_player_metrics = compute_player_metrics(df_all_p, team_logs_for_poss)
         _log_player_stage_diagnostics("player_metrics:pre_write", df_player_metrics)
-        df_player_metrics_out = _append_dedupe_write(
-            OUT_PLAYER_METRICS,
-            df_player_metrics,
-            unique_keys=["event_id", "athlete_id"],
-            sort_cols=["game_datetime_utc", "event_id", "athlete_id"],
-        )
+        # player_game_metrics is a full-history recompute from df_all_p, so do not
+        # merge with an existing artifact (which can retain stale derived/rolling values).
+        # Keep only the newest row per player-event from the fresh recompute.
+        df_player_metrics_out = df_player_metrics.copy()
+        if {"event_id", "athlete_id"}.issubset(df_player_metrics_out.columns):
+            df_player_metrics_out = df_player_metrics_out.drop_duplicates(
+                subset=["event_id", "athlete_id"], keep="last"
+            )
+        player_sort_cols = [
+            c
+            for c in ["game_datetime_utc", "event_id", "athlete_id"]
+            if c in df_player_metrics_out.columns
+        ]
+        if player_sort_cols:
+            df_player_metrics_out = df_player_metrics_out.sort_values(player_sort_cols)
+        df_player_metrics_out = df_player_metrics_out.reset_index(drop=True)
+
+        if not DRY_RUN:
+            OUT_PLAYER_METRICS.parent.mkdir(parents=True, exist_ok=True)
+            safe_write_csv(
+                df_player_metrics_out,
+                OUT_PLAYER_METRICS,
+                label="player_game_metrics",
+                allow_empty=True,
+            )
+        else:
+            log.info(f"[DRY RUN] Would write {len(df_player_metrics_out)} rows → {OUT_PLAYER_METRICS}")
         _log_player_stage_diagnostics("player_metrics:post_write", df_player_metrics_out)
 
         if OUT_PLAYER_METRICS.exists() and OUT_PLAYER_METRICS.stat().st_size > 0:

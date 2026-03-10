@@ -1,0 +1,212 @@
+name: IDES OF MARCH Research
+
+on:
+  schedule:
+    - cron: "0 16 * * 1"
+  workflow_dispatch:
+    inputs:
+      as_of:
+        description: "Optional UTC timestamp override"
+        required: false
+        default: ""
+      start_date:
+        description: "Optional historical lower bound"
+        required: false
+        default: ""
+      end_date:
+        description: "Optional historical upper bound"
+        required: false
+        default: ""
+
+concurrency:
+  group: cbb-data-pipeline
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  TZ: UTC
+  PYTHONHASHSEED: "0"
+
+jobs:
+  hydrate_upstream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Hydrate ESPN + market artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p data/staging
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "update_espn_cbb.yml" \
+            --artifact-name "INFRA-espn-data" \
+            --branch "main" \
+            --max-runs 30 \
+            --dest "data/staging" || { echo "[ERROR] Missing INFRA-espn-data"; exit 1; }
+
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "market_lines.yml" \
+            --artifact-name "INFRA-market-lines" \
+            --branch "main" \
+            --max-runs 30 \
+            --dest "data/staging" || { echo "[ERROR] Missing INFRA-market-lines"; exit 1; }
+
+      - name: Upload hydrated inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-ides-research-inputs
+          if-no-files-found: error
+          path: data/staging/**
+          retention-days: 7
+
+  integrity_gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: hydrate_upstream
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -c "import pandas, numpy, scipy, sklearn"
+
+      - name: Download hydrated inputs
+        uses: actions/download-artifact@v4
+        with:
+          name: INFRA-ides-research-inputs
+          path: data/staging
+
+      - name: Merge hydrated inputs into data/
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          staging = Path("data/staging")
+          target = Path("data")
+          target.mkdir(parents=True, exist_ok=True)
+
+          preferred = {
+              "games.csv",
+              "team_game_weighted.csv",
+              "market_lines_latest_by_game.csv",
+              "market_lines_latest.csv",
+              "market_lines.csv",
+          }
+          for path in staging.rglob("*"):
+              if not path.is_file():
+                  continue
+              if path.name not in preferred:
+                  continue
+              shutil.copy2(path, target / path.name)
+          PY
+
+      - name: Run IDES integrity audit
+        run: python -m ides_of_march.cli audit --strict --hours-ahead 48
+
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    needs: integrity_gate
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -c "import pandas, numpy, scipy, sklearn"
+
+      - name: Download hydrated inputs
+        uses: actions/download-artifact@v4
+        with:
+          name: INFRA-ides-research-inputs
+          path: data/staging
+
+      - name: Merge hydrated inputs into data/
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          staging = Path("data/staging")
+          target = Path("data")
+          target.mkdir(parents=True, exist_ok=True)
+
+          preferred = {
+              "games.csv",
+              "team_game_weighted.csv",
+              "market_lines_latest_by_game.csv",
+              "market_lines_latest.csv",
+              "market_lines.csv",
+          }
+          for path in staging.rglob("*"):
+              if not path.is_file():
+                  continue
+              if path.name not in preferred:
+                  continue
+              shutil.copy2(path, target / path.name)
+          PY
+
+      - name: Run backtest variant matrix
+        env:
+          INPUT_AS_OF: ${{ github.event.inputs.as_of || '' }}
+          INPUT_START_DATE: ${{ github.event.inputs.start_date || '' }}
+          INPUT_END_DATE: ${{ github.event.inputs.end_date || '' }}
+        run: |
+          set -euo pipefail
+          CMD=(python -m ides_of_march.cli backtest)
+          if [[ -n "${INPUT_AS_OF}" ]]; then
+            CMD+=(--as-of "${INPUT_AS_OF}")
+          fi
+          if [[ -n "${INPUT_START_DATE}" ]]; then
+            CMD+=(--start-date "${INPUT_START_DATE}")
+          fi
+          if [[ -n "${INPUT_END_DATE}" ]]; then
+            CMD+=(--end-date "${INPUT_END_DATE}")
+          fi
+          "${CMD[@]}"
+
+      - name: Validate research outputs
+        run: |
+          bash .github/scripts/check_csv.sh data/ides_of_march/backtest_variant_scorecard.csv 1 variant_id,sample_size,spread_mae,winner_accuracy,ats_accuracy
+          bash .github/scripts/check_csv.sh data/ides_of_march/situational_rulebook.csv 1 rule_id,sample_size,accepted
+
+      - name: Upload IDES research artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-ides-of-march-research
+          if-no-files-found: error
+          path: |
+            data/ides_of_march/backtest_variant_scorecard.csv
+            data/ides_of_march/situational_rulebook.csv
+            data/ides_of_march/run_manifest.json
+          retention-days: 30

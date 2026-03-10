@@ -1,0 +1,242 @@
+name: IDES OF MARCH Predictions
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+    - cron: "0 14 * * *"
+  workflow_dispatch:
+    inputs:
+      as_of:
+        description: "Optional UTC timestamp override"
+        required: false
+        default: ""
+      mc_mode:
+        description: "Monte Carlo operating mode"
+        required: false
+        default: "confidence_filter"
+        type: choice
+        options:
+          - confidence_only
+          - confidence_filter
+          - blended
+      hours_ahead:
+        description: "Upcoming window horizon (hours)"
+        required: false
+        default: "48"
+
+concurrency:
+  group: cbb-data-pipeline
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  TZ: UTC
+  PYTHONHASHSEED: "0"
+
+jobs:
+  hydrate_upstream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Hydrate ESPN + market artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p data/staging
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "update_espn_cbb.yml" \
+            --artifact-name "INFRA-espn-data" \
+            --branch "main" \
+            --max-runs 30 \
+            --dest "data/staging" || { echo "[ERROR] Missing INFRA-espn-data"; exit 1; }
+
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "market_lines.yml" \
+            --artifact-name "INFRA-market-lines" \
+            --branch "main" \
+            --max-runs 30 \
+            --dest "data/staging" || { echo "[ERROR] Missing INFRA-market-lines"; exit 1; }
+
+      - name: Upload hydrated inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-ides-hydrated-inputs
+          if-no-files-found: error
+          path: data/staging/**
+          retention-days: 7
+
+  integrity_gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: hydrate_upstream
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -c "import pandas, numpy, scipy, sklearn"
+
+      - name: Download hydrated inputs
+        uses: actions/download-artifact@v4
+        with:
+          name: INFRA-ides-hydrated-inputs
+          path: data/staging
+
+      - name: Merge hydrated inputs into data/
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          staging = Path("data/staging")
+          target = Path("data")
+          target.mkdir(parents=True, exist_ok=True)
+
+          preferred = {
+              "games.csv",
+              "team_game_weighted.csv",
+              "market_lines_latest_by_game.csv",
+              "market_lines_latest.csv",
+              "market_lines.csv",
+          }
+          for path in staging.rglob("*"):
+              if not path.is_file():
+                  continue
+              if path.name not in preferred:
+                  continue
+              shutil.copy2(path, target / path.name)
+          PY
+
+      - name: Run IDES data integrity contract stage
+        run: |
+          python .github/scripts/run_pipeline_contract.py \
+            --contract .github/pipeline_contracts/ides_of_march.contract.json \
+            --job update \
+            --days-back "3" \
+            --manifest data/ides_of_march/contract_manifest_integrity.json \
+            --stages ides_data_integrity
+
+      - name: Upload integrity manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-ides-integrity
+          if-no-files-found: error
+          path: data/ides_of_march/contract_manifest_integrity.json
+          retention-days: 14
+
+  predict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: integrity_gate
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -c "import pandas, numpy, scipy, sklearn"
+
+      - name: Download hydrated inputs
+        uses: actions/download-artifact@v4
+        with:
+          name: INFRA-ides-hydrated-inputs
+          path: data/staging
+
+      - name: Merge hydrated inputs into data/
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          staging = Path("data/staging")
+          target = Path("data")
+          target.mkdir(parents=True, exist_ok=True)
+
+          preferred = {
+              "games.csv",
+              "team_game_weighted.csv",
+              "market_lines_latest_by_game.csv",
+              "market_lines_latest.csv",
+              "market_lines.csv",
+          }
+          for path in staging.rglob("*"):
+              if not path.is_file():
+                  continue
+              if path.name not in preferred:
+                  continue
+              shutil.copy2(path, target / path.name)
+          PY
+
+      - name: Run IDES prediction contract stage
+        env:
+          INPUT_AS_OF: ${{ github.event.inputs.as_of || '' }}
+          INPUT_MC_MODE: ${{ github.event.inputs.mc_mode || 'confidence_filter' }}
+          INPUT_HOURS_AHEAD: ${{ github.event.inputs.hours_ahead || '48' }}
+        run: |
+          set -euo pipefail
+          python .github/scripts/run_pipeline_contract.py \
+            --contract .github/pipeline_contracts/ides_of_march.contract.json \
+            --job update \
+            --days-back "3" \
+            --manifest data/ides_of_march/contract_manifest_predict.json \
+            --stages ides_predict
+
+          if [[ -n "${INPUT_AS_OF}" || "${INPUT_MC_MODE}" != "confidence_filter" || "${INPUT_HOURS_AHEAD}" != "48" ]]; then
+            echo "[INFO] Re-running predict with manual overrides"
+            CMD=(python -m ides_of_march.cli predict --mc-mode "${INPUT_MC_MODE}" --hours-ahead "${INPUT_HOURS_AHEAD}")
+            if [[ -n "${INPUT_AS_OF}" ]]; then
+              CMD+=(--as-of "${INPUT_AS_OF}")
+            fi
+            "${CMD[@]}"
+          fi
+
+      - name: Validate IDES outputs
+        run: |
+          bash .github/scripts/check_csv.sh data/ides_of_march/predictions_latest.csv 0 game_id,event_id,projected_spread,market_spread
+          bash .github/scripts/check_csv.sh data/ides_of_march/bet_recs.csv 0 game_id,event_id,bet_recommendation
+          bash .github/scripts/check_csv.sh data/ides_of_march/agreement_bucket_report.csv 1 agreement_bucket,sample_size
+          bash .github/scripts/check_csv.sh data/ides_of_march/situational_rulebook.csv 1 rule_id,sample_size,accepted
+
+      - name: Upload IDES prediction artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-ides-of-march-predictions
+          if-no-files-found: error
+          path: |
+            data/ides_of_march/predictions_latest.csv
+            data/ides_of_march/bet_recs.csv
+            data/ides_of_march/agreement_bucket_report.csv
+            data/ides_of_march/situational_rulebook.csv
+            data/ides_of_march/run_manifest.json
+            data/ides_of_march/contract_manifest_predict.json
+          retention-days: 30

@@ -8,3 +8,5 @@ predictions_joint_latest.csv,101,70,0.693069,,2026-03-06T06:45:20.765315+00:00
 predictions_joint_latest.csv,101,70,0.693069,,2026-03-06T06:47:45.619840+00:00
 predictions_joint_latest.csv,101,70,0.693069,,2026-03-06T06:50:06.449549+00:00
 backtest_results_latest.csv,1,0,0.0,,2026-03-09T22:50:50.161587+00:00
+predictions_latest.csv,102,100,0.980392,,2026-03-09T23:21:21.370675+00:00
+predictions_latest.csv,102,100,0.980392,,2026-03-09T23:22:54.163519+00:00

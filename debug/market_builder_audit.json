@@ -1,68 +1,68 @@
 {
-  "generated_at_utc": "2026-03-05T23:28:23.518760+00:00",
+  "generated_at_utc": "2026-03-10T20:14:12.190170+00:00",
   "sources": [
     {
       "source_name": "market_lines_latest",
       "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\market_lines_latest.csv",
       "loaded": true,
-      "rows": 11,
-      "unique_event_ids": 11,
-      "rows_with_any_line": 10,
+      "rows": 70,
+      "unique_event_ids": 70,
+      "rows_with_any_line": 21,
       "key_column": "event_id",
       "reason": "ok",
-      "updated_at_utc": "2026-03-05T20:15:23.176466+00:00"
+      "updated_at_utc": "2026-03-10T20:14:11.920111+00:00"
     },
     {
       "source_name": "odds_snapshot",
       "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\odds_snapshot.csv",
       "loaded": true,
-      "rows": 30,
-      "unique_event_ids": 28,
-      "rows_with_any_line": 27,
+      "rows": 644,
+      "unique_event_ids": 70,
+      "rows_with_any_line": 463,
       "key_column": "event_id",
       "reason": "ok",
-      "updated_at_utc": "2026-03-05T22:26:29.110107+00:00"
+      "updated_at_utc": "2026-03-10T20:14:11.750979+00:00"
     },
     {
       "source_name": "market_lines",
       "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\market_lines.csv",
       "loaded": true,
-      "rows": 30,
-      "unique_event_ids": 28,
-      "rows_with_any_line": 27,
+      "rows": 644,
+      "unique_event_ids": 70,
+      "rows_with_any_line": 463,
       "key_column": "event_id",
       "reason": "ok",
-      "updated_at_utc": "2026-03-05T20:15:23.176466+00:00"
+      "updated_at_utc": "2026-03-10T20:14:11.732386+00:00"
     },
     {
       "source_name": "market_lines_closing",
       "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\market_lines_closing.csv",
       "loaded": true,
-      "rows": 11,
-      "unique_event_ids": 11,
-      "rows_with_any_line": 10,
+      "rows": 70,
+      "unique_event_ids": 70,
+      "rows_with_any_line": 21,
       "key_column": "event_id",
       "reason": "ok",
-      "updated_at_utc": "2026-03-05T20:15:23.176466+00:00"
+      "updated_at_utc": "2026-03-10T20:14:11.920111+00:00"
     },
     {
       "source_name": "market_lines_master",
       "path": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\data\\market_lines_master.csv",
-      "loaded": false,
-      "rows": 0,
-      "unique_event_ids": 0,
-      "rows_with_any_line": 0,
-      "key_column": null,
-      "reason": "missing_or_empty",
-      "updated_at_utc": null
+      "loaded": true,
+      "rows": 644,
+      "unique_event_ids": 70,
+      "rows_with_any_line": 463,
+      "key_column": "event_id",
+      "reason": "ok",
+      "updated_at_utc": "2026-03-10T20:14:11.699919+00:00"
     }
   ],
-  "canonical_rows": 82,
-  "canonical_unique_event_ids": 28,
-  "latest_by_book_rows": 28,
-  "latest_by_game_rows": 5481,
-  "latest_by_game_ok_rows": 511,
+  "canonical_rows": 2072,
+  "canonical_unique_event_ids": 70,
+  "latest_by_book_rows": 70,
+  "latest_by_game_rows": 5249,
+  "latest_by_game_ok_rows": 589,
   "latest_by_game_partial_rows": 1,
-  "latest_by_game_missing_rows": 4969,
-  "fallback_rows_used": 5455
+  "latest_by_game_missing_rows": 4659,
+  "fallback_rows_used": 5179
 }

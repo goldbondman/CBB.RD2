@@ -440,52 +440,52 @@ jobs:
           validate_required_csv "data/team_pretournament_snapshot.csv" 1 "team_id" || true
 
           freshness_report="$(
-            python - <<'PY'
-            from pathlib import Path
-            import os
-            import pandas as pd
+          python - <<'PY'
+          from pathlib import Path
+          import os
+          import pandas as pd
 
-            max_age_hours = float(os.getenv("ESPN_MAX_DATA_AGE_HOURS", "48"))
-            candidates = [
-                (Path("data/games.csv"), ["game_datetime_utc", "game_time_utc", "date"]),
-                (Path("data/team_game_weighted.csv"), ["game_datetime_utc", "game_date", "date"]),
-            ]
+          max_age_hours = float(os.getenv("ESPN_MAX_DATA_AGE_HOURS", "48"))
+          candidates = [
+              (Path("data/games.csv"), ["game_datetime_utc", "game_time_utc", "date"]),
+              (Path("data/team_game_weighted.csv"), ["game_datetime_utc", "game_date", "date"]),
+          ]
 
-            best_ts = None
-            best_src = None
-            for path, cols in candidates:
-                if not path.exists() or path.stat().st_size == 0:
-                    continue
-                try:
-                    df = pd.read_csv(path, low_memory=False)
-                except Exception:
-                    continue
-                hit = next((c for c in cols if c in df.columns), None)
-                if not hit:
-                    continue
-                ts = pd.to_datetime(df[hit], utc=True, errors="coerce").dropna()
-                if ts.empty:
-                    continue
-                candidate_ts = ts.max()
-                if best_ts is None or candidate_ts > best_ts:
-                    best_ts = candidate_ts
-                    best_src = f"{path.name}:{hit}"
+          best_ts = None
+          best_src = None
+          for path, cols in candidates:
+              if not path.exists() or path.stat().st_size == 0:
+                  continue
+              try:
+                  df = pd.read_csv(path, low_memory=False)
+              except Exception:
+                  continue
+              hit = next((c for c in cols if c in df.columns), None)
+              if not hit:
+                  continue
+              ts = pd.to_datetime(df[hit], utc=True, errors="coerce").dropna()
+              if ts.empty:
+                  continue
+              candidate_ts = ts.max()
+              if best_ts is None or candidate_ts > best_ts:
+                  best_ts = candidate_ts
+                  best_src = f"{path.name}:{hit}"
 
-            if best_ts is None:
-                print("status=unknown reason=no_parseable_game_datetime")
-            else:
-                age_hours = (pd.Timestamp.utcnow() - best_ts).total_seconds() / 3600.0
-                if age_hours > max_age_hours:
-                    print(
-                        f"status=stale reason=max_datetime_utc={best_ts.isoformat()} "
-                        f"source={best_src} age_hours={age_hours:.1f} threshold={max_age_hours:.0f}"
-                    )
-                else:
-                    print(
-                        f"status=fresh reason=max_datetime_utc={best_ts.isoformat()} "
-                        f"source={best_src} age_hours={age_hours:.1f} threshold={max_age_hours:.0f}"
-                    )
-            PY
+          if best_ts is None:
+              print("status=unknown reason=no_parseable_game_datetime")
+          else:
+              age_hours = (pd.Timestamp.utcnow() - best_ts).total_seconds() / 3600.0
+              if age_hours > max_age_hours:
+                  print(
+                      f"status=stale reason=max_datetime_utc={best_ts.isoformat()} "
+                      f"source={best_src} age_hours={age_hours:.1f} threshold={max_age_hours:.0f}"
+                  )
+              else:
+                  print(
+                      f"status=fresh reason=max_datetime_utc={best_ts.isoformat()} "
+                      f"source={best_src} age_hours={age_hours:.1f} threshold={max_age_hours:.0f}"
+                  )
+          PY
           )"
           echo "[INFO] ESPN freshness check: ${freshness_report}"
           if [[ "${freshness_report}" == status=stale* ]]; then
