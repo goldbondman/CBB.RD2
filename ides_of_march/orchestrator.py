@@ -50,6 +50,26 @@ def _bool(series: Any) -> pd.Series:
     return pd.Series(series).fillna(False).astype(bool)
 
 
+def _american_to_implied_prob(series: Any) -> pd.Series:
+    odds = pd.to_numeric(series, errors="coerce")
+    out = pd.Series(np.nan, index=odds.index, dtype=float)
+    neg = odds < 0
+    pos = odds > 0
+    out.loc[neg] = (-odds.loc[neg]) / ((-odds.loc[neg]) + 100.0)
+    out.loc[pos] = 100.0 / (odds.loc[pos] + 100.0)
+    return out
+
+
+def _prob_to_fair_american(series: Any) -> pd.Series:
+    p = pd.to_numeric(series, errors="coerce").clip(0.01, 0.99)
+    out = pd.Series(np.nan, index=p.index, dtype=float)
+    fav = p >= 0.5
+    dog = p < 0.5
+    out.loc[fav] = -100.0 * p.loc[fav] / (1.0 - p.loc[fav])
+    out.loc[dog] = 100.0 * (1.0 - p.loc[dog]) / p.loc[dog]
+    return out
+
+
 def _time_fields(frame: pd.DataFrame, source_col: str = "game_datetime_utc") -> pd.DataFrame:
     out = pd.DataFrame(index=frame.index)
     utc = pd.to_datetime(frame.get(source_col), utc=True, errors="coerce")
@@ -547,7 +567,58 @@ class IDESOrchestrator:
             if mc_mode == "confidence_filter" and "mc_filter_pass" in preds.columns:
                 total_recommend_mask = total_recommend_mask & preds["mc_filter_pass"].astype(bool)
             preds["total_bet_flag"] = total_recommend_mask.astype(bool)
+
+            # Moneyline value layer: compare model win probability to market implied probability.
+            implied_a_from_odds = _american_to_implied_prob(preds.get("market_moneyline_team_a"))
+            implied_b_from_odds = _american_to_implied_prob(preds.get("market_moneyline_team_b"))
+            implied_a_direct = _num(upcoming.get("market_home_win_prob"))
+            implied_b_direct = _num(upcoming.get("market_away_win_prob"))
+            preds["market_implied_prob_team_a"] = implied_a_from_odds.where(implied_a_from_odds.notna(), implied_a_direct)
+            preds["market_implied_prob_team_b"] = implied_b_from_odds.where(implied_b_from_odds.notna(), implied_b_direct)
+            preds["moneyline_edge_team_a"] = _num(preds["team_a_win_probability"]) - _num(preds["market_implied_prob_team_a"])
+            preds["moneyline_edge_team_b"] = _num(preds["team_b_win_probability"]) - _num(preds["market_implied_prob_team_b"])
+            preds["moneyline_pick"] = np.where(_num(preds["moneyline_edge_team_a"]) >= _num(preds["moneyline_edge_team_b"]), "team_a", "team_b")
+            preds["moneyline_edge"] = np.where(
+                preds["moneyline_pick"].eq("team_a"),
+                _num(preds["moneyline_edge_team_a"]),
+                _num(preds["moneyline_edge_team_b"]),
+            )
+            preds["moneyline_pick_prob"] = np.where(
+                preds["moneyline_pick"].eq("team_a"),
+                _num(preds["team_a_win_probability"]),
+                _num(preds["team_b_win_probability"]),
+            )
+            preds["moneyline_market_line"] = np.where(
+                preds["moneyline_pick"].eq("team_a"),
+                _num(preds["market_moneyline_team_a"]),
+                _num(preds["market_moneyline_team_b"]),
+            )
+            preds["moneyline_market_line"] = _num(preds["moneyline_market_line"]).where(
+                _num(preds["moneyline_market_line"]).notna(),
+                np.where(
+                    preds["moneyline_pick"].eq("team_a"),
+                    _prob_to_fair_american(preds["market_implied_prob_team_a"]),
+                    _prob_to_fair_american(preds["market_implied_prob_team_b"]),
+                ),
+            )
+            preds["moneyline_model_line"] = _prob_to_fair_american(preds["moneyline_pick_prob"])
+            preds["moneyline_confidence"] = (
+                35.0
+                + (np.clip((_num(preds["moneyline_pick_prob"]) - 0.5).abs() / 0.5, 0.0, 1.0) * 35.0)
+                + (np.clip(_num(preds["moneyline_edge"]), 0.0, 0.25) * 400.0)
+            ).clip(0.0, 100.0)
+            moneyline_recommend_mask = (
+                (_num(preds["moneyline_edge"]) >= 0.03)
+                & _num(preds["moneyline_market_line"]).notna()
+                & _num(preds["moneyline_pick_prob"]).notna()
+                & (_num(preds["moneyline_confidence"]) >= 58.0)
+            )
+            if mc_mode == "confidence_filter" and "mc_filter_pass" in preds.columns:
+                moneyline_recommend_mask = moneyline_recommend_mask & preds["mc_filter_pass"].astype(bool)
+            preds["moneyline_bet_flag"] = moneyline_recommend_mask.astype(bool)
+
             preds["final_bet_flag"] = preds["spread_bet_flag"] | preds["total_bet_flag"]
+            preds["final_bet_flag"] = preds["final_bet_flag"] | preds["moneyline_bet_flag"]
 
             spread_bets = preds[preds["spread_bet_flag"]].copy()
             spread_bets["bet_type"] = "spread"
@@ -571,7 +642,18 @@ class IDESOrchestrator:
             total_bets["confidence"] = _num(total_bets["total_confidence"])
             total_bets["bet_reason_short"] = "total edge + confidence"
 
-            bets = pd.concat([spread_bets, total_bets], ignore_index=True, sort=False)
+            moneyline_bets = preds[preds["moneyline_bet_flag"]].copy()
+            moneyline_bets["bet_type"] = "moneyline"
+            moneyline_bets["bet_side"] = moneyline_bets["moneyline_pick"]
+            moneyline_bets["market_line"] = _num(moneyline_bets["moneyline_market_line"]).round(0)
+            moneyline_bets["model_line"] = _num(moneyline_bets["moneyline_model_line"]).round(0)
+            moneyline_bets["edge"] = _num(moneyline_bets["moneyline_edge"])
+            moneyline_bets["win_probability"] = _num(moneyline_bets["moneyline_pick_prob"])
+            moneyline_bets["cover_probability"] = np.nan
+            moneyline_bets["confidence"] = _num(moneyline_bets["moneyline_confidence"])
+            moneyline_bets["bet_reason_short"] = "moneyline value edge"
+
+            bets = pd.concat([spread_bets, total_bets, moneyline_bets], ignore_index=True, sort=False)
             bets["situational_support"] = bets["agreement_bucket"].astype(str).str.contains("Situational", na=False)
             bets["monte_carlo_support"] = bets["agreement_bucket"].astype(str).str.contains("Monte Carlo", na=False)
             bets["recommended_stake_units"] = ((_num(bets["confidence"]) - 50.0) / 20.0).clip(0.0, 3.0).round(2)
@@ -634,7 +716,10 @@ class IDESOrchestrator:
                         "avg_spread_edge": float(_num(preds["spread_edge_team_a"]).abs().mean()) if len(preds) else np.nan,
                         "avg_total_edge": float(_num(preds["total_edge_over"]).abs().mean()) if len(preds) else np.nan,
                         "avg_confidence": float(_num(bets["confidence"]).mean()) if len(bets) else np.nan,
-                        "notes": "ides run summary",
+                        "notes": (
+                            "ides run summary"
+                            + f" | moneyline_bets={int((bets.get('bet_type', pd.Series(dtype=str)) == 'moneyline').sum()) if len(bets) else 0}"
+                        ),
                         "created_at_utc": now_utc,
                     }
                 ]

@@ -223,6 +223,10 @@ def _canonical_market(market: pd.DataFrame) -> pd.DataFrame:
     out["game_datetime_utc"] = normalize_dt(out, "game_datetime_utc")
     out["market_spread"] = _to_numeric(out, _pick_first(list(out.columns), ["spread_line", "closing_spread", "spread", "home_spread_current"]))
     out["market_total"] = _to_numeric(out, _pick_first(list(out.columns), ["total_line", "closing_total", "over_under", "total_current"]))
+    out["moneyline_home"] = _to_numeric(out, _pick_first(list(out.columns), ["moneyline_home", "home_ml", "home_moneyline", "ml_home"]))
+    out["moneyline_away"] = _to_numeric(out, _pick_first(list(out.columns), ["moneyline_away", "away_ml", "away_moneyline", "ml_away"]))
+    out["market_home_win_prob"] = _to_numeric(out, _pick_first(list(out.columns), ["home_win_prob", "market_home_win_prob", "home_implied_prob"]))
+    out["market_away_win_prob"] = _to_numeric(out, _pick_first(list(out.columns), ["away_win_prob", "market_away_win_prob", "away_implied_prob"]))
     out["line_source_used"] = out.get("line_source_used", out.get("source", pd.Series("unknown", index=out.index)))
     keep = [
         "event_id",
@@ -232,11 +236,44 @@ def _canonical_market(market: pd.DataFrame) -> pd.DataFrame:
         "line_source_used",
         "moneyline_home",
         "moneyline_away",
+        "market_home_win_prob",
+        "market_away_win_prob",
     ]
     for col in keep:
         if col not in out.columns:
             out[col] = np.nan
     out = out[keep].copy()
+    out = out.sort_values(["event_id", "game_datetime_utc"], kind="mergesort").drop_duplicates("event_id", keep="last")
+    return out
+
+
+def _combine_market_sources(primary: pd.DataFrame, fallback: pd.DataFrame) -> pd.DataFrame:
+    if primary.empty:
+        return fallback.copy()
+    if fallback.empty:
+        return primary.copy()
+
+    p = primary.set_index("event_id", drop=False).copy()
+    f = fallback.set_index("event_id", drop=False).copy()
+    fill_cols = [
+        "game_datetime_utc",
+        "market_spread",
+        "market_total",
+        "moneyline_home",
+        "moneyline_away",
+        "market_home_win_prob",
+        "market_away_win_prob",
+        "line_source_used",
+    ]
+    for col in fill_cols:
+        if col not in p.columns:
+            p[col] = np.nan
+        if col not in f.columns:
+            f[col] = np.nan
+        p[col] = p[col].where(p[col].notna(), f[col])
+    only_fallback = f.loc[~f.index.isin(p.index)]
+    out = pd.concat([p, only_fallback], axis=0)
+    out = out.reset_index(drop=True)
     out = out.sort_values(["event_id", "game_datetime_utc"], kind="mergesort").drop_duplicates("event_id", keep="last")
     return out
 
@@ -354,15 +391,14 @@ def build_data_steward_frame(
 ) -> DataStewardResult:
     games = safe_read_csv(data_dir / "games.csv")
     team_games = safe_read_csv(data_dir / "team_game_weighted.csv")
-    market = safe_read_csv(data_dir / "market_lines_latest_by_game.csv")
-    if market.empty:
-        market = safe_read_csv(data_dir / "market_lines_latest.csv")
+    market_by_game = safe_read_csv(data_dir / "market_lines_latest_by_game.csv")
+    market_latest = safe_read_csv(data_dir / "market_lines_latest.csv")
 
     audit: dict[str, Any] = {
         "inputs": {
             "games_rows": int(len(games)),
             "team_game_weighted_rows": int(len(team_games)),
-            "market_rows": int(len(market)),
+            "market_rows": int(max(len(market_by_game), len(market_latest))),
         },
         "as_of": as_of.isoformat(),
         "hours_ahead": int(hours_ahead),
@@ -372,7 +408,7 @@ def build_data_steward_frame(
         return DataStewardResult(pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), audit)
 
     games_norm = _canonical_game_frame(games)
-    market_norm = _canonical_market(market)
+    market_norm = _combine_market_sources(_canonical_market(market_by_game), _canonical_market(market_latest))
     team_history = _build_team_history(team_games)
 
     completed = _to_bool_completed(games_norm)
