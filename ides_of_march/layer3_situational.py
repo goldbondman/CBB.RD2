@@ -21,7 +21,9 @@ def _rule_definitions() -> list[RuleDef]:
         RuleDef("road_favorite_short_rest", "Road favorite on short rest", -1),
         RuleDef("home_oreb_vs_weak_dreb", "Home OREB edge vs weak away DREB", +1),
         RuleDef("away_threept_vs_slow", "Away high 3PT dependence vs slow home pace", -1),
+        RuleDef("home_threept_vs_slow", "Home high 3PT dependence vs slow away pace", +1),
         RuleDef("home_improving_weak_sos", "Home recent improvement vs weak SOS", +1),
+        RuleDef("away_improving_weak_sos", "Away recent improvement vs weak SOS", -1),
     ]
 
 
@@ -38,9 +40,13 @@ def _rule_mask(df: pd.DataFrame, rule_id: str) -> pd.Series:
     home_oreb = _num("home_orb_pct_l5")
     away_dreb = _num("away_drb_pct_l5")
     away_three = _num("away_three_par_l5")
+    home_three = _num("home_three_par_l5")
     home_pace = _num("home_pace_l5")
+    away_pace = _num("away_pace_l5")
     home_form = _num("home_Form_Delta")
+    away_form = _num("away_Form_Delta")
     home_sos = _num("home_sos_pre")
+    away_sos = _num("away_sos_pre")
 
     if rule_id == "home_rest_form_edge":
         return (rest_diff >= 2.0) & (form_diff >= 0.8)
@@ -50,8 +56,12 @@ def _rule_mask(df: pd.DataFrame, rule_id: str) -> pd.Series:
         return (home_oreb >= 0.31) & (away_dreb <= 0.68)
     if rule_id == "away_threept_vs_slow":
         return (away_three >= 0.38) & (home_pace <= 67.0)
+    if rule_id == "home_threept_vs_slow":
+        return (home_three >= 0.38) & (away_pace <= 67.0)
     if rule_id == "home_improving_weak_sos":
         return (home_form >= 1.0) & (home_sos <= 0.0)
+    if rule_id == "away_improving_weak_sos":
+        return (away_form >= 1.0) & (away_sos <= 0.0)
     return pd.Series(False, index=df.index)
 
 
