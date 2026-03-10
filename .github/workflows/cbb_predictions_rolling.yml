@@ -221,6 +221,14 @@ jobs:
           bash .github/scripts/check_csv.sh data/games.csv 1 game_id
           bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 team_id
 
+      - name: Validate transitive opponent-history chain
+        run: |
+          python scripts/validate_transitive_history_chain.py \
+            --input data/team_game_weighted.csv \
+            --sample-teams 25 \
+            --games-per-team 5 \
+            --warn-min-coverage 0.25
+
       - name: Data quality CI gate
         continue-on-error: true
         run: |
@@ -585,7 +593,11 @@ jobs:
 
           git commit -m "pipeline: predictions rolling $(date -u +'%Y-%m-%d %H:%M UTC') [skip ci]"
           for i in 1 2 3; do
-            if ! git pull --rebase origin main; then
+            if ! git diff --quiet; then
+              echo "[INFO] local unstaged changes detected before pull; using rebase autostash"
+              git status --short
+            fi
+            if ! git -c rebase.autoStash=true pull --rebase origin main; then
               echo "[ERROR] rebase conflict while syncing main"
               git rebase --abort || true
               exit 1
