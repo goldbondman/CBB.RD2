@@ -27,11 +27,13 @@
         {"path": "data/market_lines_latest_by_game.csv", "min_rows": 0, "required_columns": ["event_id", "spread_line", "total_line"], "allow_empty_when_no_games": true}
       ],
       "produces": [
-        {"path": "data/ides_of_march/predictions_latest.csv", "min_rows": 0, "required_columns": ["game_id", "event_id", "projected_spread", "market_spread"], "allow_empty_when_no_games": true},
-        {"path": "data/ides_of_march/bet_recs.csv", "min_rows": 0, "required_columns": ["game_id", "event_id", "bet_recommendation"], "allow_empty_when_no_games": true},
-        {"path": "data/ides_of_march/agreement_bucket_report.csv", "min_rows": 1, "required_columns": ["agreement_bucket", "sample_size"]},
-        {"path": "data/ides_of_march/situational_rulebook.csv", "min_rows": 1, "required_columns": ["rule_id", "sample_size", "accepted"]},
-        {"path": "data/ides_of_march/run_manifest.json", "min_rows": 0}
+        {"path": "data/reports/game_predictions_master.csv", "min_rows": 0, "required_columns": ["run_id", "game_id", "model_spread_team_a", "market_spread_team_a"], "allow_empty_when_no_games": true},
+        {"path": "data/actionable/bet_recommendations.csv", "min_rows": 0, "required_columns": ["run_id", "game_id", "bet_type"], "allow_empty_when_no_games": true},
+        {"path": "data/actionable/watchlist_games.csv", "min_rows": 0, "required_columns": ["run_id", "game_id", "watchlist_reason"], "allow_empty_when_no_games": true},
+        {"path": "data/actionable/no_bet_explanations.csv", "min_rows": 0, "required_columns": ["run_id", "game_id", "no_bet_reason"], "allow_empty_when_no_games": true},
+        {"path": "data/actionable/daily_card_summary.csv", "min_rows": 0, "required_columns": ["run_id", "games_on_card"], "allow_empty_when_no_games": true},
+        {"path": "data/reports/agreement_analysis_results.csv", "min_rows": 1, "required_columns": ["run_id", "agreement_bucket", "sample_size"]},
+        {"path": "data/logs/run_manifest.json", "min_rows": 0}
       ]
     },
     {
@@ -45,9 +47,8 @@
         {"path": "data/market_lines_latest_by_game.csv", "min_rows": 0, "required_columns": ["event_id", "spread_line", "total_line"], "allow_empty_when_no_games": true}
       ],
       "produces": [
-        {"path": "data/ides_of_march/backtest_variant_scorecard.csv", "min_rows": 1, "required_columns": ["variant_id", "sample_size", "spread_mae", "winner_accuracy", "ats_accuracy"]},
-        {"path": "data/ides_of_march/situational_rulebook.csv", "min_rows": 1, "required_columns": ["rule_id", "sample_size", "accepted"]},
-        {"path": "data/ides_of_march/run_manifest.json", "min_rows": 0}
+        {"path": "data/reports/backtest_model_summary.csv", "min_rows": 1, "required_columns": ["run_id", "variant_name", "spread_mae", "winner_accuracy", "ats_win_pct_all"]},
+        {"path": "data/logs/run_manifest.json", "min_rows": 0}
       ]
     }
   ]

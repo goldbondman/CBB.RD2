@@ -7,65 +7,59 @@ import pandas as pd
 
 
 PREDICTIONS_REQUIRED = [
+    "run_id",
+    "model_version",
     "game_id",
-    "event_id",
-    "game_datetime_utc",
-    "home_team",
-    "away_team",
-    "home_team_id",
-    "away_team_id",
-    "projected_spread",
-    "market_spread",
-    "projected_margin_home",
-    "win_prob_home",
-    "ats_cover_prob_home",
-    "confidence_score",
+    "game_date_pst",
+    "game_start_time_pst",
+    "game_start_datetime_pst",
+    "game_start_datetime_utc",
+    "team_a",
+    "team_b",
+    "model_spread_team_a",
+    "market_spread_team_a",
+    "team_a_win_probability",
+    "team_a_cover_probability",
+    "spread_confidence",
     "agreement_bucket",
-    "bet_recommendation",
+    "final_bet_flag",
 ]
 
 BET_RECS_REQUIRED = [
+    "run_id",
+    "model_version",
     "game_id",
-    "event_id",
-    "game_datetime_utc",
-    "home_team",
-    "away_team",
-    "market_spread",
-    "projected_spread",
-    "edge_home",
-    "win_prob_home",
-    "ats_cover_prob_home",
-    "confidence_score",
-    "bet_recommendation",
-    "line_source_used",
+    "game_date_pst",
+    "game_start_time_pst",
+    "game_start_datetime_pst",
+    "team_a",
+    "team_b",
+    "bet_type",
+    "bet_side",
+    "market_line",
+    "model_line",
+    "edge",
+    "confidence",
 ]
 
 AGREEMENT_REQUIRED = [
+    "run_id",
+    "model_version",
     "agreement_bucket",
     "sample_size",
-    "su_accuracy",
-    "ats_accuracy",
-    "avg_edge",
-    "confidence_mean",
-]
-
-SITUATIONAL_RULEBOOK_REQUIRED = [
-    "rule_id",
-    "description",
-    "sample_size",
-    "raw_ats_rate",
-    "shrunk_ats_rate",
-    "effect",
-    "accepted",
+    "straight_up_win_pct",
+    "ats_win_pct",
+    "avg_spread_edge",
 ]
 
 VARIANT_REQUIRED = [
-    "variant_id",
-    "sample_size",
+    "run_id",
+    "model_version",
+    "variant_name",
+    "games_tested",
     "spread_mae",
     "winner_accuracy",
-    "ats_accuracy",
-    "calibration_brier",
+    "ats_win_pct_all",
 ]
 
 
@@ -94,11 +88,6 @@ def validate_agreement(df: pd.DataFrame) -> SchemaCheck:
     return SchemaCheck(ok=not missing, missing_columns=missing)
 
 
-def validate_rulebook(df: pd.DataFrame) -> SchemaCheck:
-    missing = _missing(df, SITUATIONAL_RULEBOOK_REQUIRED)
-    return SchemaCheck(ok=not missing, missing_columns=missing)
-
-
-def validate_variant_scorecard(df: pd.DataFrame) -> SchemaCheck:
+def validate_backtest_summary(df: pd.DataFrame) -> SchemaCheck:
     missing = _missing(df, VARIANT_REQUIRED)
     return SchemaCheck(ok=not missing, missing_columns=missing)

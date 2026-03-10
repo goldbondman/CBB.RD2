@@ -134,7 +134,7 @@ jobs:
             --contract .github/pipeline_contracts/ides_of_march.contract.json \
             --job update \
             --days-back "3" \
-            --manifest data/ides_of_march/contract_manifest_integrity.json \
+            --manifest data/logs/contract_manifest_integrity.json \
             --stages ides_data_integrity
 
       - name: Upload integrity manifest
@@ -143,7 +143,7 @@ jobs:
         with:
           name: INFRA-ides-integrity
           if-no-files-found: error
-          path: data/ides_of_march/contract_manifest_integrity.json
+          path: data/logs/contract_manifest_integrity.json
           retention-days: 14
 
   predict:
@@ -207,7 +207,7 @@ jobs:
             --contract .github/pipeline_contracts/ides_of_march.contract.json \
             --job update \
             --days-back "3" \
-            --manifest data/ides_of_march/contract_manifest_predict.json \
+            --manifest data/logs/contract_manifest_predict.json \
             --stages ides_predict
 
           if [[ -n "${INPUT_AS_OF}" || "${INPUT_MC_MODE}" != "confidence_filter" || "${INPUT_HOURS_AHEAD}" != "48" ]]; then
@@ -221,10 +221,10 @@ jobs:
 
       - name: Validate IDES outputs
         run: |
-          bash .github/scripts/check_csv.sh data/ides_of_march/predictions_latest.csv 0 game_id,event_id,projected_spread,market_spread
-          bash .github/scripts/check_csv.sh data/ides_of_march/bet_recs.csv 0 game_id,event_id,bet_recommendation
-          bash .github/scripts/check_csv.sh data/ides_of_march/agreement_bucket_report.csv 1 agreement_bucket,sample_size
-          bash .github/scripts/check_csv.sh data/ides_of_march/situational_rulebook.csv 1 rule_id,sample_size,accepted
+          bash .github/scripts/check_csv.sh data/reports/game_predictions_master.csv 0 run_id,game_id,model_spread_team_a,market_spread_team_a
+          bash .github/scripts/check_csv.sh data/actionable/bet_recommendations.csv 0 run_id,game_id,bet_type
+          bash .github/scripts/check_csv.sh data/reports/agreement_analysis_results.csv 1 run_id,agreement_bucket,sample_size
+          bash .github/scripts/check_csv.sh data/actionable/daily_card_summary.csv 1 run_id,games_on_card
 
       - name: Upload IDES prediction artifacts
         if: always()
@@ -233,10 +233,24 @@ jobs:
           name: INFRA-ides-of-march-predictions
           if-no-files-found: error
           path: |
-            data/ides_of_march/predictions_latest.csv
-            data/ides_of_march/bet_recs.csv
-            data/ides_of_march/agreement_bucket_report.csv
-            data/ides_of_march/situational_rulebook.csv
-            data/ides_of_march/run_manifest.json
-            data/ides_of_march/contract_manifest_predict.json
+            data/actionable/bet_recommendations.csv
+            data/actionable/watchlist_games.csv
+            data/actionable/no_bet_explanations.csv
+            data/actionable/daily_card_summary.csv
+            data/reports/game_predictions_master.csv
+            data/reports/agreement_analysis_results.csv
+            data/plumbing/games_schedule_master.csv
+            data/plumbing/team_game_boxscores.csv
+            data/plumbing/player_game_boxscores.csv
+            data/plumbing/team_rolling_features.csv
+            data/plumbing/game_matchup_features.csv
+            data/plumbing/game_totals_features.csv
+            data/plumbing/game_context_adjustments.csv
+            data/plumbing/situational_signals_game_level.csv
+            data/plumbing/game_monte_carlo_outputs.csv
+            data/contracts/csv_contract_registry.csv
+            data/contracts/schema_rules.json
+            data/logs/pipeline_run_log.csv
+            data/logs/run_manifest.json
+            data/logs/contract_manifest_predict.json
           retention-days: 30

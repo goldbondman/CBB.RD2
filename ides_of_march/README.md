@@ -10,11 +10,10 @@ Standalone layered CBB prediction system.
 
 ## Outputs
 
-All outputs are isolated under `data/ides_of_march/`:
+IDES outputs are physically separated by category under `data/`:
 
-- `predictions_latest.csv`
-- `bet_recs.csv`
-- `agreement_bucket_report.csv`
-- `situational_rulebook.csv`
-- `backtest_variant_scorecard.csv`
-- `run_manifest.json`
+- `data/actionable/`: `bet_recommendations.csv`, `watchlist_games.csv`, `no_bet_explanations.csv`, `daily_card_summary.csv`
+- `data/reports/`: `game_predictions_master.csv`, `agreement_analysis_results.csv`, `backtest_model_summary.csv`
+- `data/plumbing/`: schedule, boxscore, rolling, matchup, totals, context, situational, and monte-carlo plumbing CSVs
+- `data/contracts/`: `csv_contract_registry.csv`, `schema_rules.json`
+- `data/logs/`: `pipeline_run_log.csv`, `run_manifest.json`

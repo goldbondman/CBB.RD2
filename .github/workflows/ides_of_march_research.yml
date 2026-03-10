@@ -196,8 +196,7 @@ jobs:
 
       - name: Validate research outputs
         run: |
-          bash .github/scripts/check_csv.sh data/ides_of_march/backtest_variant_scorecard.csv 1 variant_id,sample_size,spread_mae,winner_accuracy,ats_accuracy
-          bash .github/scripts/check_csv.sh data/ides_of_march/situational_rulebook.csv 1 rule_id,sample_size,accepted
+          bash .github/scripts/check_csv.sh data/reports/backtest_model_summary.csv 1 run_id,variant_name,spread_mae,winner_accuracy,ats_win_pct_all
 
       - name: Upload IDES research artifacts
         if: always()
@@ -206,7 +205,9 @@ jobs:
           name: INFRA-ides-of-march-research
           if-no-files-found: error
           path: |
-            data/ides_of_march/backtest_variant_scorecard.csv
-            data/ides_of_march/situational_rulebook.csv
-            data/ides_of_march/run_manifest.json
+            data/reports/backtest_model_summary.csv
+            data/contracts/csv_contract_registry.csv
+            data/contracts/schema_rules.json
+            data/logs/pipeline_run_log.csv
+            data/logs/run_manifest.json
           retention-days: 30

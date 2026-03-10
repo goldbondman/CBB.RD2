@@ -43,11 +43,13 @@ No stage may bypass this order without an architecture update.
 5. Write artifacts and manifest.
 
 ### Prediction Artifact Dependencies
-- `data/ides_of_march/predictions_latest.csv` depends on L1-L6 + schema pass.
-- `data/ides_of_march/bet_recs.csv` depends on decision layer + market joins.
-- `data/ides_of_march/agreement_bucket_report.csv` depends on agreement engine.
-- `data/ides_of_march/situational_rulebook.csv` depends on situational research outputs.
-- `data/ides_of_march/run_manifest.json` depends on stage status aggregation.
+- `data/reports/game_predictions_master.csv` depends on L1-L6 + schema pass.
+- `data/actionable/bet_recommendations.csv` depends on decision layer + market joins.
+- `data/actionable/watchlist_games.csv` depends on decision layer filter logic.
+- `data/actionable/no_bet_explanations.csv` depends on decision screen-out logic.
+- `data/actionable/daily_card_summary.csv` depends on actionable outputs.
+- `data/reports/agreement_analysis_results.csv` depends on agreement engine.
+- `data/logs/run_manifest.json` depends on stage status aggregation.
 
 ## Backtest / Research Flow
 1. Build walk-forward date splits.
@@ -56,8 +58,7 @@ No stage may bypass this order without an architecture update.
 4. Emit variant scorecard and calibration diagnostics.
 
 ### Research Artifact Dependencies
-- `data/ides_of_march/backtest_variant_scorecard.csv` depends on full variant execution.
-- `data/ides_of_march/situational_rulebook.csv` depends on signal thresholding/shrinkage.
+- `data/reports/backtest_model_summary.csv` depends on full variant execution.
 
 ## Gate Contract
 - `PASS`: stage valid.
