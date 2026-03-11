@@ -39,6 +39,10 @@ PROB_COLUMNS_GAME_PRED = [
     "team_b_win_probability",
     "team_a_cover_probability",
     "team_b_cover_probability",
+    "team_a_win_probability_mc",
+    "team_b_win_probability_mc",
+    "team_a_cover_probability_mc",
+    "team_b_cover_probability_mc",
     "over_probability",
     "under_probability",
 ]
@@ -46,6 +50,8 @@ PROB_COLUMNS_GAME_PRED = [
 PROB_COLUMNS_BET_RECS = [
     "win_probability",
     "cover_probability",
+    "mc_win_probability",
+    "mc_cover_probability",
     "over_probability",
     "under_probability",
 ]
@@ -239,11 +245,11 @@ class IDESOrchestrator:
         ensure_dir(self.paths.pipeline_run_log)
         out.to_csv(self.paths.pipeline_run_log, index=False)
 
-    def audit(self, *, as_of: pd.Timestamp, hours_ahead: int = 48) -> RunResult:
+    def audit(self, *, as_of: pd.Timestamp, hours_ahead: int = 48, hours_back: int = 1) -> RunResult:
         stages: list[StageRecord] = []
         run_id = f"ides_audit_{pd.Timestamp.now(tz='UTC').strftime('%Y%m%dT%H%M%SZ')}"
         try:
-            ds = build_data_steward_frame(data_dir=self.data_dir, as_of=as_of, hours_ahead=hours_ahead)
+            ds = build_data_steward_frame(data_dir=self.data_dir, as_of=as_of, hours_ahead=hours_ahead, hours_back=hours_back)
             integrity = run_data_integrity_audit(ds.upcoming_games, ds.historical_games)
             stages.append(StageRecord("Data Integrity Auditor", integrity.status, integrity.issues, integrity.metrics))
             self._append_pipeline_log(run_id, stages)
@@ -264,13 +270,13 @@ class IDESOrchestrator:
         hist = apply_decision_layer(hist, direct_win_model=direct, mc_mode=mc_mode)
         return apply_agreement_layer(hist)
 
-    def predict(self, *, as_of: pd.Timestamp, mc_mode: str = "confidence_only", hours_ahead: int = 48) -> RunResult:
+    def predict(self, *, as_of: pd.Timestamp, mc_mode: str = "confidence_only", hours_ahead: int = 48, hours_back: int = 1) -> RunResult:
         stages: list[StageRecord] = []
         outputs: dict[str, str] = {}
         run_id = f"ides_predict_{pd.Timestamp.now(tz='UTC').strftime('%Y%m%dT%H%M%SZ')}"
         now_utc = utc_now_iso()
         try:
-            ds = build_data_steward_frame(data_dir=self.data_dir, as_of=as_of, hours_ahead=hours_ahead)
+            ds = build_data_steward_frame(data_dir=self.data_dir, as_of=as_of, hours_ahead=hours_ahead, hours_back=hours_back)
             integrity = run_data_integrity_audit(ds.upcoming_games, ds.historical_games)
             stages.append(StageRecord("Data Integrity Auditor", integrity.status, integrity.issues, integrity.metrics))
             if integrity.status in {"FAIL", "BLOCKED"}:
@@ -598,6 +604,10 @@ class IDESOrchestrator:
                     "team_b_win_probability": lambda d: (1.0 - _num(d.get("win_prob_home"))).clip(0.0, 1.0),
                     "team_a_cover_probability": lambda d: _num(d.get("ats_cover_prob_home")).clip(0.0, 1.0),
                     "team_b_cover_probability": lambda d: (1.0 - _num(d.get("ats_cover_prob_home"))).clip(0.0, 1.0),
+                    "team_a_win_probability_mc": lambda d: _num(d.get("mc_home_win_prob")).clip(0.0, 1.0),
+                    "team_b_win_probability_mc": lambda d: _num(d.get("mc_away_win_prob")).clip(0.0, 1.0),
+                    "team_a_cover_probability_mc": lambda d: _num(d.get("mc_home_cover_prob")).clip(0.0, 1.0),
+                    "team_b_cover_probability_mc": lambda d: _num(d.get("mc_away_cover_prob")).clip(0.0, 1.0),
                     "spread_edge_team_a": lambda d: _num(d.get("edge_home")),
                     "spread_edge_team_b": lambda d: -_num(d.get("edge_home")),
                     "spread_confidence": lambda d: _num(d.get("confidence_score")).clip(0.0, 100.0),
@@ -687,6 +697,16 @@ class IDESOrchestrator:
             spread_bets["edge"] = np.where(spread_bets["bet_side"].eq("team_a"), spread_bets["spread_edge_team_a"], spread_bets["spread_edge_team_b"])
             spread_bets["win_probability"] = np.where(spread_bets["bet_side"].eq("team_a"), spread_bets["team_a_win_probability"], spread_bets["team_b_win_probability"])
             spread_bets["cover_probability"] = np.where(spread_bets["bet_side"].eq("team_a"), spread_bets["team_a_cover_probability"], spread_bets["team_b_cover_probability"])
+            spread_bets["mc_win_probability"] = np.where(
+                spread_bets["bet_side"].eq("team_a"),
+                spread_bets.get("team_a_win_probability_mc"),
+                spread_bets.get("team_b_win_probability_mc"),
+            )
+            spread_bets["mc_cover_probability"] = np.where(
+                spread_bets["bet_side"].eq("team_a"),
+                spread_bets.get("team_a_cover_probability_mc"),
+                spread_bets.get("team_b_cover_probability_mc"),
+            )
             spread_bets["confidence"] = spread_bets["spread_confidence"]
             spread_bets["bet_reason_short"] = "spread edge + confidence"
 
@@ -698,6 +718,8 @@ class IDESOrchestrator:
             total_bets["edge"] = np.where(total_bets["bet_side"].eq("over"), _num(total_bets["total_edge_over"]), _num(total_bets["total_edge_under"]))
             total_bets["win_probability"] = np.where(total_bets["bet_side"].eq("over"), _num(total_bets["over_probability"]), _num(total_bets["under_probability"]))
             total_bets["cover_probability"] = np.nan
+            total_bets["mc_win_probability"] = np.nan
+            total_bets["mc_cover_probability"] = np.nan
             total_bets["confidence"] = _num(total_bets["total_confidence"])
             total_bets["bet_reason_short"] = "total edge + confidence"
 
@@ -709,6 +731,16 @@ class IDESOrchestrator:
             moneyline_bets["edge"] = _num(moneyline_bets["moneyline_edge"])
             moneyline_bets["win_probability"] = _num(moneyline_bets["moneyline_pick_prob"])
             moneyline_bets["cover_probability"] = np.nan
+            moneyline_bets["mc_win_probability"] = np.where(
+                moneyline_bets["bet_side"].eq("team_a"),
+                moneyline_bets.get("team_a_win_probability_mc"),
+                moneyline_bets.get("team_b_win_probability_mc"),
+            )
+            moneyline_bets["mc_cover_probability"] = np.where(
+                moneyline_bets["bet_side"].eq("team_a"),
+                moneyline_bets.get("team_a_cover_probability_mc"),
+                moneyline_bets.get("team_b_cover_probability_mc"),
+            )
             moneyline_bets["confidence"] = _num(moneyline_bets["moneyline_confidence"])
             moneyline_bets["bet_reason_short"] = "moneyline value edge"
 
@@ -853,6 +885,7 @@ class IDESOrchestrator:
                 "run_at_utc": now_utc,
                 "as_of_utc": as_of.isoformat(),
                 "mc_mode": mc_mode,
+                "hours_back": int(hours_back),
                 "status": final_status,
                 "stages": [asdict(s) for s in stages],
                 "outputs": outputs,

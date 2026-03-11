@@ -23,6 +23,10 @@ on:
         description: "Upcoming window horizon (hours)"
         required: false
         default: "48"
+      hours_back:
+        description: "Hours prior to run time to include recently started games"
+        required: false
+        default: "1"
 
 concurrency:
   group: cbb-data-pipeline
@@ -201,6 +205,7 @@ jobs:
           INPUT_AS_OF: ${{ github.event.inputs.as_of || '' }}
           INPUT_MC_MODE: ${{ github.event.inputs.mc_mode || 'confidence_filter' }}
           INPUT_HOURS_AHEAD: ${{ github.event.inputs.hours_ahead || '48' }}
+          INPUT_HOURS_BACK: ${{ github.event.inputs.hours_back || '1' }}
         run: |
           set -euo pipefail
           python .github/scripts/run_pipeline_contract.py \
@@ -210,9 +215,9 @@ jobs:
             --manifest data/logs/contract_manifest_predict.json \
             --stages ides_predict
 
-          if [[ -n "${INPUT_AS_OF}" || "${INPUT_MC_MODE}" != "confidence_filter" || "${INPUT_HOURS_AHEAD}" != "48" ]]; then
+          if [[ -n "${INPUT_AS_OF}" || "${INPUT_MC_MODE}" != "confidence_filter" || "${INPUT_HOURS_AHEAD}" != "48" || "${INPUT_HOURS_BACK}" != "1" ]]; then
             echo "[INFO] Re-running predict with manual overrides"
-            CMD=(python -m ides_of_march.cli predict --mc-mode "${INPUT_MC_MODE}" --hours-ahead "${INPUT_HOURS_AHEAD}")
+            CMD=(python -m ides_of_march.cli predict --mc-mode "${INPUT_MC_MODE}" --hours-ahead "${INPUT_HOURS_AHEAD}" --hours-back "${INPUT_HOURS_BACK}")
             if [[ -n "${INPUT_AS_OF}" ]]; then
               CMD+=(--as-of "${INPUT_AS_OF}")
             fi

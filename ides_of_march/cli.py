@@ -58,6 +58,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Monte Carlo operating mode",
     )
     pred.add_argument("--hours-ahead", type=int, default=48, help="Upcoming horizon in hours")
+    pred.add_argument("--hours-back", type=int, default=1, help="Backward window in hours to include recently started games")
 
     backtest = sub.add_parser("backtest", help="Run variant backtests")
     backtest.add_argument("--json", action="store_true", help="Emit structured JSON output")
@@ -69,6 +70,7 @@ def build_parser() -> argparse.ArgumentParser:
     audit.add_argument("--json", action="store_true", help="Emit structured JSON output")
     audit.add_argument("--as-of", default="", help="UTC timestamp override")
     audit.add_argument("--hours-ahead", type=int, default=48, help="Upcoming horizon in hours")
+    audit.add_argument("--hours-back", type=int, default=1, help="Backward window in hours to include recently started games")
     audit.add_argument("--strict", action="store_true", help="Exit non-zero on WARN")
 
     return parser
@@ -82,7 +84,7 @@ def cli_main(argv: list[str] | None = None) -> int:
     as_of = _parse_as_of(getattr(args, "as_of", ""))
 
     if args.cmd == "predict":
-        result = orch.predict(as_of=as_of, mc_mode=args.mc_mode, hours_ahead=args.hours_ahead)
+        result = orch.predict(as_of=as_of, mc_mode=args.mc_mode, hours_ahead=args.hours_ahead, hours_back=args.hours_back)
         _emit(result, args.json)
         return 0 if result.ok else 1
 
@@ -94,7 +96,7 @@ def cli_main(argv: list[str] | None = None) -> int:
         return 0 if result.ok else 1
 
     if args.cmd == "audit":
-        result = orch.audit(as_of=as_of, hours_ahead=args.hours_ahead)
+        result = orch.audit(as_of=as_of, hours_ahead=args.hours_ahead, hours_back=args.hours_back)
         _emit(result, args.json)
         if args.strict and result.status == "FAIL":
             return 1

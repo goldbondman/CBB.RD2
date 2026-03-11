@@ -6,7 +6,7 @@
       "name": "ides_data_integrity",
       "job": "update",
       "depends_on": [],
-      "command": "python -m ides_of_march.cli audit --strict --hours-ahead 48",
+      "command": "python -m ides_of_march.cli audit --strict --hours-ahead 48 --hours-back 1",
       "requires": [
         {"path": "data/games.csv", "min_rows": 1, "required_columns": ["game_id", "game_datetime_utc"]},
         {"path": "data/team_game_weighted.csv", "min_rows": 1, "required_columns": ["event_id", "team_id", "game_datetime_utc"]},
@@ -20,7 +20,7 @@
       "name": "ides_predict",
       "job": "update",
       "depends_on": ["ides_data_integrity"],
-      "command": "python -m ides_of_march.cli predict --mc-mode confidence_filter --hours-ahead 48",
+      "command": "python -m ides_of_march.cli predict --mc-mode confidence_filter --hours-ahead 48 --hours-back 1",
       "requires": [
         {"path": "data/games.csv", "min_rows": 1, "required_columns": ["game_id", "game_datetime_utc"]},
         {"path": "data/team_game_weighted.csv", "min_rows": 1, "required_columns": ["event_id", "team_id"]},

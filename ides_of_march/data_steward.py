@@ -452,6 +452,7 @@ def build_data_steward_frame(
     data_dir: Path = DATA_DIR,
     as_of: pd.Timestamp,
     hours_ahead: int = DEFAULT_HOURS_AHEAD,
+    hours_back: int = 1,
 ) -> DataStewardResult:
     games = safe_read_csv(data_dir / "games.csv")
     team_games = safe_read_csv(data_dir / "team_game_weighted.csv")
@@ -466,6 +467,7 @@ def build_data_steward_frame(
         },
         "as_of": as_of.isoformat(),
         "hours_ahead": int(hours_ahead),
+        "hours_back": int(hours_back),
     }
 
     if games.empty or team_games.empty:
@@ -476,8 +478,13 @@ def build_data_steward_frame(
     team_history = _build_team_history(team_games)
 
     completed = _to_bool_completed(games_norm)
+    horizon_start = as_of - pd.Timedelta(hours=hours_back)
     horizon_end = as_of + pd.Timedelta(hours=hours_ahead)
-    upcoming_games = games_norm[(~completed) & (games_norm["game_datetime_utc"] >= as_of) & (games_norm["game_datetime_utc"] <= horizon_end)].copy()
+    upcoming_games = games_norm[
+        (~completed)
+        & (games_norm["game_datetime_utc"] >= horizon_start)
+        & (games_norm["game_datetime_utc"] <= horizon_end)
+    ].copy()
     completed_games = games_norm[completed].copy()
 
     upcoming_frame = _build_game_feature_frame(upcoming_games, market_norm, team_history, as_of)
@@ -493,6 +500,8 @@ def build_data_steward_frame(
         "upcoming_games": int(len(upcoming_frame)),
         "historical_games": int(len(historical_frame)),
         "team_history_rows": int(len(team_history)),
+        "upcoming_window_start_utc": horizon_start.isoformat(),
+        "upcoming_window_end_utc": horizon_end.isoformat(),
         "market_coverage_upcoming": float(upcoming_frame["market_spread"].notna().mean()) if len(upcoming_frame) else 0.0,
     }
 

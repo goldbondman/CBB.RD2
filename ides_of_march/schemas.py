@@ -20,6 +20,8 @@ PREDICTIONS_REQUIRED = [
     "market_spread_team_a",
     "team_a_win_probability",
     "team_a_cover_probability",
+    "team_a_win_probability_mc",
+    "team_a_cover_probability_mc",
     "spread_confidence",
     "agreement_bucket",
     "final_bet_flag",
@@ -40,6 +42,8 @@ BET_RECS_REQUIRED = [
     "model_line",
     "edge",
     "confidence",
+    "mc_win_probability",
+    "mc_cover_probability",
 ]
 
 AGREEMENT_REQUIRED = [
