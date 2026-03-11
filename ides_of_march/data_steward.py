@@ -26,6 +26,29 @@ class DataStewardResult:
     audit: dict[str, Any]
 
 
+# Ordered candidate column names used when normalising market source files.
+# The coalesce helper tries each name in turn and fills NaN from subsequent ones.
+_SPREAD_CANDIDATES: list[str] = [
+    "spread_line", "closing_spread", "spread", "home_spread_current",
+    "pinnacle_spread", "draftkings_spread",
+]
+_TOTAL_CANDIDATES: list[str] = [
+    "total_line", "closing_total", "over_under", "total_current",
+]
+_ML_HOME_CANDIDATES: list[str] = [
+    "moneyline_home", "home_ml", "home_moneyline", "ml_home",
+]
+_ML_AWAY_CANDIDATES: list[str] = [
+    "moneyline_away", "away_ml", "away_moneyline", "ml_away",
+]
+_WIN_PROB_HOME_CANDIDATES: list[str] = [
+    "home_win_prob", "market_home_win_prob", "home_implied_prob",
+]
+_WIN_PROB_AWAY_CANDIDATES: list[str] = [
+    "away_win_prob", "market_away_win_prob", "away_implied_prob",
+]
+
+
 def _pick_first(cols: list[str], candidates: list[str]) -> str | None:
     lookup = {c.lower(): c for c in cols}
     for c in candidates:
@@ -39,6 +62,38 @@ def _to_numeric(df: pd.DataFrame, col: str | None) -> pd.Series:
     if col is None or col not in df.columns:
         return pd.Series(np.nan, index=df.index)
     return pd.to_numeric(df[col], errors="coerce")
+
+
+def _coalesce_numeric(df: pd.DataFrame, candidates: list[str]) -> pd.Series:
+    """Coalesce numeric values across multiple candidate column names.
+
+    Tries each column name in *candidates* in order. Columns that do not exist
+    in *df* are skipped. The first column that exists initialises the result
+    series; subsequent columns fill in remaining NaN positions. Returns a
+    Series of NaN when no candidate column is present.
+
+    Args:
+        df: Source DataFrame.
+        candidates: Column names to try in priority order.
+
+    Returns:
+        Numeric Series with as many non-null values as the candidate columns
+        collectively provide.
+    """
+    lookup = {c.lower(): c for c in df.columns}
+    result: pd.Series | None = None
+    for c in candidates:
+        found = lookup.get(c.lower())
+        if found is None:
+            continue
+        values = pd.to_numeric(df[found], errors="coerce")
+        if result is None:
+            result = values
+        else:
+            result = result.where(result.notna(), values)
+        if result.notna().all():
+            break
+    return result if result is not None else pd.Series(np.nan, index=df.index)
 
 
 def _to_bool_completed(df: pd.DataFrame) -> pd.Series:
@@ -221,12 +276,12 @@ def _canonical_market(market: pd.DataFrame) -> pd.DataFrame:
         out["event_id"] = out["game_id"]
     out["event_id"] = out.get("event_id", pd.Series("", index=out.index)).map(canonical_id)
     out["game_datetime_utc"] = normalize_dt(out, "game_datetime_utc")
-    out["market_spread"] = _to_numeric(out, _pick_first(list(out.columns), ["spread_line", "closing_spread", "spread", "home_spread_current"]))
-    out["market_total"] = _to_numeric(out, _pick_first(list(out.columns), ["total_line", "closing_total", "over_under", "total_current"]))
-    out["moneyline_home"] = _to_numeric(out, _pick_first(list(out.columns), ["moneyline_home", "home_ml", "home_moneyline", "ml_home"]))
-    out["moneyline_away"] = _to_numeric(out, _pick_first(list(out.columns), ["moneyline_away", "away_ml", "away_moneyline", "ml_away"]))
-    out["market_home_win_prob"] = _to_numeric(out, _pick_first(list(out.columns), ["home_win_prob", "market_home_win_prob", "home_implied_prob"]))
-    out["market_away_win_prob"] = _to_numeric(out, _pick_first(list(out.columns), ["away_win_prob", "market_away_win_prob", "away_implied_prob"]))
+    out["market_spread"] = _coalesce_numeric(out, _SPREAD_CANDIDATES)
+    out["market_total"] = _coalesce_numeric(out, _TOTAL_CANDIDATES)
+    out["moneyline_home"] = _coalesce_numeric(out, _ML_HOME_CANDIDATES)
+    out["moneyline_away"] = _coalesce_numeric(out, _ML_AWAY_CANDIDATES)
+    out["market_home_win_prob"] = _coalesce_numeric(out, _WIN_PROB_HOME_CANDIDATES)
+    out["market_away_win_prob"] = _coalesce_numeric(out, _WIN_PROB_AWAY_CANDIDATES)
     out["line_source_used"] = out.get("line_source_used", out.get("source", pd.Series("unknown", index=out.index)))
     keep = [
         "event_id",
@@ -339,6 +394,15 @@ def _build_game_feature_frame(games: pd.DataFrame, market: pd.DataFrame, team_hi
 
     out["market_spread"] = pd.to_numeric(out.get("market_spread"), errors="coerce")
     out["market_total"] = pd.to_numeric(out.get("market_total"), errors="coerce")
+
+    # Fall back to spread/over_under columns embedded in games.csv when market
+    # lines are unavailable (e.g. conference-tournament games without posted lines).
+    if "spread" in out.columns:
+        fallback_spread = pd.to_numeric(out["spread"], errors="coerce")
+        out["market_spread"] = out["market_spread"].where(out["market_spread"].notna(), fallback_spread)
+    if "over_under" in out.columns:
+        fallback_total = pd.to_numeric(out["over_under"], errors="coerce")
+        out["market_total"] = out["market_total"].where(out["market_total"].notna(), fallback_total)
 
     # Preserve pre-derived venue/tournament flags from canonical game frame.
     out["is_neutral"] = out.get("is_neutral", pd.Series(False, index=out.index)).astype(bool)
