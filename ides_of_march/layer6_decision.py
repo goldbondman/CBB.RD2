@@ -9,6 +9,11 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+from .config import (
+    SPREAD_BET_ATS_PROB_EDGE_MIN,
+    SPREAD_BET_CONFIDENCE_MIN,
+    SPREAD_BET_EDGE_MIN,
+)
 from .utils import logistic, margin_to_home_spread
 
 
@@ -134,11 +139,11 @@ def apply_decision_layer(
 
     out["bet_recommendation"] = "PASS"
     recommend_mask = (
-        edge_abs >= 1.5
+        edge_abs >= SPREAD_BET_EDGE_MIN
     ) & (
-        pd.to_numeric(out["confidence_score"], errors="coerce") >= 55.0
+        pd.to_numeric(out["confidence_score"], errors="coerce") >= SPREAD_BET_CONFIDENCE_MIN
     ) & (
-        pd.to_numeric(out["ats_cover_prob_home"], errors="coerce").sub(0.5).abs() >= 0.03
+        pd.to_numeric(out["ats_cover_prob_home"], errors="coerce").sub(0.5).abs() >= SPREAD_BET_ATS_PROB_EDGE_MIN
     )
 
     if mc_mode == "confidence_filter" and "mc_filter_pass" in out.columns:

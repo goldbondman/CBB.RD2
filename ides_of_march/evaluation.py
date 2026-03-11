@@ -36,6 +36,47 @@ def variant_matrix() -> list[Variant]:
     return [Variant(*parts) for parts in itertools.product(backbones, win_probs, mc_modes, sit)]
 
 
+def _num(frame: pd.DataFrame, col: str) -> pd.Series:
+    return pd.to_numeric(frame.get(col), errors="coerce")
+
+
+def _apply_variant_totals_projection(frame: pd.DataFrame, variant: Variant) -> pd.DataFrame:
+    out = frame.copy()
+    base_total = _num(out, "projected_total_ctx")
+    expected_total = _num(out, "expected_total")
+
+    if variant.backbone == "A":
+        total = (0.6 * base_total.fillna(expected_total)) + (0.4 * expected_total.fillna(base_total))
+    else:
+        total = base_total.where(base_total.notna(), expected_total)
+
+    # Totals-specific possession retention / empty possession pressure.
+    to_sum = _num(out, "home_tov_pct_l5") + _num(out, "away_tov_pct_l5")
+    oreb_sum = _num(out, "home_orb_pct_l5") + _num(out, "away_orb_pct_l5")
+    ftsp_sum = _num(out, "home_ft_scoring_pressure_l5") + _num(out, "away_ft_scoring_pressure_l5")
+    three_sum = _num(out, "home_three_par_l5") + _num(out, "away_three_par_l5")
+    empty_possession_pressure = (to_sum - oreb_sum).fillna(0.0)
+
+    total = total - (8.0 * empty_possession_pressure)
+    total = total + (5.0 * (ftsp_sum.fillna(0.45) - 0.45))
+    total = total + (2.5 * (three_sum.fillna(0.70) - 0.70))
+
+    if variant.situational_on:
+        situ = _num(out, "situational_score").fillna(0.0)
+        total = total + np.clip(situ * 3.0, -2.5, 2.5)
+
+    if variant.mc_mode == "blended":
+        mc_mid = (_num(out, "mc_total_p10") + _num(out, "mc_total_p90")) / 2.0
+        total = (0.7 * total) + (0.3 * mc_mid.fillna(total))
+    elif variant.mc_mode == "confidence_filter":
+        vol = _num(out, "mc_volatility").fillna(11.0)
+        shrink = np.clip((vol - 10.5) / 8.0, 0.0, 0.25)
+        total = ((1.0 - shrink) * total) + (shrink * 138.0)
+
+    out["projected_total_ctx"] = total.where(total.notna(), expected_total).fillna(138.0).clip(110.0, 180.0)
+    return out
+
+
 def _apply_variant(train_df: pd.DataFrame, test_df: pd.DataFrame, variant: Variant) -> tuple[pd.DataFrame, pd.DataFrame]:
     train = apply_base_strength(train_df)
     train = apply_context_adjustments(train)
@@ -63,6 +104,8 @@ def _apply_variant(train_df: pd.DataFrame, test_df: pd.DataFrame, variant: Varia
 
     train = apply_monte_carlo_layer(train, mode=variant.mc_mode, n_sims=250, fast_approx=True)
     test = apply_monte_carlo_layer(test, mode=variant.mc_mode, n_sims=350, fast_approx=True)
+    train = _apply_variant_totals_projection(train, variant)
+    test = _apply_variant_totals_projection(test, variant)
 
     direct_model = fit_direct_win_model(train) if variant.win_prob == "B" else None
     train = apply_decision_layer(train, direct_win_model=direct_model, mc_mode=variant.mc_mode)
