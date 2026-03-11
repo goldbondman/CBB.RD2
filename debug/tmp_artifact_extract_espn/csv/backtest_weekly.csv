@@ -1,0 +1,2 @@
+week_label,week_start_date,total_games,ats_wins,ats_losses,ats_pct,ats_roi,ou_wins,ou_losses,ou_pct,ou_roi,ml_correct,ml_pct,edge_games,edge_ats_pct,avg_spread_error,M1_ats_pct,M1_ou_pct,M1_ml_pct,M1_ats_roi,M2_ats_pct,M2_ou_pct,M2_ml_pct,M2_ats_roi,M3_ats_pct,M3_ou_pct,M3_ml_pct,M3_ats_roi,M4_ats_pct,M4_ou_pct,M4_ml_pct,M4_ats_roi,M5_ats_pct,M5_ou_pct,M5_ml_pct,M5_ats_roi,M6_ats_pct,M6_ou_pct,M6_ml_pct,M6_ats_roi,M7_ats_pct,M7_ou_pct,M7_ml_pct,M7_ats_roi,generated_at
+1,1969-12-29,8,5,3,0.625,1.55,0,0,,0.0,4,0.5,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2026-02-28T08:36:28Z

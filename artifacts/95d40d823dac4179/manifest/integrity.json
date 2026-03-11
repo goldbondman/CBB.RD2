@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "errors": [],
+  "warnings": [],
+  "row_counts": {
+    "games": 5481,
+    "market_lines": 30,
+    "predictions_combined_latest": 101
+  },
+  "run_context": {
+    "run_id": "95d40d823dac4179",
+    "as_of": "2026-03-09T15:38:58.351035+00:00",
+    "model_version": "00257ec8",
+    "feature_version": "v1",
+    "prediction_timestamp": "2026-03-09T15:38:58.355219+00:00"
+  }
+}

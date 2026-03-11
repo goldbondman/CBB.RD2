@@ -1,0 +1,8 @@
+raw_pick_id,handicapper_id,handle,game_id,pick_team,pick_type,pick_spread,pick_total,pick_datetime_utc,source
+1,1,@CBB_Edge,401900101,Duke,spread,-5.5,,2026-02-28T18:30:00Z,twitter
+2,2,@HoopsLock,401900102,Kansas,spread,-7.0,,2026-02-28T19:00:00Z,twitter
+3,3,@CollegeLinesGuru,401900103,Gonzaga,moneyline,,,2026-02-28T20:00:00Z,twitter
+4,4,@BracketBuster,401900104,UConn,spread,+3.5,,2026-02-28T20:30:00Z,twitter
+5,5,@MidMajorMike,401900105,Murray State,spread,-4.0,,2026-02-28T21:00:00Z,twitter
+6,1,@CBB_Edge,401900101,Duke,moneyline,,,2026-02-28T18:35:00Z,twitter
+raw_pick_id,handicapper_id,tweet_id,raw_text,line,units,parse_status

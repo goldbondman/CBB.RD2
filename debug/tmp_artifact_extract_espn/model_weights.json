@@ -1,0 +1,27 @@
+{
+  "weights": {
+    "fourfactors": 0.3654,
+    "adjefficiency": 0.0765,
+    "pythagorean": 0.0216,
+    "momentum": 0.2428,
+    "situational": 0.1222,
+    "cagerankings": 0.0274,
+    "regressedeff": 0.144
+  },
+  "metric": "ats",
+  "value": 0.5227,
+  "default_weights": {
+    "fourfactors": 0.12,
+    "adjefficiency": 0.22,
+    "pythagorean": 0.14,
+    "momentum": 0.16,
+    "situational": 0.1,
+    "cagerankings": 0.18,
+    "regressedeff": 0.08
+  },
+  "n_games_used": 88,
+  "generated_at": "2026-02-26T12:00:10.359951",
+  "pipeline_run_id": "22441096216",
+  "seed": 42,
+  "saved_at_utc": "2026-02-26T12:00:10.609538+00:00"
+}

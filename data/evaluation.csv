@@ -1,0 +1,10 @@
+metric,value
+spread_mae,9.594805653710248
+total_mae,13.762946428571428
+brier_score,0.2609090633484163
+ats_hit_rate,0.532
+ou_hit_rate,0.5089285714285714
+roi_ats,0.01563636363636367
+roi_ou,-0.028409090909090995
+median_clv_spread,0.655
+median_clv_ml,

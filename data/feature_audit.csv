@@ -1,0 +1,3 @@
+feature,correlation,p_value,predictive,sample_n
+pred_home_score,-0.0806,0.2328,False,221
+pred_away_score,-0.0033,0.9607,False,221

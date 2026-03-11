@@ -1,0 +1,6 @@
+game_id,game_datetime_utc,home_team,away_team,spread,over_under,venue,neutral_site,status
+401900101,2026-02-28T23:00Z,Duke Blue Devils,Syracuse Orange,-5.5,138.5,Cameron Indoor Stadium,False,scheduled
+401900102,2026-02-28T20:00Z,Kansas Jayhawks,Baylor Bears,-7.0,148.0,Allen Fieldhouse,False,scheduled
+401900103,2026-03-01T02:00Z,Gonzaga Bulldogs,Saint Mary's Gaels,-6.0,145.5,McCarthey Athletic Center,False,scheduled
+401900104,2026-03-01T00:00Z,Marquette Golden Eagles,UConn Huskies,+3.5,144.0,Fiserv Forum,False,scheduled
+401900105,2026-03-01T01:00Z,Murray State Racers,Belmont Bruins,-4.0,136.5,CFSB Center,False,scheduled

@@ -1,0 +1,46 @@
+{
+  "run_context": {
+    "run_id": "0fa1b40e8737b0ba",
+    "as_of": "2026-03-09T15:39:37.024434+00:00",
+    "model_version": "00257ec8",
+    "feature_version": "v1",
+    "prediction_timestamp": "2026-03-09T15:39:37.028980+00:00"
+  },
+  "mode": "backtest",
+  "command": [
+    "C:\\Users\\brand\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+    "build_backtest_csvs.py"
+  ],
+  "return_code": 0,
+  "artifact_run_dir": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\artifacts\\0fa1b40e8737b0ba",
+  "model_version": {
+    "model_version_hash": "00257ec8",
+    "model_version_full": "00257ec89ace02911c969cdc664df89fc2e41d4fea1cb203382a20c05972f808",
+    "component_hashes": {
+      "model_weights": "f7c982fa85e8",
+      "confidence_calibration": "missing",
+      "model_bias_table": "91a2e5a8e350"
+    },
+    "config_snapshot": {
+      "weights": {
+        "FourFactors": 0.0578,
+        "AdjEfficiency": 0.3707,
+        "Pythagorean": 0.1622,
+        "Situational": 0.1124,
+        "CAGERankings": 0.0209,
+        "LuckRegression": 0.0209,
+        "Variance": 0.0074,
+        "HomeAwayForm": 0.2477
+      },
+      "weights_by_tier": [],
+      "active_bias_corrections": 0,
+      "bias_dimensions": []
+    },
+    "created_at_utc": "2026-03-09T15:39:37.028918+00:00",
+    "pipeline_run_id": "local_20260309_153937"
+  },
+  "backtest_outputs": {
+    "status": "skipped",
+    "reason": "Missing model_id/sub_model or game_id/event_id required for backtest outputs."
+  }
+}

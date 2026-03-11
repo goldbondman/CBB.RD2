@@ -1,0 +1,49 @@
+{
+  "active_stats": [
+    "adj_efg_diff",
+    "adj_tov_diff",
+    "weighted_drtg_diff",
+    "ftr_diff",
+    "momentum_score_diff",
+    "true_orb_pct_diff",
+    "adj_pace_diff",
+    "rest_days_diff"
+  ],
+  "skipped_stats": [
+    "cover_rate_l10_diff",
+    "close_game_win_pct_diff"
+  ],
+  "weights": {
+    "adj_efg_diff": 0.257358,
+    "adj_tov_diff": 0.13165,
+    "weighted_drtg_diff": 0.001982,
+    "ftr_diff": 0.158095,
+    "momentum_score_diff": 0.126747,
+    "true_orb_pct_diff": 0.190218,
+    "adj_pace_diff": 0.110054,
+    "rest_days_diff": 0.023896
+  },
+  "col_scales": {
+    "adj_efg_diff": 6.022943,
+    "adj_tov_diff": 3.655057,
+    "weighted_drtg_diff": 28.218757,
+    "ftr_diff": 11.446496,
+    "momentum_score_diff": 9.733329,
+    "true_orb_pct_diff": 5.298167,
+    "adj_pace_diff": 3.619287,
+    "rest_days_diff": 1.091288
+  },
+  "performance": {
+    "train_hit_rate": 71.2644,
+    "test_hit_rate": 58.6207,
+    "train_roi": 36.05,
+    "test_roi": 11.91,
+    "equal_weight_test_hit_rate": 46.5517,
+    "equal_weight_test_roi": -11.13,
+    "overfit_flag": true,
+    "n_train": 87,
+    "n_test": 58,
+    "n_ats_total": 145
+  },
+  "methodology": "60/40 walk-forward split, 1000 random scipy SLSQP starts, weights constrained to sum=1 all>=0, columns z-score normalized before optimization"
+}

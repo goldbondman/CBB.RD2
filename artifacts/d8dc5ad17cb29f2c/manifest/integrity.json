@@ -1,0 +1,19 @@
+{
+  "ok": false,
+  "errors": [
+    "market_lines.csv: missing required columns: ['pulled_at']"
+  ],
+  "warnings": [],
+  "row_counts": {
+    "games": 5481,
+    "market_lines": 30,
+    "predictions_combined_latest": 101
+  },
+  "run_context": {
+    "run_id": "d8dc5ad17cb29f2c",
+    "as_of": "2026-03-09T00:00:00+00:00",
+    "model_version": "00257ec8",
+    "feature_version": "v1",
+    "prediction_timestamp": "2026-03-09T15:27:33.593914+00:00"
+  }
+}
