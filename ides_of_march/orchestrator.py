@@ -24,42 +24,31 @@ from .utils import ensure_dir, pretty_exception, utc_now_iso, write_json
 
 MODEL_VERSION = "ides_of_march_v1"
 
-HALF_ROUND_COLUMNS: dict[str, list[str]] = {
-    "game_predictions_master.csv": [
-        "market_spread_team_a",
-        "market_spread_team_b",
-        "market_spread",
-        "market_total",
-        "market_moneyline_team_a",
-        "market_moneyline_team_b",
-        "model_spread_team_a",
-        "model_spread_team_b",
-        "model_total",
-        "team_a_win_probability",
-        "team_b_win_probability",
-        "team_a_cover_probability",
-        "team_b_cover_probability",
-        "over_probability",
-        "under_probability",
-        "spread_edge_team_a",
-        "spread_edge_team_b",
-        "total_edge_over",
-        "total_edge_under",
-        "spread_confidence",
-        "total_confidence",
-    ],
-    "bet_recommendations.csv": [
-        "market_line",
-        "model_line",
-        "edge",
-        "win_probability",
-        "cover_probability",
-        "over_probability",
-        "under_probability",
-        "confidence",
-        "recommended_stake_units",
-    ],
-}
+SPREAD_HALF_COLUMNS_GAME_PRED = [
+    "market_spread_team_a",
+    "market_spread_team_b",
+    "market_spread",
+    "model_spread_team_a",
+    "model_spread_team_b",
+    "spread_edge_team_a",
+    "spread_edge_team_b",
+]
+
+PROB_COLUMNS_GAME_PRED = [
+    "team_a_win_probability",
+    "team_b_win_probability",
+    "team_a_cover_probability",
+    "team_b_cover_probability",
+    "over_probability",
+    "under_probability",
+]
+
+PROB_COLUMNS_BET_RECS = [
+    "win_probability",
+    "cover_probability",
+    "over_probability",
+    "under_probability",
+]
 
 
 @dataclass
@@ -112,11 +101,31 @@ def _round_series_to_half(series: Any) -> pd.Series:
     return np.round(vals * 2.0) / 2.0
 
 
-def _apply_half_rounding(file_name: str, frame: pd.DataFrame) -> pd.DataFrame:
+def _round_series_to_hundredth(series: Any) -> pd.Series:
+    vals = pd.to_numeric(series, errors="coerce")
+    return vals.round(2)
+
+
+def _apply_output_rounding(file_name: str, frame: pd.DataFrame) -> pd.DataFrame:
     out = frame.copy()
-    for col in HALF_ROUND_COLUMNS.get(file_name, []):
-        if col in out.columns:
-            out[col] = _round_series_to_half(out[col])
+    if file_name == "game_predictions_master.csv":
+        for col in SPREAD_HALF_COLUMNS_GAME_PRED:
+            if col in out.columns:
+                out[col] = _round_series_to_half(out[col])
+        for col in PROB_COLUMNS_GAME_PRED:
+            if col in out.columns:
+                out[col] = _round_series_to_hundredth(out[col])
+        return out
+
+    if file_name == "bet_recommendations.csv":
+        spread_mask = out.get("bet_type", pd.Series("", index=out.index)).astype(str).eq("spread")
+        for col in ("market_line", "model_line", "edge"):
+            if col in out.columns:
+                rounded = _round_series_to_half(out[col])
+                out[col] = np.where(spread_mask, rounded, out[col])
+        for col in PROB_COLUMNS_BET_RECS:
+            if col in out.columns:
+                out[col] = _round_series_to_hundredth(out[col])
     return out
 
 
@@ -713,12 +722,12 @@ class IDESOrchestrator:
 
             preds = self._write_contract_csv(
                 "game_predictions_master.csv",
-                _apply_half_rounding("game_predictions_master.csv", preds),
+                _apply_output_rounding("game_predictions_master.csv", preds),
                 self.paths.game_predictions_master,
             )
             bets = self._write_contract_csv(
                 "bet_recommendations.csv",
-                _apply_half_rounding("bet_recommendations.csv", bets),
+                _apply_output_rounding("bet_recommendations.csv", bets),
                 self.paths.bet_recommendations,
             )
 
