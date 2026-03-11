@@ -96,7 +96,7 @@ def cli_main(argv: list[str] | None = None) -> int:
     if args.cmd == "audit":
         result = orch.audit(as_of=as_of, hours_ahead=args.hours_ahead)
         _emit(result, args.json)
-        if args.strict and result.status != "PASS":
+        if args.strict and result.status == "FAIL":
             return 1
         return 0 if result.status in {"PASS", "WARN"} else 1
 

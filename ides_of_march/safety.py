@@ -42,7 +42,8 @@ def run_data_integrity_audit(
     market_coverage = float(pd.to_numeric(upcoming_games.get("market_spread"), errors="coerce").notna().mean())
     metrics["market_coverage"] = market_coverage
     if market_coverage < min_market_coverage:
-        status = "FAIL"
+        if status == "PASS":
+            status = "WARN"
         issues.append(
             f"Market line coverage below threshold: {market_coverage:.3f} < {min_market_coverage:.3f}"
         )

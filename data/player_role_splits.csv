@@ -1,7 +1,7 @@
-athlete_id,event_id,team_id,game_datetime_utc,starter,pts_starter_l5,pts_bench_l5,min_starter_l5,min_bench_l5,efg_pct_starter_l5,efg_pct_bench_l5,usage_rate_starter_l5,usage_rate_bench_l5,pipeline_run_id
-1001,501,10,2026-01-01T01:00:00Z,True,,,,,,,,,20260310_070120
-1001,502,10,2026-01-02T01:00:00Z,True,,,,,,,,,20260310_070120
-1001,503,10,2026-01-03T01:00:00Z,True,11.5,,31.5,,58.5,,21.65,,20260310_070120
-1001,504,10,2026-01-04T01:00:00Z,True,12.0,,32.0,,58.23,,22.3,,20260310_070120
-1001,505,10,2026-01-05T01:00:00Z,True,12.5,,32.5,,59.75,,22.75,,20260310_070120
-1001,506,10,2026-01-06T01:00:00Z,True,13.0,,33.0,,61.8,,23.34,,20260310_070120
+athlete_id,player,event_id,team_id,team,game_datetime_utc,starter,pts_starter_l5,pts_bench_l5,min_starter_l5,min_bench_l5,efg_pct_starter_l5,efg_pct_bench_l5,usage_rate_starter_l5,usage_rate_bench_l5,pipeline_run_id
+9001,Player One,evt_0,100,Home Team,2025-01-01T01:00:00Z,True,,,,,,,,,22929836273
+9001,Player One,evt_1,100,Home Team,2025-01-02T01:00:00Z,True,,,,,,,,,22929836273
+9001,Player One,evt_2,100,Home Team,2025-01-03T01:00:00Z,True,20.5,,30.0,,61.5,,94.9,,22929836273
+9001,Player One,evt_3,100,Home Team,2025-01-04T01:00:00Z,True,21.0,,30.0,,61.5,,94.9,,22929836273
+9001,Player One,evt_4,100,Home Team,2025-01-05T01:00:00Z,True,21.5,,30.0,,61.5,,94.9,,22929836273
+9001,Player One,evt_5,100,Home Team,2025-01-06T01:00:00Z,True,22.0,,30.0,,61.5,,94.9,,22929836273
