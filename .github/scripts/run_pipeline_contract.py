@@ -177,25 +177,29 @@ def _validate_one_spec(repo_root: Path, spec: Any, stage_name: str, kind: str) -
         min_rows = int(spec.get("min_rows", 1))
         if len(df) < min_rows:
             return None, f"[{stage_name}] {kind} {rel} has {len(df)} rows; expected >= {min_rows}"
+        allow_empty = bool(spec.get("allow_empty", False))
         allow_empty_when_no_games = bool(spec.get("allow_empty_when_no_games", False))
         if kind == "output" and len(df) == 0:
-            if not allow_empty_when_no_games:
+            if allow_empty:
+                pass
+            elif not allow_empty_when_no_games:
                 return None, (
                     f"[{stage_name}] {kind} {rel} is empty (0 rows). "
                     "This is blocked to avoid silent empty outputs."
                 )
-            games_path = repo_root / "data" / "games.csv"
-            if not games_path.exists():
-                return None, (
-                    f"[{stage_name}] {kind} {rel} is empty and allow_empty_when_no_games=true, "
-                    "but data/games.csv is missing so 'no games' cannot be verified."
-                )
-            games_df = pd.read_csv(games_path, dtype=str, low_memory=False)
-            if len(games_df) > 0:
-                return None, (
-                    f"[{stage_name}] {kind} {rel} is empty while data/games.csv has {len(games_df)} rows. "
-                    "Empty output is only allowed when there are truly no games."
-                )
+            else:
+                games_path = repo_root / "data" / "games.csv"
+                if not games_path.exists():
+                    return None, (
+                        f"[{stage_name}] {kind} {rel} is empty and allow_empty_when_no_games=true, "
+                        "but data/games.csv is missing so 'no games' cannot be verified."
+                    )
+                games_df = pd.read_csv(games_path, dtype=str, low_memory=False)
+                if len(games_df) > 0:
+                    return None, (
+                        f"[{stage_name}] {kind} {rel} is empty while data/games.csv has {len(games_df)} rows. "
+                        "Empty output is only allowed when there are truly no games."
+                    )
         missing = [c for c in _required_cols(spec.get("required_columns")) if c not in df.columns]
         if missing:
             return None, f"[{stage_name}] {kind} {rel} missing required columns: {missing}"
