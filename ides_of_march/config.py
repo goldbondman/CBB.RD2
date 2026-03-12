@@ -55,6 +55,9 @@ class OutputPaths:
     daily_card_summary: Path
     agreement_analysis_results: Path
     backtest_model_summary: Path
+    backtest_edge_band_summary: Path
+    backtest_bet_ledger: Path
+    backtest_kelly_summary: Path
     csv_contract_registry: Path
     schema_rules: Path
     pipeline_run_log: Path
@@ -86,6 +89,9 @@ def output_paths(
         daily_card_summary=actionable_dir / "daily_card_summary.csv",
         agreement_analysis_results=reports_dir / "agreement_analysis_results.csv",
         backtest_model_summary=reports_dir / "backtest_model_summary.csv",
+        backtest_edge_band_summary=reports_dir / "backtest_edge_band_summary.csv",
+        backtest_bet_ledger=reports_dir / "backtest_bet_ledger.csv",
+        backtest_kelly_summary=reports_dir / "backtest_kelly_summary.csv",
         csv_contract_registry=contracts_dir / "csv_contract_registry.csv",
         schema_rules=contracts_dir / "schema_rules.json",
         pipeline_run_log=logs_dir / "pipeline_run_log.csv",
