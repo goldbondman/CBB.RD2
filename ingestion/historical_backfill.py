@@ -21,6 +21,11 @@ if str(REPO_ROOT) not in sys.path:
 from pipeline.id_utils import canonicalize_espn_game_id
 from pipeline.team_utils import TeamCanonicalizer, normalize_team_name, slugify
 
+try:
+    from ingestion.wagertalk_scraper import wagertalk_candidates_for_date
+except Exception:  # pragma: no cover - optional source adapter
+    wagertalk_candidates_for_date = None
+
 log = logging.getLogger(__name__)
 # Standard log format for CI/CD readability
 logging.basicConfig(level=logging.INFO, format="[DIAG] HistoricalBackfill | %(levelname)-8s | %(message)s")
@@ -64,6 +69,7 @@ class HistoricalBackfill:
         self.closing_path = data_dir / "market_lines_closing.csv"
         self.unresolved_path = data_dir / "unresolved_games.csv"
         self.audit_path = data_dir / "market_line_backfill_audit.csv"
+        self.wagertalk_path = data_dir / "wagertalk_historical_odds.csv"
         self.throttler = Throttler(rps_limit=0.5) # 1 req every 2 seconds
         self.canonicalizer = TeamCanonicalizer()
         self.url_cache: Dict[str, str] = {}
@@ -221,6 +227,50 @@ class HistoricalBackfill:
                 ))
             except Exception:
                 continue
+
+        return candidates
+
+    def get_wagertalk_candidates(self, game_date: date) -> List[CandidateLine]:
+        """Layer 1: WagerTalk historical lines from local cache CSV."""
+        if wagertalk_candidates_for_date is None:
+            return []
+        if not self.wagertalk_path.exists():
+            return []
+
+        try:
+            raw_candidates = wagertalk_candidates_for_date(
+                game_date=game_date,
+                data_dir=self.data_dir,
+                cache_path=self.wagertalk_path,
+            )
+        except Exception as e:
+            log.warning("WagerTalk adapter failed for %s: %s", game_date, e)
+            return []
+
+        candidates: List[CandidateLine] = []
+        for raw in raw_candidates:
+            home_raw = str(raw.get("provider_home_team_raw", "")).strip()
+            away_raw = str(raw.get("provider_away_team_raw", "")).strip()
+            if not home_raw or not away_raw:
+                continue
+            try:
+                spread = float(raw.get("candidate_home_spread"))
+                total = float(raw.get("candidate_total"))
+            except (TypeError, ValueError):
+                continue
+
+            candidates.append(CandidateLine(
+                provider_name="wagertalk",
+                provider_game_date=raw.get("provider_game_date", game_date.strftime("%Y-%m-%d")),
+                provider_home_team_raw=home_raw,
+                provider_away_team_raw=away_raw,
+                candidate_home_spread=spread,
+                candidate_total=total,
+                candidate_is_closing=bool(raw.get("candidate_is_closing", True)),
+                url=str(raw.get("url", "")),
+                provider_home_slug_norm=slugify(self.canonicalizer.get_canonical_name(home_raw, "wagertalk")),
+                provider_away_slug_norm=slugify(self.canonicalizer.get_canonical_name(away_raw, "wagertalk")),
+            ))
 
         return candidates
 
@@ -394,6 +444,7 @@ class HistoricalBackfill:
 
             # Fetch candidates once per date
             candidates = []
+            candidates.extend(self.get_wagertalk_candidates(g_date))
             candidates.extend(self.get_team_rankings_candidates(g_date))
             # candidates.extend(self.get_vegas_insider_candidates(g_date))
 
