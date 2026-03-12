@@ -51,3 +51,25 @@
 - Optional enrichment:
   - `data/plumbing/line_movement.csv` for CLV metrics
 - If graded outcomes or CLV fields are unavailable, output files are still written with explicit provisional/blocked rows instead of failing silently.
+
+## INFRA-phase2-phase3-orchestrator producer
+
+- Producer workflow: `.github/workflows/phase2_phase3_orchestrator.yml`
+- Trigger chain:
+  - `workflow_run` after successful `Rolling Performance Dashboard`
+  - manual dispatch
+- Artifact name: `INFRA-phase2-phase3-orchestrator`
+- Core outputs:
+  - `data/layer_validation_results.csv`
+  - `data/layer_registry.csv`
+  - `data/layer_registry_latest.csv`
+  - `data/calibration_report.csv`
+  - `data/performance_attribution.csv`
+  - `docs/reports/layer_validation_report.md`
+  - `docs/reports/calibration_recommendations.md`
+
+## Orchestrator guard behavior
+
+- Phase 2 is skipped unless both warehouse and backtest artifacts are present.
+- Phase 3 is skipped unless backtest artifacts are present.
+- Skip decisions are surfaced in workflow summary output; no placeholder metrics are fabricated.

@@ -1,0 +1,263 @@
+﻿name: Phase2-Phase3 Orchestrator
+
+on:
+  workflow_run:
+    workflows: ["Rolling Performance Dashboard"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_phase2:
+        description: "Run Phase 2 (backtesting activation)"
+        required: false
+        default: "true"
+        type: choice
+        options: ["true", "false"]
+      run_phase3:
+        description: "Run Phase 3 (calibration + attribution)"
+        required: false
+        default: "true"
+        type: choice
+        options: ["true", "false"]
+      min_sample:
+        description: "Minimum sample for Phase 2 validation"
+        required: false
+        default: "50"
+      edge_threshold:
+        description: "Model edge threshold for Phase 2"
+        required: false
+        default: "4.0"
+      p_threshold:
+        description: "P-value threshold for validation"
+        required: false
+        default: "0.05"
+      phase2_output_dir:
+        description: "Phase 2 output dir"
+        required: false
+        default: "data/layer_backtests"
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: cbb-data-pipeline
+  cancel-in-progress: false
+
+jobs:
+  precheck:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      run_phase2: ${{ steps.eval.outputs.run_phase2 }}
+      run_phase3: ${{ steps.eval.outputs.run_phase3 }}
+      min_sample: ${{ steps.eval.outputs.min_sample }}
+      edge_threshold: ${{ steps.eval.outputs.edge_threshold }}
+      p_threshold: ${{ steps.eval.outputs.p_threshold }}
+      phase2_output_dir: ${{ steps.eval.outputs.phase2_output_dir }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Evaluate prerequisites
+        id: eval
+        env:
+          INPUT_RUN_PHASE2: ${{ github.event.inputs.run_phase2 || 'true' }}
+          INPUT_RUN_PHASE3: ${{ github.event.inputs.run_phase3 || 'true' }}
+          INPUT_MIN_SAMPLE: ${{ github.event.inputs.min_sample || '50' }}
+          INPUT_EDGE_THRESHOLD: ${{ github.event.inputs.edge_threshold || '4.0' }}
+          INPUT_P_THRESHOLD: ${{ github.event.inputs.p_threshold || '0.05' }}
+          INPUT_PHASE2_OUTPUT_DIR: ${{ github.event.inputs.phase2_output_dir || 'data/layer_backtests' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          run_phase2="${INPUT_RUN_PHASE2:-true}"
+          run_phase3="${INPUT_RUN_PHASE3:-true}"
+          min_sample="${INPUT_MIN_SAMPLE:-50}"
+          edge_threshold="${INPUT_EDGE_THRESHOLD:-4.0}"
+          p_threshold="${INPUT_P_THRESHOLD:-0.05}"
+          phase2_output_dir="${INPUT_PHASE2_OUTPUT_DIR:-data/layer_backtests}"
+
+          backtest_ok=false
+          warehouse_ok=false
+          scripts_ok=false
+
+          if [[ -s data/backtest_results_latest.csv ]]; then
+            backtest_ok=true
+          fi
+
+          if [[ -s data/historical_warehouse.parquet || -s ../data/historical_warehouse.parquet ]]; then
+            warehouse_ok=true
+          fi
+
+          if [[ -f scripts/backtesting_activation.py && -f scripts/calibration_attribution.py ]]; then
+            scripts_ok=true
+          fi
+
+          phase2_ready=false
+          phase3_ready=false
+
+          if [[ "$run_phase2" == "true" && "$warehouse_ok" == "true" && "$backtest_ok" == "true" && "$scripts_ok" == "true" ]]; then
+            phase2_ready=true
+          fi
+
+          if [[ "$run_phase3" == "true" && "$backtest_ok" == "true" && "$scripts_ok" == "true" ]]; then
+            phase3_ready=true
+          fi
+
+          echo "run_phase2=$phase2_ready" >> "$GITHUB_OUTPUT"
+          echo "run_phase3=$phase3_ready" >> "$GITHUB_OUTPUT"
+          echo "min_sample=$min_sample" >> "$GITHUB_OUTPUT"
+          echo "edge_threshold=$edge_threshold" >> "$GITHUB_OUTPUT"
+          echo "p_threshold=$p_threshold" >> "$GITHUB_OUTPUT"
+          echo "phase2_output_dir=$phase2_output_dir" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Precheck Summary"
+            echo "- backtest_ok: $backtest_ok"
+            echo "- warehouse_ok: $warehouse_ok"
+            echo "- scripts_ok: $scripts_ok"
+            echo "- run_phase2_requested: $run_phase2"
+            echo "- run_phase3_requested: $run_phase3"
+            echo "- run_phase2_effective: $phase2_ready"
+            echo "- run_phase3_effective: $phase3_ready"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  run-phases:
+    needs: precheck
+    if: ${{ needs.precheck.outputs.run_phase2 == 'true' || needs.precheck.outputs.run_phase3 == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TZ: UTC
+      PYTHONHASHSEED: "0"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pip install -r requirements.txt
+          python -c "import pandas, numpy, scipy"
+
+      - name: Run Phase 2 backtesting activation
+        if: ${{ needs.precheck.outputs.run_phase2 == 'true' }}
+        run: |
+          set -euo pipefail
+          python scripts/backtesting_activation.py \
+            --output-dir "${{ needs.precheck.outputs.phase2_output_dir }}" \
+            --min-sample "${{ needs.precheck.outputs.min_sample }}" \
+            --edge-threshold "${{ needs.precheck.outputs.edge_threshold }}" \
+            --p-threshold "${{ needs.precheck.outputs.p_threshold }}"
+
+      - name: Skip note (Phase 2)
+        if: ${{ needs.precheck.outputs.run_phase2 != 'true' }}
+        run: echo "[SKIP] Phase 2 skipped due to missing prerequisites or manual selection."
+
+      - name: Run Phase 3 calibration and attribution
+        if: ${{ needs.precheck.outputs.run_phase3 == 'true' }}
+        run: |
+          set -euo pipefail
+          python scripts/calibration_attribution.py --output-dir data
+
+      - name: Skip note (Phase 3)
+        if: ${{ needs.precheck.outputs.run_phase3 != 'true' }}
+        run: echo "[SKIP] Phase 3 skipped due to missing prerequisites or manual selection."
+
+      - name: Validate expected outputs
+        run: |
+          set -euo pipefail
+          if [[ "${{ needs.precheck.outputs.run_phase2 }}" == "true" ]]; then
+            test -s data/layer_validation_results.csv
+            test -s data/layer_registry_latest.csv
+            test -s docs/reports/layer_validation_report.md
+          fi
+          if [[ "${{ needs.precheck.outputs.run_phase3 }}" == "true" ]]; then
+            test -s data/calibration_report.csv
+            test -s data/performance_attribution.csv
+            test -s docs/reports/calibration_recommendations.md
+          fi
+
+      - name: Upload orchestrator artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-phase2-phase3-orchestrator
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            data/layer_validation_results.csv
+            data/layer_registry.csv
+            data/layer_registry_latest.csv
+            data/calibration_report.csv
+            data/calibration_buckets.csv
+            data/performance_attribution.csv
+            data/metric_redundancy_report.csv
+            data/phase_performance.csv
+            data/seed_calibration.csv
+            data/pes_incremental_lift.csv
+            data/edge_decay_report.csv
+            docs/reports/layer_validation_report.md
+            docs/reports/calibration_recommendations.md
+
+      - name: Commit and push updates
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add \
+            data/layer_validation_results.csv \
+            data/layer_registry.csv \
+            data/layer_registry_latest.csv \
+            data/calibration_report.csv \
+            data/calibration_buckets.csv \
+            data/performance_attribution.csv \
+            data/metric_redundancy_report.csv \
+            data/phase_performance.csv \
+            data/seed_calibration.csv \
+            data/pes_incremental_lift.csv \
+            data/edge_decay_report.csv \
+            docs/reports/layer_validation_report.md \
+            docs/reports/calibration_recommendations.md || true
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No phase2/phase3 changes to commit"
+            exit 0
+          fi
+
+          git commit -m "analytics: run phase2/phase3 orchestrator [$(date -u +%Y-%m-%dT%H:%M:%SZ)]"
+
+          for i in 1 2 3; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              echo "[OK] Push succeeded on attempt $i"
+              exit 0
+            fi
+            echo "[WARN] Push failed on attempt $i"
+            if [[ -d .git/rebase-merge || -d .git/rebase-apply ]]; then
+              git rebase --abort || true
+            fi
+            sleep $((i * 2))
+          done
+
+          echo "[ERROR] Push failed after retries"
+          exit 1
