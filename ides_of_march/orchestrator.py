@@ -7,7 +7,13 @@ from typing import Any, Callable
 import numpy as np
 import pandas as pd
 
-from .config import DATA_DIR, output_paths
+from .config import (
+    DATA_DIR,
+    SPREAD_BET_ATS_PROB_EDGE_MIN,
+    SPREAD_BET_CONFIDENCE_MIN,
+    SPREAD_BET_EDGE_MIN,
+    output_paths,
+)
 from .csv_contracts import CSV_HEADERS, conform_to_contract, write_template
 from .data_steward import build_data_steward_frame
 from .evaluation import run_variant_backtest
@@ -32,6 +38,7 @@ SPREAD_HALF_COLUMNS_GAME_PRED = [
     "model_spread_team_b",
     "spread_edge_team_a",
     "spread_edge_team_b",
+    "spread_edge_for_pick",
 ]
 
 PROB_COLUMNS_GAME_PRED = [
@@ -135,6 +142,85 @@ def _apply_output_rounding(file_name: str, frame: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def _compute_blowout_scores(frame: pd.DataFrame) -> pd.DataFrame:
+    out = pd.DataFrame(index=frame.index)
+    adj_abs = _num(frame.get("adj_em_margin_l12")).abs()
+    to_abs = _num(frame.get("to_margin_l5")).abs()
+    oreb_abs = _num(frame.get("oreb_margin_l5")).abs()
+    rest_abs = _num(frame.get("rest_diff")).abs()
+    mc_win = _num(frame.get("mc_home_win_prob")).fillna(_num(frame.get("win_prob_home")))
+
+    out["blowout_score_adj"] = ((adj_abs - 8.0) / 10.0).clip(lower=0.0) * 1.2
+    out["blowout_score_to"] = ((to_abs - 0.012) / 0.01).clip(lower=0.0) * 0.08
+    out["blowout_score_oreb"] = ((oreb_abs - 0.03) / 0.01).clip(lower=0.0) * 0.10
+    out["blowout_score_rest"] = ((rest_abs - 1.0).clip(lower=0.0)) * 0.05
+    out["blowout_score_mcw"] = ((mc_win.sub(0.5).abs() - 0.10).clip(lower=0.0)) * 1.3
+    out["blowout_score_total"] = (
+        _num(out["blowout_score_adj"])
+        + _num(out["blowout_score_to"])
+        + _num(out["blowout_score_oreb"])
+        + _num(out["blowout_score_rest"])
+        + _num(out["blowout_score_mcw"])
+    )
+    return out
+
+
+def _apply_spread_flip_logic(preds: pd.DataFrame) -> pd.DataFrame:
+    out = preds.copy()
+    out["model_pick_raw"] = np.where(_num(out.get("spread_edge_team_a")) >= 0, out.get("team_a"), out.get("team_b"))
+    raw_market_line = np.where(out["model_pick_raw"].eq(out["team_a"]), _num(out.get("market_spread_team_a")), _num(out.get("market_spread_team_b")))
+    raw_edge = np.where(out["model_pick_raw"].eq(out["team_a"]), _num(out.get("spread_edge_team_a")), _num(out.get("spread_edge_team_b")))
+    raw_dog = _num(pd.Series(raw_market_line, index=out.index)) > 0
+    raw_line = _num(pd.Series(raw_market_line, index=out.index))
+    raw_edge_abs = _num(pd.Series(raw_edge, index=out.index)).abs()
+    blowout_total = _num(out.get("blowout_score_total"))
+
+    flip_dog_5_to_7_5 = raw_dog & raw_line.between(5.0, 7.5, inclusive="both") & ((raw_edge_abs >= 5.0) | (blowout_total >= 1.10))
+    # Broader blowout override for larger market dogs when volatility/mismatch is elevated.
+    flip_dog_8_plus_blowout = raw_dog & (raw_line >= 8.0) & (blowout_total >= 1.20) & (raw_edge_abs >= 3.0)
+    out["model_pick_flipped"] = (flip_dog_5_to_7_5 | flip_dog_8_plus_blowout).astype(bool)
+    out["model_pick_flip_reason"] = np.select(
+        [flip_dog_5_to_7_5, flip_dog_8_plus_blowout],
+        ["dog_5_to_7_5_inverse", "dog_8_plus_blowout_inverse"],
+        default="",
+    )
+    out["model_pick"] = np.where(out["model_pick_flipped"], np.where(out["model_pick_raw"].eq(out["team_a"]), out["team_b"], out["team_a"]), out["model_pick_raw"])
+
+    out["spread_pick"] = out["model_pick"]
+    pick_edge = pd.Series(
+        np.where(out["model_pick"].eq(out["team_a"]), _num(out.get("spread_edge_team_a")), _num(out.get("spread_edge_team_b"))),
+        index=out.index,
+    )
+    out["spread_edge_for_pick"] = _num(pick_edge).abs()
+    return out
+
+
+def _apply_totals_flip_logic(preds: pd.DataFrame, frame: pd.DataFrame) -> pd.DataFrame:
+    out = preds.copy()
+    out["total_pick_raw"] = np.where(_num(out.get("over_probability")) >= 0.5, "over", "under")
+
+    market_total = _num(out.get("market_total"))
+    blowout_total = _num(out.get("blowout_score_total"))
+    mc_vol = _num(frame.get("mc_volatility"))
+    expected_pace = _num(frame.get("expected_pace"))
+    threepa_sum = _num(frame.get("home_three_par_l5")) + _num(frame.get("away_three_par_l5"))
+
+    # In high-total/high-variance spots, modeled unders can be too aggressive.
+    flip_under_chaos = (
+        out["total_pick_raw"].eq("under")
+        & (market_total >= 145.0)
+        & (blowout_total >= 1.10)
+        & (threepa_sum >= 0.78)
+        & (mc_vol >= 11.0)
+        & (expected_pace >= 66.0)
+    )
+
+    out["total_pick_flipped"] = flip_under_chaos.astype(bool)
+    out["total_pick_flip_reason"] = np.where(out["total_pick_flipped"], "under_high_total_chaos_inverse", "")
+    out["total_pick"] = np.where(out["total_pick_flipped"], "over", out["total_pick_raw"])
+    return out
+
+
 def _time_fields(frame: pd.DataFrame, source_col: str = "game_datetime_utc") -> pd.DataFrame:
     out = pd.DataFrame(index=frame.index)
     utc = pd.to_datetime(frame.get(source_col), utc=True, errors="coerce")
@@ -172,6 +258,9 @@ class IDESOrchestrator:
             "daily_card_summary.csv": self.paths.daily_card_summary,
             "agreement_analysis_results.csv": self.paths.agreement_analysis_results,
             "backtest_model_summary.csv": self.paths.backtest_model_summary,
+            "backtest_edge_band_summary.csv": self.paths.backtest_edge_band_summary,
+            "backtest_bet_ledger.csv": self.paths.backtest_bet_ledger,
+            "backtest_kelly_summary.csv": self.paths.backtest_kelly_summary,
             "pipeline_run_log.csv": self.paths.pipeline_run_log,
         }
         for file_name, path in file_to_path.items():
@@ -202,10 +291,16 @@ class IDESOrchestrator:
             if callable(spec):
                 out[col] = spec(base)
             elif isinstance(spec, str):
-                value = base.get(spec)
-                if isinstance(value, pd.DataFrame):
-                    value = value.iloc[:, 0]
-                out[col] = value
+                # String mappings can represent either:
+                # 1) source-column references (when the source column exists), or
+                # 2) literal constants (run_id/model_version/static labels).
+                if spec in base.columns:
+                    value = base.get(spec)
+                    if isinstance(value, pd.DataFrame):
+                        value = value.iloc[:, 0]
+                    out[col] = value
+                else:
+                    out[col] = spec
             else:
                 out[col] = spec
         if "created_at_utc" in headers and "created_at_utc" not in out.columns:
@@ -516,12 +611,20 @@ class IDESOrchestrator:
                     "round_name": lambda d: d.get("round_name", np.nan),
                     "team_a": "home_team",
                     "team_b": "away_team",
-                    "home_rest_form_signal_team_a": active.str.contains("home_rest_form_edge", na=False).astype(int),
-                    "home_rest_form_signal_team_b": 0,
-                    "slow_dog_to_edge_signal_team_a": active.str.contains("road_favorite_short_rest", na=False).astype(int),
-                    "slow_dog_to_edge_signal_team_b": 0,
-                    "oreb_mismatch_signal_team_a": active.str.contains("home_oreb_vs_weak_dreb", na=False).astype(int),
-                    "oreb_mismatch_signal_team_b": 0,
+                    "home_rest_form_signal_team_a": active.str.contains("home_rest_form_stack", na=False).astype(int),
+                    "home_rest_form_signal_team_b": active.str.contains("away_rest_form_stack", na=False).astype(int),
+                    "slow_dog_to_edge_signal_team_a": active.str.contains("home_pace_mismatch_fast_edge", na=False).astype(int),
+                    "slow_dog_to_edge_signal_team_b": active.str.contains("away_pace_mismatch_fast_edge", na=False).astype(int),
+                    "oreb_mismatch_signal_team_a": active.str.contains("home_oreb_edge_3pct", na=False).astype(int),
+                    "oreb_mismatch_signal_team_b": active.str.contains("away_oreb_edge_3pct", na=False).astype(int),
+                    "high_three_pt_dependence_warning_team_a": active.str.contains("fade_home_threept_vs_slow", na=False).astype(int),
+                    "high_three_pt_dependence_warning_team_b": active.str.contains("fade_away_threept_vs_slow", na=False).astype(int),
+                    "weak_sos_form_inflation_warning_team_a": active.str.contains("fade_home_weak_sos_form_pop", na=False).astype(int),
+                    "weak_sos_form_inflation_warning_team_b": active.str.contains("fade_away_weak_sos_form_pop", na=False).astype(int),
+                    "conference_tourney_bye_signal_team_a": active.str.contains("conference_bye_edge_home", na=False).astype(int),
+                    "conference_tourney_bye_signal_team_b": active.str.contains("conference_bye_edge_away", na=False).astype(int),
+                    "conference_tourney_fatigue_signal_team_a": active.str.contains("conference_fatigue_fade_home", na=False).astype(int),
+                    "conference_tourney_fatigue_signal_team_b": active.str.contains("conference_fatigue_fade_away", na=False).astype(int),
                     "situational_score_team_a": lambda d: _num(d.get("situational_score")),
                     "situational_score_team_b": lambda d: -_num(d.get("situational_score")),
                     "situational_lean": lambda d: np.where(_num(d.get("situational_score")) >= 0, "team_a", "team_b"),
@@ -624,18 +727,93 @@ class IDESOrchestrator:
             preds["under_probability"] = 1.0 - _num(preds["over_probability"])
             preds["total_edge_over"] = _num(preds["model_total"]) - _num(preds["market_total"])
             preds["total_edge_under"] = -_num(preds["total_edge_over"])
-            preds["spread_pick"] = np.where(_num(preds["spread_edge_team_a"]) >= 0, preds["team_a"], preds["team_b"])
-            preds["total_pick"] = np.where(_num(preds["over_probability"]) >= 0.5, "over", "under")
+            blowout = _compute_blowout_scores(upcoming)
+            for col in blowout.columns:
+                preds[col] = blowout[col]
+
+            preds = _apply_spread_flip_logic(preds)
+            preds = _apply_totals_flip_logic(preds, upcoming)
             preds["total_confidence"] = (_num(preds["total_edge_over"]).abs() * 8.0).clip(0.0, 100.0)
-            preds["spread_bet_flag"] = preds["final_bet_flag"].astype(bool)
-            total_recommend_mask = (
-                (_num(preds["total_edge_over"]).abs() >= 2.0)
-                & (_num(preds["total_confidence"]) >= 55.0)
-                & (_num(preds["over_probability"]).sub(0.5).abs() >= 0.03)
+            preds["spread_model_pick"] = preds["spread_pick"]
+            preds["total_model_pick"] = preds["total_pick"]
+
+            spread_prob_for_pick = np.where(
+                preds["model_pick"].eq(preds["team_a"]),
+                _num(preds["team_a_cover_probability"]),
+                _num(preds["team_b_cover_probability"]),
             )
+            spread_line_ok = _num(preds["market_spread"]).notna() & _num(preds["model_spread_team_a"]).notna()
+            spread_edge_ok = _num(preds["spread_edge_for_pick"]) >= SPREAD_BET_EDGE_MIN
+            spread_conf_ok = _num(preds["spread_confidence"]) >= SPREAD_BET_CONFIDENCE_MIN
+            spread_prob_ok = _num(pd.Series(spread_prob_for_pick, index=preds.index)).sub(0.5).abs() >= SPREAD_BET_ATS_PROB_EDGE_MIN
+            spread_recommend_mask = spread_line_ok & spread_edge_ok & spread_conf_ok & spread_prob_ok
+            spread_mc_blocked = pd.Series(False, index=preds.index)
             if mc_mode == "confidence_filter" and "mc_filter_pass" in preds.columns:
+                spread_mc_blocked = ~preds["mc_filter_pass"].astype(bool)
+                spread_recommend_mask = spread_recommend_mask & preds["mc_filter_pass"].astype(bool)
+            preds["spread_bet_flag"] = spread_recommend_mask.astype(bool)
+            preds["spread_bet_recommended"] = preds["spread_bet_flag"].astype(bool)
+            preds["spread_bet_reason"] = np.select(
+                [
+                    preds["spread_bet_flag"] & preds["model_pick_flipped"].astype(bool),
+                    preds["spread_bet_flag"],
+                    ~spread_line_ok,
+                    spread_mc_blocked,
+                    ~spread_edge_ok,
+                    ~spread_conf_ok,
+                    ~spread_prob_ok,
+                ],
+                [
+                    "recommended:flip_gate+edge_confidence_probability",
+                    "recommended:edge_confidence_probability",
+                    "pass:missing_market_or_model_spread",
+                    "pass:mc_filter_blocked",
+                    f"pass:edge_lt_{SPREAD_BET_EDGE_MIN:.1f}",
+                    f"pass:confidence_lt_{SPREAD_BET_CONFIDENCE_MIN:.1f}",
+                    f"pass:ats_prob_edge_lt_{SPREAD_BET_ATS_PROB_EDGE_MIN:.2f}",
+                ],
+                default="pass:thresholds_not_met",
+            )
+
+            total_pick_under = preds["total_pick"].astype(str).str.lower().eq("under")
+            total_edge_for_pick = np.where(
+                preds["total_pick"].astype(str).str.lower().eq("over"),
+                _num(preds["total_edge_over"]),
+                _num(preds["total_edge_under"]),
+            )
+            total_edge_for_pick_abs = _num(pd.Series(total_edge_for_pick, index=preds.index)).abs()
+            total_line_ok = _num(preds["market_total"]).notna() & _num(preds["model_total"]).notna()
+            total_auto_low_market = _num(preds["market_total"]) <= 130.0
+            total_under_150_edge12 = total_pick_under & (_num(preds["market_total"]) <= 150.0) & (total_edge_for_pick_abs >= 12.0)
+            total_edge12_any = total_edge_for_pick_abs >= 12.0
+            total_recommend_mask = total_line_ok & (total_auto_low_market | total_under_150_edge12 | total_edge12_any)
+            total_mc_blocked = pd.Series(False, index=preds.index)
+            if mc_mode == "confidence_filter" and "mc_filter_pass" in preds.columns:
+                total_mc_blocked = ~preds["mc_filter_pass"].astype(bool)
                 total_recommend_mask = total_recommend_mask & preds["mc_filter_pass"].astype(bool)
             preds["total_bet_flag"] = total_recommend_mask.astype(bool)
+            preds["total_bet_recommended"] = preds["total_bet_flag"].astype(bool)
+            preds["total_bet_reason"] = np.select(
+                [
+                    preds["total_bet_flag"] & preds["total_pick_flipped"].astype(bool),
+                    preds["total_bet_flag"] & total_auto_low_market,
+                    preds["total_bet_flag"] & total_under_150_edge12,
+                    preds["total_bet_flag"],
+                    ~total_line_ok,
+                    total_mc_blocked,
+                    total_pick_under & (_num(preds["market_total"]) <= 150.0),
+                ],
+                [
+                    "recommended:totals_flip_chaos_inverse",
+                    "recommended:market_total_le_130_any_side",
+                    "recommended:under_le_150_edge_ge_12",
+                    "recommended:edge_ge_12",
+                    "pass:missing_market_or_model_total",
+                    "pass:mc_filter_blocked",
+                    "pass:under_le_150_edge_lt_12",
+                ],
+                default="pass:edge_lt_12",
+            )
 
             # Moneyline value layer: compare model win probability to market implied probability.
             implied_a_from_odds = _american_to_implied_prob(preds.get("market_moneyline_team_a"))
@@ -691,10 +869,19 @@ class IDESOrchestrator:
 
             spread_bets = preds[preds["spread_bet_flag"]].copy()
             spread_bets["bet_type"] = "spread"
-            spread_bets["bet_side"] = np.where(spread_bets["spread_pick"] == spread_bets["team_a"], "team_a", "team_b")
+            spread_bets["bet_side"] = np.where(spread_bets["model_pick"] == spread_bets["team_a"], "team_a", "team_b")
+            spread_bets["model_pick"] = spread_bets["model_pick"]
+            spread_bets["model_pick_raw"] = spread_bets["model_pick_raw"]
+            spread_bets["model_pick_flipped"] = spread_bets["model_pick_flipped"]
+            spread_bets["model_pick_flip_reason"] = spread_bets["model_pick_flip_reason"]
+            spread_bets["total_pick"] = spread_bets["total_pick"]
+            spread_bets["total_pick_raw"] = spread_bets["total_pick_raw"]
+            spread_bets["total_pick_flipped"] = spread_bets["total_pick_flipped"]
+            spread_bets["total_pick_flip_reason"] = spread_bets["total_pick_flip_reason"]
+            spread_bets["blowout_score_total"] = _num(spread_bets["blowout_score_total"])
             spread_bets["market_line"] = np.where(spread_bets["bet_side"].eq("team_a"), spread_bets["market_spread_team_a"], spread_bets["market_spread_team_b"])
             spread_bets["model_line"] = np.where(spread_bets["bet_side"].eq("team_a"), spread_bets["model_spread_team_a"], spread_bets["model_spread_team_b"])
-            spread_bets["edge"] = np.where(spread_bets["bet_side"].eq("team_a"), spread_bets["spread_edge_team_a"], spread_bets["spread_edge_team_b"])
+            spread_bets["edge"] = _num(spread_bets["spread_edge_for_pick"])
             spread_bets["win_probability"] = np.where(spread_bets["bet_side"].eq("team_a"), spread_bets["team_a_win_probability"], spread_bets["team_b_win_probability"])
             spread_bets["cover_probability"] = np.where(spread_bets["bet_side"].eq("team_a"), spread_bets["team_a_cover_probability"], spread_bets["team_b_cover_probability"])
             spread_bets["mc_win_probability"] = np.where(
@@ -708,24 +895,45 @@ class IDESOrchestrator:
                 spread_bets.get("team_b_cover_probability_mc"),
             )
             spread_bets["confidence"] = spread_bets["spread_confidence"]
-            spread_bets["bet_reason_short"] = "spread edge + confidence"
+            spread_bets["bet_reason_short"] = spread_bets["spread_bet_reason"].fillna("recommended:spread")
 
             total_bets = preds[preds["total_bet_flag"]].copy()
             total_bets["bet_type"] = "total"
             total_bets["bet_side"] = total_bets["total_pick"].str.lower()
+            total_bets["model_pick"] = total_bets["total_pick"].str.lower()
+            total_bets["model_pick_raw"] = total_bets["total_pick_raw"].str.lower()
+            total_bets["model_pick_flipped"] = total_bets["total_pick_flipped"].astype(bool)
+            total_bets["model_pick_flip_reason"] = total_bets["total_pick_flip_reason"]
+            total_bets["total_pick_raw"] = total_bets["total_pick_raw"].str.lower()
+            total_bets["total_pick_flipped"] = total_bets["total_pick_flipped"].astype(bool)
+            total_bets["total_pick_flip_reason"] = total_bets["total_pick_flip_reason"]
+            total_bets["blowout_score_total"] = _num(total_bets["blowout_score_total"])
             total_bets["market_line"] = _num(total_bets["market_total"])
             total_bets["model_line"] = _num(total_bets["model_total"])
-            total_bets["edge"] = np.where(total_bets["bet_side"].eq("over"), _num(total_bets["total_edge_over"]), _num(total_bets["total_edge_under"]))
+            total_edge_pick = pd.Series(
+                np.where(total_bets["bet_side"].eq("over"), _num(total_bets["total_edge_over"]), _num(total_bets["total_edge_under"])),
+                index=total_bets.index,
+            )
+            total_bets["edge"] = _num(total_edge_pick).abs()
             total_bets["win_probability"] = np.where(total_bets["bet_side"].eq("over"), _num(total_bets["over_probability"]), _num(total_bets["under_probability"]))
             total_bets["cover_probability"] = np.nan
             total_bets["mc_win_probability"] = np.nan
             total_bets["mc_cover_probability"] = np.nan
             total_bets["confidence"] = _num(total_bets["total_confidence"])
-            total_bets["bet_reason_short"] = "total edge + confidence"
+            total_bets["bet_reason_short"] = total_bets["total_bet_reason"].fillna("recommended:total")
 
             moneyline_bets = preds[preds["moneyline_bet_flag"]].copy()
             moneyline_bets["bet_type"] = "moneyline"
             moneyline_bets["bet_side"] = moneyline_bets["moneyline_pick"]
+            moneyline_bets["model_pick"] = np.where(moneyline_bets["moneyline_pick"].eq("team_a"), moneyline_bets["team_a"], moneyline_bets["team_b"])
+            moneyline_bets["model_pick_raw"] = moneyline_bets["model_pick"]
+            moneyline_bets["model_pick_flipped"] = False
+            moneyline_bets["model_pick_flip_reason"] = ""
+            moneyline_bets["total_pick"] = moneyline_bets["total_pick"]
+            moneyline_bets["total_pick_raw"] = moneyline_bets["total_pick_raw"]
+            moneyline_bets["total_pick_flipped"] = moneyline_bets["total_pick_flipped"]
+            moneyline_bets["total_pick_flip_reason"] = moneyline_bets["total_pick_flip_reason"]
+            moneyline_bets["blowout_score_total"] = _num(moneyline_bets["blowout_score_total"])
             moneyline_bets["market_line"] = _num(moneyline_bets["moneyline_market_line"]).round(0)
             moneyline_bets["model_line"] = _num(moneyline_bets["moneyline_model_line"]).round(0)
             moneyline_bets["edge"] = _num(moneyline_bets["moneyline_edge"])
@@ -922,7 +1130,9 @@ class IDESOrchestrator:
                 self._append_pipeline_log(run_id, stages, "no_historical_games")
                 return RunResult(ok=False, status="BLOCKED", stages=stages, outputs=outputs, error="no_historical_games")
 
-            scorecard = run_variant_backtest(hist)
+            artifacts = run_variant_backtest(hist)
+            scorecard = artifacts.scorecard.copy()
+
             backtest = pd.DataFrame(index=scorecard.index)
             backtest["run_id"] = run_id
             backtest["model_version"] = MODEL_VERSION
@@ -946,16 +1156,104 @@ class IDESOrchestrator:
             backtest["mc_probability_calibration_error"] = np.nan
             backtest["avg_spread_edge"] = scorecard.get("avg_spread_edge")
             backtest["avg_total_edge"] = scorecard.get("avg_total_edge")
-            backtest["roi_spread"] = np.nan
-            backtest["roi_total"] = np.nan
-            backtest["notes"] = "ides variant backtest"
+            backtest["roi_spread"] = scorecard.get("roi_spread")
+            backtest["roi_total"] = scorecard.get("roi_total")
+            backtest["notes"] = (
+                "ides variant backtest"
+                + " | ml_win_pct="
+                + scorecard.get("moneyline_win_pct_all", pd.Series(np.nan, index=scorecard.index)).round(4).astype(str)
+                + " | ml_roi="
+                + scorecard.get("roi_moneyline", pd.Series(np.nan, index=scorecard.index)).round(2).astype(str)
+                + " | ml_proxy_rate="
+                + scorecard.get("moneyline_proxy_usage_rate", pd.Series(np.nan, index=scorecard.index)).round(4).astype(str)
+                + " | five_u_annualized="
+                + scorecard.get("five_unit_annualized", pd.Series(np.nan, index=scorecard.index)).round(2).astype(str)
+            )
             backtest["created_at_utc"] = now_utc
             backtest = self._write_contract_csv("backtest_model_summary.csv", backtest, self.paths.backtest_model_summary)
             outputs["backtest_model_summary"] = str(self.paths.backtest_model_summary)
 
+            edge_summary = artifacts.edge_band_summary.copy()
+            edge_summary["run_id"] = run_id
+            edge_summary["model_version"] = MODEL_VERSION
+            edge_summary["variant_name"] = edge_summary.get("variant_id")
+            edge_summary["created_at_utc"] = now_utc
+            edge_summary = self._write_contract_csv("backtest_edge_band_summary.csv", edge_summary, self.paths.backtest_edge_band_summary)
+            outputs["backtest_edge_band_summary"] = str(self.paths.backtest_edge_band_summary)
+
+            ledger = artifacts.bet_ledger.copy()
+            dt = pd.to_datetime(ledger.get("game_datetime_utc"), utc=True, errors="coerce")
+            pst = dt.dt.tz_convert("America/Los_Angeles")
+            ledger["run_id"] = run_id
+            ledger["model_version"] = MODEL_VERSION
+            ledger["variant_name"] = ledger.get("variant_id")
+            ledger["game_start_datetime_utc"] = np.where(dt.notna(), dt.dt.strftime("%Y-%m-%dT%H:%M:%SZ"), np.nan)
+            ledger["game_date_pst"] = np.where(pst.notna(), pst.dt.strftime("%Y-%m-%d"), np.nan)
+            ledger["season"] = np.where(pst.notna(), np.where(pst.dt.month >= 7, pst.dt.year + 1, pst.dt.year), np.nan)
+            ledger["created_at_utc"] = now_utc
+            ledger = self._write_contract_csv("backtest_bet_ledger.csv", ledger, self.paths.backtest_bet_ledger)
+            outputs["backtest_bet_ledger"] = str(self.paths.backtest_bet_ledger)
+
+            kelly = artifacts.kelly_summary.copy()
+            kelly["run_id"] = run_id
+            kelly["model_version"] = MODEL_VERSION
+            kelly["variant_name"] = kelly.get("variant_id")
+            kelly["created_at_utc"] = now_utc
+            kelly = self._write_contract_csv("backtest_kelly_summary.csv", kelly, self.paths.backtest_kelly_summary)
+            outputs["backtest_kelly_summary"] = str(self.paths.backtest_kelly_summary)
+
             schema = validate_backtest_summary(backtest)
             issues = [] if schema.ok else [f"backtest_model_summary missing columns: {schema.missing_columns}"]
-            stages.append(StageRecord("Evaluation Agent", "PASS" if not issues else "FAIL", issues, {"rows": int(len(backtest))}))
+            ml_proxy_count = int((ledger.get("market_type", pd.Series(dtype=str)).eq("moneyline") & ledger.get("odds_source", pd.Series(dtype=str)).eq("spread_proxy")).sum())
+            ml_rows = int(ledger.get("market_type", pd.Series(dtype=str)).eq("moneyline").sum())
+            ml_proxy_rate = (ml_proxy_count / ml_rows) if ml_rows > 0 else 0.0
+            ats_rows = int(ledger.get("market_type", pd.Series(dtype=str)).eq("ats").sum())
+            total_rows = int(ledger.get("market_type", pd.Series(dtype=str)).eq("total").sum())
+            max_five_u_annualized = float(pd.to_numeric(scorecard.get("five_unit_annualized"), errors="coerce").max()) if len(scorecard) else 0.0
+            graded_band_counts = (
+                edge_summary.groupby(["market_type", "edge_band"], observed=False)["bets_graded"].sum().reset_index()
+                if not edge_summary.empty
+                else pd.DataFrame(columns=["market_type", "edge_band", "bets_graded"])
+            )
+            graded_by_band_note = ",".join(
+                [
+                    f"{str(r.market_type)}:{str(r.edge_band)}="
+                    f"{int(0 if pd.isna(pd.to_numeric(r.bets_graded, errors='coerce')) else pd.to_numeric(r.bets_graded, errors='coerce'))}"
+                    for r in graded_band_counts.itertuples(index=False)
+                ]
+            )
+            five_by_variant_note = ",".join(
+                [
+                    f"{str(r.variant_id)}={float(pd.to_numeric(r.five_unit_annualized, errors='coerce')):.2f}"
+                    for r in scorecard[["variant_id", "five_unit_annualized"]].itertuples(index=False)
+                ]
+            ) if {"variant_id", "five_unit_annualized"}.issubset(set(scorecard.columns)) else ""
+            eval_notes = [
+                f"moneyline_proxy_usage_count={ml_proxy_count}",
+                f"moneyline_proxy_usage_rate={ml_proxy_rate:.4f}",
+                f"graded_samples=ats:{ats_rows},moneyline:{ml_rows},totals:{total_rows}",
+                f"graded_samples_by_band={graded_by_band_note}",
+                f"five_unit_annualized_max={max_five_u_annualized:.2f}",
+                f"five_unit_annualized_by_variant={five_by_variant_note}",
+            ]
+            stages.append(
+                StageRecord(
+                    "Evaluation Agent",
+                    "PASS" if not issues else "FAIL",
+                    issues + eval_notes,
+                    {
+                        "rows": int(len(backtest)),
+                        "edge_band_rows": int(len(edge_summary)),
+                        "ledger_rows": int(len(ledger)),
+                        "kelly_rows": int(len(kelly)),
+                        "moneyline_proxy_usage_count": ml_proxy_count,
+                        "moneyline_proxy_usage_rate": ml_proxy_rate,
+                        "ats_rows": ats_rows,
+                        "moneyline_rows": ml_rows,
+                        "total_rows": total_rows,
+                    },
+                )
+            )
 
             status = "PASS" if not issues else "FAIL"
             manifest = {

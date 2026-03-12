@@ -1,0 +1,54 @@
+name: layer-performance-monitor
+
+on:
+  workflow_run:
+    workflows: ["results-writer"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      auto_demote:
+        description: "Auto-apply demotion flags"
+        required: false
+        default: "true"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  monitor-layers:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install pandas numpy scipy
+
+      - name: Run performance monitor
+        run: |
+          python layer_performance_monitor.py \
+            --predictions-path data/reports/game_predictions_master.csv \
+            --registry-path data/layer_registry.csv \
+            --signals-path data/plumbing/situational_layer_signals.csv \
+            --auto-demote "${{ github.event.inputs.auto_demote || 'true' }}" \
+            --report-dir data/reports/
+
+      - name: Commit registry and report updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/layer_registry.csv
+          git add data/reports/
+          git add data/layer_demotion_candidates_*.csv 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "chore: layer performance monitor update [$(date -u +%Y-%m-%dT%H:%M:%SZ)]"
+          git push

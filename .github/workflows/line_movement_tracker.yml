@@ -1,0 +1,69 @@
+name: line-movement-tracker
+
+on:
+  workflow_run:
+    workflows: ["market-availability-checker"]
+    types: [completed]
+  schedule:
+    # Post-game CLV pass after overnight closes/results refresh.
+    - cron: "0 11 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "pre_game or post_game"
+        required: true
+        default: "pre_game"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  track-lines:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install pandas numpy scipy
+
+      - name: Resolve mode
+        id: mode
+        shell: bash
+        run: |
+          MODE="${{ github.event.inputs.mode }}"
+          if [[ -z "$MODE" ]]; then
+            if [[ "${{ github.event_name }}" == "schedule" ]]; then
+              MODE="post_game"
+            else
+              MODE="pre_game"
+            fi
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+
+      - name: Run line movement tracker
+        run: |
+          python line_movement_tracker.py \
+            --predictions-path data/reports/game_predictions_master.csv \
+            --bet-recs-path data/actionable/bet_recommendations.csv \
+            --data-dir data/ \
+            --mode "${{ steps.mode.outputs.mode }}"
+
+      - name: Commit outputs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/plumbing/line_movement.csv
+          git add data/reports/game_predictions_master.csv
+          git diff --staged --quiet || git commit -m "chore: line movement update [${{ steps.mode.outputs.mode }}] [$(date -u +%Y-%m-%dT%H:%M:%SZ)]"
+          git push

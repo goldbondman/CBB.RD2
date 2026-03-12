@@ -1,0 +1,56 @@
+name: market-availability-checker
+
+on:
+  workflow_run:
+    workflows: ["IDES OF MARCH Predictions"]
+    types: [completed]
+  schedule:
+    # Re-check lines as markets open through the PT day.
+    - cron: "0 16,18,20,22,0,2 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run without writing"
+        required: false
+        default: "false"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  check-markets:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install pandas numpy scipy
+
+      - name: Check market availability
+        run: |
+          python market_availability_checker.py \
+            --predictions-path data/reports/game_predictions_master.csv \
+            --bet-recs-path data/actionable/bet_recommendations.csv \
+            --line-movement-path data/plumbing/line_movement.csv \
+            --data-dir data/ \
+            --dry-run "${{ github.event.inputs.dry_run || 'false' }}"
+
+      - name: Commit suppression updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/actionable/bet_recommendations.csv
+          git add data/reports/game_predictions_master.csv
+          git diff --staged --quiet || git commit -m "chore: market availability check [$(date -u +%Y-%m-%dT%H:%M:%SZ)]"
+          git push
