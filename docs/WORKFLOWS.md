@@ -28,3 +28,26 @@
   - `data/` tree output (depth 2)
   - Key CSV row counts
   - Integrity report outputs
+
+## INFRA-rolling-performance-dashboard producer
+
+- Producer workflow: `.github/workflows/rolling_performance_dashboard.yml`
+- Trigger chain:
+  - `workflow_run` after successful `results-writer`
+  - weekly schedule
+  - manual dispatch
+- Artifact name: `INFRA-rolling-performance-dashboard`
+- Core outputs:
+  - `data/performance_tracker.csv`
+  - `data/edge_vs_actual_margin.csv`
+  - `data/clv_tracker.csv`
+  - `data/weekly_performance_summary_*.txt`
+
+## Rolling tracker runtime notes
+
+- Script entrypoint: `scripts/rolling_performance_dashboard.py`
+- Required source input:
+  - `data/reports/game_predictions_master.csv`
+- Optional enrichment:
+  - `data/plumbing/line_movement.csv` for CLV metrics
+- If graded outcomes or CLV fields are unavailable, output files are still written with explicit provisional/blocked rows instead of failing silently.

@@ -1,0 +1,3 @@
+move_bucket,move_against_model,n,ats_hit_rate,mean_clv,mean_line_move
+0-0.25,False,226,0.46017699115044247,-7.320967920353982,0.0
+0-0.25,True,177,0.576271186440678,5.683848870056497,0.0

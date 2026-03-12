@@ -1,0 +1,122 @@
+﻿name: Rolling Performance Dashboard
+
+on:
+  workflow_run:
+    workflows: ["results-writer"]
+    types: [completed]
+  schedule:
+    # Weekly Monday run near midnight Pacific (08:20 UTC)
+    - cron: "20 8 * * 1"
+  workflow_dispatch:
+    inputs:
+      predictions_path:
+        description: "Predictions master CSV path"
+        required: false
+        default: "data/reports/game_predictions_master.csv"
+      run_layer_monitor:
+        description: "Run layer performance monitor hook"
+        required: false
+        default: "true"
+        type: choice
+        options: ["true", "false"]
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: cbb-data-pipeline
+  cancel-in-progress: false
+
+jobs:
+  tracker:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TZ: UTC
+      PYTHONHASHSEED: "0"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pip install pandas numpy scipy
+
+      - name: Run rolling performance dashboard
+        env:
+          INPUT_PRED_PATH: ${{ github.event.inputs.predictions_path || 'data/reports/game_predictions_master.csv' }}
+          INPUT_RUN_LAYER_MONITOR: ${{ github.event.inputs.run_layer_monitor || 'true' }}
+        run: |
+          set -euo pipefail
+          python scripts/rolling_performance_dashboard.py \
+            --predictions-path "$INPUT_PRED_PATH" \
+            --output-dir data \
+            --run-layer-monitor "$INPUT_RUN_LAYER_MONITOR"
+
+      - name: Validate dashboard outputs
+        run: |
+          set -euo pipefail
+          test -s data/performance_tracker.csv
+          test -s data/edge_vs_actual_margin.csv
+          test -s data/clv_tracker.csv
+          ls data/weekly_performance_summary_*.txt >/dev/null
+
+      - name: Upload dashboard artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-rolling-performance-dashboard
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            data/performance_tracker.csv
+            data/edge_vs_actual_margin.csv
+            data/clv_tracker.csv
+            data/weekly_performance_summary_*.txt
+
+      - name: Commit and push tracker updates
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add data/performance_tracker.csv data/edge_vs_actual_margin.csv data/clv_tracker.csv data/weekly_performance_summary_*.txt || true
+          if git diff --staged --quiet; then
+            echo "[SKIP] No dashboard changes to commit"
+            exit 0
+          fi
+
+          git commit -m "analytics: update rolling performance dashboard [$(date -u +%Y-%m-%dT%H:%M:%SZ)]"
+
+          for i in 1 2 3; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              echo "[OK] Push succeeded on attempt $i"
+              exit 0
+            fi
+            echo "[WARN] Push failed on attempt $i"
+            if [[ -d .git/rebase-merge || -d .git/rebase-apply ]]; then
+              git rebase --abort || true
+            fi
+            sleep $((i * 2))
+          done
+
+          echo "[ERROR] Push failed after retries"
+          exit 1

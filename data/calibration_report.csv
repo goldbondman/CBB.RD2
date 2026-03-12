@@ -1,0 +1,5 @@
+metric,value
+rows_used,403.0
+bucket_count,2.0
+brier_score,0.2947766045673077
+weighted_abs_calibration_gap,0.21804559553349884

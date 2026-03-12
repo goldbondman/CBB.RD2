@@ -1,0 +1,2 @@
+status,reason,required_inputs
+BLOCKED,No seed-linked calibrated prediction probability artifact found.,"seed_team, seed_opponent, model_probability, outcome"
