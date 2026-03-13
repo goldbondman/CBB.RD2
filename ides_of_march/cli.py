@@ -65,6 +65,12 @@ def build_parser() -> argparse.ArgumentParser:
     backtest.add_argument("--as-of", default="", help="UTC timestamp override")
     backtest.add_argument("--start-date", default="", help="Optional UTC lower bound")
     backtest.add_argument("--end-date", default="", help="Optional UTC upper bound")
+    backtest.add_argument(
+        "--require-wagertalk",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Require WagerTalk historical odds to be present and matched in training rows (default: True).",
+    )
 
     audit = sub.add_parser("audit", help="Run data-integrity audit for IDES pipeline")
     audit.add_argument("--json", action="store_true", help="Emit structured JSON output")
@@ -91,7 +97,12 @@ def cli_main(argv: list[str] | None = None) -> int:
     if args.cmd == "backtest":
         start = args.start_date.strip() or None
         end = args.end_date.strip() or None
-        result = orch.backtest(as_of=as_of, start_date=start, end_date=end)
+        result = orch.backtest(
+            as_of=as_of,
+            start_date=start,
+            end_date=end,
+            require_wagertalk=bool(args.require_wagertalk),
+        )
         _emit(result, args.json)
         return 0 if result.ok else 1
 

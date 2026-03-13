@@ -58,11 +58,13 @@ class OutputPaths:
     watchlist_games: Path
     no_bet_explanations: Path
     daily_card_summary: Path
+    recent_predictions_results: Path
     agreement_analysis_results: Path
     backtest_model_summary: Path
     backtest_edge_band_summary: Path
     backtest_bet_ledger: Path
     backtest_kelly_summary: Path
+    backtest_calibration_policy: Path
     csv_contract_registry: Path
     schema_rules: Path
     pipeline_run_log: Path
@@ -92,11 +94,13 @@ def output_paths(
         watchlist_games=actionable_dir / "watchlist_games.csv",
         no_bet_explanations=actionable_dir / "no_bet_explanations.csv",
         daily_card_summary=actionable_dir / "daily_card_summary.csv",
+        recent_predictions_results=reports_dir / "recent_predictions_results.csv",
         agreement_analysis_results=reports_dir / "agreement_analysis_results.csv",
         backtest_model_summary=reports_dir / "backtest_model_summary.csv",
         backtest_edge_band_summary=reports_dir / "backtest_edge_band_summary.csv",
         backtest_bet_ledger=reports_dir / "backtest_bet_ledger.csv",
         backtest_kelly_summary=reports_dir / "backtest_kelly_summary.csv",
+        backtest_calibration_policy=reports_dir / "backtest_calibration_policy.json",
         csv_contract_registry=contracts_dir / "csv_contract_registry.csv",
         schema_rules=contracts_dir / "schema_rules.json",
         pipeline_run_log=logs_dir / "pipeline_run_log.csv",

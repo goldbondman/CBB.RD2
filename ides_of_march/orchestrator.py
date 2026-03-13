@@ -7,6 +7,11 @@ from typing import Any, Callable
 import numpy as np
 import pandas as pd
 
+from .calibration import (
+    build_backtest_calibration_policy,
+    load_backtest_calibration_policy,
+    resolve_spread_thresholds,
+)
 from .config import (
     DATA_DIR,
     ENABLE_UPSET_LAYER,
@@ -26,7 +31,7 @@ from .layer5_agreement import apply_agreement_layer, summarize_agreement_buckets
 from .layer6_decision import apply_decision_layer, fit_direct_win_model
 from .safety import run_data_integrity_audit, run_model_safety_audit
 from .schemas import validate_agreement, validate_backtest_summary, validate_bet_recs, validate_predictions
-from .utils import ensure_dir, pretty_exception, utc_now_iso, write_json
+from .utils import ensure_dir, home_spread_to_margin, pretty_exception, utc_now_iso, write_json
 
 
 MODEL_VERSION = "ides_of_march_v1"
@@ -241,6 +246,133 @@ def _time_fields(frame: pd.DataFrame, source_col: str = "game_datetime_utc") -> 
     return out
 
 
+def _build_recent_predictions_results_frame(
+    scored_history: pd.DataFrame,
+    *,
+    as_of: pd.Timestamp,
+    run_id: str,
+    now_utc: str,
+) -> pd.DataFrame:
+    if scored_history.empty:
+        return pd.DataFrame()
+
+    hist = scored_history.copy()
+    game_dt_utc = pd.to_datetime(hist.get("game_datetime_utc"), utc=True, errors="coerce")
+    game_dt_pst = game_dt_utc.dt.tz_convert("America/Los_Angeles")
+    game_day_pst = game_dt_pst.dt.normalize()
+    as_of_pst = as_of.tz_convert("America/Los_Angeles")
+    window_start = as_of_pst.normalize() - pd.Timedelta(days=2)
+    window_end = as_of_pst.normalize() + pd.Timedelta(days=2)
+
+    state_text = hist.get("state", pd.Series("", index=hist.index)).fillna("").astype(str).str.lower()
+    status_text = hist.get("status_desc", pd.Series("", index=hist.index)).fillna("").astype(str).str.lower()
+    completed_flag = (
+        _bool(hist.get("completed"))
+        | state_text.isin({"post", "final", "completed"})
+        | status_text.str.contains("final", na=False)
+        | status_text.str.contains("complete", na=False)
+    )
+    completed_flag = completed_flag & _num(hist.get("actual_margin")).notna() & _num(hist.get("actual_total")).notna()
+    in_window = game_day_pst.between(window_start, window_end, inclusive="both")
+    mask = in_window & completed_flag & game_dt_utc.notna()
+    if not bool(mask.any()):
+        return pd.DataFrame()
+
+    frame = hist.loc[mask].copy()
+    tf = _time_fields(frame)
+
+    market_spread = _num(frame.get("market_spread"))
+    model_spread = _num(frame.get("projected_spread"))
+    spread_edge = _num(frame.get("edge_home"))
+    market_total = _num(frame.get("market_total"))
+    model_total = _num(frame.get("projected_total_ctx"))
+    win_prob_home = _num(frame.get("win_prob_home")).clip(0.0, 1.0)
+    cover_prob_home = _num(frame.get("ats_cover_prob_home")).clip(0.0, 1.0)
+    over_prob = (1.0 / (1.0 + np.exp(-(model_total - market_total) / 6.0))).clip(0.01, 0.99)
+
+    prediction_winner = np.where(
+        model_spread < 0,
+        frame.get("home_team"),
+        np.where(model_spread > 0, frame.get("away_team"), "pickem"),
+    )
+    predicted_spread_pick = np.where(cover_prob_home >= 0.5, frame.get("home_team"), frame.get("away_team"))
+    predicted_total_pick = np.where(model_total >= market_total, "over", "under")
+
+    actual_margin = _num(frame.get("actual_margin"))
+    actual_total = _num(frame.get("actual_total"))
+    home_won = _num(frame.get("home_won"))
+    actual_winner = np.where(home_won > 0.5, frame.get("home_team"), frame.get("away_team"))
+    actual_home_covered = actual_margin > home_spread_to_margin(market_spread)
+
+    total_result = actual_total - market_total
+    total_pick_correct = np.where(
+        market_total.notna() & actual_total.notna() & (total_result != 0.0),
+        np.where(predicted_total_pick == "over", total_result > 0.0, total_result < 0.0),
+        np.nan,
+    )
+    spread_pick_correct = np.where(
+        market_spread.notna() & actual_margin.notna(),
+        np.where(predicted_spread_pick == frame.get("home_team"), actual_home_covered, ~actual_home_covered),
+        np.nan,
+    )
+    winner_pick_correct = np.where(home_won.notna(), prediction_winner == actual_winner, np.nan)
+
+    home_score = _num(frame.get("home_score"))
+    away_score = _num(frame.get("away_score"))
+    derived_home = (actual_total + actual_margin) / 2.0
+    derived_away = (actual_total - actual_margin) / 2.0
+    home_score = home_score.where(home_score.notna(), derived_home)
+    away_score = away_score.where(away_score.notna(), derived_away)
+
+    game_status = frame.get("game_status", frame.get("status_desc", frame.get("state", pd.Series("completed", index=frame.index))))
+    game_status = pd.Series(game_status, index=frame.index).fillna("completed")
+
+    out = pd.DataFrame(index=frame.index)
+    out["run_id"] = run_id
+    out["model_version"] = MODEL_VERSION
+    out["as_of_utc"] = as_of.isoformat()
+    out["window_start_pst"] = window_start.strftime("%Y-%m-%d")
+    out["window_end_pst"] = window_end.strftime("%Y-%m-%d")
+    out["game_id"] = frame.get("game_id")
+    out["event_id"] = frame.get("event_id", frame.get("game_id"))
+    out["season"] = tf.get("season")
+    out["game_date_pst"] = tf.get("game_date_pst")
+    out["game_start_time_pst"] = tf.get("game_start_time_pst")
+    out["game_start_datetime_pst"] = tf.get("game_start_datetime_pst")
+    out["game_start_datetime_utc"] = tf.get("game_start_datetime_utc")
+    out["team_a"] = frame.get("home_team")
+    out["team_b"] = frame.get("away_team")
+    out["game_status"] = game_status
+    out["line_source_used"] = frame.get("line_source_used")
+    out["historical_odds_source"] = frame.get("historical_odds_source")
+    out["market_spread_team_a"] = market_spread
+    out["model_spread_team_a"] = model_spread
+    out["spread_edge_team_a"] = spread_edge
+    out["market_total"] = market_total
+    out["model_total"] = model_total
+    out["total_edge_over"] = model_total - market_total
+    out["team_a_win_probability"] = win_prob_home
+    out["team_a_cover_probability"] = cover_prob_home
+    out["over_probability"] = over_prob
+    out["prediction_winner"] = prediction_winner
+    out["predicted_spread_pick"] = predicted_spread_pick
+    out["predicted_total_pick"] = predicted_total_pick
+    out["team_a_score_actual"] = home_score.round(0)
+    out["team_b_score_actual"] = away_score.round(0)
+    out["actual_winner"] = actual_winner
+    out["actual_margin"] = actual_margin
+    out["actual_total"] = actual_total
+    out["actual_home_covered"] = actual_home_covered.astype(object)
+    out["winner_pick_correct"] = pd.Series(winner_pick_correct, index=frame.index).astype(object)
+    out["spread_pick_correct"] = pd.Series(spread_pick_correct, index=frame.index).astype(object)
+    out["total_pick_correct"] = pd.Series(total_pick_correct, index=frame.index).astype(object)
+    out["completed_flag"] = True
+    out["created_at_utc"] = now_utc
+    out["updated_at_utc"] = now_utc
+
+    return out.sort_values(["game_start_datetime_utc", "game_id"], ascending=[False, False], kind="mergesort")
+
+
 class IDESOrchestrator:
     def __init__(self, *, data_dir: Path = DATA_DIR) -> None:
         self.data_dir = data_dir
@@ -263,6 +395,7 @@ class IDESOrchestrator:
             "watchlist_games.csv": self.paths.watchlist_games,
             "no_bet_explanations.csv": self.paths.no_bet_explanations,
             "daily_card_summary.csv": self.paths.daily_card_summary,
+            "recent_predictions_results.csv": self.paths.recent_predictions_results,
             "agreement_analysis_results.csv": self.paths.agreement_analysis_results,
             "backtest_model_summary.csv": self.paths.backtest_model_summary,
             "backtest_edge_band_summary.csv": self.paths.backtest_edge_band_summary,
@@ -346,6 +479,14 @@ class IDESOrchestrator:
             out = update
         ensure_dir(self.paths.pipeline_run_log)
         out.to_csv(self.paths.pipeline_run_log, index=False)
+
+    @staticmethod
+    def _default_spread_thresholds() -> dict[str, float]:
+        return {
+            "edge_min": float(SPREAD_BET_EDGE_MIN),
+            "confidence_min": float(SPREAD_BET_CONFIDENCE_MIN),
+            "ats_prob_edge_min": float(SPREAD_BET_ATS_PROB_EDGE_MIN),
+        }
 
     def audit(self, *, as_of: pd.Timestamp, hours_ahead: int = 48, hours_back: int = 1) -> RunResult:
         stages: list[StageRecord] = []
@@ -472,6 +613,17 @@ class IDESOrchestrator:
                 agreement["notes"] = "historical agreement summary"
                 agreement["created_at_utc"] = now_utc
                 agreement = self._write_contract_csv("agreement_analysis_results.csv", agreement, self.paths.agreement_analysis_results)
+                recent_results = _build_recent_predictions_results_frame(
+                    hist_scored,
+                    as_of=as_of,
+                    run_id=run_id,
+                    now_utc=now_utc,
+                )
+                recent_results = self._write_contract_csv(
+                    "recent_predictions_results.csv",
+                    recent_results,
+                    self.paths.recent_predictions_results,
+                )
 
                 outputs = {
                     "games_schedule_master": str(self.paths.games_schedule_master),
@@ -488,6 +640,7 @@ class IDESOrchestrator:
                     "watchlist_games": str(self.paths.watchlist_games),
                     "no_bet_explanations": str(self.paths.no_bet_explanations),
                     "daily_card_summary": str(self.paths.daily_card_summary),
+                    "recent_predictions_results": str(self.paths.recent_predictions_results),
                     "agreement_analysis_results": str(self.paths.agreement_analysis_results),
                 }
 
@@ -896,15 +1049,29 @@ class IDESOrchestrator:
             preds["spread_model_pick"] = preds["spread_pick"]
             preds["total_model_pick"] = preds["total_pick"]
 
+            default_spread_thresholds = self._default_spread_thresholds()
+            spread_policy = load_backtest_calibration_policy(self.paths.backtest_calibration_policy)
+            spread_thresholds = resolve_spread_thresholds(
+                preds,
+                policy=spread_policy,
+                mc_mode=mc_mode,
+                default_thresholds=default_spread_thresholds,
+            )
+            preds["spread_edge_threshold_used"] = _num(spread_thresholds.get("edge_min"))
+            preds["spread_confidence_threshold_used"] = _num(spread_thresholds.get("confidence_min"))
+            preds["spread_prob_edge_threshold_used"] = _num(spread_thresholds.get("ats_prob_edge_min"))
+            preds["spread_calibration_scope"] = spread_thresholds.get("policy_scope", pd.Series("defaults", index=preds.index)).astype(str)
+            preds["spread_calibration_variant"] = spread_thresholds.get("policy_variant", pd.Series("", index=preds.index)).astype(str)
+
             spread_prob_for_pick = np.where(
                 preds["model_pick"].eq(preds["team_a"]),
                 _num(preds["team_a_cover_probability"]),
                 _num(preds["team_b_cover_probability"]),
             )
             spread_line_ok = _num(preds["market_spread"]).notna() & _num(preds["model_spread_team_a"]).notna()
-            spread_edge_ok = _num(preds["spread_edge_for_pick"]) >= SPREAD_BET_EDGE_MIN
-            spread_conf_ok = _num(preds["spread_confidence"]) >= SPREAD_BET_CONFIDENCE_MIN
-            spread_prob_ok = _num(pd.Series(spread_prob_for_pick, index=preds.index)).sub(0.5).abs() >= SPREAD_BET_ATS_PROB_EDGE_MIN
+            spread_edge_ok = _num(preds["spread_edge_for_pick"]) >= _num(preds["spread_edge_threshold_used"])
+            spread_conf_ok = _num(preds["spread_confidence"]) >= _num(preds["spread_confidence_threshold_used"])
+            spread_prob_ok = _num(pd.Series(spread_prob_for_pick, index=preds.index)).sub(0.5).abs() >= _num(preds["spread_prob_edge_threshold_used"])
             spread_recommend_mask = spread_line_ok & spread_edge_ok & spread_conf_ok & spread_prob_ok
             spread_mc_blocked = pd.Series(False, index=preds.index)
             if mc_mode == "confidence_filter" and "mc_filter_pass" in preds.columns:
@@ -927,11 +1094,46 @@ class IDESOrchestrator:
                     "recommended:edge_confidence_probability",
                     "pass:missing_market_or_model_spread",
                     "pass:mc_filter_blocked",
-                    f"pass:edge_lt_{SPREAD_BET_EDGE_MIN:.1f}",
-                    f"pass:confidence_lt_{SPREAD_BET_CONFIDENCE_MIN:.1f}",
-                    f"pass:ats_prob_edge_lt_{SPREAD_BET_ATS_PROB_EDGE_MIN:.2f}",
+                    "pass:edge_lt_calibrated_min",
+                    "pass:confidence_lt_calibrated_min",
+                    "pass:ats_prob_edge_lt_calibrated_min",
                 ],
                 default="pass:thresholds_not_met",
+            )
+
+            scope_counts = preds["spread_calibration_scope"].value_counts(dropna=False).to_dict()
+            scope_note = ",".join([f"{str(k)}={int(v)}" for k, v in scope_counts.items()]) if scope_counts else "none"
+            active_variant = preds["spread_calibration_variant"].replace("", np.nan).dropna().astype(str).mode()
+            policy_branch = (spread_policy or {}).get("spread_thresholds_by_mc_mode", {}).get(mc_mode, {}) if isinstance(spread_policy, dict) else {}
+            policy_status = "PASS" if spread_policy and isinstance(policy_branch, dict) and policy_branch else "WARN"
+            policy_notes = [
+                f"policy_file={self.paths.backtest_calibration_policy}",
+                f"policy_loaded={int(spread_policy is not None)}",
+                f"policy_generated_at_utc={'' if not spread_policy else spread_policy.get('generated_at_utc', '')}",
+                f"policy_mc_mode={mc_mode}",
+                f"policy_variant={(active_variant.iloc[0] if len(active_variant) else '')}",
+                f"threshold_scope_counts={scope_note}",
+                f"avg_edge_min_used={float(_num(preds['spread_edge_threshold_used']).mean()):.2f}",
+                f"avg_confidence_min_used={float(_num(preds['spread_confidence_threshold_used']).mean()):.2f}",
+                f"avg_prob_edge_min_used={float(_num(preds['spread_prob_edge_threshold_used']).mean()):.4f}",
+            ]
+            if spread_policy is None:
+                policy_notes.append("Spread calibration policy missing; using static defaults.")
+            elif not policy_branch:
+                policy_notes.append("Spread calibration policy did not include current mc_mode; using static defaults.")
+            stages.append(
+                StageRecord(
+                    "Backtest Calibration",
+                    policy_status,
+                    policy_notes,
+                    {
+                        "rows": int(len(preds)),
+                        "policy_loaded": int(spread_policy is not None),
+                        "avg_edge_min_used": float(_num(preds["spread_edge_threshold_used"]).mean()),
+                        "avg_confidence_min_used": float(_num(preds["spread_confidence_threshold_used"]).mean()),
+                        "avg_prob_edge_min_used": float(_num(preds["spread_prob_edge_threshold_used"]).mean()),
+                    },
+                )
             )
 
             total_pick_under = preds["total_pick"].astype(str).str.lower().eq("under")
@@ -1208,6 +1410,17 @@ class IDESOrchestrator:
             agreement["notes"] = "historical agreement summary"
             agreement["created_at_utc"] = now_utc
             agreement = self._write_contract_csv("agreement_analysis_results.csv", agreement, self.paths.agreement_analysis_results)
+            recent_results = _build_recent_predictions_results_frame(
+                hist_scored,
+                as_of=as_of,
+                run_id=run_id,
+                now_utc=now_utc,
+            )
+            recent_results = self._write_contract_csv(
+                "recent_predictions_results.csv",
+                recent_results,
+                self.paths.recent_predictions_results,
+            )
 
             outputs = {
                 "games_schedule_master": str(self.paths.games_schedule_master),
@@ -1224,8 +1437,11 @@ class IDESOrchestrator:
                 "watchlist_games": str(self.paths.watchlist_games),
                 "no_bet_explanations": str(self.paths.no_bet_explanations),
                 "daily_card_summary": str(self.paths.daily_card_summary),
+                "recent_predictions_results": str(self.paths.recent_predictions_results),
                 "agreement_analysis_results": str(self.paths.agreement_analysis_results),
             }
+            if self.paths.backtest_calibration_policy.exists():
+                outputs["backtest_calibration_policy"] = str(self.paths.backtest_calibration_policy)
 
             pred_schema = validate_predictions(preds)
             bet_schema = validate_bet_recs(bets)
@@ -1271,6 +1487,7 @@ class IDESOrchestrator:
         as_of: pd.Timestamp,
         start_date: str | None = None,
         end_date: str | None = None,
+        require_wagertalk: bool = True,
     ) -> RunResult:
         stages: list[StageRecord] = []
         outputs: dict[str, str] = {}
@@ -1288,6 +1505,54 @@ class IDESOrchestrator:
             if hist.empty:
                 self._append_pipeline_log(run_id, stages, "no_historical_games")
                 return RunResult(ok=False, status="BLOCKED", stages=stages, outputs=outputs, error="no_historical_games")
+
+            wagertalk_rows = int(ds.audit.get("inputs", {}).get("wagertalk_historical_odds_rows", 0))
+            historical_odds_source = hist.get("historical_odds_source", pd.Series(np.nan, index=hist.index))
+            if not isinstance(historical_odds_source, pd.Series):
+                historical_odds_source = pd.Series(historical_odds_source, index=hist.index)
+            wagertalk_mask = historical_odds_source.fillna("").astype(str).eq("wagertalk_historical_odds")
+            wagertalk_matches = int(wagertalk_mask.sum())
+            wagertalk_share = float(wagertalk_matches / len(hist)) if len(hist) else 0.0
+            spread_coverage = float(_num(hist.get("market_spread")).notna().mean()) if len(hist) else 0.0
+            totals_coverage = float(_num(hist.get("market_total")).notna().mean()) if len(hist) else 0.0
+
+            wagertalk_notes = [
+                f"wagertalk_rows_available={wagertalk_rows}",
+                f"wagertalk_matches_in_training={wagertalk_matches}",
+                f"wagertalk_match_share={wagertalk_share:.4f}",
+                f"historical_spread_coverage={spread_coverage:.4f}",
+                f"historical_total_coverage={totals_coverage:.4f}",
+                f"require_wagertalk={int(bool(require_wagertalk))}",
+            ]
+            wagertalk_status = "PASS"
+            wagertalk_error: str | None = None
+            if require_wagertalk and wagertalk_rows <= 0:
+                wagertalk_status = "BLOCKED"
+                wagertalk_error = "wagertalk_historical_odds_missing"
+                wagertalk_notes.append("WagerTalk gate failed: data/wagertalk_historical_odds.csv is missing or empty.")
+            elif require_wagertalk and wagertalk_matches <= 0:
+                wagertalk_status = "BLOCKED"
+                wagertalk_error = "wagertalk_historical_matches_zero"
+                wagertalk_notes.append("WagerTalk gate failed: no WagerTalk historical odds rows matched training games.")
+            stages.append(
+                StageRecord(
+                    "Market Lines Steward",
+                    wagertalk_status,
+                    wagertalk_notes,
+                    {
+                        "rows": int(len(hist)),
+                        "wagertalk_rows_available": wagertalk_rows,
+                        "wagertalk_matches": wagertalk_matches,
+                        "wagertalk_match_share": wagertalk_share,
+                        "historical_spread_coverage": spread_coverage,
+                        "historical_total_coverage": totals_coverage,
+                        "require_wagertalk": int(bool(require_wagertalk)),
+                    },
+                )
+            )
+            if wagertalk_error is not None:
+                self._append_pipeline_log(run_id, stages, wagertalk_error)
+                return RunResult(ok=False, status="BLOCKED", stages=stages, outputs=outputs, error=wagertalk_error)
 
             artifacts = run_variant_backtest(hist)
             scorecard = artifacts.scorecard.copy()
@@ -1327,6 +1592,8 @@ class IDESOrchestrator:
                 + scorecard.get("moneyline_proxy_usage_rate", pd.Series(np.nan, index=scorecard.index)).round(4).astype(str)
                 + " | five_u_annualized="
                 + scorecard.get("five_unit_annualized", pd.Series(np.nan, index=scorecard.index)).round(2).astype(str)
+                + f" | wt_matches={wagertalk_matches}"
+                + f" | wt_share={wagertalk_share:.4f}"
             )
             backtest["created_at_utc"] = now_utc
             backtest = self._write_contract_csv("backtest_model_summary.csv", backtest, self.paths.backtest_model_summary)
@@ -1361,6 +1628,15 @@ class IDESOrchestrator:
             kelly = self._write_contract_csv("backtest_kelly_summary.csv", kelly, self.paths.backtest_kelly_summary)
             outputs["backtest_kelly_summary"] = str(self.paths.backtest_kelly_summary)
 
+            calibration_policy = build_backtest_calibration_policy(
+                scorecard,
+                artifacts.bet_ledger,
+                generated_at_utc=now_utc,
+                default_thresholds=self._default_spread_thresholds(),
+            )
+            write_json(self.paths.backtest_calibration_policy, calibration_policy)
+            outputs["backtest_calibration_policy"] = str(self.paths.backtest_calibration_policy)
+
             schema = validate_backtest_summary(backtest)
             issues = [] if schema.ok else [f"backtest_model_summary missing columns: {schema.missing_columns}"]
             ml_proxy_count = int((ledger.get("market_type", pd.Series(dtype=str)).eq("moneyline") & ledger.get("odds_source", pd.Series(dtype=str)).eq("spread_proxy")).sum())
@@ -1394,6 +1670,13 @@ class IDESOrchestrator:
                 f"graded_samples_by_band={graded_by_band_note}",
                 f"five_unit_annualized_max={max_five_u_annualized:.2f}",
                 f"five_unit_annualized_by_variant={five_by_variant_note}",
+                f"wagertalk_rows_available={wagertalk_rows}",
+                f"wagertalk_matches_in_training={wagertalk_matches}",
+                f"wagertalk_match_share={wagertalk_share:.4f}",
+                f"historical_spread_coverage={spread_coverage:.4f}",
+                f"historical_total_coverage={totals_coverage:.4f}",
+                f"calibration_policy_path={self.paths.backtest_calibration_policy}",
+                "calibration_policy_mode=spread_thresholds",
             ]
             stages.append(
                 StageRecord(
