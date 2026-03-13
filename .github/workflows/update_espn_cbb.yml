@@ -398,19 +398,36 @@ jobs:
           fi
 
           git commit -m "data: update ESPN CBB artifacts [skip ci]"
+
+          STASH_CREATED=0
+          if ! git diff --quiet || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
+            echo "[INFO] Stashing unstaged/untracked changes before rebase"
+            git stash push --include-untracked -m "update_espn_pre_rebase_${GITHUB_RUN_ID}" >/dev/null 2>&1 || true
+            STASH_CREATED=1
+          fi
+
           for i in 1 2 3; do
             if ! git pull --rebase origin main; then
               echo "[ERROR] rebase conflict while syncing main on attempt ${i}"
               git rebase --abort || true
+              if (( STASH_CREATED == 1 )); then
+                git stash pop || true
+              fi
               exit 1
             fi
             if git push origin HEAD:main; then
               echo "[OK] push succeeded on attempt ${i}"
+              if (( STASH_CREATED == 1 )); then
+                git stash pop || true
+              fi
               exit 0
             fi
             echo "[WARN] push failed on attempt ${i}; retrying"
             sleep $((i * 2))
           done
+          if (( STASH_CREATED == 1 )); then
+            git stash pop || true
+          fi
           echo "[ERROR] failed to push after retries"
           exit 1
 
@@ -583,18 +600,35 @@ jobs:
           fi
 
           git commit -m "data: update ESPN CBB artifacts + rankings [skip ci]"
+
+          STASH_CREATED=0
+          if ! git diff --quiet || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
+            echo "[INFO] Stashing unstaged/untracked changes before rebase"
+            git stash push --include-untracked -m "update_espn_rankings_pre_rebase_${GITHUB_RUN_ID}" >/dev/null 2>&1 || true
+            STASH_CREATED=1
+          fi
+
           for i in 1 2 3; do
             if ! git pull --rebase origin main; then
               echo "[ERROR] rebase conflict while syncing main on attempt ${i}"
               git rebase --abort || true
+              if (( STASH_CREATED == 1 )); then
+                git stash pop || true
+              fi
               exit 1
             fi
             if git push origin HEAD:main; then
               echo "[OK] push succeeded on attempt ${i}"
+              if (( STASH_CREATED == 1 )); then
+                git stash pop || true
+              fi
               exit 0
             fi
             echo "[WARN] push failed on attempt ${i}; retrying"
             sleep $((i * 2))
           done
+          if (( STASH_CREATED == 1 )); then
+            git stash pop || true
+          fi
           echo "[ERROR] failed to push after retries"
           exit 1
