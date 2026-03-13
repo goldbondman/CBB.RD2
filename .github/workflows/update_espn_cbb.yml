@@ -3,10 +3,20 @@ name: Update ESPN CBB Data
 on:
   workflow_dispatch:
     inputs:
+      run_profile:
+        description: "Run profile: daily (normal full pipeline) or historical_boxscore_backfill (one-time 6-year boxscore + W/L history)."
+        required: false
+        default: "daily"
+        type: choice
+        options: ["daily", "historical_boxscore_backfill"]
       days_back:
         description: "Days back to fetch (default 3, use >180 only for manual backfill)"
         required: false
         default: "3"
+      backfill_days:
+        description: "Backfill window in days for historical_boxscore_backfill (default 2190 ~ 6 years)."
+        required: false
+        default: "2190"
       run_rankings:
         description: "Build CAGE rankings after pipeline"
         required: false
@@ -48,14 +58,18 @@ env:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 240
     permissions:
       contents: write
     outputs:
+      run_profile: ${{ steps.resolve_inputs.outputs.run_profile }}
       days_back: ${{ steps.resolve_inputs.outputs.days_back }}
       game_type: ${{ steps.resolve_inputs.outputs.game_type }}
       run_rankings: ${{ steps.resolve_inputs.outputs.run_rankings }}
       commit_data: ${{ steps.resolve_inputs.outputs.commit_data }}
+      contract_stages: ${{ steps.resolve_inputs.outputs.contract_stages }}
+      validation_profile: ${{ steps.resolve_inputs.outputs.validation_profile }}
+      commit_scope: ${{ steps.resolve_inputs.outputs.commit_scope }}
       artifact_name: ${{ steps.resolve_inputs.outputs.artifact_name }}
 
     steps:
@@ -67,17 +81,42 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
+          INPUT_RUN_PROFILE: ${{ github.event.inputs.run_profile }}
           INPUT_DAYS_BACK: ${{ github.event.inputs.days_back }}
+          INPUT_BACKFILL_DAYS: ${{ github.event.inputs.backfill_days }}
           INPUT_RUN_RANKINGS: ${{ github.event.inputs.run_rankings }}
           INPUT_GAME_TYPE: ${{ github.event.inputs.game_type }}
           INPUT_COMMIT_DATA: ${{ github.event.inputs.commit_data }}
         run: |
           set -euo pipefail
 
+          RUN_PROFILE="${INPUT_RUN_PROFILE:-daily}"
+          if [[ -z "$RUN_PROFILE" ]]; then
+            RUN_PROFILE="daily"
+          fi
+          case "$RUN_PROFILE" in
+            daily|historical_boxscore_backfill) ;;
+            *) echo "[ERROR] run_profile must be daily or historical_boxscore_backfill"; exit 1 ;;
+          esac
+
           DAYS_BACK="${INPUT_DAYS_BACK:-3}"
           if [[ -z "$DAYS_BACK" ]]; then
             DAYS_BACK="3"
           fi
+          BACKFILL_DAYS="${INPUT_BACKFILL_DAYS:-2190}"
+          if [[ -z "$BACKFILL_DAYS" ]]; then
+            BACKFILL_DAYS="2190"
+          fi
+          if ! [[ "$BACKFILL_DAYS" =~ ^[0-9]+$ ]]; then
+            echo "[ERROR] backfill_days must be numeric; got '$BACKFILL_DAYS'"
+            exit 1
+          fi
+          BACKFILL_DAYS_INT=$((BACKFILL_DAYS))
+          if (( BACKFILL_DAYS_INT < 365 || BACKFILL_DAYS_INT > 4000 )); then
+            echo "[ERROR] backfill_days must be between 365 and 4000 for historical_boxscore_backfill"
+            exit 1
+          fi
+
           if ! [[ "$DAYS_BACK" =~ ^[0-9]+$ ]]; then
             echo "[ERROR] days_back must be numeric; got '$DAYS_BACK'"
             exit 1
@@ -122,11 +161,31 @@ jobs:
             *) echo "[ERROR] invalid game_type '$GAME_TYPE'"; exit 1 ;;
           esac
 
-          echo "[INFO] Resolved update inputs: event=$EVENT_NAME days_back=$DAYS_BACK run_rankings=$RUN_RANKINGS game_type=$GAME_TYPE commit_data=$COMMIT_DATA"
+          CONTRACT_STAGES=""
+          VALIDATION_PROFILE="full"
+          COMMIT_SCOPE="curated"
+          if [[ "$RUN_PROFILE" == "historical_boxscore_backfill" ]]; then
+            if [[ "$EVENT_NAME" != "workflow_dispatch" ]]; then
+              echo "[ERROR] historical_boxscore_backfill is manual-only"
+              exit 1
+            fi
+            DAYS_BACK="$BACKFILL_DAYS"
+            RUN_RANKINGS="false"
+            GAME_TYPE="regular"
+            CONTRACT_STAGES="espn_pipeline"
+            VALIDATION_PROFILE="backfill_boxscore"
+            COMMIT_SCOPE="boxscore_history"
+          fi
+
+          echo "[INFO] Resolved update inputs: event=$EVENT_NAME run_profile=$RUN_PROFILE days_back=$DAYS_BACK run_rankings=$RUN_RANKINGS game_type=$GAME_TYPE commit_data=$COMMIT_DATA stages=${CONTRACT_STAGES:-all}"
+          echo "run_profile=$RUN_PROFILE" >> "$GITHUB_OUTPUT"
           echo "days_back=$DAYS_BACK" >> "$GITHUB_OUTPUT"
           echo "run_rankings=$RUN_RANKINGS" >> "$GITHUB_OUTPUT"
           echo "commit_data=$COMMIT_DATA" >> "$GITHUB_OUTPUT"
           echo "game_type=$GAME_TYPE" >> "$GITHUB_OUTPUT"
+          echo "contract_stages=$CONTRACT_STAGES" >> "$GITHUB_OUTPUT"
+          echo "validation_profile=$VALIDATION_PROFILE" >> "$GITHUB_OUTPUT"
+          echo "commit_scope=$COMMIT_SCOPE" >> "$GITHUB_OUTPUT"
           echo "artifact_name=INFRA-espn-data" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
@@ -164,26 +223,37 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          EXTRA_STAGE_ARGS=()
+          if [[ -n "${{ steps.resolve_inputs.outputs.contract_stages }}" ]]; then
+            EXTRA_STAGE_ARGS+=(--stages "${{ steps.resolve_inputs.outputs.contract_stages }}")
+          fi
           python .github/scripts/run_pipeline_contract.py \
             --contract .github/pipeline_contracts/espn_pipeline_contract.json \
             --job update \
             --days-back "${{ steps.resolve_inputs.outputs.days_back }}" \
             --game-type "${{ steps.resolve_inputs.outputs.game_type }}" \
-            --manifest data/update_manifest.json
+            --manifest data/update_manifest.json \
+            "${EXTRA_STAGE_ARGS[@]}"
 
       - name: Validate required core outputs
         shell: bash
         run: |
           set -euo pipefail
-          bash .github/scripts/check_csv.sh data/games.csv 1 "game_id,game_datetime_utc"
-          bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "event_id,team_id,game_datetime_utc"
-          bash .github/scripts/check_csv.sh data/team_pretournament_snapshot.csv 1 "team_id"
-          bash .github/scripts/check_csv.sh data/advanced_metrics.csv 1 "event_id,team_id"
-          bash .github/scripts/check_csv.sh data/market_lines_latest_by_game.csv 0 "event_id,spread_line,total_line,line_source_used"
-          bash .github/scripts/check_csv.sh data/predictions_joint_latest.csv 1 "game_id,pred_total,pred_margin"
-          python .github/scripts/validate_joint_predictions.py \
-            --input data/predictions_joint_latest.csv \
-            --debug-json debug/pred_margin_validation.json
+          if [[ "${{ steps.resolve_inputs.outputs.validation_profile }}" == "backfill_boxscore" ]]; then
+            bash .github/scripts/check_csv.sh data/games.csv 1 "game_id,game_datetime_utc,date,home_wins,home_losses,away_wins,away_losses"
+            bash .github/scripts/check_csv.sh data/team_game_logs.csv 1 "event_id,team_id,wins,losses,fgm,fga,ftm,fta,tpm,tpa,orb,drb,reb,tov,ast"
+            bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "event_id,team_id,game_datetime_utc"
+          else
+            bash .github/scripts/check_csv.sh data/games.csv 1 "game_id,game_datetime_utc"
+            bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "event_id,team_id,game_datetime_utc"
+            bash .github/scripts/check_csv.sh data/team_pretournament_snapshot.csv 1 "team_id"
+            bash .github/scripts/check_csv.sh data/advanced_metrics.csv 1 "event_id,team_id"
+            bash .github/scripts/check_csv.sh data/market_lines_latest_by_game.csv 0 "event_id,spread_line,total_line,line_source_used"
+            bash .github/scripts/check_csv.sh data/predictions_joint_latest.csv 1 "game_id,pred_total,pred_margin"
+            python .github/scripts/validate_joint_predictions.py \
+              --input data/predictions_joint_latest.csv \
+              --debug-json debug/pred_margin_validation.json
+          fi
 
       - name: Print data integrity block
         shell: bash
@@ -205,6 +275,10 @@ jobs:
           retention-days: 21
           path: |
             data/games.csv
+            data/team_game_logs.csv
+            data/player_game_logs.csv
+            data/team_game_metrics.csv
+            data/team_game_sos.csv
             data/team_game_weighted.csv
             data/team_pretournament_snapshot.csv
             data/advanced_metrics.csv
@@ -249,26 +323,35 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          for _f in \
-            data/games.csv \
-            data/team_game_weighted.csv \
-            data/team_pretournament_snapshot.csv \
-            data/advanced_metrics.csv \
-            data/market_lines.csv \
-            data/market_lines_latest.csv \
-            data/market_lines_closing.csv \
-            data/market_lines_snapshots.csv \
-            data/market_lines_canonical.csv \
-            data/market_lines_latest_by_book.csv \
-            data/market_lines_latest_by_game.csv \
-            data/predictions_joint_latest.csv \
-            data/predictions_joint_snapshots.csv \
-            data/rotation_features.csv \
-            data/situational_features.csv \
-            data/luck_regression_features.csv \
-            data/player_availability_features.csv \
-            data/player_season_summary.csv \
-            data/team_season_summary.csv; do
+          FILES_TO_STAGE=()
+          if [[ "${{ steps.resolve_inputs.outputs.commit_scope }}" == "boxscore_history" ]]; then
+            FILES_TO_STAGE+=(data/games.csv data/team_game_logs.csv)
+          else
+            FILES_TO_STAGE+=(
+              data/games.csv
+              data/team_game_logs.csv
+              data/team_game_weighted.csv
+              data/team_pretournament_snapshot.csv
+              data/advanced_metrics.csv
+              data/market_lines.csv
+              data/market_lines_latest.csv
+              data/market_lines_closing.csv
+              data/market_lines_snapshots.csv
+              data/market_lines_canonical.csv
+              data/market_lines_latest_by_book.csv
+              data/market_lines_latest_by_game.csv
+              data/predictions_joint_latest.csv
+              data/predictions_joint_snapshots.csv
+              data/rotation_features.csv
+              data/situational_features.csv
+              data/luck_regression_features.csv
+              data/player_availability_features.csv
+              data/player_season_summary.csv
+              data/team_season_summary.csv
+            )
+          fi
+
+          for _f in "${FILES_TO_STAGE[@]}"; do
             if [[ -e "$_f" ]]; then
               echo "[INFO] staging: $_f"
               git add -- "$_f"
@@ -285,6 +368,9 @@ jobs:
           STAGED_BYTES=$(git diff --cached --name-only -z | xargs -0 -r du -cb | tail -n 1 | cut -f1)
           STAGED_BYTES=${STAGED_BYTES:-0}
           MAX_BYTES=$((50 * 1024 * 1024))
+          if [[ "${{ steps.resolve_inputs.outputs.commit_scope }}" == "boxscore_history" ]]; then
+            MAX_BYTES=$((200 * 1024 * 1024))
+          fi
           if (( STAGED_BYTES > MAX_BYTES )); then
             echo "[ERROR] staged payload ${STAGED_BYTES} bytes exceeds ${MAX_BYTES} byte guard"
             exit 1
@@ -419,28 +505,37 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          for _f in \
-            data/games.csv \
-            data/team_game_weighted.csv \
-            data/team_pretournament_snapshot.csv \
-            data/advanced_metrics.csv \
-            data/market_lines.csv \
-            data/market_lines_latest.csv \
-            data/market_lines_closing.csv \
-            data/market_lines_snapshots.csv \
-            data/market_lines_canonical.csv \
-            data/market_lines_latest_by_book.csv \
-            data/market_lines_latest_by_game.csv \
-            data/predictions_joint_latest.csv \
-            data/predictions_joint_snapshots.csv \
-            data/rotation_features.csv \
-            data/situational_features.csv \
-            data/luck_regression_features.csv \
-            data/player_availability_features.csv \
-            data/player_season_summary.csv \
-            data/team_season_summary.csv \
-            data/cbb_rankings.csv \
-            data/cbb_rankings_by_conference.csv; do
+          FILES_TO_STAGE=()
+          if [[ "${{ needs.update.outputs.commit_scope }}" == "boxscore_history" ]]; then
+            FILES_TO_STAGE+=(data/games.csv data/team_game_logs.csv)
+          else
+            FILES_TO_STAGE+=(
+              data/games.csv
+              data/team_game_logs.csv
+              data/team_game_weighted.csv
+              data/team_pretournament_snapshot.csv
+              data/advanced_metrics.csv
+              data/market_lines.csv
+              data/market_lines_latest.csv
+              data/market_lines_closing.csv
+              data/market_lines_snapshots.csv
+              data/market_lines_canonical.csv
+              data/market_lines_latest_by_book.csv
+              data/market_lines_latest_by_game.csv
+              data/predictions_joint_latest.csv
+              data/predictions_joint_snapshots.csv
+              data/rotation_features.csv
+              data/situational_features.csv
+              data/luck_regression_features.csv
+              data/player_availability_features.csv
+              data/player_season_summary.csv
+              data/team_season_summary.csv
+              data/cbb_rankings.csv
+              data/cbb_rankings_by_conference.csv
+            )
+          fi
+
+          for _f in "${FILES_TO_STAGE[@]}"; do
             if [[ -e "$_f" ]]; then
               echo "[INFO] staging: $_f"
               git add -- "$_f"
@@ -457,6 +552,9 @@ jobs:
           STAGED_BYTES=$(git diff --cached --name-only -z | xargs -0 -r du -cb | tail -n 1 | cut -f1)
           STAGED_BYTES=${STAGED_BYTES:-0}
           MAX_BYTES=$((50 * 1024 * 1024))
+          if [[ "${{ needs.update.outputs.commit_scope }}" == "boxscore_history" ]]; then
+            MAX_BYTES=$((200 * 1024 * 1024))
+          fi
           if (( STAGED_BYTES > MAX_BYTES )); then
             echo "[ERROR] staged payload ${STAGED_BYTES} bytes exceeds ${MAX_BYTES} byte guard"
             exit 1

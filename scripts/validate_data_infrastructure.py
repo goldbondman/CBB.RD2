@@ -16,9 +16,7 @@ def normalize_id(series: pd.Series) -> pd.Series:
     )
 
 
-def check_file(path, required_cols, pk_cols,
-               critical_col=None, min_rows=1,
-               min_nonnull=0.5):
+def check_file(path, required_cols, pk_cols, critical_col=None, min_rows=1, min_nonnull=0.5):
     """
     Returns dict with:
       exists, row_count, missing_cols, pk_duplicates,
@@ -71,68 +69,60 @@ def check_file(path, required_cols, pk_cols,
 
 CHECKS = [
     {
-      'path': 'data/games.csv',
-      'required_cols': ['game_id','game_date','home_team_id',
-                        'away_team_id','completed',
-                        'home_score','away_score'],
-      'pk_cols': ['game_id'],
-      'critical_col': 'completed',
-      'min_rows': 100,
-      'min_nonnull': 0.95,
+        "path": "data/games.csv",
+        "required_cols": ["game_id", "date", "home_team_id", "away_team_id", "completed", "home_score", "away_score"],
+        "pk_cols": ["game_id"],
+        "critical_col": "completed",
+        "min_rows": 100,
+        "min_nonnull": 0.95,
     },
     {
-      'path': 'data/team_game_weighted.csv',
-      'required_cols': ['event_id','team_id',
-                        'game_datetime_utc','net_rtg_l10',
-                        'adj_ortg','adj_drtg','pace_l5'],
-      'pk_cols': ['event_id','team_id'],
-      'critical_col': 'net_rtg_l10',
-      'min_rows': 200,
-      'min_nonnull': 0.70,
+        "path": "data/team_game_weighted.csv",
+        "required_cols": ["event_id", "team_id", "game_datetime_utc", "net_rtg_l10", "adj_ortg", "adj_drtg", "pace_l5"],
+        "pk_cols": ["event_id", "team_id"],
+        "critical_col": "net_rtg_l10",
+        "min_rows": 200,
+        "min_nonnull": 0.70,
     },
     {
-      'path': 'data/predictions_combined_latest.csv',
-      'required_cols': ['game_id','pred_spread','pred_total'],
-      'pk_cols': ['game_id'],
-      'critical_col': 'pred_spread',
-      'min_rows': 1,
-      'min_nonnull': 0.80,
+        "path": "data/predictions_combined_latest.csv",
+        "required_cols": ["game_id", "pred_spread", "pred_total"],
+        "pk_cols": ["game_id"],
+        "critical_col": "pred_spread",
+        "min_rows": 1,
+        "min_nonnull": 0.80,
     },
     {
-      'path': 'data/predictions_history.csv',
-      'required_cols': ['game_id','pred_spread','game_date'],
-      'pk_cols': ['game_id'],
-      'critical_col': 'pred_spread',
-      'min_rows': 50,
-      'min_nonnull': 0.80,
+        "path": "data/predictions_history.csv",
+        "required_cols": ["game_id", "pred_spread", "game_date"],
+        "pk_cols": ["game_id"],
+        "critical_col": "pred_spread",
+        "min_rows": 50,
+        "min_nonnull": 0.80,
     },
     {
-      'path': 'data/market_lines.csv',
-      'required_cols': ['game_id','home_spread',
-                        'total_line','capture_type'],
-      'pk_cols': ['game_id','capture_type'],
-      'critical_col': 'home_spread',
-      'min_rows': 50,
-      'min_nonnull': 0.70,
+        "path": "data/market_lines.csv",
+        "required_cols": ["game_id", "home_spread_current", "total_current", "capture_type", "pulled_at_utc"],
+        "pk_cols": ["game_id", "capture_type", "pulled_at_utc"],
+        "critical_col": "home_spread_current",
+        "min_rows": 50,
+        "min_nonnull": 0.70,
     },
     {
-      'path': 'data/results_log.csv',
-      'required_cols': ['game_id','pred_spread',
-                        'actual_margin','market_spread',
-                        'home_covered_ats'],
-      'pk_cols': ['game_id'],
-      'critical_col': 'home_covered_ats',
-      'min_rows': 50,
-      'min_nonnull': 0.90,
+        "path": "data/results_log.csv",
+        "required_cols": ["game_id", "pred_spread", "actual_margin", "market_spread", "home_covered_ats"],
+        "pk_cols": ["game_id"],
+        "critical_col": "actual_margin",
+        "min_rows": 50,
+        "min_nonnull": 0.90,
     },
     {
-      'path': 'data/player_game_logs.csv',
-      'required_cols': ['event_id','team_id','athlete_id',
-                        'min','did_not_play'],
-      'pk_cols': ['event_id','team_id','athlete_id'],
-      'critical_col': 'min',
-      'min_rows': 500,
-      'min_nonnull': 0.80,
+        "path": "data/player_game_logs.csv",
+        "required_cols": ["event_id", "team_id", "athlete_id", "min", "did_not_play"],
+        "pk_cols": ["event_id", "team_id", "athlete_id"],
+        "critical_col": "min",
+        "min_rows": 500,
+        "min_nonnull": 0.80,
     },
 ]
 
@@ -173,18 +163,18 @@ def fmt_pct(v):
 if __name__ == "__main__":
     results = [check_file(**cfg) for cfg in CHECKS]
 
-    print("┌─────────────────────────────────────────┬──────┬────────┬────────────┬──────────┐")
-    print("│ File                                    │ Rows │ Pk_ok  │ Crit_nonnull│ Status  │")
-    print("├─────────────────────────────────────────┼──────┼────────┼────────────┼──────────┤")
+    print("+-----------------------------------------+------+--------+------------+----------+")
+    print("| File                                    | Rows | Pk_ok  | Crit_nonnull| Status   |")
+    print("+-----------------------------------------+------+--------+------------+----------+")
     for r in results:
         pk_ok = "N/A" if r["pk_duplicates"] is None else ("YES" if r["pk_duplicates"] == 0 else "NO")
-        print(f"│ {r['path'][:39]:<39} │ {r['row_count']:>4} │ {pk_ok:<6} │ {fmt_pct(r['critical_col_nonnull_rate']):<10} │ {r['status']:<8} │")
-    print("└─────────────────────────────────────────┴──────┴────────┴────────────┴──────────┘")
+        print(f"| {r['path'][:39]:<39} | {r['row_count']:>4} | {pk_ok:<6} | {fmt_pct(r['critical_col_nonnull_rate']):<10} | {r['status']:<8} |")
+    print("+-----------------------------------------+------+--------+------------+----------+")
 
     print("\nJOIN HEALTH")
     j = join_health()
     for a, b, inter, denom, pct, status in j:
-        print(f"{a} ∩ {b}: {inter:>4} / {denom:<4} ({pct:>5.1f}%)  {status}")
+        print(f"{a} INTERSECT {b}: {inter:>4} / {denom:<4} ({pct:>5.1f}%)  {status}")
 
     statuses = [r["status"] for r in results] + [x[-1] for x in j]
     if "FAIL" in statuses:

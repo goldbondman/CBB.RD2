@@ -594,10 +594,11 @@ jobs:
           git commit -m "pipeline: predictions rolling $(date -u +'%Y-%m-%d %H:%M UTC') [skip ci]"
           for i in 1 2 3; do
             if ! git diff --quiet; then
-              echo "[INFO] local unstaged changes detected before pull; using rebase autostash"
+              echo "[ERROR] local unstaged changes detected before rebase; aborting retry"
               git status --short
+              exit 1
             fi
-            if ! git -c rebase.autoStash=true pull --rebase origin main; then
+            if ! git pull --rebase origin main; then
               echo "[ERROR] rebase conflict while syncing main"
               git rebase --abort || true
               exit 1

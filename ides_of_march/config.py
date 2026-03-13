@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 
 
@@ -16,9 +17,13 @@ DEFAULT_HOURS_AHEAD = 48
 MIN_HISTORY_GAMES = 120
 MIN_RULE_SAMPLE = 50
 RULE_SHRINK_K = 75.0
-SPREAD_BET_EDGE_MIN = 1.0
-SPREAD_BET_CONFIDENCE_MIN = 52.0
+SPREAD_BET_EDGE_MIN = 0.5
+SPREAD_BET_CONFIDENCE_MIN = 51.0
 SPREAD_BET_ATS_PROB_EDGE_MIN = 0.02
+ENABLE_UPSET_LAYER = os.getenv("IDES_ENABLE_UPSET_LAYER", "0").strip().lower() in {"1", "true", "yes", "y", "on"}
+UPSET_LAYER_MIN_SAMPLE = int(os.getenv("IDES_UPSET_LAYER_MIN_SAMPLE", "15"))
+UPSET_LAYER_EFFECT_CAP = float(os.getenv("IDES_UPSET_LAYER_EFFECT_CAP", "0.015"))
+UPSET_LAYER_CANDIDATES_PATH = os.getenv("IDES_UPSET_LAYER_CANDIDATES_PATH", "").strip()
 
 MODEL_B_WEIGHTS = {
     "adj_em_margin": 0.45,

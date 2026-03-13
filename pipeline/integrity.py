@@ -55,7 +55,11 @@ def run_integrity_gate(
         dt = pd.to_datetime(games["game_datetime_utc"], utc=True, errors="coerce")
         bad_ts = int((dt > as_of).sum())
         if bad_ts:
-            warnings.append(f"games.csv has {bad_ts} rows newer than as_of={as_of.isoformat()}")
+            msg = f"games.csv has {bad_ts} rows newer than as_of={as_of.isoformat()}"
+            if mode == "predict":
+                errors.append(msg)
+            else:
+                warnings.append(msg)
 
     lines = pd.read_csv(data_dir / "market_lines.csv", low_memory=False)
     row_counts["market_lines"] = len(lines)
@@ -68,10 +72,14 @@ def run_integrity_gate(
         pulled_at = pd.to_datetime(lines[ts_col], utc=True, errors="coerce")
         late_lines = int((pulled_at > as_of).sum())
         if late_lines:
-            warnings.append(
+            msg = (
                 f"market_lines.csv has {late_lines} rows newer than as_of={as_of.isoformat()} "
                 f"(timestamp column={ts_col})"
             )
+            if mode == "predict":
+                errors.append(msg)
+            else:
+                warnings.append(msg)
 
     if mode == "backtest":
         preds = pd.read_csv(data_dir / "predictions_combined_latest.csv", low_memory=False)

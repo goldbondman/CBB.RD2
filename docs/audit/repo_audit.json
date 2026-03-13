@@ -1,19 +1,32 @@
 {
-  "generated_at_utc": "2026-03-05T05:56:04.569869+00:00",
+  "generated_at_utc": "2026-03-12T15:48:07.367698+00:00",
   "repo_root": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2",
   "entrypoints": {
     "workflows": [
       {
+        "workflow": ".github\\workflows\\cage_rankings.yml",
+        "python_commands": [
+          "python .github/scripts/download_latest_artifact.py",
+          "python espn_rankings.py"
+        ]
+      },
+      {
         "workflow": ".github\\workflows\\cbb_analytics.yml",
         "python_commands": [
-          "python -m pip",
+          "python -m ingestion.historical_backfill",
+          "python .github/scripts/data_integrity_report.py",
+          "python .github/scripts/download_latest_artifact.py",
           "python build_training_data.py",
           "python cbb_accuracy_report.py",
           "python cbb_backtester.py",
           "python cbb_results_tracker.py",
           "python cbb_season_summaries.py",
+          "python context_layers/run_all.py",
+          "python espn_pipeline.py",
           "python evaluation/predictions_graded.py",
-          "python ingestion/historical_backfill.py",
+          "python scripts/gate_builder.py",
+          "python scripts/segment_performance_explorer.py",
+          "python scripts/validate_backtest_context_outputs.py",
           "python scripts/validate_backtest_market_data.py",
           "python scripts/validate_data_infrastructure.py"
         ]
@@ -28,16 +41,42 @@
         ]
       },
       {
+        "workflow": ".github\\workflows\\cbb_master_nightly.yml",
+        "python_commands": []
+      },
+      {
+        "workflow": ".github\\workflows\\cbb_perplexity_models.yml",
+        "python_commands": [
+          "python .github/scripts/download_latest_artifact.py",
+          "python .github/scripts/run_pipeline_contract.py",
+          "python .github/scripts/validate_joint_predictions.py",
+          "python .github/scripts/write_run_manifest.py",
+          "python scripts/backtest_alignment.py",
+          "python scripts/backtest_cage_ats.py",
+          "python scripts/backtest_kelly.py",
+          "python scripts/build_matchup_features.py",
+          "python scripts/compute_core_metrics.py",
+          "python scripts/generate_picks.py",
+          "python scripts/generate_prediction_report.py",
+          "python scripts/generate_trend_picks.py",
+          "python scripts/train_models.py"
+        ]
+      },
+      {
         "workflow": ".github\\workflows\\cbb_pipeline.yml",
         "python_commands": [
           "python -m evaluation.predictions_graded",
           "python -m ingestion.market_lines",
+          "python -m model_lab.joint_models",
+          "python -m pipeline.advanced_metrics.build_advanced_metrics",
+          "python apply_signals.py",
           "python cbb_accuracy_report.py",
           "python cbb_results_tracker.py",
           "python cbb_season_summaries.py",
           "python cbb_walk_forward.py",
           "python espn_pipeline.py",
           "python espn_prediction_runner.py",
+          "python grade_signal_picks.py",
           "python optimize_weights.py",
           "python weight_deployer.py"
         ]
@@ -45,22 +84,78 @@
       {
         "workflow": ".github\\workflows\\cbb_predictions_rolling.yml",
         "python_commands": [
+          "python .github/scripts/data_integrity_report.py",
+          "python .github/scripts/download_latest_artifact.py",
           "python build_derived_csvs.py",
           "python cbb_ensemble.py",
           "python cbb_monte_carlo.py",
           "python cbb_player_matchup.py",
           "python cbb_travel_fatigue.py",
+          "python context_layers/run_all.py",
           "python infra/ci/validate_predictions_freshness.py",
           "python scripts/audit_csv_quality.py",
           "python scripts/ci_data_quality_gate.py",
-          "python scripts/validate_data_infrastructure.py"
+          "python scripts/validate_data_infrastructure.py",
+          "python scripts/validate_transitive_history_chain.py"
         ]
       },
       {
         "workflow": ".github\\workflows\\cbb_user_deliverables.yml",
         "python_commands": [
+          "python .github/scripts/download_latest_artifact.py",
           "python build_derived_csvs.py",
           "python infra/ci/validate_predictions_freshness.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\ci.yml",
+        "python_commands": [
+          "python -m model_lab.orchestrator"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\grade_signal_picks.yml",
+        "python_commands": [
+          "python grade_signal_picks.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\ides_of_march_predictions.yml",
+        "python_commands": [
+          "python -m ides_of_march.cli",
+          "python .github/scripts/download_latest_artifact.py",
+          "python .github/scripts/run_pipeline_contract.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\ides_of_march_research.yml",
+        "python_commands": [
+          "python -m ides_of_march.cli",
+          "python .github/scripts/download_latest_artifact.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\layer_performance_monitor.yml",
+        "python_commands": [
+          "python layer_performance_monitor.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\line_movement_tracker.yml",
+        "python_commands": [
+          "python line_movement_tracker.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\march_madness_backtest.yml",
+        "python_commands": [
+          "python scripts/march_madness_backtest.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\market_availability_checker.yml",
+        "python_commands": [
+          "python market_availability_checker.py"
         ]
       },
       {
@@ -68,7 +163,15 @@
         "python_commands": [
           "python -m enrichment.predictions_with_context",
           "python -m ingestion.market_lines",
-          "python scripts/assert_market_master_monotonic.py"
+          "python .github/scripts/download_latest_artifact.py",
+          "python scripts/assert_market_master_monotonic.py",
+          "python scripts/validate_market_context_integrity.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\nightly.yml",
+        "python_commands": [
+          "python -m model_lab.orchestrator"
         ]
       },
       {
@@ -76,29 +179,61 @@
         "python_commands": [
           "python -m pip",
           "python -m pytest",
+          "python .github/scripts/data_integrity_report.py",
           "python scripts/run_player_overlay.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\results_writer.yml",
+        "python_commands": [
+          "python results_writer.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\roster_injury_monitor.yml",
+        "python_commands": [
+          "python roster_injury_monitor.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\situational_layer_scoring.yml",
+        "python_commands": [
+          "python build_pes_columns.py",
+          "python layer_registry.py",
+          "python live_game_scorer.py"
         ]
       },
       {
         "workflow": ".github\\workflows\\update_espn_cbb.yml",
         "python_commands": [
-          "python .github/scripts/validate_workflows.py",
-          "python cbb_luck_regression_features.py",
-          "python cbb_rotation_features.py",
-          "python cbb_season_summaries.py",
-          "python cbb_situational_features.py",
-          "python espn_pipeline.py",
-          "python espn_rankings.py",
-          "python player_availability_features.py"
+          "python -m py_compile",
+          "python .github/scripts/print_data_integrity.py",
+          "python .github/scripts/run_pipeline_contract.py",
+          "python .github/scripts/validate_joint_predictions.py",
+          "python .github/scripts/validate_workflows.py"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\wagertalk_historical_odds.yml",
+        "python_commands": [
+          "python -m ingestion.wagertalk_scraper"
+        ]
+      },
+      {
+        "workflow": ".github\\workflows\\weekly.yml",
+        "python_commands": [
+          "python -m model_lab.orchestrator"
         ]
       }
     ],
     "scripts": [
+      "apply_signals.py",
       "audit_grading_completeness.py",
       "bias_detector.py",
       "build_backtest_csvs.py",
       "build_derived_csvs.py",
       "build_lineage_map.py",
+      "build_pes_columns.py",
       "build_training_data.py",
       "calibrate_confidence.py",
       "cbb_accuracy_report.py",
@@ -123,21 +258,41 @@
       "field_reconciler.py",
       "fix_conferences.py",
       "fix_duplicates_inplace.py",
+      "grade_signal_picks.py",
+      "historical_tournament_builder.py",
+      "layer_performance_monitor.py",
+      "layer_registry.py",
+      "line_movement_tracker.py",
+      "live_game_scorer.py",
+      "market_availability_checker.py",
       "optimize_weights.py",
+      "pes_backtesting.py",
       "player_availability_features.py",
+      "results_interpreter.py",
+      "results_writer.py",
+      "roster_injury_monitor.py",
       "run_backtest.py",
       "send_email.py",
+      "situational_layer_backtesting.py",
       "stat_ranker.py",
       "verify_rolling_windows.py",
       "weight_deployer.py"
     ],
     "modules": [
+      ".github.scripts.data_integrity_report",
+      ".github.scripts.download_latest_artifact",
+      ".github.scripts.print_data_integrity",
+      ".github.scripts.run_pipeline_contract",
+      ".github.scripts.validate_joint_predictions",
+      ".github.scripts.write_run_manifest",
+      "apply_signals",
       "audit_grading_completeness",
       "backtesting.compute_metrics",
       "bias_detector",
       "build_backtest_csvs",
       "build_derived_csvs",
       "build_lineage_map",
+      "build_pes_columns",
       "build_training_data",
       "calibrate_confidence",
       "cbb_accuracy_report",
@@ -154,6 +309,7 @@
       "cbb_travel_fatigue",
       "cbb_walk_forward",
       "cbb_weight_optimizer",
+      "context_layers.run_all",
       "cron_check",
       "enrichment.predictions_with_context",
       "espn_pipeline",
@@ -167,36 +323,81 @@
       "field_reconciler",
       "fix_conferences",
       "fix_duplicates_inplace",
+      "grade_signal_picks",
+      "historical_tournament_builder",
+      "ides_of_march.cli",
       "infra.ci.test_validate_predictions_freshness_smoke",
       "infra.ci.validate_predictions_freshness",
       "ingestion.historical_backfill",
       "ingestion.market_lines",
+      "ingestion.wagertalk_scraper",
+      "layer_performance_monitor",
+      "layer_registry",
+      "line_movement_tracker",
+      "live_game_scorer",
+      "market_availability_checker",
       "model_lab.cli",
+      "model_lab.joint_models",
+      "model_lab.orchestrator",
       "models.bias_detector",
       "models.clv_analyzer",
       "models.weight_optimizer",
       "optimize_weights",
+      "pes_backtesting",
+      "pipeline.advanced_metrics.build_advanced_metrics",
       "pipeline.advanced_metrics.compute_runner",
+      "pipeline.market_canonical",
       "pipeline.repo_audit",
       "pipeline.smoke",
       "player_availability_features",
+      "results_interpreter",
+      "results_writer",
+      "roster_injury_monitor",
       "run_backtest",
+      "scripts.analytics_smoke",
       "scripts.assert_market_master_monotonic",
       "scripts.audit_csv_quality",
+      "scripts.audit_data",
       "scripts.backfill_market_lines",
+      "scripts.backtest_alignment",
+      "scripts.backtest_cage_ats",
+      "scripts.backtest_kelly",
       "scripts.build_market_line_views",
+      "scripts.build_matchup_features",
       "scripts.build_team_splits",
       "scripts.ci_data_quality_gate",
+      "scripts.compute_core_metrics",
+      "scripts.edge_bucketing_engine",
+      "scripts.exec_summary",
+      "scripts.feature_null_scanner",
+      "scripts.gate_builder",
+      "scripts.generate_picks",
+      "scripts.generate_prediction_report",
+      "scripts.generate_trend_picks",
+      "scripts.march_madness_backtest",
+      "scripts.missing_market_detector",
+      "scripts.opponent_style_similarity",
+      "scripts.overconfidence_detector",
       "scripts.run_player_overlay",
+      "scripts.segment_performance_explorer",
       "scripts.smoke_argparse_market_lines",
       "scripts.smoke_cli_market_lines",
       "scripts.smoke_normalization_market_lines",
+      "scripts.team_volatility_score",
       "scripts.test_market_lines_append_only",
       "scripts.test_resolve_date_range",
+      "scripts.train_models",
+      "scripts.validate_backtest_context_outputs",
       "scripts.validate_backtest_market_data",
       "scripts.validate_data_infrastructure",
+      "scripts.validate_market_context_integrity",
+      "scripts.validate_transitive_history_chain",
       "scripts.verify_pipeline_integrity",
+      "scripts.window_backtest",
+      "scripts.window_grid_evaluator",
+      "scripts.workflow_smoke",
       "send_email",
+      "situational_layer_backtesting",
       "stat_ranker",
       "verify_rolling_windows",
       "weight_deployer"
@@ -206,6 +407,44 @@
   },
   "artifacts": {
     "artifacts": [
+      {
+        "artifact": "data/cbb_picks_today.csv",
+        "type": "csv",
+        "producers": [
+          "scripts\\generate_picks.py"
+        ],
+        "consumers": [],
+        "usage": {
+          "write_count": 1,
+          "read_count": 0
+        }
+      },
+      {
+        "artifact": "data/cbb_pure_trend_picks_today.csv",
+        "type": "csv",
+        "producers": [
+          "scripts\\generate_trend_picks.py"
+        ],
+        "consumers": [],
+        "usage": {
+          "write_count": 1,
+          "read_count": 0
+        }
+      },
+      {
+        "artifact": "data/cbb_trend_picks_today.csv",
+        "type": "csv",
+        "producers": [
+          "scripts\\generate_trend_picks.py"
+        ],
+        "consumers": [
+          "scripts\\generate_trend_picks.py"
+        ],
+        "usage": {
+          "write_count": 1,
+          "read_count": 1
+        }
+      },
       {
         "artifact": "data/games.csv",
         "type": "csv",
@@ -220,11 +459,48 @@
         }
       },
       {
+        "artifact": "data/internal/core_metrics.csv",
+        "type": "csv",
+        "producers": [],
+        "consumers": [
+          "scripts\\build_matchup_features.py"
+        ],
+        "usage": {
+          "write_count": 0,
+          "read_count": 1
+        }
+      },
+      {
+        "artifact": "data/internal/matchup_features.csv",
+        "type": "csv",
+        "producers": [],
+        "consumers": [
+          "scripts\\generate_picks.py",
+          "scripts\\train_models.py"
+        ],
+        "usage": {
+          "write_count": 0,
+          "read_count": 2
+        }
+      },
+      {
         "artifact": "data/line_movement_features.csv",
         "type": "csv",
         "producers": [],
         "consumers": [
           "cbb_line_movement_features.py"
+        ],
+        "usage": {
+          "write_count": 0,
+          "read_count": 1
+        }
+      },
+      {
+        "artifact": "data/market_lines_latest_by_game.csv",
+        "type": "csv",
+        "producers": [],
+        "consumers": [
+          "scripts\\build_matchup_features.py"
         ],
         "usage": {
           "write_count": 0,
@@ -272,7 +548,7 @@
       {
         "module": "config.logging_config",
         "file": "config\\logging_config.py",
-        "inbound_references": 10
+        "inbound_references": 12
       },
       {
         "module": "model_lab.config",
@@ -282,6 +558,11 @@
       {
         "module": "ingestion.market_lines",
         "file": "ingestion\\market_lines.py",
+        "inbound_references": 9
+      },
+      {
+        "module": "ides_of_march.utils",
+        "file": "ides_of_march\\utils.py",
         "inbound_references": 8
       },
       {
@@ -290,9 +571,19 @@
         "inbound_references": 7
       },
       {
+        "module": "pipeline.market_canonical",
+        "file": "pipeline\\market_canonical.py",
+        "inbound_references": 7
+      },
+      {
         "module": "model_lab.splits",
         "file": "model_lab\\splits.py",
         "inbound_references": 6
+      },
+      {
+        "module": "build_pes_columns",
+        "file": "build_pes_columns.py",
+        "inbound_references": 5
       },
       {
         "module": "cbb_config",
@@ -300,8 +591,28 @@
         "inbound_references": 5
       },
       {
+        "module": "backtesting.direction_map",
+        "file": "backtesting\\direction_map.py",
+        "inbound_references": 4
+      },
+      {
         "module": "build_derived_csvs",
         "file": "build_derived_csvs.py",
+        "inbound_references": 4
+      },
+      {
+        "module": "cbb_prediction_model",
+        "file": "cbb_prediction_model.py",
+        "inbound_references": 4
+      },
+      {
+        "module": "ides_of_march.config",
+        "file": "ides_of_march\\config.py",
+        "inbound_references": 4
+      },
+      {
+        "module": "ides_of_march.orchestrator",
+        "file": "ides_of_march\\orchestrator.py",
         "inbound_references": 4
       },
       {
@@ -313,11 +624,6 @@
         "module": "pipeline.advanced_metrics.rolling_window_layer",
         "file": "pipeline\\advanced_metrics\\rolling_window_layer.py",
         "inbound_references": 4
-      },
-      {
-        "module": "backtesting.direction_map",
-        "file": "backtesting\\direction_map.py",
-        "inbound_references": 3
       },
       {
         "module": "cbb_backtester",
@@ -335,8 +641,8 @@
         "inbound_references": 3
       },
       {
-        "module": "cbb_prediction_model",
-        "file": "cbb_prediction_model.py",
+        "module": "espn_client",
+        "file": "espn_client.py",
         "inbound_references": 3
       },
       {
@@ -347,6 +653,36 @@
       {
         "module": "espn_player_metrics",
         "file": "espn_player_metrics.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "espn_prediction_runner",
+        "file": "espn_prediction_runner.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "ides_of_march.data_steward",
+        "file": "ides_of_march\\data_steward.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "ides_of_march.layer1_base_strength",
+        "file": "ides_of_march\\layer1_base_strength.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "ides_of_march.layer3_situational",
+        "file": "ides_of_march\\layer3_situational.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "ides_of_march.layer5_agreement",
+        "file": "ides_of_march\\layer5_agreement.py",
+        "inbound_references": 3
+      },
+      {
+        "module": "ides_of_march.layer6_decision",
+        "file": "ides_of_march\\layer6_decision.py",
         "inbound_references": 3
       },
       {
@@ -365,6 +701,11 @@
         "inbound_references": 3
       },
       {
+        "module": "pes_metric",
+        "file": "pes_metric.py",
+        "inbound_references": 3
+      },
+      {
         "module": "team_splits",
         "file": "team_splits.py",
         "inbound_references": 3
@@ -375,18 +716,28 @@
         "inbound_references": 2
       },
       {
+        "module": "cbb_monte_carlo",
+        "file": "cbb_monte_carlo.py",
+        "inbound_references": 2
+      },
+      {
         "module": "config.model_version",
         "file": "config\\model_version.py",
         "inbound_references": 2
       },
       {
-        "module": "espn_client",
-        "file": "espn_client.py",
+        "module": "enrichment.predictions_with_context",
+        "file": "enrichment\\predictions_with_context.py",
         "inbound_references": 2
       },
       {
         "module": "espn_pipeline",
         "file": "espn_pipeline.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "espn_sos",
+        "file": "espn_sos.py",
         "inbound_references": 2
       },
       {
@@ -397,6 +748,26 @@
       {
         "module": "evaluation.walk_forward",
         "file": "evaluation\\walk_forward.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "ides_of_march.layer2_context",
+        "file": "ides_of_march\\layer2_context.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "ides_of_march.layer4_monte_carlo",
+        "file": "ides_of_march\\layer4_monte_carlo.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "layer_registry",
+        "file": "layer_registry.py",
+        "inbound_references": 2
+      },
+      {
+        "module": "model_lab.bet_recs",
+        "file": "model_lab\\bet_recs.py",
         "inbound_references": 2
       },
       {
@@ -495,6 +866,11 @@
         "inbound_references": 1
       },
       {
+        "module": "backtesting.signal_evaluator",
+        "file": "backtesting\\signal_evaluator.py",
+        "inbound_references": 1
+      },
+      {
         "module": "backtesting.stale",
         "file": "backtesting\\stale.py",
         "inbound_references": 1
@@ -510,8 +886,8 @@
         "inbound_references": 1
       },
       {
-        "module": "cbb_monte_carlo",
-        "file": "cbb_monte_carlo.py",
+        "module": "cbb_advanced_metrics_codex",
+        "file": "cbb_advanced_metrics_codex.py",
         "inbound_references": 1
       },
       {
@@ -550,11 +926,6 @@
         "inbound_references": 1
       },
       {
-        "module": "enrichment.predictions_with_context",
-        "file": "enrichment\\predictions_with_context.py",
-        "inbound_references": 1
-      },
-      {
         "module": "espn_gap_fillers",
         "file": "espn_gap_fillers.py",
         "inbound_references": 1
@@ -570,18 +941,8 @@
         "inbound_references": 1
       },
       {
-        "module": "espn_prediction_runner",
-        "file": "espn_prediction_runner.py",
-        "inbound_references": 1
-      },
-      {
         "module": "espn_rankings",
         "file": "espn_rankings.py",
-        "inbound_references": 1
-      },
-      {
-        "module": "espn_sos",
-        "file": "espn_sos.py",
         "inbound_references": 1
       },
       {
@@ -600,8 +961,33 @@
         "inbound_references": 1
       },
       {
+        "module": "ides_of_march.cli",
+        "file": "ides_of_march\\cli.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "ides_of_march.csv_contracts",
+        "file": "ides_of_march\\csv_contracts.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "ides_of_march.evaluation",
+        "file": "ides_of_march\\evaluation.py",
+        "inbound_references": 1
+      },
+      {
         "module": "infra.ci.validate_predictions_freshness",
         "file": "infra\\ci\\validate_predictions_freshness.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "ingestion.wagertalk_scraper",
+        "file": "ingestion\\wagertalk_scraper.py",
+        "inbound_references": 1
+      },
+      {
+        "module": "line_movement_tracker",
+        "file": "line_movement_tracker.py",
         "inbound_references": 1
       },
       {
@@ -678,15 +1064,32 @@
         "module": "pipeline.team_utils",
         "file": "pipeline\\team_utils.py",
         "inbound_references": 1
+      },
+      {
+        "module": "situational_layer_backtesting",
+        "file": "situational_layer_backtesting.py",
+        "inbound_references": 1
       }
     ],
     "edges": [
+      {
+        "module": "apply_signals",
+        "imports": [
+          "backtesting.signal_evaluator"
+        ]
+      },
       {
         "module": "backtesting.engine",
         "imports": [
           "backtesting.combos",
           "backtesting.direction_map",
           "backtesting.thresholds"
+        ]
+      },
+      {
+        "module": "backtesting.signal_evaluator",
+        "imports": [
+          "backtesting.direction_map"
         ]
       },
       {
@@ -712,7 +1115,14 @@
       {
         "module": "build_derived_csvs",
         "imports": [
+          "model_lab.bet_recs",
           "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "build_training_data",
+        "imports": [
+          "pipeline.market_canonical"
         ]
       },
       {
@@ -723,6 +1133,7 @@
           "config.logging_config",
           "espn_config",
           "pipeline.id_utils",
+          "pipeline.market_canonical",
           "pipeline_csv_utils"
         ]
       },
@@ -813,6 +1224,7 @@
         "imports": [
           "espn_config",
           "models.alpha_evaluator",
+          "pipeline.market_canonical",
           "pipeline_csv_utils"
         ]
       },
@@ -874,6 +1286,7 @@
           "espn_config",
           "espn_tournament",
           "models.alpha_evaluator",
+          "pipeline.market_canonical",
           "pipeline_csv_utils",
           "team_splits"
         ]
@@ -925,6 +1338,87 @@
         ]
       },
       {
+        "module": "historical_tournament_builder",
+        "imports": [
+          "build_pes_columns",
+          "ides_of_march.data_steward",
+          "ides_of_march.layer1_base_strength",
+          "ides_of_march.layer2_context",
+          "ides_of_march.layer3_situational",
+          "ides_of_march.layer4_monte_carlo",
+          "ides_of_march.layer5_agreement",
+          "ides_of_march.layer6_decision",
+          "pes_metric"
+        ]
+      },
+      {
+        "module": "ides_of_march.__init__",
+        "imports": [
+          "ides_of_march.orchestrator"
+        ]
+      },
+      {
+        "module": "ides_of_march.__main__",
+        "imports": [
+          "ides_of_march.cli"
+        ]
+      },
+      {
+        "module": "ides_of_march.cli",
+        "imports": [
+          "ides_of_march.orchestrator"
+        ]
+      },
+      {
+        "module": "ides_of_march.data_steward",
+        "imports": [
+          "ides_of_march.config",
+          "ides_of_march.utils"
+        ]
+      },
+      {
+        "module": "ides_of_march.evaluation",
+        "imports": [
+          "ides_of_march.layer1_base_strength",
+          "ides_of_march.layer2_context",
+          "ides_of_march.layer3_situational",
+          "ides_of_march.layer4_monte_carlo",
+          "ides_of_march.layer5_agreement",
+          "ides_of_march.layer6_decision"
+        ]
+      },
+      {
+        "module": "ides_of_march.layer1_base_strength",
+        "imports": [
+          "ides_of_march.config"
+        ]
+      },
+      {
+        "module": "ides_of_march.layer3_situational",
+        "imports": [
+          "ides_of_march.config"
+        ]
+      },
+      {
+        "module": "ides_of_march.layer4_monte_carlo",
+        "imports": [
+          "cbb_monte_carlo"
+        ]
+      },
+      {
+        "module": "ides_of_march.layer5_agreement",
+        "imports": [
+          "ides_of_march.utils"
+        ]
+      },
+      {
+        "module": "ides_of_march.layer6_decision",
+        "imports": [
+          "ides_of_march.config",
+          "ides_of_march.utils"
+        ]
+      },
+      {
         "module": "infra.ci.validate_predictions_freshness",
         "imports": [
           "build_derived_csvs"
@@ -934,6 +1428,7 @@
         "module": "ingestion.historical_backfill",
         "imports": [
           "espn_config",
+          "ingestion.wagertalk_scraper",
           "pipeline.id_utils",
           "pipeline.team_utils"
         ]
@@ -943,7 +1438,40 @@
         "imports": [
           "espn_config",
           "espn_gap_fillers",
+          "pipeline.market_canonical",
           "pipeline_csv_utils"
+        ]
+      },
+      {
+        "module": "layer_performance_monitor",
+        "imports": [
+          "build_pes_columns",
+          "ides_of_march.utils",
+          "layer_registry"
+        ]
+      },
+      {
+        "module": "line_movement_tracker",
+        "imports": [
+          "ides_of_march.orchestrator",
+          "ides_of_march.utils"
+        ]
+      },
+      {
+        "module": "live_game_scorer",
+        "imports": [
+          "build_pes_columns",
+          "layer_registry",
+          "pes_metric",
+          "situational_layer_backtesting"
+        ]
+      },
+      {
+        "module": "market_availability_checker",
+        "imports": [
+          "build_pes_columns",
+          "ides_of_march.utils",
+          "line_movement_tracker"
         ]
       },
       {
@@ -1013,6 +1541,14 @@
         ]
       },
       {
+        "module": "model_lab.joint_models",
+        "imports": [
+          "config.logging_config",
+          "model_lab.bet_recs",
+          "pipeline.market_canonical"
+        ]
+      },
+      {
         "module": "model_lab.model_wrappers",
         "imports": [
           "model_lab.config"
@@ -1039,6 +1575,12 @@
         ]
       },
       {
+        "module": "pes_backtesting",
+        "imports": [
+          "pes_metric"
+        ]
+      },
+      {
         "module": "pipeline.__init__",
         "imports": [
           "pipeline.cli"
@@ -1055,6 +1597,12 @@
         "imports": [
           "pipeline.advanced_metrics.compute_runner",
           "pipeline.advanced_metrics.feature_registry"
+        ]
+      },
+      {
+        "module": "pipeline.advanced_metrics.build_advanced_metrics",
+        "imports": [
+          "config.logging_config"
         ]
       },
       {
@@ -1167,6 +1715,21 @@
         ]
       },
       {
+        "module": "results_writer",
+        "imports": [
+          "ides_of_march.data_steward",
+          "ides_of_march.orchestrator",
+          "ides_of_march.utils"
+        ]
+      },
+      {
+        "module": "roster_injury_monitor",
+        "imports": [
+          "build_pes_columns",
+          "ides_of_march.utils"
+        ]
+      },
+      {
         "module": "run_backtest",
         "imports": [
           "backtesting.compute_metrics",
@@ -1189,6 +1752,12 @@
         "module": "scripts.build_market_line_views",
         "imports": [
           "ingestion.market_lines"
+        ]
+      },
+      {
+        "module": "scripts.march_madness_backtest",
+        "imports": [
+          "espn_client"
         ]
       },
       {
@@ -1228,9 +1797,21 @@
         ]
       },
       {
+        "module": "scripts.validate_transitive_history_chain",
+        "imports": [
+          "espn_prediction_runner"
+        ]
+      },
+      {
         "module": "send_email",
         "imports": [
           "config.logging_config"
+        ]
+      },
+      {
+        "module": "tests.test_advanced_metrics_codex",
+        "imports": [
+          "cbb_advanced_metrics_codex"
         ]
       },
       {
@@ -1288,9 +1869,64 @@
         ]
       },
       {
+        "module": "tests.test_espn_sos_guardrails",
+        "imports": [
+          "espn_sos"
+        ]
+      },
+      {
         "module": "tests.test_field_reconciler",
         "imports": [
           "field_reconciler"
+        ]
+      },
+      {
+        "module": "tests.test_ides_of_march_agreement",
+        "imports": [
+          "ides_of_march.layer5_agreement"
+        ]
+      },
+      {
+        "module": "tests.test_ides_of_march_backtest_evaluation",
+        "imports": [
+          "ides_of_march.csv_contracts",
+          "ides_of_march.evaluation"
+        ]
+      },
+      {
+        "module": "tests.test_ides_of_march_base_strength",
+        "imports": [
+          "ides_of_march.layer1_base_strength"
+        ]
+      },
+      {
+        "module": "tests.test_ides_of_march_data_steward",
+        "imports": [
+          "ides_of_march.data_steward"
+        ]
+      },
+      {
+        "module": "tests.test_ides_of_march_decision",
+        "imports": [
+          "ides_of_march.layer6_decision"
+        ]
+      },
+      {
+        "module": "tests.test_ides_of_march_situational",
+        "imports": [
+          "ides_of_march.layer3_situational"
+        ]
+      },
+      {
+        "module": "tests.test_market_canonical_builder",
+        "imports": [
+          "pipeline.market_canonical"
+        ]
+      },
+      {
+        "module": "tests.test_market_lines_debug_fixes",
+        "imports": [
+          "ingestion.market_lines"
         ]
       },
       {
@@ -1367,6 +2003,19 @@
         "module": "tests.test_prediction_runner_spread_guard",
         "imports": [
           "espn_prediction_runner"
+        ]
+      },
+      {
+        "module": "tests.test_prediction_runner_transitive_chain",
+        "imports": [
+          "cbb_prediction_model",
+          "espn_prediction_runner"
+        ]
+      },
+      {
+        "module": "tests.test_predictions_context_line_reasons",
+        "imports": [
+          "enrichment.predictions_with_context"
         ]
       },
       {
@@ -1447,7 +2096,31 @@
         "workflow_referenced": false
       },
       {
+        "path": "ides_of_march\\__main__.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "ides_of_march\\safety.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "ides_of_march\\schemas.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
         "path": "pipeline\\__main__.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
+        "path": "pipeline\\advanced_metrics\\advanced_metrics_formulas.py",
         "reason": "unreferenced_uninvoked",
         "inbound_refs": 0,
         "workflow_referenced": false
@@ -1477,6 +2150,12 @@
         "workflow_referenced": false
       },
       {
+        "path": "scripts\\edge_overconfidence_common.py",
+        "reason": "unreferenced_uninvoked",
+        "inbound_refs": 0,
+        "workflow_referenced": false
+      },
+      {
         "path": "scripts\\smoke_market_lines_run_capture.py",
         "reason": "unreferenced_uninvoked",
         "inbound_refs": 0,
@@ -1484,36 +2163,6 @@
       },
       {
         "path": "signals_library.py",
-        "reason": "unreferenced_uninvoked",
-        "inbound_refs": 0,
-        "workflow_referenced": false
-      },
-      {
-        "path": "tests\\test_backtest_outputs.py",
-        "reason": "unreferenced_uninvoked",
-        "inbound_refs": 0,
-        "workflow_referenced": false
-      },
-      {
-        "path": "tests\\test_build_backtest_csvs.py",
-        "reason": "unreferenced_uninvoked",
-        "inbound_refs": 0,
-        "workflow_referenced": false
-      },
-      {
-        "path": "tests\\test_build_derived_csvs.py",
-        "reason": "unreferenced_uninvoked",
-        "inbound_refs": 0,
-        "workflow_referenced": false
-      },
-      {
-        "path": "tests\\test_cbb_accuracy_report.py",
-        "reason": "unreferenced_uninvoked",
-        "inbound_refs": 0,
-        "workflow_referenced": false
-      },
-      {
-        "path": "tests\\test_cbb_backtester_market_lines.py",
         "reason": "unreferenced_uninvoked",
         "inbound_refs": 0,
         "workflow_referenced": false
@@ -1532,15 +2181,16 @@
           "model_lab/feature_selector.py",
           "model_lab/feature_tests.py",
           "pipeline/advanced_metrics/__init__.py",
+          "pipeline/advanced_metrics/advanced_metrics_formulas.py",
           "pipeline/advanced_metrics/audit_logger.py",
-          "pipeline/advanced_metrics/cache_layer.py",
-          "pipeline/advanced_metrics/compute_runner.py"
+          "pipeline/advanced_metrics/build_advanced_metrics.py"
         ],
         "note": "Potential overlapping legacy paths; quarantine before deletion."
       },
       {
         "reason": "model_runners_overlap",
         "paths": [
+          ".github/scripts/validate_joint_predictions.py",
           "backtesting/__init__.py",
           "backtesting/combos.py",
           "backtesting/compute_metrics.py",
@@ -1549,10 +2199,9 @@
           "backtesting/git_ops.py",
           "backtesting/lx_days.py",
           "backtesting/reporting.py",
+          "backtesting/signal_evaluator.py",
           "backtesting/stale.py",
-          "backtesting/thresholds.py",
-          "build_backtest_csvs.py",
-          "cbb_backtester.py"
+          "backtesting/thresholds.py"
         ],
         "note": "Potential overlapping legacy paths; quarantine before deletion."
       },

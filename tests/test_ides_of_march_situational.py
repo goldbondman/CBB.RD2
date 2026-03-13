@@ -17,7 +17,7 @@ def test_discover_rules_enforces_min_sample_and_shrinkage():
     hist = pd.DataFrame(rows)
 
     rulebook = discover_situational_rules(hist, min_sample=50, shrink_k=75.0)
-    row = rulebook[rulebook["rule_id"] == "home_rest_form_edge"].iloc[0]
+    row = rulebook[rulebook["rule_id"] == "home_rest_form_stack"].iloc[0]
 
     assert int(row["sample_size"]) == 60
     assert bool(row["accepted"]) is True
@@ -28,8 +28,8 @@ def test_apply_situational_layer_sets_active_rules_and_adjustment():
     rulebook = pd.DataFrame(
         [
             {
-                "rule_id": "home_rest_form_edge",
-                "description": "Home + rest edge + positive form delta",
+                "rule_id": "home_rest_form_stack",
+                "description": "Home rest + form stack",
                 "direction": 1,
                 "sample_size": 80,
                 "raw_ats_rate": 0.62,
@@ -57,5 +57,5 @@ def test_apply_situational_layer_sets_active_rules_and_adjustment():
     )
 
     out = apply_situational_layer(frame, rulebook)
-    assert out.loc[0, "situational_active_rules"] == "home_rest_form_edge"
+    assert out.loc[0, "situational_active_rules"] == "home_rest_form_stack"
     assert float(out.loc[0, "situational_spread_adjustment"]) > 0

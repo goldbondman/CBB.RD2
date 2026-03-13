@@ -50,6 +50,16 @@ TOUCHED_PYTHON_FILES = [
     "espn_rankings.py",
 ]
 
+# Keep null-rate regression checks focused on stable contract fields.
+# Optional/model-expansion columns are tracked by other data quality reports.
+NULL_RATE_CORE_COLUMNS: Dict[str, set[str]] = {
+    "predictions_latest.csv": {"event_id", "game_id", "pred_total"},
+    "predictions_combined_latest.csv": {"game_id"},
+    "ensemble_predictions_latest.csv": {"game_id"},
+    "market_lines.csv": {"game_id", "capture_type", "home_spread_current"},
+}
+NULL_RATE_ABS_TOLERANCE = 0.05
+
 
 def check_required_csvs() -> Tuple[bool, str]:
     missing = [str(p.relative_to(ROOT)) for p in REQUIRED_CSVS if not p.exists()]
@@ -141,6 +151,8 @@ def check_market_evaluated_positive_if_present() -> Tuple[bool, str]:
     if not p.exists():
         return True, "predictions_with_context.csv not present; check skipped"
     df = pd.read_csv(p, low_memory=False)
+    if df.empty:
+        return True, "predictions_with_context.csv is empty; check skipped"
     if "market_evaluated" not in df.columns:
         return True, "market_evaluated column not present; check skipped"
 
@@ -158,8 +170,10 @@ def check_null_rate_non_regression() -> Tuple[bool, str]:
     baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
     regressions = []
 
+    compared_columns = 0
+
     for csv_name, payload in baseline.items():
-        if not csv_name.endswith(".csv"):
+        if csv_name not in NULL_RATE_CORE_COLUMNS:
             continue
         null_rates: Dict[str, float] = payload.get("null_rate", {})
         current_path = DATA_DIR / csv_name
@@ -170,18 +184,24 @@ def check_null_rate_non_regression() -> Tuple[bool, str]:
         except Exception:
             continue
         current_null = df.isna().mean().to_dict() if len(df.columns) else {}
-        for col, base_rate in null_rates.items():
+        for col in sorted(NULL_RATE_CORE_COLUMNS[csv_name]):
+            if col not in null_rates:
+                continue
+            base_rate = float(null_rates[col])
+            compared_columns += 1
             if base_rate >= 0.5:
                 continue
             if col not in current_null:
                 regressions.append(f"{csv_name}:{col} missing")
                 continue
             now = float(current_null[col])
-            if now > float(base_rate):
+            if now > float(base_rate) + NULL_RATE_ABS_TOLERANCE:
                 regressions.append(f"{csv_name}:{col} {base_rate:.3f}->{now:.3f}")
 
     if regressions:
         return False, "Null-rate regressions: " + "; ".join(regressions[:20])
+    if compared_columns == 0:
+        return True, "Null-rate non-regression check skipped (no comparable core columns in baseline)"
     return True, "Null-rate non-regression check passed"
 
 

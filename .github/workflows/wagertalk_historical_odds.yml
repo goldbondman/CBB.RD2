@@ -23,7 +23,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: wagertalk-historical-odds
+  group: cbb-data-pipeline
   cancel-in-progress: false
 
 jobs:

@@ -225,10 +225,20 @@ def _parse_generated_at(df: pd.DataFrame) -> tuple[datetime, str]:
         if parsed.notna().any():
             return parsed.max().to_pydatetime().astimezone(timezone.utc), col
 
+    # Unit tests may call validate() with an in-memory frame and no backing file.
+    # In that case, predicted_at_utc is the only available recency signal.
+    if (not selected_df_path or not Path(str(selected_df_path)).exists()) and PREDICTED_AT_COLUMN in df.columns:
+        parsed, _ = _parse_utc_strict_series(df[PREDICTED_AT_COLUMN])
+        if parsed.notna().any():
+            return parsed.max().to_pydatetime().astimezone(timezone.utc), PREDICTED_AT_COLUMN
+
     if not selected_df_path:
         raise RuntimeError("Internal error: selected file path unavailable for mtime fallback")
     print("[WARN] No generated-at column found; falling back to file mtime (UTC).")
-    mtime = datetime.fromtimestamp(Path(selected_df_path).stat().st_mtime, tz=timezone.utc)
+    selected_path = Path(str(selected_df_path))
+    if not selected_path.exists():
+        raise RuntimeError("Internal error: selected file path does not exist for mtime fallback")
+    mtime = datetime.fromtimestamp(selected_path.stat().st_mtime, tz=timezone.utc)
     return mtime, "mtime"
 
 
@@ -347,6 +357,9 @@ def validate(
     if now_utc.tzinfo is None:
         raise ValueError("now_utc must be timezone-aware")
 
+    if "_selected_file_path" not in df.attrs:
+        df.attrs["_selected_file_path"] = selected_file
+
     total_rows = len(df)
     tz = ZoneInfo(timezone_local)
     window_start_utc = now_utc.astimezone(tz).astimezone(timezone.utc)
@@ -461,13 +474,7 @@ def validate(
         parsed_values = selected_stats.get("parsed_values", [])
         upcoming_games_count = sum(1 for dt in parsed_values if dt >= window_start_utc)
 
-    if freshness_age_hours <= max_hours and upcoming_games_count == 0:
-        failures = [f for f in failures if not f.startswith("not forward-looking:")]
-
-    if not failures and upcoming_games_count == 0:
-        result = "SKIP"
-    else:
-        result = "FAIL" if failures else "PASS"
+    result = "FAIL" if failures else "PASS"
 
     print(
         "[INFO] gate_decision="

@@ -15,6 +15,7 @@ canonical_files:
     expected_min_rows: 100
   - path: data/predictions_latest.csv
     expected_min_rows: 1
+    max_all_null_column_pct: 70.0
 
 market_lines:
   paths:

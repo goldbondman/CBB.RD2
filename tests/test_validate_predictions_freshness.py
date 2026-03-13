@@ -5,11 +5,26 @@ from datetime import datetime, timezone
 import pandas as pd
 import pytest
 
-from infra.ci.validate_predictions_freshness import select_prediction_source, validate, validate_file
+from infra.ci.validate_predictions_freshness import (
+    select_prediction_source,
+    validate,
+    validate_file,
+    validate_predictions_freshness,
+)
 
 
 def _base_now() -> datetime:
     return datetime(2026, 3, 1, 18, 0, tzinfo=timezone.utc)
+
+
+def _base_frame() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "game_id": ["g1", "g2"],
+            "generated_at_utc": ["2026-03-01T17:10:00Z", "2026-03-01T17:10:00Z"],
+            "game_datetime_utc": ["2026-03-01T20:45:00Z", "2026-03-01T21:45:00Z"],
+        }
+    )
 
 
 def test_validator_passes_with_real_schema_game_datetime_utc() -> None:
@@ -36,8 +51,6 @@ def test_validator_passes_with_real_schema_game_datetime_utc() -> None:
     assert summary.parseable_rate == 1.0
 
 
-
-
 def test_validate_prefers_game_datetime_utc_regression() -> None:
     now_utc = _base_now()
     df = pd.DataFrame(
@@ -61,10 +74,22 @@ def test_validate_prefers_game_datetime_utc_regression() -> None:
     assert summary.time_column_used == "game_datetime_utc"
     assert summary.time_parseable_rate == 1.0
 
+
 def test_validate_predictions_freshness_fail_stale() -> None:
     now_utc = _base_now()
     df = _base_frame()
     df["generated_at_utc"] = "2026-03-01T00:00:00Z"
+
+    with pytest.raises(RuntimeError, match="stale predictions"):
+        validate(
+            df,
+            selected_file="data/predictions_latest.csv",
+            now_utc=now_utc,
+            timezone_local="America/Los_Angeles",
+            max_hours=6,
+        )
+
+
 def test_validator_passes_with_canonical_game_time_utc() -> None:
     df = pd.DataFrame(
         {
@@ -141,7 +166,6 @@ def test_best_column_selection_prefers_more_parseable_candidate() -> None:
     assert summary.parseable_rate == 1.0
 
 
-
 def test_select_prediction_source_parity_with_build_derived(tmp_path, monkeypatch) -> None:
     import build_derived_csvs as bdc
 
@@ -184,7 +208,6 @@ def test_validate_file_wrapper_pass(tmp_path) -> None:
 
     assert summary.result == "PASS"
     assert summary.selected_file == str(file_path)
-from infra.ci.validate_predictions_freshness import validate_predictions_freshness
 
 
 def _write_predictions(path, columns: dict[str, list[str]]) -> None:
