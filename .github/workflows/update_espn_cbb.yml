@@ -387,7 +387,8 @@ jobs:
 
           STAGED_BYTES=$(git diff --cached --name-only -z | xargs -0 -r du -cb | tail -n 1 | cut -f1)
           STAGED_BYTES=${STAGED_BYTES:-0}
-          MAX_BYTES=$((50 * 1024 * 1024))
+          # Curated daily payloads can exceed 50 MB during full refreshes.
+          MAX_BYTES=$((80 * 1024 * 1024))
           if [[ "${{ steps.resolve_inputs.outputs.commit_scope }}" == "boxscore_history" ]]; then
             MAX_BYTES=$((200 * 1024 * 1024))
           fi
@@ -571,7 +572,8 @@ jobs:
 
           STAGED_BYTES=$(git diff --cached --name-only -z | xargs -0 -r du -cb | tail -n 1 | cut -f1)
           STAGED_BYTES=${STAGED_BYTES:-0}
-          MAX_BYTES=$((50 * 1024 * 1024))
+          # Curated daily payloads can exceed 50 MB during full refreshes.
+          MAX_BYTES=$((80 * 1024 * 1024))
           if [[ "${{ needs.update.outputs.commit_scope }}" == "boxscore_history" ]]; then
             MAX_BYTES=$((200 * 1024 * 1024))
           fi
