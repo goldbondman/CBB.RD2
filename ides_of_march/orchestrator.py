@@ -9,6 +9,7 @@ import pandas as pd
 
 from .config import (
     DATA_DIR,
+    ENABLE_UPSET_LAYER,
     SPREAD_BET_ATS_PROB_EDGE_MIN,
     SPREAD_BET_CONFIDENCE_MIN,
     SPREAD_BET_EDGE_MIN,
@@ -148,7 +149,13 @@ def _compute_blowout_scores(frame: pd.DataFrame) -> pd.DataFrame:
     to_abs = _num(frame.get("to_margin_l5")).abs()
     oreb_abs = _num(frame.get("oreb_margin_l5")).abs()
     rest_abs = _num(frame.get("rest_diff")).abs()
-    mc_win = _num(frame.get("mc_home_win_prob")).fillna(_num(frame.get("win_prob_home")))
+    mc_home = _num(frame.get("mc_home_win_prob", pd.Series(np.nan, index=frame.index)))
+    if not isinstance(mc_home, pd.Series):
+        mc_home = pd.Series(mc_home, index=frame.index)
+    win_home = _num(frame.get("win_prob_home", pd.Series(np.nan, index=frame.index)))
+    if not isinstance(win_home, pd.Series):
+        win_home = pd.Series(win_home, index=frame.index)
+    mc_win = mc_home.fillna(win_home)
 
     out["blowout_score_adj"] = ((adj_abs - 8.0) / 10.0).clip(lower=0.0) * 1.2
     out["blowout_score_to"] = ((to_abs - 0.012) / 0.01).clip(lower=0.0) * 0.08
@@ -377,6 +384,151 @@ class IDESOrchestrator:
             if integrity.status in {"FAIL", "BLOCKED"}:
                 self._append_pipeline_log(run_id, stages, "integrity_gate_failed")
                 return RunResult(ok=False, status=integrity.status, stages=stages, outputs=outputs, error="integrity_gate_failed")
+            if ds.upcoming_games.empty:
+                hist_scored = self._score_history_for_reports(ds.historical_games, mc_mode=mc_mode)
+                stages.append(
+                    StageRecord(
+                        "Layer Stack",
+                        "PASS",
+                        [f"upcoming_rows=0 upset_layer_enabled={ENABLE_UPSET_LAYER}"],
+                        {"rows": 0, "upset_layer_enabled": int(ENABLE_UPSET_LAYER)},
+                    )
+                )
+                stages.append(
+                    StageRecord(
+                        "Model Safety Auditor",
+                        "WARN",
+                        ["No upcoming games: model safety audit skipped."],
+                        {"rows": 0},
+                    )
+                )
+
+                self._write_contract_csv("games_schedule_master.csv", pd.DataFrame(), self.paths.games_schedule_master)
+                self._write_contract_csv("team_game_boxscores.csv", pd.DataFrame(), self.paths.team_game_boxscores)
+                self._write_contract_csv("player_game_boxscores.csv", pd.DataFrame(), self.paths.player_game_boxscores)
+                self._write_contract_csv("team_rolling_features.csv", pd.DataFrame(), self.paths.team_rolling_features)
+                self._write_contract_csv("game_matchup_features.csv", pd.DataFrame(), self.paths.game_matchup_features)
+                self._write_contract_csv("game_totals_features.csv", pd.DataFrame(), self.paths.game_totals_features)
+                self._write_contract_csv("game_context_adjustments.csv", pd.DataFrame(), self.paths.game_context_adjustments)
+                self._write_contract_csv("situational_signals_game_level.csv", pd.DataFrame(), self.paths.situational_signals_game_level)
+                self._write_contract_csv("game_monte_carlo_outputs.csv", pd.DataFrame(), self.paths.game_monte_carlo_outputs)
+
+                preds = self._write_contract_csv(
+                    "game_predictions_master.csv",
+                    _apply_output_rounding("game_predictions_master.csv", pd.DataFrame()),
+                    self.paths.game_predictions_master,
+                )
+                bets = self._write_contract_csv(
+                    "bet_recommendations.csv",
+                    _apply_output_rounding("bet_recommendations.csv", pd.DataFrame()),
+                    self.paths.bet_recommendations,
+                )
+                watch = self._write_contract_csv("watchlist_games.csv", pd.DataFrame(), self.paths.watchlist_games)
+                no_bet = self._write_contract_csv("no_bet_explanations.csv", pd.DataFrame(), self.paths.no_bet_explanations)
+
+                as_of_pst = as_of.tz_convert("America/Los_Angeles")
+                season = int(as_of_pst.year + 1) if as_of_pst.month >= 7 else int(as_of_pst.year)
+                summary = pd.DataFrame(
+                    [
+                        {
+                            "run_id": run_id,
+                            "model_version": MODEL_VERSION,
+                            "season": season,
+                            "game_date_pst": as_of_pst.strftime("%Y-%m-%d"),
+                            "games_on_card": 0,
+                            "spread_bets_count": 0,
+                            "total_bets_count": 0,
+                            "watchlist_count": 0,
+                            "highest_confidence_bet": np.nan,
+                            "highest_edge_bet": np.nan,
+                            "avg_spread_edge": np.nan,
+                            "avg_total_edge": np.nan,
+                            "avg_confidence": np.nan,
+                            "notes": "no upcoming games in active horizon",
+                            "created_at_utc": now_utc,
+                        }
+                    ]
+                )
+                summary = self._write_contract_csv("daily_card_summary.csv", summary, self.paths.daily_card_summary)
+
+                agreement = summarize_agreement_buckets(hist_scored).rename(
+                    columns={
+                        "su_accuracy": "straight_up_win_pct",
+                        "ats_accuracy": "ats_win_pct",
+                        "avg_edge": "avg_spread_edge",
+                        "confidence_mean": "avg_spread_confidence",
+                    }
+                )
+                agreement["run_id"] = run_id
+                agreement["model_version"] = MODEL_VERSION
+                agreement["phase"] = "all"
+                agreement["round_name"] = "all"
+                agreement["over_win_pct"] = np.nan
+                agreement["under_win_pct"] = np.nan
+                agreement["avg_total_edge"] = np.nan
+                agreement["avg_total_confidence"] = np.nan
+                agreement["roi_spread"] = np.nan
+                agreement["roi_total"] = np.nan
+                agreement["notes"] = "historical agreement summary"
+                agreement["created_at_utc"] = now_utc
+                agreement = self._write_contract_csv("agreement_analysis_results.csv", agreement, self.paths.agreement_analysis_results)
+
+                outputs = {
+                    "games_schedule_master": str(self.paths.games_schedule_master),
+                    "team_game_boxscores": str(self.paths.team_game_boxscores),
+                    "player_game_boxscores": str(self.paths.player_game_boxscores),
+                    "team_rolling_features": str(self.paths.team_rolling_features),
+                    "game_matchup_features": str(self.paths.game_matchup_features),
+                    "game_totals_features": str(self.paths.game_totals_features),
+                    "game_context_adjustments": str(self.paths.game_context_adjustments),
+                    "situational_signals_game_level": str(self.paths.situational_signals_game_level),
+                    "game_monte_carlo_outputs": str(self.paths.game_monte_carlo_outputs),
+                    "game_predictions_master": str(self.paths.game_predictions_master),
+                    "bet_recommendations": str(self.paths.bet_recommendations),
+                    "watchlist_games": str(self.paths.watchlist_games),
+                    "no_bet_explanations": str(self.paths.no_bet_explanations),
+                    "daily_card_summary": str(self.paths.daily_card_summary),
+                    "agreement_analysis_results": str(self.paths.agreement_analysis_results),
+                }
+
+                pred_schema = validate_predictions(preds)
+                bet_schema = validate_bet_recs(bets)
+                agr_schema = validate_agreement(agreement)
+                schema_issues: list[str] = []
+                if not pred_schema.ok:
+                    schema_issues.append(f"game_predictions_master missing columns: {pred_schema.missing_columns}")
+                if not bet_schema.ok:
+                    schema_issues.append(f"bet_recommendations missing columns: {bet_schema.missing_columns}")
+                if not agr_schema.ok:
+                    schema_issues.append(f"agreement_analysis_results missing columns: {agr_schema.missing_columns}")
+                stages.append(StageRecord("Contract Validation", "PASS" if not schema_issues else "FAIL", schema_issues, {"rows": int(len(preds))}))
+
+                final_status = "WARN" if integrity.status == "WARN" else "PASS"
+                if schema_issues:
+                    final_status = "FAIL"
+
+                manifest = {
+                    "run_type": "predict",
+                    "run_id": run_id,
+                    "model_version": MODEL_VERSION,
+                    "run_at_utc": now_utc,
+                    "as_of_utc": as_of.isoformat(),
+                    "mc_mode": mc_mode,
+                    "hours_back": int(hours_back),
+                    "status": final_status,
+                    "stages": [asdict(s) for s in stages],
+                    "outputs": outputs,
+                }
+                write_json(self.paths.run_manifest, manifest)
+                outputs["run_manifest"] = str(self.paths.run_manifest)
+                self._append_pipeline_log(run_id, stages)
+                return RunResult(
+                    ok=final_status in {"PASS", "WARN"},
+                    status=final_status,
+                    stages=stages,
+                    outputs=outputs,
+                    error=None if final_status in {"PASS", "WARN"} else "predict_failed",
+                )
 
             upcoming = apply_base_strength(ds.upcoming_games)
             upcoming = apply_context_adjustments(upcoming)
@@ -387,7 +539,14 @@ class IDESOrchestrator:
             direct_model = fit_direct_win_model(hist_scored)
             upcoming = apply_decision_layer(upcoming, direct_win_model=direct_model, mc_mode=mc_mode)
             upcoming = apply_agreement_layer(upcoming)
-            stages.append(StageRecord("Layer Stack", "PASS", [], {"rows": int(len(upcoming))}))
+            stages.append(
+                StageRecord(
+                    "Layer Stack",
+                    "PASS",
+                    [f"upset_layer_enabled={ENABLE_UPSET_LAYER}"],
+                    {"rows": int(len(upcoming)), "upset_layer_enabled": int(ENABLE_UPSET_LAYER)},
+                )
+            )
 
             safety = run_model_safety_audit(upcoming)
             stages.append(StageRecord("Model Safety Auditor", safety.status, safety.issues, safety.metrics))

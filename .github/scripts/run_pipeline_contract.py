@@ -188,16 +188,38 @@ def _validate_one_spec(repo_root: Path, spec: Any, stage_name: str, kind: str) -
                     "This is blocked to avoid silent empty outputs."
                 )
             else:
-                games_path = repo_root / "data" / "games.csv"
-                if not games_path.exists():
-                    return None, (
-                        f"[{stage_name}] {kind} {rel} is empty and allow_empty_when_no_games=true, "
-                        "but data/games.csv is missing so 'no games' cannot be verified."
+                # Prefer upcoming-slate signals (if available) over historical games.csv.
+                schedule_path = repo_root / "data" / "plumbing" / "games_schedule_master.csv"
+                no_games_context: bool | None = None
+                if schedule_path.exists():
+                    schedule_df = pd.read_csv(schedule_path, dtype=str, low_memory=False)
+                    no_games_context = len(schedule_df) == 0
+                else:
+                    summary_path = repo_root / "data" / "actionable" / "daily_card_summary.csv"
+                    if summary_path.exists():
+                        summary_df = pd.read_csv(summary_path, dtype=str, low_memory=False)
+                        if "games_on_card" in summary_df.columns and len(summary_df) > 0:
+                            games_on_card = pd.to_numeric(summary_df["games_on_card"], errors="coerce")
+                            no_games_context = bool((games_on_card.fillna(0) <= 0).all())
+
+                if no_games_context is None:
+                    games_path = repo_root / "data" / "games.csv"
+                    if not games_path.exists():
+                        return None, (
+                            f"[{stage_name}] {kind} {rel} is empty and allow_empty_when_no_games=true, "
+                            "but no upcoming-slate indicator or data/games.csv is available to verify context."
+                        )
+                    games_df = pd.read_csv(games_path, dtype=str, low_memory=False)
+                    no_games_context = len(games_df) == 0
+
+                if not no_games_context:
+                    context_hint = (
+                        "data/plumbing/games_schedule_master.csv"
+                        if schedule_path.exists()
+                        else ("data/actionable/daily_card_summary.csv" if (repo_root / "data" / "actionable" / "daily_card_summary.csv").exists() else "data/games.csv")
                     )
-                games_df = pd.read_csv(games_path, dtype=str, low_memory=False)
-                if len(games_df) > 0:
                     return None, (
-                        f"[{stage_name}] {kind} {rel} is empty while data/games.csv has {len(games_df)} rows. "
+                        f"[{stage_name}] {kind} {rel} is empty while {context_hint} indicates games are available. "
                         "Empty output is only allowed when there are truly no games."
                     )
         missing = [c for c in _required_cols(spec.get("required_columns")) if c not in df.columns]

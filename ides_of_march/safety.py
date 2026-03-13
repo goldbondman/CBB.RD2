@@ -29,8 +29,12 @@ def run_data_integrity_audit(
     }
 
     if upcoming_games.empty:
-        status = "BLOCKED"
+        # Empty upcoming horizon is a valid no-slate state (off days / windows
+        # between game blocks). Keep this non-blocking so contract stages can
+        # complete and downstream outputs can remain empty by design.
+        status = "WARN"
         issues.append("No upcoming games found in active horizon.")
+        metrics["no_upcoming_horizon"] = True
         return SafetyStatus(status=status, issues=issues, metrics=metrics)
 
     required_cols = ["event_id", "game_id", "home_team_id", "away_team_id", "game_datetime_utc"]

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 import json
+import math
 from dataclasses import dataclass
 
 import numpy as np
@@ -13,6 +14,19 @@ from .layer3_situational import apply_situational_layer, discover_situational_ru
 from .layer4_monte_carlo import apply_monte_carlo_layer
 from .layer5_agreement import apply_agreement_layer, summarize_agreement_buckets
 from .layer6_decision import apply_decision_layer, fit_direct_win_model
+
+
+EDGE_BANDS: list[tuple[str, float, float | None]] = [
+    ("0-1.5", 0.0, 1.5),
+    ("1.51-3.5", 1.5, 3.5),
+    ("3.6-5.5", 3.5, 5.5),
+    ("5.6+", 5.5, None),
+]
+
+ATS_TOTALS_DEFAULT_ODDS = -110.0
+KELLY_FRACTION = 0.25
+TARGET_TOP_UNITS_PER_SEASON = 30
+MONEYLINE_SIGMA = 11.0
 
 
 @dataclass(frozen=True)
@@ -41,6 +55,14 @@ class Variant:
         return f"bb_{self.backbone}|wp_{self.win_prob}|mc_{self.mc_mode}|{sit}"
 
 
+@dataclass
+class BacktestArtifacts:
+    scorecard: pd.DataFrame
+    edge_band_summary: pd.DataFrame
+    bet_ledger: pd.DataFrame
+    kelly_summary: pd.DataFrame
+
+
 def variant_matrix() -> list[Variant]:
     backbones = ["A", "B"]
     win_probs = ["A", "B"]
@@ -53,6 +75,250 @@ def _num(frame: pd.DataFrame, col: str) -> pd.Series:
     return pd.to_numeric(frame.get(col), errors="coerce")
 
 
+def _edge_band_labels(edge_abs: pd.Series) -> pd.Series:
+    edge = pd.to_numeric(edge_abs, errors="coerce").abs()
+    out = pd.Series(np.nan, index=edge.index, dtype=object)
+    out.loc[edge.notna() & (edge >= 0.0) & (edge <= 1.5)] = "0-1.5"
+    out.loc[edge.notna() & (edge > 1.5) & (edge <= 3.5)] = "1.51-3.5"
+    out.loc[edge.notna() & (edge > 3.5) & (edge <= 5.5)] = "3.6-5.5"
+    out.loc[edge.notna() & (edge > 5.5)] = "5.6+"
+    return out
+
+
+def _home_cover_mask(margin_home: pd.Series, market_spread: pd.Series) -> pd.Series:
+    cover_margin = pd.to_numeric(margin_home, errors="coerce") + pd.to_numeric(market_spread, errors="coerce")
+    out = pd.Series(pd.NA, index=cover_margin.index, dtype="boolean")
+    valid = cover_margin.notna()
+    out.loc[valid] = cover_margin.loc[valid] > 0.0
+    return out
+
+
+def _predicted_home_cover_mask(frame: pd.DataFrame) -> pd.Series:
+    out = pd.Series(pd.NA, index=frame.index, dtype="boolean")
+
+    if "predicted_ats_side" in frame.columns:
+        side = frame["predicted_ats_side"].astype("string").str.upper()
+        out.loc[side.eq("HOME")] = True
+        out.loc[side.eq("AWAY")] = False
+
+    if "ats_cover_prob_home" in frame.columns:
+        prob = _num(frame, "ats_cover_prob_home")
+        prob_mask = out.isna() & prob.notna()
+        out.loc[prob_mask] = prob.loc[prob_mask] >= 0.5
+
+    projected_margin = _num(frame, "projected_margin_home")
+    if projected_margin.isna().all() and "projected_margin_pre_mc" in frame.columns:
+        projected_margin = _num(frame, "projected_margin_pre_mc")
+    if projected_margin.isna().all() and "projected_spread" in frame.columns:
+        projected_margin = -_num(frame, "projected_spread")
+
+    market_spread = _num(frame, "market_spread")
+    margin_mask = out.isna() & projected_margin.notna() & market_spread.notna()
+    out.loc[margin_mask] = (projected_margin.loc[margin_mask] + market_spread.loc[margin_mask]) > 0.0
+    return out
+
+
+def _american_to_implied_prob(odds: pd.Series | np.ndarray | float) -> pd.Series:
+    s = pd.to_numeric(odds, errors="coerce")
+    out = pd.Series(np.nan, index=s.index, dtype=float)
+    neg = s < 0
+    pos = s > 0
+    out.loc[neg] = (-s.loc[neg]) / ((-s.loc[neg]) + 100.0)
+    out.loc[pos] = 100.0 / (s.loc[pos] + 100.0)
+    return out.clip(0.01, 0.99)
+
+
+def _prob_to_fair_american(prob: pd.Series | np.ndarray | float) -> pd.Series:
+    p = pd.to_numeric(prob, errors="coerce").clip(0.01, 0.99)
+    out = pd.Series(np.nan, index=p.index, dtype=float)
+    fav = p >= 0.5
+    dog = p < 0.5
+    out.loc[fav] = -100.0 * p.loc[fav] / (1.0 - p.loc[fav])
+    out.loc[dog] = 100.0 * (1.0 - p.loc[dog]) / p.loc[dog]
+    return out
+
+
+def _profit_per_unit_from_american(odds: pd.Series) -> pd.Series:
+    out = pd.Series(np.nan, index=odds.index, dtype=float)
+    pos = odds > 0
+    neg = odds < 0
+    out.loc[pos] = odds.loc[pos] / 100.0
+    out.loc[neg] = 100.0 / (-odds.loc[neg])
+    return out
+
+
+def _spread_to_home_win_prob(spread_home: pd.Series, sigma: float = MONEYLINE_SIGMA) -> pd.Series:
+    margin = -pd.to_numeric(spread_home, errors="coerce")
+    z = margin / max(float(sigma), 1e-9)
+    return pd.Series(0.5 * (1.0 + np.vectorize(math.erf)(z / math.sqrt(2.0))), index=spread_home.index).clip(0.01, 0.99)
+
+
+def _kelly_fraction(prob: pd.Series, odds_american: pd.Series, fraction: float = KELLY_FRACTION) -> pd.Series:
+    p = pd.to_numeric(prob, errors="coerce")
+    odds = pd.to_numeric(odds_american, errors="coerce")
+    b = _profit_per_unit_from_american(odds)
+    q = 1.0 - p
+    full = ((b * p) - q) / b
+    out = (pd.to_numeric(full, errors="coerce") * max(float(fraction), 0.0)).clip(lower=0.0)
+    return out.where(p.notna() & odds.notna(), np.nan).fillna(0.0)
+
+
+def _annualized_count(count: int, dt: pd.Series) -> float:
+    ts = pd.to_datetime(dt, utc=True, errors="coerce").dropna()
+    if ts.empty:
+        return 0.0
+    seasons = np.where(ts.dt.month >= 7, ts.dt.year + 1, ts.dt.year)
+    n_seasons = max(1, int(pd.Series(seasons).nunique()))
+    return float(count) / float(n_seasons)
+
+
+def _apply_season_quantile_kelly_units(ledger: pd.DataFrame, *, target_top_count: int = TARGET_TOP_UNITS_PER_SEASON) -> pd.DataFrame:
+    out = ledger.copy()
+    out["recommended_stake_units"] = 0.0
+    out["kelly_scale"] = np.nan
+    out["season_scale_target_count"] = int(max(1, target_top_count))
+
+    kelly_raw = pd.to_numeric(out.get("kelly_fraction_raw"), errors="coerce")
+    mask = kelly_raw > 0
+    if not mask.any():
+        return out
+
+    game_dt_raw = out["game_datetime_utc"] if "game_datetime_utc" in out.columns else pd.Series(pd.NaT, index=out.index)
+    game_dt = pd.to_datetime(game_dt_raw, utc=True, errors="coerce")
+    derived_season = pd.Series(
+        np.where(game_dt.notna(), np.where(game_dt.dt.month >= 7, game_dt.dt.year + 1, game_dt.dt.year), np.nan),
+        index=out.index,
+    )
+    season_raw = out["season"] if "season" in out.columns else pd.Series(np.nan, index=out.index)
+    season_numeric = pd.to_numeric(season_raw, errors="coerce")
+    season_key = season_numeric.where(season_numeric.notna(), derived_season).fillna(-1).astype(int)
+
+    target = int(max(1, target_top_count))
+    active_index = out.index[mask]
+    for season in season_key.loc[active_index].unique():
+        season_idx = active_index[season_key.loc[active_index] == season]
+        active = kelly_raw.loc[season_idx].astype(float)
+        if active.empty:
+            continue
+
+        k = target if len(active) >= target else 1
+        top_idx = active.nlargest(k).index
+        threshold = active.loc[top_idx].min()
+        if not np.isfinite(threshold) or threshold <= 0:
+            threshold = active.max()
+        scale = 5.0 / threshold if np.isfinite(threshold) and threshold > 0 else 0.0
+
+        out.loc[season_idx, "kelly_scale"] = scale
+        raw_units = active * scale
+        sized = raw_units.clip(lower=0.1, upper=4.9).round(1)
+        sized.loc[top_idx] = 5.0
+        out.loc[season_idx, "recommended_stake_units"] = sized
+    return out
+
+
+def _empty_backtest_artifacts() -> BacktestArtifacts:
+    scorecard_cols = [
+        "variant_id",
+        "backbone",
+        "win_prob_approach",
+        "mc_mode",
+        "situational_on",
+        "sample_size",
+        "spread_mae",
+        "spread_rmse",
+        "winner_accuracy",
+        "ats_accuracy",
+        "ats_win_pct_edge_gt_1",
+        "ats_win_pct_edge_gt_2",
+        "ats_win_pct_edge_gt_3",
+        "totals_mae",
+        "over_under_win_pct_all",
+        "total_win_pct_edge_gt_1",
+        "total_win_pct_edge_gt_2",
+        "total_win_pct_edge_gt_3",
+        "calibration_brier",
+        "avg_spread_edge",
+        "avg_total_edge",
+        "ats_edge_buckets",
+        "situational_bucket_perf",
+        "agreement_bucket_perf",
+        "roi_spread",
+        "roi_total",
+        "moneyline_win_pct_all",
+        "roi_moneyline",
+        "moneyline_proxy_usage_count",
+        "moneyline_proxy_usage_rate",
+        "five_unit_bets",
+        "five_unit_annualized",
+    ]
+    edge_cols = [
+        "variant_id",
+        "market_type",
+        "edge_band",
+        "edge_unit",
+        "bets_graded",
+        "wins",
+        "losses",
+        "pushes",
+        "win_rate",
+        "units_risked",
+        "pnl_units",
+        "roi_pct",
+        "avg_edge",
+        "avg_stake_units",
+        "avg_odds_american",
+        "moneyline_proxy_usage_rate",
+    ]
+    ledger_cols = [
+        "variant_id",
+        "game_id",
+        "event_id",
+        "game_datetime_utc",
+        "phase",
+        "round_name",
+        "market_type",
+        "bet_side",
+        "bet_outcome",
+        "result",
+        "market_line",
+        "model_line",
+        "market_odds_american",
+        "odds_source",
+        "pick_probability",
+        "market_implied_probability",
+        "edge",
+        "edge_unit",
+        "edge_band",
+        "kelly_fraction_raw",
+        "recommended_stake_units",
+        "units_risked",
+        "profit_per_unit",
+        "pnl_units",
+    ]
+    kelly_cols = [
+        "variant_id",
+        "market_type",
+        "bets_total",
+        "bets_with_stake",
+        "avg_kelly_fraction_raw",
+        "avg_stake_units",
+        "median_stake_units",
+        "max_stake_units",
+        "five_unit_bets",
+        "five_unit_rate",
+        "five_unit_annualized",
+        "units_risked",
+        "pnl_units",
+        "roi_pct",
+    ]
+    return BacktestArtifacts(
+        scorecard=pd.DataFrame(columns=scorecard_cols),
+        edge_band_summary=pd.DataFrame(columns=edge_cols),
+        bet_ledger=pd.DataFrame(columns=ledger_cols),
+        kelly_summary=pd.DataFrame(columns=kelly_cols),
+    )
+
+
 def _apply_variant_totals_projection(frame: pd.DataFrame, variant: Variant) -> pd.DataFrame:
     out = frame.copy()
     base_total = _num(out, "projected_total_ctx")
@@ -63,7 +329,6 @@ def _apply_variant_totals_projection(frame: pd.DataFrame, variant: Variant) -> p
     else:
         total = base_total.where(base_total.notna(), expected_total)
 
-    # Totals-specific possession retention / empty possession pressure.
     to_sum = _num(out, "home_tov_pct_l5") + _num(out, "away_tov_pct_l5")
     oreb_sum = _num(out, "home_orb_pct_l5") + _num(out, "away_orb_pct_l5")
     ftsp_sum = _num(out, "home_ft_scoring_pressure_l5") + _num(out, "away_ft_scoring_pressure_l5")
@@ -130,7 +395,287 @@ def _apply_variant(train_df: pd.DataFrame, test_df: pd.DataFrame, variant: Varia
     return test, rulebook
 
 
-def _compute_metrics(scored: pd.DataFrame) -> dict[str, float | str]:
+def _grade_ats(scored: pd.DataFrame, variant_id: str) -> pd.DataFrame:
+    df = scored.copy()
+    if df.empty:
+        return pd.DataFrame()
+
+    market_spread = _num(df, "market_spread")
+    margin = _num(df, "actual_margin")
+    pred_side_home = _num(df, "ats_cover_prob_home").fillna(0.5) >= 0.5
+    cover_margin = margin + market_spread
+    home_cover = _home_cover_mask(margin, market_spread).fillna(False)
+
+    result = pd.Series("NO_LINE", index=df.index, dtype=object)
+    valid = market_spread.notna() & margin.notna()
+    push = valid & cover_margin.eq(0.0)
+    non_push = valid & ~push
+
+    pred_correct = np.where(pred_side_home, home_cover, ~home_cover)
+    result.loc[non_push] = np.where(pred_correct[non_push], "WIN", "LOSS")
+    result.loc[push] = "PUSH"
+
+    pick_probability = np.where(pred_side_home, _num(df, "ats_cover_prob_home"), 1.0 - _num(df, "ats_cover_prob_home"))
+    edge_points = _num(df, "edge_home").abs()
+    market_line = np.where(pred_side_home, market_spread, -market_spread)
+    model_line = np.where(pred_side_home, _num(df, "projected_spread"), -_num(df, "projected_spread"))
+
+    out = pd.DataFrame(
+        {
+            "variant_id": variant_id,
+            "game_id": df.get("game_id"),
+            "event_id": df.get("event_id", df.get("game_id")),
+            "game_datetime_utc": df.get("game_datetime_utc"),
+            "phase": df.get("phase", "all"),
+            "round_name": df.get("round_name", "all"),
+            "market_type": "ats",
+            "bet_side": np.where(pred_side_home, "home", "away"),
+            "bet_outcome": np.where(pred_side_home, "home_cover", "away_cover"),
+            "result": result,
+            "market_line": pd.to_numeric(market_line, errors="coerce"),
+            "model_line": pd.to_numeric(model_line, errors="coerce"),
+            "market_odds_american": ATS_TOTALS_DEFAULT_ODDS,
+            "odds_source": "assumed_-110",
+            "pick_probability": pd.to_numeric(pick_probability, errors="coerce").clip(0.01, 0.99),
+            "market_implied_probability": _american_to_implied_prob(pd.Series(ATS_TOTALS_DEFAULT_ODDS, index=df.index)),
+            "edge": edge_points,
+            "edge_unit": "points",
+        }
+    )
+    return out
+
+
+def _grade_totals(scored: pd.DataFrame, variant_id: str) -> pd.DataFrame:
+    df = scored.copy()
+    if df.empty:
+        return pd.DataFrame()
+
+    market_total = _num(df, "market_total")
+    actual_total = _num(df, "actual_total")
+    pred_total = _num(df, "projected_total_ctx")
+
+    over_prob = (1.0 / (1.0 + np.exp(-(pred_total - market_total) / 6.0))).clip(0.01, 0.99)
+    pick_over = over_prob >= 0.5
+    total_diff = actual_total - market_total
+
+    result = pd.Series("NO_LINE", index=df.index, dtype=object)
+    valid = market_total.notna() & actual_total.notna()
+    push = valid & total_diff.eq(0.0)
+    non_push = valid & ~push
+    over_hit = total_diff > 0.0
+    pred_correct = np.where(pick_over, over_hit, ~over_hit)
+    result.loc[non_push] = np.where(pred_correct[non_push], "WIN", "LOSS")
+    result.loc[push] = "PUSH"
+
+    pick_probability = np.where(pick_over, over_prob, 1.0 - over_prob)
+    edge_points = (pred_total - market_total).abs()
+
+    out = pd.DataFrame(
+        {
+            "variant_id": variant_id,
+            "game_id": df.get("game_id"),
+            "event_id": df.get("event_id", df.get("game_id")),
+            "game_datetime_utc": df.get("game_datetime_utc"),
+            "phase": df.get("phase", "all"),
+            "round_name": df.get("round_name", "all"),
+            "market_type": "total",
+            "bet_side": np.where(pick_over, "over", "under"),
+            "bet_outcome": np.where(pick_over, "over", "under"),
+            "result": result,
+            "market_line": market_total,
+            "model_line": pred_total,
+            "market_odds_american": ATS_TOTALS_DEFAULT_ODDS,
+            "odds_source": "assumed_-110",
+            "pick_probability": pd.to_numeric(pick_probability, errors="coerce").clip(0.01, 0.99),
+            "market_implied_probability": _american_to_implied_prob(pd.Series(ATS_TOTALS_DEFAULT_ODDS, index=df.index)),
+            "edge": edge_points,
+            "edge_unit": "points",
+        }
+    )
+    return out
+
+
+def _grade_moneyline(scored: pd.DataFrame, variant_id: str) -> pd.DataFrame:
+    df = scored.copy()
+    if df.empty:
+        return pd.DataFrame()
+
+    market_spread = _num(df, "market_spread")
+    home_odds = _num(df, "moneyline_home")
+    away_odds = _num(df, "moneyline_away")
+    home_prob_from_odds = _american_to_implied_prob(home_odds)
+    away_prob_from_odds = _american_to_implied_prob(away_odds)
+
+    proxy_home_prob = _spread_to_home_win_prob(market_spread, sigma=MONEYLINE_SIGMA)
+    proxy_away_prob = (1.0 - proxy_home_prob).clip(0.01, 0.99)
+    proxy_home_odds = _prob_to_fair_american(proxy_home_prob)
+    proxy_away_odds = _prob_to_fair_american(proxy_away_prob)
+
+    market_prob_home = home_prob_from_odds.where(home_prob_from_odds.notna(), proxy_home_prob)
+    market_prob_away = away_prob_from_odds.where(away_prob_from_odds.notna(), proxy_away_prob)
+    market_odds_home = home_odds.where(home_odds.notna(), proxy_home_odds)
+    market_odds_away = away_odds.where(away_odds.notna(), proxy_away_odds)
+
+    model_prob_home = _num(df, "win_prob_home").clip(0.01, 0.99)
+    model_prob_away = (1.0 - model_prob_home).clip(0.01, 0.99)
+
+    edge_home = model_prob_home - market_prob_home
+    edge_away = model_prob_away - market_prob_away
+    pick_home = edge_home >= edge_away
+
+    picked_market_prob = np.where(pick_home, market_prob_home, market_prob_away)
+    picked_model_prob = np.where(pick_home, model_prob_home, model_prob_away)
+    picked_edge = np.where(pick_home, edge_home, edge_away)
+    picked_odds = np.where(pick_home, market_odds_home, market_odds_away)
+    picked_odds_series = pd.Series(picked_odds, index=df.index)
+    picked_side = np.where(pick_home, "home", "away")
+    picked_outcome = np.where(pick_home, "home_win", "away_win")
+    pick_won = np.where(pick_home, _num(df, "home_won") > 0.5, _num(df, "home_won") <= 0.5)
+
+    result = pd.Series("NO_LINE", index=df.index, dtype=object)
+    valid = pd.to_numeric(picked_odds_series, errors="coerce").notna() & _num(df, "home_won").notna()
+    result.loc[valid] = np.where(pick_won[valid], "WIN", "LOSS")
+
+    odds_source = np.where(home_odds.notna() & away_odds.notna(), "market_moneyline", "spread_proxy")
+
+    out = pd.DataFrame(
+        {
+            "variant_id": variant_id,
+            "game_id": df.get("game_id"),
+            "event_id": df.get("event_id", df.get("game_id")),
+            "game_datetime_utc": df.get("game_datetime_utc"),
+            "phase": df.get("phase", "all"),
+            "round_name": df.get("round_name", "all"),
+            "market_type": "moneyline",
+            "bet_side": picked_side,
+            "bet_outcome": picked_outcome,
+            "result": result,
+            "market_line": pd.to_numeric(picked_odds_series, errors="coerce"),
+            "model_line": _prob_to_fair_american(pd.Series(picked_model_prob, index=df.index)),
+            "market_odds_american": pd.to_numeric(picked_odds_series, errors="coerce"),
+            "odds_source": odds_source,
+            "pick_probability": pd.to_numeric(picked_model_prob, errors="coerce").clip(0.01, 0.99),
+            "market_implied_probability": pd.to_numeric(picked_market_prob, errors="coerce").clip(0.01, 0.99),
+                "edge": np.abs(pd.to_numeric(picked_edge, errors="coerce")) * 100.0,
+            "edge_unit": "pp",
+        }
+    )
+    return out
+
+
+def _grade_markets(scored: pd.DataFrame, variant_id: str) -> pd.DataFrame:
+    ats = _grade_ats(scored, variant_id)
+    totals = _grade_totals(scored, variant_id)
+    moneyline = _grade_moneyline(scored, variant_id)
+    out = pd.concat([ats, totals, moneyline], ignore_index=True, sort=False)
+    if out.empty:
+        return out
+
+    out["edge"] = pd.to_numeric(out["edge"], errors="coerce").abs()
+    out["edge_band"] = _edge_band_labels(out["edge"])
+    out["profit_per_unit"] = _profit_per_unit_from_american(pd.to_numeric(out["market_odds_american"], errors="coerce"))
+    out["kelly_fraction_raw"] = _kelly_fraction(
+        pd.to_numeric(out["pick_probability"], errors="coerce").clip(0.01, 0.99),
+        pd.to_numeric(out["market_odds_american"], errors="coerce"),
+        fraction=KELLY_FRACTION,
+    )
+    out = _apply_season_quantile_kelly_units(out, target_top_count=TARGET_TOP_UNITS_PER_SEASON)
+    out["units_risked"] = np.where(out["recommended_stake_units"] > 0.0, out["recommended_stake_units"], 0.0)
+    out["pnl_units"] = np.where(
+        out["result"].eq("WIN"),
+        out["units_risked"] * out["profit_per_unit"],
+        np.where(out["result"].eq("LOSS"), -out["units_risked"], 0.0),
+    )
+    out["bet_outcome"] = out["bet_outcome"].astype(str)
+    out["market_type"] = out["market_type"].astype(str)
+    return out
+
+
+def _win_rate(results: pd.Series) -> float:
+    graded = results.isin(["WIN", "LOSS"])
+    if not graded.any():
+        return np.nan
+    return float(results[graded].eq("WIN").mean())
+
+
+def _roi_pct(units_risked: pd.Series, pnl_units: pd.Series) -> float:
+    risked = float(pd.to_numeric(units_risked, errors="coerce").fillna(0.0).sum())
+    pnl = float(pd.to_numeric(pnl_units, errors="coerce").fillna(0.0).sum())
+    if risked <= 0:
+        return np.nan
+    return (pnl / risked) * 100.0
+
+
+def _summarize_edge_bands(ledger: pd.DataFrame) -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
+    if ledger.empty:
+        return pd.DataFrame()
+
+    for (variant_id, market_type, edge_band), grp in ledger.groupby(["variant_id", "market_type", "edge_band"], observed=False, dropna=False):
+        if pd.isna(edge_band):
+            continue
+        wins = int((grp["result"] == "WIN").sum())
+        losses = int((grp["result"] == "LOSS").sum())
+        pushes = int((grp["result"] == "PUSH").sum())
+        graded = wins + losses + pushes
+        units_risked = float(pd.to_numeric(grp["units_risked"], errors="coerce").fillna(0.0).sum())
+        pnl_units = float(pd.to_numeric(grp["pnl_units"], errors="coerce").fillna(0.0).sum())
+        roi = (pnl_units / units_risked * 100.0) if units_risked > 0 else np.nan
+        rows.append(
+            {
+                "variant_id": variant_id,
+                "market_type": market_type,
+                "edge_band": edge_band,
+                "edge_unit": grp["edge_unit"].mode(dropna=True).iloc[0] if grp["edge_unit"].notna().any() else np.nan,
+                "bets_graded": graded,
+                "wins": wins,
+                "losses": losses,
+                "pushes": pushes,
+                "win_rate": _win_rate(grp["result"]),
+                "units_risked": units_risked,
+                "pnl_units": pnl_units,
+                "roi_pct": roi,
+                "avg_edge": float(pd.to_numeric(grp["edge"], errors="coerce").mean()),
+                "avg_stake_units": float(pd.to_numeric(grp["recommended_stake_units"], errors="coerce").mean()),
+                "avg_odds_american": float(pd.to_numeric(grp["market_odds_american"], errors="coerce").mean()),
+                "moneyline_proxy_usage_rate": float(grp["odds_source"].eq("spread_proxy").mean()) if market_type == "moneyline" else 0.0,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def _summarize_kelly(ledger: pd.DataFrame) -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
+    if ledger.empty:
+        return pd.DataFrame()
+
+    grouped = ledger.groupby(["variant_id", "market_type"], observed=False, dropna=False)
+    for (variant_id, market_type), grp in grouped:
+        units = pd.to_numeric(grp["recommended_stake_units"], errors="coerce").fillna(0.0)
+        active = units > 0
+        five_count = int((units >= 5.0).sum())
+        rows.append(
+            {
+                "variant_id": variant_id,
+                "market_type": market_type,
+                "bets_total": int(len(grp)),
+                "bets_with_stake": int(active.sum()),
+                "avg_kelly_fraction_raw": float(pd.to_numeric(grp["kelly_fraction_raw"], errors="coerce").fillna(0.0).mean()),
+                "avg_stake_units": float(units[active].mean()) if active.any() else 0.0,
+                "median_stake_units": float(units[active].median()) if active.any() else 0.0,
+                "max_stake_units": float(units.max()) if len(units) else 0.0,
+                "five_unit_bets": five_count,
+                "five_unit_rate": float(five_count / max(int(active.sum()), 1)) if active.any() else 0.0,
+                "five_unit_annualized": _annualized_count(five_count, pd.to_datetime(grp["game_datetime_utc"], utc=True, errors="coerce")),
+                "units_risked": float(pd.to_numeric(grp["units_risked"], errors="coerce").fillna(0.0).sum()),
+                "pnl_units": float(pd.to_numeric(grp["pnl_units"], errors="coerce").fillna(0.0).sum()),
+                "roi_pct": _roi_pct(grp["units_risked"], grp["pnl_units"]),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def _compute_variant_metrics(scored: pd.DataFrame, ledger: pd.DataFrame, variant_id: str) -> dict[str, float | int | str]:
     if scored.empty:
         return {
             "sample_size": 0,
@@ -152,276 +697,117 @@ def _compute_metrics(scored: pd.DataFrame) -> dict[str, float | str]:
             "ats_edge_buckets": "{}",
             "situational_bucket_perf": "{}",
             "agreement_bucket_perf": "{}",
+            "roi_spread": np.nan,
+            "roi_total": np.nan,
+            "moneyline_win_pct_all": np.nan,
+            "roi_moneyline": np.nan,
+            "moneyline_proxy_usage_count": 0,
+            "moneyline_proxy_usage_rate": 0.0,
+            "five_unit_bets": 0,
+            "five_unit_annualized": 0.0,
         }
 
-    df = scored.copy()
-    margin = pd.to_numeric(df.get("actual_margin"), errors="coerce")
-    total = pd.to_numeric(df.get("actual_total"), errors="coerce")
-    home_won = pd.to_numeric(df.get("home_won"), errors="coerce")
-    market_spread = pd.to_numeric(df.get("market_spread"), errors="coerce")
-    market_total = pd.to_numeric(df.get("market_total"), errors="coerce")
-
-    pred_margin = pd.to_numeric(df.get("projected_margin_home"), errors="coerce")
-    pred_total = pd.to_numeric(df.get("projected_total_ctx"), errors="coerce")
-    pred_win = pd.to_numeric(df.get("win_prob_home"), errors="coerce")
+    margin = _num(scored, "actual_margin")
+    total = _num(scored, "actual_total")
+    home_won = _num(scored, "home_won")
+    pred_margin = _num(scored, "projected_margin_home")
+    pred_total = _num(scored, "projected_total_ctx")
+    pred_win = _num(scored, "win_prob_home")
 
     predicted_home_win = pred_win >= 0.5
     winner_accuracy = float((predicted_home_win == (home_won > 0.5)).mean()) if home_won.notna().any() else np.nan
-
-    home_cover = (margin + market_spread) > 0
-    predicted_home_cover = df.get("predicted_ats_side", pd.Series("HOME", index=df.index)).astype(str).eq("HOME")
-    ats_accuracy = float((predicted_home_cover == home_cover).mean()) if margin.notna().any() and market_spread.notna().any() else np.nan
-
     spread_mae = float((pred_margin - margin).abs().mean()) if margin.notna().any() else np.nan
     spread_rmse = float(np.sqrt(np.mean((pred_margin - margin) ** 2))) if margin.notna().any() else np.nan
+    totals_mae = float((pred_total - total).abs().mean()) if total.notna().any() else np.nan
     brier = float(np.mean((pred_win - home_won) ** 2)) if home_won.notna().any() else np.nan
 
-    edge_abs = pd.to_numeric(df.get("edge_home"), errors="coerce").abs()
-    ats_correct = (predicted_home_cover == home_cover).astype(float)
-    ats_win_pct_edge_gt_1 = float(ats_correct[edge_abs >= 1.0].mean()) if (edge_abs >= 1.0).any() else np.nan
-    ats_win_pct_edge_gt_2 = float(ats_correct[edge_abs >= 2.0].mean()) if (edge_abs >= 2.0).any() else np.nan
-    ats_win_pct_edge_gt_3 = float(ats_correct[edge_abs >= 3.0].mean()) if (edge_abs >= 3.0).any() else np.nan
+    ats = ledger[(ledger["variant_id"] == variant_id) & ledger["market_type"].eq("ats")].copy()
+    totals = ledger[(ledger["variant_id"] == variant_id) & ledger["market_type"].eq("total")].copy()
+    ml = ledger[(ledger["variant_id"] == variant_id) & ledger["market_type"].eq("moneyline")].copy()
 
-    over_prob = (1.0 / (1.0 + np.exp(-(pred_total - market_total) / 6.0))).clip(0.01, 0.99)
-    over_pick = over_prob >= 0.5
-    actual_over = total > market_total
-    ou_correct = (over_pick == actual_over).astype(float)
-    totals_mae = float((pred_total - total).abs().mean()) if total.notna().any() else np.nan
-    over_under_win_pct_all = float(ou_correct.mean()) if total.notna().any() and market_total.notna().any() else np.nan
+    def _threshold_win_rate(frame: pd.DataFrame, threshold: float) -> float:
+        if frame.empty:
+            return np.nan
+        hit = frame[pd.to_numeric(frame["edge"], errors="coerce") >= threshold]
+        return _win_rate(hit["result"]) if not hit.empty else np.nan
 
-    total_edge_abs = (pred_total - market_total).abs()
-    total_win_pct_edge_gt_1 = float(ou_correct[total_edge_abs >= 1.0].mean()) if (total_edge_abs >= 1.0).any() else np.nan
-    total_win_pct_edge_gt_2 = float(ou_correct[total_edge_abs >= 2.0].mean()) if (total_edge_abs >= 2.0).any() else np.nan
-    total_win_pct_edge_gt_3 = float(ou_correct[total_edge_abs >= 3.0].mean()) if (total_edge_abs >= 3.0).any() else np.nan
-    bucket = pd.cut(edge_abs, bins=[-np.inf, 1.5, 3.0, np.inf], labels=["0-1.5", "1.5-3", "3+"])
-    edge_perf = (
-        pd.DataFrame({"bucket": bucket, "ats_correct": (predicted_home_cover == home_cover).astype(float)})
-        .groupby("bucket", observed=False)["ats_correct"]
-        .mean()
-        .to_dict()
-    )
+    ats_edge = pd.to_numeric(ats["edge"], errors="coerce") if not ats.empty else pd.Series(dtype=float)
+    ats_bucket_payload = {}
+    if not ats.empty:
+        for label, lo, hi in EDGE_BANDS:
+            if hi is None:
+                seg = ats[ats_edge > lo]
+            elif label == "0-1.5":
+                seg = ats[(ats_edge >= lo) & (ats_edge <= hi)]
+            else:
+                seg = ats[(ats_edge > lo) & (ats_edge <= hi)]
+            ats_bucket_payload[label] = _win_rate(seg["result"]) if not seg.empty else np.nan
 
-    situ_bucket = pd.cut(pd.to_numeric(df.get("situational_score"), errors="coerce"), bins=[-np.inf, -0.02, 0.02, np.inf], labels=["negative", "neutral", "positive"])
+    situ_bucket = pd.cut(pd.to_numeric(scored.get("situational_score"), errors="coerce"), bins=[-np.inf, -0.02, 0.02, np.inf], labels=["negative", "neutral", "positive"])
+    predicted_home_cover = _predicted_home_cover_mask(scored)
+    market_spread = _num(scored, "market_spread")
+    home_cover = _home_cover_mask(margin, market_spread)
+    ats_correct = predicted_home_cover.eq(home_cover).where(predicted_home_cover.notna() & home_cover.notna()).astype("Float64")
     situ_perf = (
-        pd.DataFrame({"bucket": situ_bucket, "ats_correct": (predicted_home_cover == home_cover).astype(float)})
+        pd.DataFrame({"bucket": situ_bucket, "ats_correct": ats_correct})
         .groupby("bucket", observed=False)["ats_correct"]
         .mean()
         .to_dict()
     )
 
-    agreement = summarize_agreement_buckets(df)
-    agreement_payload = agreement.set_index("agreement_bucket")["ats_accuracy"].to_dict()
+    agreement = summarize_agreement_buckets(scored)
+    agreement_payload = agreement.set_index("agreement_bucket")["ats_accuracy"].to_dict() if not agreement.empty else {}
+
+    five_count = int((pd.to_numeric(ledger["recommended_stake_units"], errors="coerce") >= 5.0).sum()) if not ledger.empty else 0
+    five_annual = _annualized_count(five_count, pd.to_datetime(ledger.get("game_datetime_utc"), utc=True, errors="coerce")) if not ledger.empty else 0.0
+
+    ml_proxy_count = int(ml["odds_source"].eq("spread_proxy").sum()) if not ml.empty else 0
+    ml_proxy_rate = float(ml["odds_source"].eq("spread_proxy").mean()) if not ml.empty else 0.0
 
     return {
-        "sample_size": int(len(df)),
+        "sample_size": int(len(scored)),
         "spread_mae": spread_mae,
         "spread_rmse": spread_rmse,
         "winner_accuracy": winner_accuracy,
-        "ats_accuracy": ats_accuracy,
-        "ats_win_pct_edge_gt_1": ats_win_pct_edge_gt_1,
-        "ats_win_pct_edge_gt_2": ats_win_pct_edge_gt_2,
-        "ats_win_pct_edge_gt_3": ats_win_pct_edge_gt_3,
+        "ats_accuracy": _win_rate(ats["result"]) if not ats.empty else np.nan,
+        "ats_win_pct_edge_gt_1": _threshold_win_rate(ats, 1.0),
+        "ats_win_pct_edge_gt_2": _threshold_win_rate(ats, 2.0),
+        "ats_win_pct_edge_gt_3": _threshold_win_rate(ats, 3.0),
         "totals_mae": totals_mae,
-        "over_under_win_pct_all": over_under_win_pct_all,
-        "total_win_pct_edge_gt_1": total_win_pct_edge_gt_1,
-        "total_win_pct_edge_gt_2": total_win_pct_edge_gt_2,
-        "total_win_pct_edge_gt_3": total_win_pct_edge_gt_3,
+        "over_under_win_pct_all": _win_rate(totals["result"]) if not totals.empty else np.nan,
+        "total_win_pct_edge_gt_1": _threshold_win_rate(totals, 1.0),
+        "total_win_pct_edge_gt_2": _threshold_win_rate(totals, 2.0),
+        "total_win_pct_edge_gt_3": _threshold_win_rate(totals, 3.0),
         "calibration_brier": brier,
-        "avg_spread_edge": float(edge_abs.mean()) if edge_abs.notna().any() else np.nan,
-        "avg_total_edge": float(total_edge_abs.mean()) if total_edge_abs.notna().any() else np.nan,
-        "ats_edge_buckets": json.dumps(edge_perf),
+        "avg_spread_edge": float(pd.to_numeric(ats["edge"], errors="coerce").mean()) if not ats.empty else np.nan,
+        "avg_total_edge": float(pd.to_numeric(totals["edge"], errors="coerce").mean()) if not totals.empty else np.nan,
+        "ats_edge_buckets": json.dumps(ats_bucket_payload),
         "situational_bucket_perf": json.dumps(situ_perf),
         "agreement_bucket_perf": json.dumps(agreement_payload),
+        "roi_spread": _roi_pct(ats["units_risked"], ats["pnl_units"]) if not ats.empty else np.nan,
+        "roi_total": _roi_pct(totals["units_risked"], totals["pnl_units"]) if not totals.empty else np.nan,
+        "moneyline_win_pct_all": _win_rate(ml["result"]) if not ml.empty else np.nan,
+        "roi_moneyline": _roi_pct(ml["units_risked"], ml["pnl_units"]) if not ml.empty else np.nan,
+        "moneyline_proxy_usage_count": ml_proxy_count,
+        "moneyline_proxy_usage_rate": ml_proxy_rate,
+        "five_unit_bets": five_count,
+        "five_unit_annualized": five_annual,
     }
 
 
-def _build_bet_ledger(variant_id: str, scored: pd.DataFrame) -> pd.DataFrame:
-    """Build individual bet rows from a scored DataFrame for one variant."""
-    _COLS = [
-        "variant_id", "game_id", "game_datetime_utc",
-        "market_type", "odds_source", "edge", "side", "bet_won",
-    ]
-    if scored.empty:
-        return pd.DataFrame(columns=_COLS)
-
-    s = scored.reset_index(drop=True)
-    gid = s.get("game_id", pd.Series(dtype=str, index=s.index))
-    gdt = s.get("game_datetime_utc", pd.Series(dtype=str, index=s.index))
-
-    ms = pd.to_numeric(s.get("market_spread"), errors="coerce")
-    mt = pd.to_numeric(s.get("market_total"), errors="coerce")
-    pm = pd.to_numeric(s.get("projected_margin_home"), errors="coerce")
-    pt = pd.to_numeric(s.get("projected_total_ctx"), errors="coerce")
-    am = pd.to_numeric(s.get("actual_margin"), errors="coerce")
-    at_ = pd.to_numeric(s.get("actual_total"), errors="coerce")
-    wp = pd.to_numeric(s.get("win_prob_home"), errors="coerce")
-    hw = pd.to_numeric(s.get("home_won"), errors="coerce")
-
-    ledger_parts: list[pd.DataFrame] = []
-
-    # ATS bets
-    ats_mask = ms.notna() & pm.notna()
-    if ats_mask.any():
-        raw_edge = pm[ats_mask] - ms[ats_mask]
-        predicted_home_cover = raw_edge > 0
-        home_cover = (am[ats_mask] + ms[ats_mask]) > 0
-        has_result = am[ats_mask].notna()
-        bet_won = np.where(has_result, (predicted_home_cover == home_cover).astype(float), np.nan)
-        ats = pd.DataFrame({
-            "variant_id": variant_id,
-            "game_id": gid[ats_mask].values,
-            "game_datetime_utc": gdt[ats_mask].values,
-            "market_type": "ats",
-            "odds_source": "market",
-            "edge": raw_edge.abs().round(4).values,
-            "side": np.where(predicted_home_cover, "HOME", "AWAY"),
-            "bet_won": bet_won,
-        })
-        ledger_parts.append(ats)
-
-    # Total bets
-    tot_mask = mt.notna() & pt.notna()
-    if tot_mask.any():
-        raw_total_edge = pt[tot_mask] - mt[tot_mask]
-        predicted_over = raw_total_edge > 0
-        actual_over = at_[tot_mask] > mt[tot_mask]
-        has_result = at_[tot_mask].notna()
-        bet_won = np.where(has_result, (predicted_over == actual_over).astype(float), np.nan)
-        tot = pd.DataFrame({
-            "variant_id": variant_id,
-            "game_id": gid[tot_mask].values,
-            "game_datetime_utc": gdt[tot_mask].values,
-            "market_type": "total",
-            "odds_source": "market",
-            "edge": raw_total_edge.abs().round(4).values,
-            "side": np.where(predicted_over, "OVER", "UNDER"),
-            "bet_won": bet_won,
-        })
-        ledger_parts.append(tot)
-
-    # Moneyline bets (proxied from spread model win probability)
-    ml_mask = wp.notna()
-    if ml_mask.any():
-        ml_edge = (wp[ml_mask] - 0.5).abs().round(4)
-        predicted_home_win = wp[ml_mask] >= 0.5
-        actual_home_win = hw[ml_mask] > 0.5
-        has_result = hw[ml_mask].notna()
-        bet_won = np.where(has_result, (predicted_home_win == actual_home_win).astype(float), np.nan)
-        ml = pd.DataFrame({
-            "variant_id": variant_id,
-            "game_id": gid[ml_mask].values,
-            "game_datetime_utc": gdt[ml_mask].values,
-            "market_type": "moneyline",
-            "odds_source": "spread_proxy",
-            "edge": ml_edge.values,
-            "side": np.where(predicted_home_win, "HOME", "AWAY"),
-            "bet_won": bet_won,
-        })
-        ledger_parts.append(ml)
-
-    if not ledger_parts:
-        return pd.DataFrame(columns=_COLS)
-    return pd.concat(ledger_parts, ignore_index=True)[_COLS]
-
-
-def _build_edge_band_summary(ledger: pd.DataFrame) -> pd.DataFrame:
-    """Aggregate bet_ledger into edge-band win-rate statistics."""
-    _COLS = ["variant_id", "market_type", "edge_band", "bets_graded", "bets_won", "win_rate"]
-    if ledger.empty:
-        return pd.DataFrame(columns=_COLS)
-
-    df = ledger[ledger["bet_won"].notna()].copy()
-    if df.empty:
-        return pd.DataFrame(columns=_COLS)
-
-    df["edge_band"] = pd.cut(
-        pd.to_numeric(df["edge"], errors="coerce"),
-        bins=_EDGE_BAND_BINS,
-        labels=_EDGE_BAND_LABELS,
-        right=True,
-    )
-    grp = df.groupby(["variant_id", "market_type", "edge_band"], observed=False)
-    agg = grp.agg(
-        bets_graded=("bet_won", "count"),
-        bets_won=("bet_won", lambda x: int((pd.to_numeric(x, errors="coerce") == 1).sum())),
-    ).reset_index()
-    agg["win_rate"] = (
-        agg["bets_won"] / agg["bets_graded"].clip(lower=1)
-    ).round(4)
-    return agg[_COLS]
-
-
-def _build_kelly_summary(ledger: pd.DataFrame) -> pd.DataFrame:
-    """Compute Kelly criterion fractions per variant and market type."""
-    _COLS = ["variant_id", "market_type", "kelly_fraction", "avg_edge", "win_rate", "bets_graded"]
-    if ledger.empty:
-        return pd.DataFrame(columns=_COLS)
-
-    df = ledger[ledger["bet_won"].notna()].copy()
-    if df.empty:
-        return pd.DataFrame(columns=_COLS)
-
-    grp = df.groupby(["variant_id", "market_type"], observed=True)
-    agg = grp.agg(
-        bets_graded=("bet_won", "count"),
-        bets_won=("bet_won", lambda x: int((pd.to_numeric(x, errors="coerce") == 1).sum())),
-        avg_edge=("edge", lambda x: round(float(pd.to_numeric(x, errors="coerce").mean()), 4)),
-    ).reset_index()
-    agg["win_rate"] = (agg["bets_won"] / agg["bets_graded"].clip(lower=1)).round(4)
-    # Kelly fraction using even-money (1:1) approximation: f* = 2p - 1, clipped at 0.
-    # This is a simplification; typical sports-book ATS/totals odds are ~-110 (0.909:1),
-    # but even-money provides a conservative upper-bound estimate for unit sizing.
-    agg["kelly_fraction"] = (2 * agg["win_rate"] - 1).clip(lower=0).round(4)
-    return agg[_COLS]
-
-
 def run_variant_backtest(historical_games: pd.DataFrame) -> BacktestArtifacts:
-    _SCORECARD_COLS = [
-        "variant_id",
-        "sample_size",
-        "spread_mae",
-        "spread_rmse",
-        "winner_accuracy",
-        "ats_accuracy",
-        "ats_win_pct_edge_gt_1",
-        "ats_win_pct_edge_gt_2",
-        "ats_win_pct_edge_gt_3",
-        "totals_mae",
-        "over_under_win_pct_all",
-        "total_win_pct_edge_gt_1",
-        "total_win_pct_edge_gt_2",
-        "total_win_pct_edge_gt_3",
-        "calibration_brier",
-        "avg_spread_edge",
-        "avg_total_edge",
-        "ats_edge_buckets",
-        "situational_bucket_perf",
-        "agreement_bucket_perf",
-    ]
-    _EMPTY_LEDGER_COLS = [
-        "variant_id", "game_id", "game_datetime_utc",
-        "market_type", "odds_source", "edge", "side", "bet_won",
-    ]
-    _EMPTY_EDGE_COLS = ["variant_id", "market_type", "edge_band", "bets_graded", "bets_won", "win_rate"]
-    _EMPTY_KELLY_COLS = ["variant_id", "market_type", "kelly_fraction", "avg_edge", "win_rate", "bets_graded"]
-
     if historical_games.empty:
-        return BacktestArtifacts(
-            scorecard=pd.DataFrame(columns=_SCORECARD_COLS),
-            edge_band_summary=pd.DataFrame(columns=_EMPTY_EDGE_COLS),
-            bet_ledger=pd.DataFrame(columns=_EMPTY_LEDGER_COLS),
-            kelly_summary=pd.DataFrame(columns=_EMPTY_KELLY_COLS),
-        )
+        return _empty_backtest_artifacts()
 
     df = historical_games.copy()
     df = df.sort_values("game_datetime_utc", kind="mergesort").reset_index(drop=True)
     min_train = max(120, int(len(df) * 0.7))
     if min_train >= len(df):
-        min_train = max(120, len(df) - 1)
+        min_train = max(1, len(df) - 1)
     windows = [(np.arange(0, min_train), np.arange(min_train, len(df)))]
 
-    rows: list[dict[str, object]] = []
-    ledger_parts: list[pd.DataFrame] = []
+    score_rows: list[dict[str, object]] = []
+    ledgers: list[pd.DataFrame] = []
     for variant in variant_matrix():
         scored_parts: list[pd.DataFrame] = []
         for train_idx, test_idx in windows:
@@ -433,8 +819,11 @@ def run_variant_backtest(historical_games: pd.DataFrame) -> BacktestArtifacts:
             scored_parts.append(scored)
 
         scored_all = pd.concat(scored_parts, ignore_index=True) if scored_parts else pd.DataFrame()
-        metrics = _compute_metrics(scored_all)
-        rows.append(
+        ledger = _grade_markets(scored_all, variant.id)
+        if not ledger.empty:
+            ledgers.append(ledger)
+        metrics = _compute_variant_metrics(scored_all, ledger, variant.id)
+        score_rows.append(
             {
                 "variant_id": variant.id,
                 "backbone": variant.backbone,
@@ -444,20 +833,19 @@ def run_variant_backtest(historical_games: pd.DataFrame) -> BacktestArtifacts:
                 **metrics,
             }
         )
-        if not scored_all.empty:
-            ledger_parts.append(_build_bet_ledger(variant.id, scored_all))
 
-    out = pd.DataFrame(rows)
-    out = out.sort_values(["ats_accuracy", "winner_accuracy", "spread_mae"], ascending=[False, False, True], na_position="last")
-    scorecard = out.reset_index(drop=True)
+    scorecard = pd.DataFrame(score_rows)
+    if not scorecard.empty:
+        scorecard = scorecard.sort_values(["ats_accuracy", "winner_accuracy", "spread_mae"], ascending=[False, False, True], na_position="last").reset_index(drop=True)
 
-    ledger = pd.concat(ledger_parts, ignore_index=True) if ledger_parts else pd.DataFrame(columns=_EMPTY_LEDGER_COLS)
-    edge_band_summary = _build_edge_band_summary(ledger)
-    kelly_summary = _build_kelly_summary(ledger)
+    empty = _empty_backtest_artifacts()
+    bet_ledger = pd.concat(ledgers, ignore_index=True, sort=False) if ledgers else empty.bet_ledger
+    edge_band_summary = _summarize_edge_bands(bet_ledger)
+    kelly_summary = _summarize_kelly(bet_ledger)
 
     return BacktestArtifacts(
-        scorecard=scorecard,
-        edge_band_summary=edge_band_summary,
-        bet_ledger=ledger,
-        kelly_summary=kelly_summary,
+        scorecard=scorecard if not scorecard.empty else empty.scorecard,
+        edge_band_summary=edge_band_summary if not edge_band_summary.empty else empty.edge_band_summary,
+        bet_ledger=bet_ledger,
+        kelly_summary=kelly_summary if not kelly_summary.empty else empty.kelly_summary,
     )
