@@ -68,6 +68,15 @@ PLAYER_TARGET_NULL_GUARD_COLUMNS = [
     "efg_pct", "three_pct", "fg_pct", "ft_pct",
 ]
 
+MARKET_LINE_COLUMNS = [
+    "spread",
+    "over_under",
+    "home_ml",
+    "away_ml",
+    "odds_provider",
+    "odds_details",
+]
+
 HALF_SCORE_FINAL_MIN_NON_NULL = float(os.getenv("HALF_SCORE_FINAL_MIN_NON_NULL", "0.80"))
 STANDINGS_MIN_NON_NULL = float(os.getenv("STANDINGS_MIN_NON_NULL", "0.80"))
 SOS_MAX_ROW_MULTIPLIER = float(os.getenv("SOS_MAX_ROW_MULTIPLIER", "1.25"))
@@ -323,6 +332,15 @@ def _log_player_stage_diagnostics(stage: str, df: pd.DataFrame) -> None:
     log.info(f"{stage}: key_dtypes={dtypes} key_sample={key_sample} suffix_collisions={suffix_collisions[:10]}")
 
 
+def _strip_market_line_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Keep market columns present but clear values for boxscore-only historical runs."""
+    out = df.copy()
+    for col in MARKET_LINE_COLUMNS:
+        if col in out.columns:
+            out[col] = None
+    return out
+
+
 def _enrich_team_rows_from_scoreboard(df_team: pd.DataFrame, games_df: pd.DataFrame) -> pd.DataFrame:
     """Fill missing team metadata from scoreboard context to avoid blank wins/losses/conference."""
     if df_team.empty:
@@ -575,7 +593,7 @@ def _save_raw_json(subdir: str, name: str, data: Any) -> None:
 
 # ── Scoreboard pass ───────────────────────────────────────────────────────────
 
-def build_games(days_back: int = DAYS_BACK) -> pd.DataFrame:
+def build_games(days_back: int = DAYS_BACK, strip_market_lines: bool = False) -> pd.DataFrame:
     """
     Fetch scoreboard for the past `days_back` days + today + tomorrow.
     Returns a DataFrame of all parsed game rows and writes games.csv.
@@ -627,6 +645,8 @@ def build_games(days_back: int = DAYS_BACK) -> pd.DataFrame:
 
     teams_ref = _build_d1_team_reference(df_all_unfiltered)
     df_all, d1_report = filter_d1_vs_d1(df_all_unfiltered, teams_ref)
+    if strip_market_lines:
+        df_all = _strip_market_line_columns(df_all)
 
     fetched_games = len(df_all_unfiltered)
     d1_games_kept = len(df_all)
@@ -652,7 +672,13 @@ def build_games(days_back: int = DAYS_BACK) -> pd.DataFrame:
 
 # ── Summary pass ──────────────────────────────────────────────────────────────
 
-def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BACK, skip_odds_validation: bool = True) -> dict:
+def build_team_and_player_logs(
+    games_df: pd.DataFrame,
+    days_back: int = DAYS_BACK,
+    skip_odds_validation: bool = True,
+    include_player_boxscores: bool = True,
+    build_derived_features: bool = True,
+) -> dict:
     """
     For each completed game in the run window, fetch the ESPN summary and
     write team + player rows to their respective CSVs.
@@ -697,11 +723,12 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
                 row["parse_version"] = PARSE_VERSION
             team_rows.extend([hrow, arow])
 
-            for p in parsed.get("players", []):
-                p["pulled_at_utc"] = now_iso
-                p["source"]        = SOURCE
-                p["parse_version"] = PARSE_VERSION
-                player_rows.append(p)
+            if include_player_boxscores:
+                for p in parsed.get("players", []):
+                    p["pulled_at_utc"] = now_iso
+                    p["source"]        = SOURCE
+                    p["parse_version"] = PARSE_VERSION
+                    player_rows.append(p)
 
             processed.add(gid)
 
@@ -735,11 +762,12 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
                         row["source"]        = SOURCE
                         row["parse_version"] = PARSE_VERSION
                     team_rows.extend([hrow, arow])
-                    for p in parsed.get("players", []):
-                        p["pulled_at_utc"] = now_iso
-                        p["source"]        = SOURCE
-                        p["parse_version"] = PARSE_VERSION
-                        player_rows.append(p)
+                    if include_player_boxscores:
+                        for p in parsed.get("players", []):
+                            p["pulled_at_utc"] = now_iso
+                            p["source"]        = SOURCE
+                            p["parse_version"] = PARSE_VERSION
+                            player_rows.append(p)
                     processed.add(gid)
                     log.info(f"  Retry OK: {gid}")
                 else:
@@ -783,6 +811,17 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
                 TARGET_NULL_GUARD_COLUMNS,
             )
         log.info(f"team_game_logs.csv: {len(df_all)} total rows")
+
+        if not build_derived_features and not include_player_boxscores:
+            log.info("Skipping derived features, rankings, and player boxscores (team-boxscore-only mode)")
+            _clear_checkpoint()
+            return {
+                "games_found": len(game_ids),
+                "games_parsed": len(processed),
+                "games_failed": len(failed),
+                "team_rows_written": len(team_rows),
+                "player_rows_written": 0,
+            }
 
         # ── Compute advanced metrics + rolling windows on full history ──
         # Always runs on the full df_all (not just new rows) so rolling
@@ -880,7 +919,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
     else:
         log.warning("No team rows to write")
 
-    if player_rows:
+    if include_player_boxscores and player_rows:
         df_players = pd.DataFrame(player_rows)
         _log_player_stage_diagnostics("player_rows:parsed", df_players)
         _assert_required_columns(df_players, REQUIRED_PLAYER_COLUMNS, "player_rows")
@@ -954,7 +993,7 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
                     sort_cols=["game_datetime_utc", "event_id", "team_id"],
                 )
                 log.info(f"team_injury_impact.csv: {len(df_impact_out)} total rows")
-    else:
+    elif include_player_boxscores:
         log.warning("No player rows to write")
 
         # Keep required player artifacts present even when no boxscore player
@@ -985,6 +1024,8 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
             OUT_PLAYER_METRICS.parent.mkdir(parents=True, exist_ok=True)
             safe_write_csv(empty_player_metrics, OUT_PLAYER_METRICS, label="player_game_metrics", allow_empty=True)
             log.info("player_game_metrics.csv: 0 total rows")
+    else:
+        log.info("Skipping player boxscore extraction and player artifacts (team-boxscore-only mode)")
 
     # ── Reconciliation report ──
     log.info("=== Reconciliation ===")
@@ -1010,9 +1051,15 @@ def build_team_and_player_logs(games_df: pd.DataFrame, days_back: int = DAYS_BAC
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
-def run(days_back: int = DAYS_BACK, skip_odds_validation: bool = True) -> None:
+def run(
+    days_back: int = DAYS_BACK,
+    skip_odds_validation: bool = True,
+    include_player_boxscores: bool = True,
+    build_derived_features: bool = True,
+    strip_market_lines: bool = False,
+) -> None:
     log.info(f"=== ESPN CBB Pipeline | DAYS_BACK={days_back} | PARSE_VERSION={PARSE_VERSION} ===")
-    games_df = build_games(days_back=days_back)
+    games_df = build_games(days_back=days_back, strip_market_lines=strip_market_lines)
     if games_df.empty:
         log.error("No games from scoreboard — aborting")
         try:
@@ -1027,7 +1074,13 @@ def run(days_back: int = DAYS_BACK, skip_odds_validation: bool = True) -> None:
         except Exception as exc:
             log.warning(f"Pipeline logger failed (non-fatal): {exc}")
         return
-    stats = build_team_and_player_logs(games_df, days_back=days_back, skip_odds_validation=skip_odds_validation)
+    stats = build_team_and_player_logs(
+        games_df,
+        days_back=days_back,
+        skip_odds_validation=skip_odds_validation,
+        include_player_boxscores=include_player_boxscores,
+        build_derived_features=build_derived_features,
+    )
     log.info("=== Run complete ===")
     try:
         from cbb_pipeline_logger import log_pipeline_run
@@ -1063,5 +1116,29 @@ if __name__ == "__main__":
         help="Skip hard validation failure when odds/soft fields are null (default: True). "
              "Use --no-skip-odds-validation to enforce hard errors.",
     )
+    parser.add_argument(
+        "--summary-mode",
+        choices=["full", "team-only"],
+        default="full",
+        help="Summary extraction mode. 'team-only' skips player boxscore rows/artifacts.",
+    )
+    parser.add_argument(
+        "--build-derived-features",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Build derived team features/snapshot/rankings outputs (default: True).",
+    )
+    parser.add_argument(
+        "--strip-market-lines",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Keep market columns but clear market-line values from outputs.",
+    )
     args = parser.parse_args()
-    run(days_back=args.days_back, skip_odds_validation=args.skip_odds_validation)
+    run(
+        days_back=args.days_back,
+        skip_odds_validation=args.skip_odds_validation,
+        include_player_boxscores=(args.summary_mode == "full"),
+        build_derived_features=args.build_derived_features,
+        strip_market_lines=args.strip_market_lines,
+    )

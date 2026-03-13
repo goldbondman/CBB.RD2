@@ -43,8 +43,8 @@ on:
     - cron: "0 10 * * *"
 
 concurrency:
-  group: cbb-data-pipeline
-  cancel-in-progress: true
+  group: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.run_profile == 'historical_boxscore_backfill') && format('cbb-data-pipeline-backfill-{0}', github.run_id) || 'cbb-data-pipeline' }}
+  cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.run_profile == 'historical_boxscore_backfill') }}
 
 permissions:
   contents: read
@@ -172,7 +172,7 @@ jobs:
             DAYS_BACK="$BACKFILL_DAYS"
             RUN_RANKINGS="false"
             GAME_TYPE="regular"
-            CONTRACT_STAGES="espn_pipeline"
+            CONTRACT_STAGES="espn_pipeline_boxscore_only"
             VALIDATION_PROFILE="backfill_boxscore"
             COMMIT_SCOPE="boxscore_history"
           fi
@@ -242,7 +242,6 @@ jobs:
           if [[ "${{ steps.resolve_inputs.outputs.validation_profile }}" == "backfill_boxscore" ]]; then
             bash .github/scripts/check_csv.sh data/games.csv 1 "game_id,game_datetime_utc,date,home_wins,home_losses,away_wins,away_losses"
             bash .github/scripts/check_csv.sh data/team_game_logs.csv 1 "event_id,team_id,wins,losses,fgm,fga,ftm,fta,tpm,tpa,orb,drb,reb,tov,ast"
-            bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "event_id,team_id,game_datetime_utc"
           else
             bash .github/scripts/check_csv.sh data/games.csv 1 "game_id,game_datetime_utc"
             bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "event_id,team_id,game_datetime_utc"
@@ -259,15 +258,36 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python .github/scripts/print_data_integrity.py \
-            --label update \
-            --output data/update_data_integrity.json \
-            data/games.csv \
-            data/team_game_weighted.csv \
-            data/team_pretournament_snapshot.csv
+          if [[ "${{ steps.resolve_inputs.outputs.validation_profile }}" == "backfill_boxscore" ]]; then
+            python .github/scripts/print_data_integrity.py \
+              --label update \
+              --output data/update_data_integrity.json \
+              data/games.csv \
+              data/team_game_logs.csv
+          else
+            python .github/scripts/print_data_integrity.py \
+              --label update \
+              --output data/update_data_integrity.json \
+              data/games.csv \
+              data/team_game_weighted.csv \
+              data/team_pretournament_snapshot.csv
+          fi
+
+      - name: Upload backfill artifact bundle
+        if: ${{ always() && steps.resolve_inputs.outputs.validation_profile == 'backfill_boxscore' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-espn-data
+          if-no-files-found: error
+          retention-days: 21
+          path: |
+            data/games.csv
+            data/team_game_logs.csv
+            data/update_manifest.json
+            data/update_data_integrity.json
 
       - name: Upload update artifact bundle
-        if: always()
+        if: ${{ always() && steps.resolve_inputs.outputs.validation_profile != 'backfill_boxscore' }}
         uses: actions/upload-artifact@v4
         with:
           name: INFRA-espn-data

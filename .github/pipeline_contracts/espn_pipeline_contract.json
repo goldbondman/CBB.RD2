@@ -27,6 +27,25 @@
       ]
     },
     {
+      "name": "espn_pipeline_boxscore_only",
+      "job": "update",
+      "depends_on": [],
+      "command": "python espn_pipeline.py --days-back {days_back} --summary-mode team-only --no-build-derived-features --strip-market-lines",
+      "requires": [],
+      "produces": [
+        {
+          "path": "data/games.csv",
+          "min_rows": 1,
+          "required_columns": ["game_id", "game_datetime_utc", "date", "home_wins", "home_losses", "away_wins", "away_losses"]
+        },
+        {
+          "path": "data/team_game_logs.csv",
+          "min_rows": 1,
+          "required_columns": ["event_id", "team_id", "wins", "losses", "fgm", "fga", "ftm", "fta", "tpm", "tpa", "orb", "drb", "reb", "tov", "ast"]
+        }
+      ]
+    },
+    {
       "name": "rotation_features",
       "job": "update",
       "depends_on": ["espn_pipeline"],
