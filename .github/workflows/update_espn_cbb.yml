@@ -244,6 +244,7 @@ jobs:
             bash .github/scripts/check_csv.sh data/team_game_logs.csv 1 "event_id,team_id,wins,losses,fgm,fga,ftm,fta,tpm,tpa,orb,drb,reb,tov,ast"
           else
             bash .github/scripts/check_csv.sh data/games.csv 1 "game_id,game_datetime_utc"
+            bash .github/scripts/check_csv.sh data/team_game_logs.csv 0 "event_id,team_id"
             bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "event_id,team_id,game_datetime_utc"
             bash .github/scripts/check_csv.sh data/team_pretournament_snapshot.csv 1 "team_id"
             bash .github/scripts/check_csv.sh data/advanced_metrics.csv 1 "event_id,team_id"
