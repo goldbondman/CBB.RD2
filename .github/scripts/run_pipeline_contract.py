@@ -4,15 +4,15 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
+import math
 import shlex
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
-import pandas as pd
 
 DATE_COLUMNS = [
     "game_datetime_utc",
@@ -30,6 +30,61 @@ class StageResult:
     started_at_utc: str
     finished_at_utc: str
     outputs: list[dict[str, Any]]
+
+
+def _read_csv(path: Path) -> tuple[list[dict[str, str]], list[str]]:
+    """Read a CSV file and return (rows, column_names) using stdlib csv."""
+    with path.open(newline="", encoding="utf-8", errors="replace") as fh:
+        reader = csv.DictReader(fh)
+        rows = list(reader)
+        cols = list(reader.fieldnames or [])
+    return rows, cols
+
+
+def _parse_dt(val: str) -> datetime | None:
+    """Parse a date string to a UTC-aware datetime; returns None on failure."""
+    if not val or not val.strip():
+        return None
+    s = val.strip().replace("Z", "+00:00")
+    try:
+        dt = datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
+    except (ValueError, TypeError):
+        return None
+
+
+def _numeric_non_null_rate(rows: list[dict[str, str]], col: str) -> float:
+    """Return fraction of rows where col can be parsed as a finite float."""
+    if not rows:
+        return 0.0
+    count = 0
+    for row in rows:
+        v = (row.get(col) or "").strip()
+        if v:
+            try:
+                if math.isfinite(float(v)):
+                    count += 1
+            except ValueError:
+                pass
+    return count / len(rows)
+
+
+def _null_rate_pct(rows: list[dict[str, str]], col: str) -> float:
+    """Return percentage of rows where col is empty/null."""
+    if not rows:
+        return 0.0
+    null_count = sum(1 for r in rows if not (r.get(col) or "").strip())
+    return round(null_count / len(rows) * 100.0, 2)
+
+
+def _to_float_or_zero(val: str) -> float:
+    """Parse val as float; return 0.0 on failure."""
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return 0.0
 
 
 def _spec_path(spec: Any) -> str:
@@ -93,25 +148,26 @@ def _required_cols(raw: Any) -> list[str]:
 
 
 def _csv_summary(path: Path) -> dict[str, Any]:
-    df = pd.read_csv(path, dtype=str, low_memory=False)
+    rows, cols = _read_csv(path)
     out: dict[str, Any] = {
         "path": str(path),
-        "rows": int(len(df)),
-        "columns": int(len(df.columns)),
+        "rows": len(rows),
+        "columns": len(cols),
     }
 
     for col in DATE_COLUMNS:
-        if col in df.columns:
-            ts = pd.to_datetime(df[col], utc=True, errors="coerce").dropna()
-            if not ts.empty:
-                out["min_date_utc"] = ts.min().isoformat()
-                out["max_date_utc"] = ts.max().isoformat()
+        if col in cols:
+            parsed = [_parse_dt(r.get(col, "")) for r in rows]
+            valid_dates = [d for d in parsed if d is not None]
+            if valid_dates:
+                out["min_date_utc"] = min(valid_dates).isoformat()
+                out["max_date_utc"] = max(valid_dates).isoformat()
             break
 
     key_rates: dict[str, float] = {}
     for col in ["game_id", "event_id", "team_id", "game_datetime_utc"]:
-        if col in df.columns:
-            key_rates[col] = round(float(df[col].isna().mean()) * 100.0, 2)
+        if col in cols:
+            key_rates[col] = _null_rate_pct(rows, col)
     if key_rates:
         out["null_rates_pct"] = key_rates
     return out
@@ -125,14 +181,14 @@ def _feature_coverage_summary(repo_root: Path) -> dict[str, Any]:
     if not market_path.exists():
         market_path = data_dir / "market_lines_latest.csv"
     if market_path.exists() and market_path.stat().st_size > 0:
-        mdf = pd.read_csv(market_path, dtype=str, low_memory=False)
-        spread_col = next((c for c in ["spread_line", "home_spread_current", "spread"] if c in mdf.columns), None)
-        total_col = next((c for c in ["total_line", "total_current", "over_under"] if c in mdf.columns), None)
-        spread_rate = float(pd.to_numeric(mdf[spread_col], errors="coerce").notna().mean()) if spread_col else 0.0
-        total_rate = float(pd.to_numeric(mdf[total_col], errors="coerce").notna().mean()) if total_col else 0.0
+        mrows, mcols = _read_csv(market_path)
+        spread_col = next((c for c in ["spread_line", "home_spread_current", "spread"] if c in mcols), None)
+        total_col = next((c for c in ["total_line", "total_current", "over_under"] if c in mcols), None)
+        spread_rate = _numeric_non_null_rate(mrows, spread_col) if spread_col else 0.0
+        total_rate = _numeric_non_null_rate(mrows, total_col) if total_col else 0.0
         summary["market"] = {
             "path": str(market_path.relative_to(repo_root)),
-            "rows": int(len(mdf)),
+            "rows": len(mrows),
             "spread_non_null_rate": round(spread_rate, 6),
             "total_non_null_rate": round(total_rate, 6),
         }
@@ -141,12 +197,15 @@ def _feature_coverage_summary(repo_root: Path) -> dict[str, Any]:
 
     snap_path = data_dir / "team_snapshot.csv"
     if snap_path.exists() and snap_path.stat().st_size > 0:
-        sdf = pd.read_csv(snap_path, dtype=str, low_memory=False)
-        feat_cols = [c for c in ["efg_pct", "efg_pct_l10", "pace", "pace_l10", "form_rating", "net_rtg_std_l10"] if c in sdf.columns]
-        row_rate = float(sdf[feat_cols].notna().any(axis=1).mean()) if feat_cols else 0.0
+        srows, scols = _read_csv(snap_path)
+        feat_cols = [c for c in ["efg_pct", "efg_pct_l10", "pace", "pace_l10", "form_rating", "net_rtg_std_l10"] if c in scols]
+        if feat_cols and srows:
+            row_rate = sum(1 for r in srows if any((r.get(c) or "").strip() for c in feat_cols)) / len(srows)
+        else:
+            row_rate = 0.0
         summary["team_snapshot"] = {
             "path": str(snap_path.relative_to(repo_root)),
-            "rows": int(len(sdf)),
+            "rows": len(srows),
             "present_feature_columns": feat_cols,
             "non_null_feature_row_rate": round(row_rate, 6),
         }
@@ -173,13 +232,13 @@ def _validate_one_spec(repo_root: Path, spec: Any, stage_name: str, kind: str) -
         return None, f"[{stage_name}] empty {kind}: {rel}"
 
     if path.suffix.lower() == ".csv":
-        df = pd.read_csv(path, dtype=str, low_memory=False)
+        rows, cols = _read_csv(path)
         min_rows = int(spec.get("min_rows", 1))
-        if len(df) < min_rows:
-            return None, f"[{stage_name}] {kind} {rel} has {len(df)} rows; expected >= {min_rows}"
+        if len(rows) < min_rows:
+            return None, f"[{stage_name}] {kind} {rel} has {len(rows)} rows; expected >= {min_rows}"
         allow_empty = bool(spec.get("allow_empty", False))
         allow_empty_when_no_games = bool(spec.get("allow_empty_when_no_games", False))
-        if kind == "output" and len(df) == 0:
+        if kind == "output" and len(rows) == 0:
             if allow_empty:
                 pass
             elif not allow_empty_when_no_games:
@@ -192,15 +251,17 @@ def _validate_one_spec(repo_root: Path, spec: Any, stage_name: str, kind: str) -
                 schedule_path = repo_root / "data" / "plumbing" / "games_schedule_master.csv"
                 no_games_context: bool | None = None
                 if schedule_path.exists():
-                    schedule_df = pd.read_csv(schedule_path, dtype=str, low_memory=False)
-                    no_games_context = len(schedule_df) == 0
+                    schedule_rows, _ = _read_csv(schedule_path)
+                    no_games_context = len(schedule_rows) == 0
                 else:
                     summary_path = repo_root / "data" / "actionable" / "daily_card_summary.csv"
                     if summary_path.exists():
-                        summary_df = pd.read_csv(summary_path, dtype=str, low_memory=False)
-                        if "games_on_card" in summary_df.columns and len(summary_df) > 0:
-                            games_on_card = pd.to_numeric(summary_df["games_on_card"], errors="coerce")
-                            no_games_context = bool((games_on_card.fillna(0) <= 0).all())
+                        summary_rows, summary_cols = _read_csv(summary_path)
+                        if "games_on_card" in summary_cols and summary_rows:
+                            no_games_context = all(
+                                _to_float_or_zero(r.get("games_on_card", "")) <= 0
+                                for r in summary_rows
+                            )
 
                 if no_games_context is None:
                     games_path = repo_root / "data" / "games.csv"
@@ -209,8 +270,8 @@ def _validate_one_spec(repo_root: Path, spec: Any, stage_name: str, kind: str) -
                             f"[{stage_name}] {kind} {rel} is empty and allow_empty_when_no_games=true, "
                             "but no upcoming-slate indicator or data/games.csv is available to verify context."
                         )
-                    games_df = pd.read_csv(games_path, dtype=str, low_memory=False)
-                    no_games_context = len(games_df) == 0
+                    games_rows, _ = _read_csv(games_path)
+                    no_games_context = len(games_rows) == 0
 
                 if not no_games_context:
                     context_hint = (
@@ -222,7 +283,7 @@ def _validate_one_spec(repo_root: Path, spec: Any, stage_name: str, kind: str) -
                         f"[{stage_name}] {kind} {rel} is empty while {context_hint} indicates games are available. "
                         "Empty output is only allowed when there are truly no games."
                     )
-        missing = [c for c in _required_cols(spec.get("required_columns")) if c not in df.columns]
+        missing = [c for c in _required_cols(spec.get("required_columns")) if c not in cols]
         if missing:
             return None, f"[{stage_name}] {kind} {rel} missing required columns: {missing}"
 
