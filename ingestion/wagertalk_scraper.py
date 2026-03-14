@@ -1,5 +1,5 @@
 """
-WagerTalk historical odds scraper for CBB (2025-26 season baseline).
+WagerTalk historical odds scraper for CBB.
 
 Fetches schedule, lines, and scores from WagerTalk's internal API:
   /odds?action=getData&date=YYYY-MM-DD&data={L4.txt | lines-L4.txt | scores-L4.txt}
@@ -55,6 +55,8 @@ BOOKS: Dict[int, str] = {
     111: "fanatics", 115: "consensus",
 }
 SEASON_START = date(2025, 11, 1)
+OFFSEASON_START = (4, 15)
+OFFSEASON_END = (10, 31)
 DEFAULT_DELAY = 2.5      # seconds between requests (be polite)
 MAX_RETRIES = 3
 BACKOFF_BASE = 8.0
@@ -194,6 +196,23 @@ def parse_cell_value(raw: str) -> Tuple[Optional[float], Optional[float], Option
         return None, num, ml
     # Otherwise it's a spread
     return num, None, ml
+
+
+def is_probable_offseason_day(target_day: date) -> bool:
+    """Skip clear CBB offseason dates during historical backfills."""
+    month_day = (target_day.month, target_day.day)
+    return OFFSEASON_START <= month_day <= OFFSEASON_END
+
+
+def iter_scrape_dates(start: date, end: date) -> List[date]:
+    """Yield only the dates worth querying for a CBB odds backfill."""
+    days: List[date] = []
+    current = start
+    while current <= end:
+        if not is_probable_offseason_day(current):
+            days.append(current)
+        current += timedelta(days=1)
+    return days
 
 
 # ---------------------------------------------------------------------------
@@ -503,9 +522,6 @@ class WagerTalkScraper:
         """Fetch and parse all CBB games for a single date."""
         log.info("Scraping %s ...", date_str)
 
-        # Warm session for this date
-        self.session.warm_up(date_str)
-
         sched_raw = self.session.get_data(date_str, f"{SPORT}.txt")
         if not sched_raw:
             log.warning("No schedule data for %s", date_str)
@@ -528,16 +544,24 @@ class WagerTalkScraper:
     def scrape_range(self, start: date, end: date):
         """Scrape all dates from start to end (inclusive)."""
         all_rows: List[GameOdds] = []
-        current = start
-        total_days = (end - start).days + 1
-        done = 0
+        total_calendar_days = (end - start).days + 1
+        target_days = iter_scrape_dates(start, end)
+        skipped_offseason_days = total_calendar_days - len(target_days)
+        if skipped_offseason_days:
+            log.info(
+                "Skipping %d probable offseason dates in requested window",
+                skipped_offseason_days,
+            )
+        if not target_days:
+            log.info("No probable in-season dates found in %s -> %s", start, end)
+            return all_rows
 
-        while current <= end:
+        total_days = len(target_days)
+
+        for done, current in enumerate(target_days, start=1):
             date_str = current.strftime("%Y-%m-%d")
             if date_str in self._scraped_dates:
                 log.info("Skipping %s (already scraped)", date_str)
-                current += timedelta(days=1)
-                done += 1
                 continue
 
             try:
@@ -549,11 +573,8 @@ class WagerTalkScraper:
             except Exception as e:
                 log.error("Error scraping %s: %s", date_str, e)
 
-            done += 1
             if done % 10 == 0:
                 log.info("Progress: %d/%d days", done, total_days)
-
-            current += timedelta(days=1)
 
         log.info("Scrape complete. %d total game records written.", len(all_rows))
         return all_rows
@@ -705,7 +726,7 @@ def wagertalk_candidates_for_date(
 # ---------------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(
-        description="Scrape WagerTalk historical CBB odds for the 2025-26 season."
+        description="Scrape WagerTalk historical CBB odds."
     )
     parser.add_argument(
         "--start-date", default=SEASON_START.strftime("%Y-%m-%d"),
@@ -743,9 +764,12 @@ def main():
     )
 
     if args.date:
+        if scraper.skip_existing and args.date in scraper._scraped_dates:
+            log.info("Skipping %s (already scraped)", args.date)
+            return
         rows = scraper.scrape_date(args.date)
         if rows:
-            scraper._write_rows(rows, append=False)
+            scraper._write_rows(rows, append=output_path.exists())
             log.info("Wrote %d games for %s", len(rows), args.date)
     else:
         start = datetime.strptime(args.start_date, "%Y-%m-%d").date()
