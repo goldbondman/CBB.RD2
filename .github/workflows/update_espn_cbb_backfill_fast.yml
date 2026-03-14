@@ -1,0 +1,279 @@
+name: Update ESPN CBB Backfill (Fast)
+
+on:
+  workflow_dispatch:
+    inputs:
+      backfill_days:
+        description: "Backfill window in days (default 2190 ~ 6 years)."
+        required: false
+        default: "2190"
+      fetch_sleep:
+        description: "Seconds to sleep between ESPN summary fetches."
+        required: false
+        default: "0.05"
+      espn_max_retries:
+        description: "Retry attempts per ESPN request."
+        required: false
+        default: "2"
+      espn_retry_delay:
+        description: "Initial retry delay in seconds."
+        required: false
+        default: "0.5"
+      espn_retry_backoff:
+        description: "Retry backoff multiplier."
+        required: false
+        default: "1.5"
+      commit_data:
+        description: "Commit curated boxscore history outputs to main"
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+
+concurrency:
+  group: cbb-data-pipeline-backfill-fast
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  TZ: UTC
+  PYTHONHASHSEED: "0"
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      contents: write
+    env:
+      FETCH_SLEEP: ${{ github.event.inputs.fetch_sleep || '0.05' }}
+      ESPN_MAX_RETRIES: ${{ github.event.inputs.espn_max_retries || '2' }}
+      ESPN_RETRY_DELAY: ${{ github.event.inputs.espn_retry_delay || '0.5' }}
+      ESPN_RETRY_BACKOFF: ${{ github.event.inputs.espn_retry_backoff || '1.5' }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Resolve and validate inputs
+        id: resolve_inputs
+        shell: bash
+        env:
+          INPUT_BACKFILL_DAYS: ${{ github.event.inputs.backfill_days }}
+          INPUT_COMMIT_DATA: ${{ github.event.inputs.commit_data }}
+          INPUT_FETCH_SLEEP: ${{ github.event.inputs.fetch_sleep }}
+          INPUT_ESPN_MAX_RETRIES: ${{ github.event.inputs.espn_max_retries }}
+          INPUT_ESPN_RETRY_DELAY: ${{ github.event.inputs.espn_retry_delay }}
+          INPUT_ESPN_RETRY_BACKOFF: ${{ github.event.inputs.espn_retry_backoff }}
+        run: |
+          set -euo pipefail
+
+          BACKFILL_DAYS="${INPUT_BACKFILL_DAYS:-2190}"
+          if [[ -z "$BACKFILL_DAYS" ]]; then
+            BACKFILL_DAYS="2190"
+          fi
+          if ! [[ "$BACKFILL_DAYS" =~ ^[0-9]+$ ]]; then
+            echo "[ERROR] backfill_days must be numeric; got '$BACKFILL_DAYS'"
+            exit 1
+          fi
+          BACKFILL_DAYS_INT=$((BACKFILL_DAYS))
+          if (( BACKFILL_DAYS_INT < 365 || BACKFILL_DAYS_INT > 4000 )); then
+            echo "[ERROR] backfill_days must be between 365 and 4000"
+            exit 1
+          fi
+
+          FETCH_SLEEP_VALUE="${INPUT_FETCH_SLEEP:-0.05}"
+          ESPN_MAX_RETRIES_VALUE="${INPUT_ESPN_MAX_RETRIES:-2}"
+          ESPN_RETRY_DELAY_VALUE="${INPUT_ESPN_RETRY_DELAY:-0.5}"
+          ESPN_RETRY_BACKOFF_VALUE="${INPUT_ESPN_RETRY_BACKOFF:-1.5}"
+          export FETCH_SLEEP_VALUE ESPN_MAX_RETRIES_VALUE ESPN_RETRY_DELAY_VALUE ESPN_RETRY_BACKOFF_VALUE
+
+          python - <<'PY'
+          import os
+
+          def require_float(name: str, minimum: float = 0.0) -> None:
+              raw = os.environ[name]
+              value = float(raw)
+              if value < minimum:
+                  raise SystemExit(f"[ERROR] {name} must be >= {minimum}; got {raw!r}")
+
+          def require_int(name: str, minimum: int = 1) -> None:
+              raw = os.environ[name]
+              value = int(raw)
+              if value < minimum:
+                  raise SystemExit(f"[ERROR] {name} must be >= {minimum}; got {raw!r}")
+
+          require_float("FETCH_SLEEP_VALUE", 0.0)
+          require_int("ESPN_MAX_RETRIES_VALUE", 1)
+          require_float("ESPN_RETRY_DELAY_VALUE", 0.0)
+          require_float("ESPN_RETRY_BACKOFF_VALUE", 1.0)
+          print("[OK] numeric backfill tuning inputs validated")
+          PY
+
+          COMMIT_DATA="${INPUT_COMMIT_DATA:-false}"
+          case "$COMMIT_DATA" in
+            true|false) ;;
+            *) echo "[ERROR] commit_data must be true or false"; exit 1 ;;
+          esac
+
+          echo "[INFO] Resolved fast backfill inputs: backfill_days=$BACKFILL_DAYS fetch_sleep=$FETCH_SLEEP_VALUE espn_max_retries=$ESPN_MAX_RETRIES_VALUE espn_retry_delay=$ESPN_RETRY_DELAY_VALUE espn_retry_backoff=$ESPN_RETRY_BACKOFF_VALUE commit_data=$COMMIT_DATA"
+          echo "backfill_days=$BACKFILL_DAYS" >> "$GITHUB_OUTPUT"
+          echo "commit_data=$COMMIT_DATA" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f constraints.txt ]]; then
+            pip install -r requirements.txt -c constraints.txt
+          else
+            pip install -r requirements.txt
+          fi
+          python -c "import pandas, numpy, requests, scipy"
+
+      - name: Self-test pipeline contract tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile .github/scripts/run_pipeline_contract.py .github/scripts/print_data_integrity.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('.github/pipeline_contracts/espn_pipeline_contract.json')
+          contract = json.loads(p.read_text(encoding='utf-8'))
+          assert contract.get('stages'), 'Contract missing stages'
+          print('[OK] contract loaded:', p)
+          PY
+
+      - name: Run fast backfill pipeline stage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/run_pipeline_contract.py \
+            --contract .github/pipeline_contracts/espn_pipeline_contract.json \
+            --job update \
+            --days-back "${{ steps.resolve_inputs.outputs.backfill_days }}" \
+            --game-type regular \
+            --manifest data/update_manifest.json \
+            --stages espn_pipeline_boxscore_only
+
+      - name: Validate required backfill outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash .github/scripts/check_csv.sh data/games.csv 1 "game_id,game_datetime_utc,date,home_wins,home_losses,away_wins,away_losses"
+          bash .github/scripts/check_csv.sh data/team_game_logs.csv 1 "event_id,team_id,wins,losses,fgm,fga,ftm,fta,tpm,tpa,orb,drb,reb,tov,ast"
+
+      - name: Print data integrity block
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/print_data_integrity.py \
+            --label update_fast_backfill \
+            --output data/update_data_integrity.json \
+            data/games.csv \
+            data/team_game_logs.csv
+
+      - name: Upload backfill artifact bundle
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-espn-data-fast-backfill
+          if-no-files-found: error
+          retention-days: 21
+          path: |
+            data/games.csv
+            data/team_game_logs.csv
+            data/update_manifest.json
+            data/update_data_integrity.json
+
+      - name: Validate workflow health
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f .github/scripts/validate_workflows.py ]]; then
+            python .github/scripts/validate_workflows.py
+          else
+            echo "[SKIP] .github/scripts/validate_workflows.py not found"
+          fi
+
+      - name: Commit curated backfill outputs to main
+        if: ${{ github.event.inputs.commit_data == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "[SKIP] commit_data requested but ref is ${GITHUB_REF}; only main is allowed"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          FILES_TO_STAGE=(data/games.csv data/team_game_logs.csv)
+
+          for _f in "${FILES_TO_STAGE[@]}"; do
+            if [[ -e "$_f" ]]; then
+              echo "[INFO] staging: $_f"
+              git add -- "$_f"
+            else
+              echo "[SKIP] missing, not staging: $_f"
+            fi
+          done
+
+          if git diff --staged --quiet; then
+            echo "[SKIP] No backfill output changes to commit"
+            exit 0
+          fi
+
+          STAGED_BYTES=$(git diff --cached --name-only -z | xargs -0 -r du -cb | tail -n 1 | cut -f1)
+          STAGED_BYTES=${STAGED_BYTES:-0}
+          MAX_BYTES=$((200 * 1024 * 1024))
+          if (( STAGED_BYTES > MAX_BYTES )); then
+            echo "[ERROR] staged payload ${STAGED_BYTES} bytes exceeds ${MAX_BYTES} byte guard"
+            exit 1
+          fi
+
+          git commit -m "data: fast ESPN CBB backfill artifacts [skip ci]"
+
+          STASH_CREATED=0
+          if ! git diff --quiet || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
+            echo "[INFO] Stashing unstaged/untracked changes before rebase"
+            git stash push --include-untracked -m "update_espn_fast_backfill_pre_rebase_${GITHUB_RUN_ID}" >/dev/null 2>&1 || true
+            STASH_CREATED=1
+          fi
+
+          for i in 1 2 3; do
+            if ! git pull --rebase origin main; then
+              echo "[ERROR] rebase conflict while syncing main on attempt ${i}"
+              git rebase --abort || true
+              if (( STASH_CREATED == 1 )); then
+                git stash pop || true
+              fi
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo "[OK] push succeeded on attempt ${i}"
+              if (( STASH_CREATED == 1 )); then
+                git stash pop || true
+              fi
+              exit 0
+            fi
+            echo "[WARN] push failed on attempt ${i}; retrying"
+            sleep $((i * 2))
+          done
+          if (( STASH_CREATED == 1 )); then
+            git stash pop || true
+          fi
+          echo "[ERROR] failed to push after retries"
+          exit 1
