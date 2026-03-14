@@ -1,30 +1,55 @@
 {
-  "generated_at_utc": "2026-03-05T23:31:07+00:00",
-  "contract": "C:\\Users\\brand\\OneDrive\\Desktop\\CBB\\CBB.RD2\\.github\\pipeline_contracts\\espn_pipeline_contract.json",
+  "generated_at_utc": "2026-03-14T07:24:22+00:00",
+  "contract": "/home/runner/work/CBB.RD2/CBB.RD2/.github/pipeline_contracts/espn_pipeline_contract.json",
   "job": "update",
-  "failed_stage": "situational_features",
-  "error": "[situational_features] input validation failed:\n[situational_features] input data/team_game_weighted.csv missing required columns: ['game_id']\n  -> expected producer stage(s): ['espn_pipeline'] (ensure dependency order reaches situational_features)",
-  "failed_stage_requires": [
+  "failed_stage": "espn_pipeline",
+  "error": "[espn_pipeline] command failed with exit code 1: python espn_pipeline.py --days-back 3\nDeclared outputs status:\n  - data/games.csv: exists=True size_bytes=10019611 valid=True\n  - data/team_game_weighted.csv: exists=True size_bytes=28283121 valid=True\n  - data/team_pretournament_snapshot.csv: exists=True size_bytes=1680594 valid=True",
+  "failed_stage_requires": [],
+  "failed_stage_produces": [
+    {
+      "path": "data/games.csv",
+      "min_rows": 1,
+      "required_columns": [
+        "game_id",
+        "game_datetime_utc"
+      ]
+    },
     {
       "path": "data/team_game_weighted.csv",
       "min_rows": 1,
       "required_columns": [
-        "game_id",
+        "event_id",
+        "team_id",
+        "game_datetime_utc"
+      ]
+    },
+    {
+      "path": "data/team_pretournament_snapshot.csv",
+      "min_rows": 1,
+      "required_columns": [
         "team_id"
       ]
     }
   ],
-  "failed_stage_produces": [
-    {
-      "path": "data/situational_features.csv",
-      "min_rows": 1
-    }
-  ],
   "failed_stage_outputs": [
     {
-      "path": "data/situational_features.csv",
+      "path": "data/games.csv",
       "exists": true,
-      "size_bytes": 1899849,
+      "size_bytes": 10019611,
+      "valid": true,
+      "error": null
+    },
+    {
+      "path": "data/team_game_weighted.csv",
+      "exists": true,
+      "size_bytes": 28283121,
+      "valid": true,
+      "error": null
+    },
+    {
+      "path": "data/team_pretournament_snapshot.csv",
+      "exists": true,
+      "size_bytes": 1680594,
       "valid": true,
       "error": null
     }
@@ -34,21 +59,46 @@
       {
         "path": "data/games.csv",
         "exists": true,
-        "size_bytes": 1863628,
+        "size_bytes": 10019611,
         "valid": true,
         "error": null
       },
       {
         "path": "data/team_game_weighted.csv",
         "exists": true,
-        "size_bytes": 27875564,
+        "size_bytes": 28283121,
         "valid": true,
         "error": null
       },
       {
         "path": "data/team_pretournament_snapshot.csv",
         "exists": true,
-        "size_bytes": 1677595,
+        "size_bytes": 1680594,
+        "valid": true,
+        "error": null
+      }
+    ],
+    "espn_pipeline_boxscore_only": [
+      {
+        "path": "data/games.csv",
+        "exists": true,
+        "size_bytes": 10019611,
+        "valid": true,
+        "error": null
+      },
+      {
+        "path": "data/team_game_logs.csv",
+        "exists": true,
+        "size_bytes": 33329369,
+        "valid": true,
+        "error": null
+      }
+    ],
+    "luck_regression_features": [
+      {
+        "path": "data/luck_regression_features.csv",
+        "exists": true,
+        "size_bytes": 4972623,
         "valid": true,
         "error": null
       }
@@ -57,14 +107,23 @@
       {
         "path": "data/market_lines_canonical.csv",
         "exists": true,
-        "size_bytes": 14553,
+        "size_bytes": 768203,
         "valid": true,
         "error": null
       },
       {
         "path": "data/market_lines_latest_by_game.csv",
         "exists": true,
-        "size_bytes": 789223,
+        "size_bytes": 765006,
+        "valid": true,
+        "error": null
+      }
+    ],
+    "player_availability_features": [
+      {
+        "path": "data/player_availability_features.csv",
+        "exists": true,
+        "size_bytes": 1354834,
         "valid": true,
         "error": null
       }
@@ -73,7 +132,23 @@
       {
         "path": "data/rotation_features.csv",
         "exists": true,
-        "size_bytes": 4745716,
+        "size_bytes": 5413549,
+        "valid": true,
+        "error": null
+      }
+    ],
+    "season_summaries": [
+      {
+        "path": "data/player_season_summary.csv",
+        "exists": true,
+        "size_bytes": 1412814,
+        "valid": true,
+        "error": null
+      },
+      {
+        "path": "data/team_season_summary.csv",
+        "exists": true,
+        "size_bytes": 94621,
         "valid": true,
         "error": null
       }
@@ -82,7 +157,7 @@
       {
         "path": "data/situational_features.csv",
         "exists": true,
-        "size_bytes": 1899849,
+        "size_bytes": 1857244,
         "valid": true,
         "error": null
       }
@@ -91,7 +166,7 @@
       {
         "path": "data/advanced_metrics.csv",
         "exists": true,
-        "size_bytes": 300787,
+        "size_bytes": 7248689,
         "valid": true,
         "error": null
       }
@@ -100,21 +175,21 @@
       {
         "path": "data/team_snapshot.csv",
         "exists": true,
-        "size_bytes": 2085245,
+        "size_bytes": 2254155,
         "valid": true,
         "error": null
       },
       {
         "path": "data/predictions_joint_latest.csv",
         "exists": true,
-        "size_bytes": 44847,
+        "size_bytes": 52546,
         "valid": true,
         "error": null
       },
       {
         "path": "data/predictions_joint_snapshots.csv",
         "exists": true,
-        "size_bytes": 109722,
+        "size_bytes": 1541898,
         "valid": true,
         "error": null
       }
@@ -122,13 +197,13 @@
   },
   "feature_coverage_summary": {
     "market": {
-      "path": "data\\market_lines_latest_by_game.csv",
-      "rows": 5481,
-      "spread_non_null_rate": 0.093231,
-      "total_non_null_rate": 0.093414
+      "path": "data/market_lines_latest_by_game.csv",
+      "rows": 5350,
+      "spread_non_null_rate": 0.034019,
+      "total_non_null_rate": 0.034019
     },
     "team_snapshot": {
-      "path": "data\\team_snapshot.csv",
+      "path": "data/team_snapshot.csv",
       "rows": 650,
       "present_feature_columns": [
         "efg_pct",
