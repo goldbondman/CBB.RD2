@@ -28,7 +28,7 @@
       ],
       "produces": [
         {"path": "data/reports/game_predictions_master.csv", "min_rows": 0, "required_columns": ["run_id", "game_id", "model_spread_team_a", "market_spread_team_a"], "allow_empty_when_no_games": true},
-        {"path": "data/actionable/bet_recommendations.csv", "min_rows": 0, "required_columns": ["run_id", "game_id", "bet_type"], "allow_empty_when_no_games": true},
+        {"path": "data/actionable/bet_recommendations.csv", "min_rows": 0, "required_columns": ["run_id", "game_id", "bet_type"], "allow_empty_when_no_games": true, "allow_empty_when_no_market_lines": true},
         {"path": "data/actionable/watchlist_games.csv", "min_rows": 0, "required_columns": ["run_id", "game_id", "watchlist_reason"], "allow_empty_when_no_games": true, "allow_empty": true},
         {"path": "data/actionable/no_bet_explanations.csv", "min_rows": 0, "required_columns": ["run_id", "game_id", "no_bet_reason"], "allow_empty_when_no_games": true},
         {"path": "data/actionable/daily_card_summary.csv", "min_rows": 0, "required_columns": ["run_id", "games_on_card"], "allow_empty_when_no_games": true},
