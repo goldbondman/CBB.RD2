@@ -1103,7 +1103,7 @@ class IDESOrchestrator:
 
             scope_counts = preds["spread_calibration_scope"].value_counts(dropna=False).to_dict()
             scope_note = ",".join([f"{str(k)}={int(v)}" for k, v in scope_counts.items()]) if scope_counts else "none"
-            active_variant = preds["spread_calibration_variant"].replace("", np.nan).dropna().astype(str).mode()
+            active_variant = preds["spread_calibration_variant"].replace("", np.nan).infer_objects(copy=False).dropna().astype(str).mode()
             policy_branch = (spread_policy or {}).get("spread_thresholds_by_mc_mode", {}).get(mc_mode, {}) if isinstance(spread_policy, dict) else {}
             policy_status = "PASS" if spread_policy and isinstance(policy_branch, dict) and policy_branch else "WARN"
             policy_notes = [

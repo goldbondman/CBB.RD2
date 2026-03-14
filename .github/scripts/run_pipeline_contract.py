@@ -215,6 +215,40 @@ def _feature_coverage_summary(repo_root: Path) -> dict[str, Any]:
     return summary
 
 
+def _market_lines_unavailable(repo_root: Path) -> bool:
+    """Return True if market lines are not available for the current upcoming-game slate.
+
+    Uses ``games_schedule_master.csv`` as the primary signal (it reflects the
+    actual market data that was merged for upcoming games) and falls back to
+    checking the raw market-lines input files when the schedule file is absent.
+    """
+    # Primary: games_schedule_master.csv is produced by the predict stage and
+    # contains merged market data for upcoming games.
+    schedule_path = repo_root / "data" / "plumbing" / "games_schedule_master.csv"
+    if schedule_path.exists() and schedule_path.stat().st_size > 0:
+        rows, cols = _read_csv(schedule_path)
+        if rows:
+            spread_col = next(
+                (c for c in ("market_spread_team_a_open", "market_spread_team_a_close") if c in cols),
+                None,
+            )
+            if spread_col:
+                has_market = any(
+                    (r.get(spread_col) or "").strip().lower() not in ("", "nan")
+                    for r in rows
+                )
+                return not has_market
+    # Fallback: check raw market-lines input files for any data rows.
+    data_dir = repo_root / "data"
+    for fname in ("market_lines_latest_by_game.csv", "market_lines_latest.csv", "market_lines.csv"):
+        p = data_dir / fname
+        if p.exists() and p.stat().st_size > 0:
+            rows, _ = _read_csv(p)
+            if rows:
+                return False
+    return True
+
+
 def _validate_one_spec(repo_root: Path, spec: Any, stage_name: str, kind: str) -> tuple[dict[str, Any] | None, str | None]:
     if isinstance(spec, str):
         spec = {"path": spec}
@@ -238,8 +272,11 @@ def _validate_one_spec(repo_root: Path, spec: Any, stage_name: str, kind: str) -
             return None, f"[{stage_name}] {kind} {rel} has {len(rows)} rows; expected >= {min_rows}"
         allow_empty = bool(spec.get("allow_empty", False))
         allow_empty_when_no_games = bool(spec.get("allow_empty_when_no_games", False))
+        allow_empty_when_no_market_lines = bool(spec.get("allow_empty_when_no_market_lines", False))
         if kind == "output" and len(rows) == 0:
             if allow_empty:
+                pass
+            elif allow_empty_when_no_market_lines and _market_lines_unavailable(repo_root):
                 pass
             elif not allow_empty_when_no_games:
                 return None, (
