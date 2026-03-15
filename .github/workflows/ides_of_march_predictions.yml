@@ -74,6 +74,14 @@ jobs:
             --max-runs 30 \
             --dest "data/staging" || { echo "[ERROR] Missing INFRA-market-lines"; exit 1; }
 
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "wagertalk_historical_odds.yml" \
+            --artifact-name "INFRA-wagertalk-historical-odds" \
+            --branch "main" \
+            --max-runs 30 \
+            --dest "data/staging" || { echo "[ERROR] Missing INFRA-wagertalk-historical-odds"; exit 1; }
+
       - name: Upload hydrated inputs
         uses: actions/upload-artifact@v4
         with:
@@ -123,6 +131,7 @@ jobs:
               "market_lines_latest_by_game.csv",
               "market_lines_latest.csv",
               "market_lines.csv",
+              "wagertalk_historical_odds.csv",
           }
           for path in staging.rglob("*"):
               if not path.is_file():
@@ -150,7 +159,7 @@ jobs:
           path: data/logs/contract_manifest_integrity.json
           retention-days: 14
 
-  predict:
+  backtest_calibration:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: integrity_gate
@@ -191,6 +200,7 @@ jobs:
               "market_lines_latest_by_game.csv",
               "market_lines_latest.csv",
               "market_lines.csv",
+              "wagertalk_historical_odds.csv",
           }
           for path in staging.rglob("*"):
               if not path.is_file():
@@ -199,6 +209,102 @@ jobs:
                   continue
               shutil.copy2(path, target / path.name)
           PY
+
+      - name: Build IDES backtest calibration policy
+        run: |
+          python -m ides_of_march.cli backtest --require-wagertalk
+
+      - name: Upload IDES backtest calibration artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-ides-backtest-calibration
+          if-no-files-found: error
+          path: |
+            data/reports/backtest_model_summary.csv
+            data/reports/backtest_edge_band_summary.csv
+            data/reports/backtest_bet_ledger.csv
+            data/reports/backtest_kelly_summary.csv
+            data/reports/backtest_calibration_policy.json
+            data/logs/pipeline_run_log.csv
+            data/logs/run_manifest.json
+          retention-days: 14
+
+  predict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: backtest_calibration
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -c "import pandas, numpy, scipy, sklearn"
+
+      - name: Download hydrated inputs
+        uses: actions/download-artifact@v4
+        with:
+          name: INFRA-ides-hydrated-inputs
+          path: data/staging
+
+      - name: Download backtest calibration artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: INFRA-ides-backtest-calibration
+          path: data/backtest_calibration
+
+      - name: Merge hydrated inputs into data/
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          staging = Path("data/staging")
+          target = Path("data")
+          target.mkdir(parents=True, exist_ok=True)
+
+          preferred = {
+              "games.csv",
+              "team_game_weighted.csv",
+              "market_lines_latest_by_game.csv",
+              "market_lines_latest.csv",
+              "market_lines.csv",
+              "wagertalk_historical_odds.csv",
+          }
+          for path in staging.rglob("*"):
+              if not path.is_file():
+                  continue
+              if path.name not in preferred:
+                  continue
+              shutil.copy2(path, target / path.name)
+
+          calibration_src = Path("data/backtest_calibration")
+          calibration_dest = Path("data/reports")
+          calibration_dest.mkdir(parents=True, exist_ok=True)
+          for name in {
+              "backtest_model_summary.csv",
+              "backtest_edge_band_summary.csv",
+              "backtest_bet_ledger.csv",
+              "backtest_kelly_summary.csv",
+              "backtest_calibration_policy.json",
+          }:
+              for path in calibration_src.rglob(name):
+                  if path.is_file():
+                      shutil.copy2(path, calibration_dest / name)
+          PY
+
+      - name: Refresh ESPN schedule
+        continue-on-error: true
+        run: |
+          python espn_pipeline.py --days-back 2 --days-ahead 7 --no-build-derived-features --summary-mode team-only
 
       - name: Run IDES prediction contract stage
         env:
@@ -212,16 +318,19 @@ jobs:
             --contract .github/pipeline_contracts/ides_of_march.contract.json \
             --job update \
             --days-back "3" \
+            --hours-ahead "${INPUT_HOURS_AHEAD}" \
+            --hours-back "${INPUT_HOURS_BACK}" \
+            --mc-mode "${INPUT_MC_MODE}" \
             --manifest data/logs/contract_manifest_predict.json \
             --stages ides_predict
 
-          if [[ -n "${INPUT_AS_OF}" || "${INPUT_MC_MODE}" != "confidence_filter" || "${INPUT_HOURS_AHEAD}" != "48" || "${INPUT_HOURS_BACK}" != "1" ]]; then
-            echo "[INFO] Re-running predict with manual overrides"
-            CMD=(python -m ides_of_march.cli predict --mc-mode "${INPUT_MC_MODE}" --hours-ahead "${INPUT_HOURS_AHEAD}" --hours-back "${INPUT_HOURS_BACK}")
-            if [[ -n "${INPUT_AS_OF}" ]]; then
-              CMD+=(--as-of "${INPUT_AS_OF}")
-            fi
-            "${CMD[@]}"
+          if [[ -n "${INPUT_AS_OF}" ]]; then
+            echo "[INFO] Re-running predict with --as-of override"
+            python -m ides_of_march.cli predict \
+              --mc-mode "${INPUT_MC_MODE}" \
+              --hours-ahead "${INPUT_HOURS_AHEAD}" \
+              --hours-back "${INPUT_HOURS_BACK}" \
+              --as-of "${INPUT_AS_OF}"
           fi
 
       - name: Validate IDES outputs
@@ -243,6 +352,11 @@ jobs:
             data/actionable/no_bet_explanations.csv
             data/actionable/daily_card_summary.csv
             data/reports/game_predictions_master.csv
+            data/reports/backtest_model_summary.csv
+            data/reports/backtest_edge_band_summary.csv
+            data/reports/backtest_bet_ledger.csv
+            data/reports/backtest_kelly_summary.csv
+            data/reports/backtest_calibration_policy.json
             data/reports/agreement_analysis_results.csv
             data/plumbing/games_schedule_master.csv
             data/plumbing/team_game_boxscores.csv

@@ -14,7 +14,7 @@ on:
       hours_ahead:
         description: "How many hours ahead from now to include (manual runs)"
         required: false
-        default: "30"
+        default: "48"
       run_mode:
         description: "Execution mode label"
         required: false
@@ -207,13 +207,20 @@ jobs:
           mkdir -p data
           LOG_PATH="data/perplexity_contract_runner.log"
           STAGES="espn_pipeline,rotation_features,situational_features,market_builder,advanced_metrics_builder,joint_models_predictions"
-          if [[ -f data/team_game_weighted.csv ]]; then
-            ROWS=$(python -c "import pandas as pd; print(len(pd.read_csv('data/team_game_weighted.csv')))" 2>/dev/null || echo 0)
-            # Require >50 rows to confirm ESPN data is substantive, not a stale/empty artifact
-            if (( ROWS > 50 )); then
-              echo "[INFO] ESPN artifact present with $ROWS rows; skipping espn_pipeline stage"
-              STAGES="rotation_features,situational_features,market_builder,advanced_metrics_builder,joint_models_predictions"
+          # On manual (workflow_dispatch) runs always re-run espn_pipeline so today's upcoming
+          # games are fetched fresh. Skipping is only safe for scheduled runs where the artifact
+          # was just produced moments ago by the upstream update_espn_cbb workflow.
+          if [[ "${GITHUB_EVENT_NAME:-}" != "workflow_dispatch" ]]; then
+            if [[ -f data/team_game_weighted.csv ]]; then
+              ROWS=$(python -c "import pandas as pd; print(len(pd.read_csv('data/team_game_weighted.csv')))" 2>/dev/null || echo 0)
+              # Require >50 rows to confirm ESPN data is substantive, not a stale/empty artifact
+              if (( ROWS > 50 )); then
+                echo "[INFO] ESPN artifact present with $ROWS rows; skipping espn_pipeline stage"
+                STAGES="rotation_features,situational_features,market_builder,advanced_metrics_builder,joint_models_predictions"
+              fi
             fi
+          else
+            echo "[INFO] workflow_dispatch: always running espn_pipeline to ensure today's games are fetched fresh"
           fi
           set +e
           python .github/scripts/run_pipeline_contract.py \

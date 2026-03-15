@@ -181,6 +181,10 @@ SEASON_ACTIVE: bool = True
 # Override via env var for backfill runs; default is 3 for daily cron.
 DAYS_BACK = int(os.getenv("DAYS_BACK", "3"))
 
+# How many days ahead to fetch scheduled/upcoming games (for lines on future games).
+# 7 ensures a full week of tournament bracket games are visible.
+DAYS_AHEAD = int(os.getenv("DAYS_AHEAD", "7"))
+
 # Timezone used to determine "today" (PST keeps us safe for late-night games)
 TZ = ZoneInfo("America/Los_Angeles")
 

@@ -6,7 +6,7 @@
       "name": "espn_pipeline",
       "job": "update",
       "depends_on": [],
-      "command": "python espn_pipeline.py --days-back {days_back}",
+      "command": "python espn_pipeline.py --days-back {days_back} --days-ahead 7",
       "requires": [],
       "produces": [
         {

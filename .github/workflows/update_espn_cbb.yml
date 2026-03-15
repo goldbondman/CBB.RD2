@@ -61,16 +61,6 @@ jobs:
     timeout-minutes: 240
     permissions:
       contents: write
-    outputs:
-      run_profile: ${{ steps.resolve_inputs.outputs.run_profile }}
-      days_back: ${{ steps.resolve_inputs.outputs.days_back }}
-      game_type: ${{ steps.resolve_inputs.outputs.game_type }}
-      run_rankings: ${{ steps.resolve_inputs.outputs.run_rankings }}
-      commit_data: ${{ steps.resolve_inputs.outputs.commit_data }}
-      contract_stages: ${{ steps.resolve_inputs.outputs.contract_stages }}
-      validation_profile: ${{ steps.resolve_inputs.outputs.validation_profile }}
-      commit_scope: ${{ steps.resolve_inputs.outputs.commit_scope }}
-      artifact_name: ${{ steps.resolve_inputs.outputs.artifact_name }}
 
     steps:
       - name: Checkout repo
@@ -91,71 +81,36 @@ jobs:
           set -euo pipefail
 
           RUN_PROFILE="${INPUT_RUN_PROFILE:-daily}"
-          if [[ -z "$RUN_PROFILE" ]]; then
-            RUN_PROFILE="daily"
-          fi
+          [[ -z "$RUN_PROFILE" ]] && RUN_PROFILE="daily"
           case "$RUN_PROFILE" in
             daily|historical_boxscore_backfill) ;;
-            *) echo "[ERROR] run_profile must be daily or historical_boxscore_backfill"; exit 1 ;;
+            *) echo "[ERROR] invalid run_profile '$RUN_PROFILE'"; exit 1 ;;
           esac
 
           DAYS_BACK="${INPUT_DAYS_BACK:-3}"
-          if [[ -z "$DAYS_BACK" ]]; then
-            DAYS_BACK="3"
+          [[ -z "$DAYS_BACK" ]] && DAYS_BACK="3"
+          [[ "$DAYS_BACK" =~ ^[0-9]+$ ]] || { echo "[ERROR] days_back must be numeric; got '$DAYS_BACK'"; exit 1; }
+          (( DAYS_BACK >= 1 )) || { echo "[ERROR] days_back must be >= 1"; exit 1; }
+          if (( DAYS_BACK > 180 )) && [[ "$EVENT_NAME" != "workflow_dispatch" ]]; then
+            echo "[ERROR] days_back > 180 is only allowed on manual workflow_dispatch runs"; exit 1
           fi
-          BACKFILL_DAYS="${INPUT_BACKFILL_DAYS:-2190}"
-          if [[ -z "$BACKFILL_DAYS" ]]; then
-            BACKFILL_DAYS="2190"
-          fi
-          if ! [[ "$BACKFILL_DAYS" =~ ^[0-9]+$ ]]; then
-            echo "[ERROR] backfill_days must be numeric; got '$BACKFILL_DAYS'"
-            exit 1
-          fi
-          BACKFILL_DAYS_INT=$((BACKFILL_DAYS))
-          if (( BACKFILL_DAYS_INT < 365 || BACKFILL_DAYS_INT > 4000 )); then
-            echo "[ERROR] backfill_days must be between 365 and 4000 for historical_boxscore_backfill"
-            exit 1
-          fi
+          (( DAYS_BACK > 180 )) && echo "[WARN] manual backfill requested with days_back=$DAYS_BACK"
 
-          if ! [[ "$DAYS_BACK" =~ ^[0-9]+$ ]]; then
-            echo "[ERROR] days_back must be numeric; got '$DAYS_BACK'"
-            exit 1
-          fi
-          DAYS_BACK_INT=$((DAYS_BACK))
-          if (( DAYS_BACK_INT < 1 )); then
-            echo "[ERROR] days_back must be >= 1"
-            exit 1
-          fi
-          if (( DAYS_BACK_INT > 180 )); then
-            if [[ "$EVENT_NAME" != "workflow_dispatch" ]]; then
-              echo "[ERROR] days_back > 180 is only allowed on manual workflow_dispatch runs"
-              exit 1
-            fi
-            echo "[WARN] manual backfill requested with days_back=$DAYS_BACK_INT"
-          fi
+          BACKFILL_DAYS="${INPUT_BACKFILL_DAYS:-2190}"
+          [[ -z "$BACKFILL_DAYS" ]] && BACKFILL_DAYS="2190"
+          [[ "$BACKFILL_DAYS" =~ ^[0-9]+$ ]] || { echo "[ERROR] backfill_days must be numeric; got '$BACKFILL_DAYS'"; exit 1; }
+          (( BACKFILL_DAYS >= 365 && BACKFILL_DAYS <= 4000 )) || { echo "[ERROR] backfill_days must be 365–4000"; exit 1; }
 
           RUN_RANKINGS="${INPUT_RUN_RANKINGS:-true}"
-          if [[ -z "$RUN_RANKINGS" ]]; then
-            RUN_RANKINGS="true"
-          fi
-          case "$RUN_RANKINGS" in
-            true|false) ;;
-            *) echo "[ERROR] run_rankings must be true or false"; exit 1 ;;
-          esac
+          [[ -z "$RUN_RANKINGS" ]] && RUN_RANKINGS="true"
+          case "$RUN_RANKINGS" in true|false) ;; *) echo "[ERROR] run_rankings must be true or false"; exit 1 ;; esac
 
           COMMIT_DATA="${INPUT_COMMIT_DATA:-false}"
-          if [[ "$EVENT_NAME" != "workflow_dispatch" ]]; then
-            COMMIT_DATA="false"
-          fi
-          case "$COMMIT_DATA" in
-            true|false) ;;
-            *) echo "[ERROR] commit_data must be true or false"; exit 1 ;;
-          esac
+          [[ "$EVENT_NAME" != "workflow_dispatch" ]] && COMMIT_DATA="false"
+          case "$COMMIT_DATA" in true|false) ;; *) echo "[ERROR] commit_data must be true or false"; exit 1 ;; esac
 
           GAME_TYPE="${INPUT_GAME_TYPE:-regular}"
-          if [[ -z "$GAME_TYPE" ]]; then
-            GAME_TYPE="regular"
-          fi
+          [[ -z "$GAME_TYPE" ]] && GAME_TYPE="regular"
           case "$GAME_TYPE" in
             regular|conf_tournament|ncaa_r1|ncaa_r2) ;;
             *) echo "[ERROR] invalid game_type '$GAME_TYPE'"; exit 1 ;;
@@ -165,10 +120,7 @@ jobs:
           VALIDATION_PROFILE="full"
           COMMIT_SCOPE="curated"
           if [[ "$RUN_PROFILE" == "historical_boxscore_backfill" ]]; then
-            if [[ "$EVENT_NAME" != "workflow_dispatch" ]]; then
-              echo "[ERROR] historical_boxscore_backfill is manual-only"
-              exit 1
-            fi
+            [[ "$EVENT_NAME" == "workflow_dispatch" ]] || { echo "[ERROR] historical_boxscore_backfill is manual-only"; exit 1; }
             DAYS_BACK="$BACKFILL_DAYS"
             RUN_RANKINGS="false"
             GAME_TYPE="regular"
@@ -177,16 +129,17 @@ jobs:
             COMMIT_SCOPE="boxscore_history"
           fi
 
-          echo "[INFO] Resolved update inputs: event=$EVENT_NAME run_profile=$RUN_PROFILE days_back=$DAYS_BACK run_rankings=$RUN_RANKINGS game_type=$GAME_TYPE commit_data=$COMMIT_DATA stages=${CONTRACT_STAGES:-all}"
-          echo "run_profile=$RUN_PROFILE" >> "$GITHUB_OUTPUT"
-          echo "days_back=$DAYS_BACK" >> "$GITHUB_OUTPUT"
-          echo "run_rankings=$RUN_RANKINGS" >> "$GITHUB_OUTPUT"
-          echo "commit_data=$COMMIT_DATA" >> "$GITHUB_OUTPUT"
-          echo "game_type=$GAME_TYPE" >> "$GITHUB_OUTPUT"
-          echo "contract_stages=$CONTRACT_STAGES" >> "$GITHUB_OUTPUT"
-          echo "validation_profile=$VALIDATION_PROFILE" >> "$GITHUB_OUTPUT"
-          echo "commit_scope=$COMMIT_SCOPE" >> "$GITHUB_OUTPUT"
-          echo "artifact_name=INFRA-espn-data" >> "$GITHUB_OUTPUT"
+          echo "[INFO] event=$EVENT_NAME profile=$RUN_PROFILE days_back=$DAYS_BACK rankings=$RUN_RANKINGS game_type=$GAME_TYPE commit=$COMMIT_DATA stages=${CONTRACT_STAGES:-all}"
+          {
+            echo "run_profile=$RUN_PROFILE"
+            echo "days_back=$DAYS_BACK"
+            echo "run_rankings=$RUN_RANKINGS"
+            echo "commit_data=$COMMIT_DATA"
+            echo "game_type=$GAME_TYPE"
+            echo "contract_stages=$CONTRACT_STAGES"
+            echo "validation_profile=$VALIDATION_PROFILE"
+            echo "commit_scope=$COMMIT_SCOPE"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -205,21 +158,7 @@ jobs:
           fi
           python -c "import pandas, numpy, requests, scipy"
 
-      - name: Self-test pipeline contract tooling
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m py_compile .github/scripts/run_pipeline_contract.py .github/scripts/print_data_integrity.py
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          p = Path('.github/pipeline_contracts/espn_pipeline_contract.json')
-          contract = json.loads(p.read_text(encoding='utf-8'))
-          assert contract.get('stages'), 'Contract missing stages'
-          print('[OK] contract loaded:', p)
-          PY
-
-      - name: Run dependency-aware update stages
+      - name: Run update pipeline
         shell: bash
         run: |
           set -euo pipefail
@@ -235,7 +174,7 @@ jobs:
             --manifest data/update_manifest.json \
             "${EXTRA_STAGE_ARGS[@]}"
 
-      - name: Validate required core outputs
+      - name: Validate update outputs
         shell: bash
         run: |
           set -euo pipefail
@@ -255,26 +194,37 @@ jobs:
               --debug-json debug/pred_margin_validation.json
           fi
 
-      - name: Print data integrity block
+      - name: Run rankings
+        if: ${{ steps.resolve_inputs.outputs.run_rankings == 'true' && steps.resolve_inputs.outputs.validation_profile != 'backfill_boxscore' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "team_id,event_id,game_datetime_utc" 36
+          bash .github/scripts/check_csv.sh data/team_pretournament_snapshot.csv 1 "team_id" 36
+          python .github/scripts/run_pipeline_contract.py \
+            --contract .github/pipeline_contracts/espn_pipeline_contract.json \
+            --job rankings \
+            --days-back "${{ steps.resolve_inputs.outputs.days_back }}" \
+            --game-type "${{ steps.resolve_inputs.outputs.game_type }}" \
+            --manifest data/rankings_manifest.json
+          bash .github/scripts/check_csv.sh data/cbb_rankings.csv 1 "team_id,rank"
+          bash .github/scripts/check_csv.sh data/cbb_rankings_by_conference.csv 1
+
+      - name: Print data integrity
         shell: bash
         run: |
           set -euo pipefail
           if [[ "${{ steps.resolve_inputs.outputs.validation_profile }}" == "backfill_boxscore" ]]; then
             python .github/scripts/print_data_integrity.py \
-              --label update \
-              --output data/update_data_integrity.json \
-              data/games.csv \
-              data/team_game_logs.csv
+              --label update --output data/update_data_integrity.json \
+              data/games.csv data/team_game_logs.csv
           else
             python .github/scripts/print_data_integrity.py \
-              --label update \
-              --output data/update_data_integrity.json \
-              data/games.csv \
-              data/team_game_weighted.csv \
-              data/team_pretournament_snapshot.csv
+              --label update --output data/update_data_integrity.json \
+              data/games.csv data/team_game_weighted.csv data/team_pretournament_snapshot.csv
           fi
 
-      - name: Upload backfill artifact bundle
+      - name: Upload backfill artifact
         if: ${{ always() && steps.resolve_inputs.outputs.validation_profile == 'backfill_boxscore' }}
         uses: actions/upload-artifact@v4
         with:
@@ -287,7 +237,7 @@ jobs:
             data/update_manifest.json
             data/update_data_integrity.json
 
-      - name: Upload update artifact bundle
+      - name: Upload update artifact
         if: ${{ always() && steps.resolve_inputs.outputs.validation_profile != 'backfill_boxscore' }}
         uses: actions/upload-artifact@v4
         with:
@@ -321,205 +271,8 @@ jobs:
             data/update_manifest.json
             data/update_data_integrity.json
 
-      - name: Validate workflow health
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ -f .github/scripts/validate_workflows.py ]]; then
-            python .github/scripts/validate_workflows.py
-          else
-            echo "[SKIP] .github/scripts/validate_workflows.py not found"
-          fi
-
-      - name: Commit curated update outputs to main
-        if: ${{ github.event_name == 'workflow_dispatch' && steps.resolve_inputs.outputs.commit_data == 'true' && steps.resolve_inputs.outputs.run_rankings != 'true' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
-            echo "[SKIP] commit_data requested but ref is ${GITHUB_REF}; only main is allowed"
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          FILES_TO_STAGE=()
-          if [[ "${{ steps.resolve_inputs.outputs.commit_scope }}" == "boxscore_history" ]]; then
-            FILES_TO_STAGE+=(data/games.csv data/team_game_logs.csv)
-          else
-            FILES_TO_STAGE+=(
-              data/games.csv
-              data/team_game_logs.csv
-              data/team_game_weighted.csv
-              data/team_pretournament_snapshot.csv
-              data/advanced_metrics.csv
-              data/market_lines.csv
-              data/market_lines_latest.csv
-              data/market_lines_closing.csv
-              data/market_lines_snapshots.csv
-              data/market_lines_canonical.csv
-              data/market_lines_latest_by_book.csv
-              data/market_lines_latest_by_game.csv
-              data/predictions_joint_latest.csv
-              data/predictions_joint_snapshots.csv
-              data/rotation_features.csv
-              data/situational_features.csv
-              data/luck_regression_features.csv
-              data/player_availability_features.csv
-              data/player_season_summary.csv
-              data/team_season_summary.csv
-            )
-          fi
-
-          for _f in "${FILES_TO_STAGE[@]}"; do
-            if [[ -e "$_f" ]]; then
-              echo "[INFO] staging: $_f"
-              git add -- "$_f"
-            else
-              echo "[SKIP] missing, not staging: $_f"
-            fi
-          done
-
-          if git diff --staged --quiet; then
-            echo "[SKIP] No curated update output changes to commit"
-            exit 0
-          fi
-
-          STAGED_BYTES=$(git diff --cached --name-only -z | xargs -0 -r du -cb | tail -n 1 | cut -f1)
-          STAGED_BYTES=${STAGED_BYTES:-0}
-          # Curated daily payloads can exceed 50 MB during full refreshes.
-          MAX_BYTES=$((80 * 1024 * 1024))
-          if [[ "${{ steps.resolve_inputs.outputs.commit_scope }}" == "boxscore_history" ]]; then
-            MAX_BYTES=$((200 * 1024 * 1024))
-          fi
-          if (( STAGED_BYTES > MAX_BYTES )); then
-            echo "[ERROR] staged payload ${STAGED_BYTES} bytes exceeds ${MAX_BYTES} byte guard"
-            exit 1
-          fi
-
-          git commit -m "data: update ESPN CBB artifacts [skip ci]"
-
-          STASH_CREATED=0
-          if ! git diff --quiet || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
-            echo "[INFO] Stashing unstaged/untracked changes before rebase"
-            git stash push --include-untracked -m "update_espn_pre_rebase_${GITHUB_RUN_ID}" >/dev/null 2>&1 || true
-            STASH_CREATED=1
-          fi
-
-          for i in 1 2 3; do
-            if ! git pull --rebase origin main; then
-              echo "[ERROR] rebase conflict while syncing main on attempt ${i}"
-              git rebase --abort || true
-              if (( STASH_CREATED == 1 )); then
-                git stash pop || true
-              fi
-              exit 1
-            fi
-            if git push origin HEAD:main; then
-              echo "[OK] push succeeded on attempt ${i}"
-              if (( STASH_CREATED == 1 )); then
-                git stash pop || true
-              fi
-              exit 0
-            fi
-            echo "[WARN] push failed on attempt ${i}; retrying"
-            sleep $((i * 2))
-          done
-          if (( STASH_CREATED == 1 )); then
-            git stash pop || true
-          fi
-          echo "[ERROR] failed to push after retries"
-          exit 1
-
-  rankings:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: update
-    if: ${{ needs.update.result == 'success' && needs.update.outputs.run_rankings == 'true' }}
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install dependencies
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ -f constraints.txt ]]; then
-            pip install -r requirements.txt -c constraints.txt
-          else
-            pip install -r requirements.txt
-          fi
-          python -c "import pandas, numpy, requests, scipy"
-
-      - name: Download update artifact bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: INFRA-espn-data
-          path: data
-
-      - name: Validate update manifest and ranking inputs
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ ! -f data/update_manifest.json ]]; then
-            echo "[ERROR] Missing required data/update_manifest.json from update artifact"
-            exit 1
-          fi
-          python - <<'PY'
-          import json
-          from pathlib import Path
-
-          manifest = json.loads(Path('data/update_manifest.json').read_text(encoding='utf-8'))
-          stage_names = [s.get('name') for s in manifest.get('stages', [])]
-          required = {'espn_pipeline'}
-          missing = sorted(required - set(stage_names))
-          if missing:
-              raise SystemExit(f"[ERROR] update_manifest missing required stages: {missing}")
-          print('[OK] update_manifest stage list:', stage_names)
-          PY
-          bash .github/scripts/check_csv.sh data/team_game_weighted.csv 1 "team_id,event_id,game_datetime_utc" 36
-          bash .github/scripts/check_csv.sh data/team_pretournament_snapshot.csv 1 "team_id" 36
-
-      - name: Run dependency-aware rankings stage
-        shell: bash
-        run: |
-          set -euo pipefail
-          python .github/scripts/run_pipeline_contract.py \
-            --contract .github/pipeline_contracts/espn_pipeline_contract.json \
-            --job rankings \
-            --days-back "${{ needs.update.outputs.days_back }}" \
-            --game-type "${{ needs.update.outputs.game_type }}" \
-            --manifest data/rankings_manifest.json
-
-      - name: Validate rankings outputs
-        shell: bash
-        run: |
-          set -euo pipefail
-          bash .github/scripts/check_csv.sh data/cbb_rankings.csv 1 "team_id,rank"
-          bash .github/scripts/check_csv.sh data/cbb_rankings_by_conference.csv 1
-
-      - name: Print rankings integrity block
-        shell: bash
-        run: |
-          set -euo pipefail
-          python .github/scripts/print_data_integrity.py \
-            --label rankings \
-            --output data/rankings_data_integrity.json \
-            data/cbb_rankings.csv \
-            data/cbb_rankings_by_conference.csv
-
       - name: Upload rankings artifact
-        if: always()
+        if: ${{ steps.resolve_inputs.outputs.run_rankings == 'true' && steps.resolve_inputs.outputs.validation_profile != 'backfill_boxscore' }}
         uses: actions/upload-artifact@v4
         with:
           name: INFRA-rankings
@@ -529,15 +282,14 @@ jobs:
             data/cbb_rankings.csv
             data/cbb_rankings_by_conference.csv
             data/rankings_manifest.json
-            data/rankings_data_integrity.json
 
-      - name: Commit curated update+rankings outputs to main
-        if: ${{ github.event_name == 'workflow_dispatch' && needs.update.outputs.commit_data == 'true' }}
+      - name: Commit curated outputs to main
+        if: ${{ github.event_name == 'workflow_dispatch' && steps.resolve_inputs.outputs.commit_data == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
           if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
-            echo "[SKIP] commit_data requested but ref is ${GITHUB_REF}; only main is allowed"
+            echo "[SKIP] ref is ${GITHUB_REF}; only main is allowed for direct push"
             exit 0
           fi
 
@@ -545,91 +297,77 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           FILES_TO_STAGE=()
-          if [[ "${{ needs.update.outputs.commit_scope }}" == "boxscore_history" ]]; then
+          if [[ "${{ steps.resolve_inputs.outputs.commit_scope }}" == "boxscore_history" ]]; then
             FILES_TO_STAGE+=(data/games.csv data/team_game_logs.csv)
           else
+            # Snapshot/log files grow unboundedly (appended every run) — keep them in
+            # artifacts only, not git history. Commit only the "latest" curated views.
             FILES_TO_STAGE+=(
               data/games.csv
-              data/team_game_logs.csv
               data/team_game_weighted.csv
               data/team_pretournament_snapshot.csv
               data/advanced_metrics.csv
               data/market_lines.csv
               data/market_lines_latest.csv
               data/market_lines_closing.csv
-              data/market_lines_snapshots.csv
               data/market_lines_canonical.csv
               data/market_lines_latest_by_book.csv
               data/market_lines_latest_by_game.csv
               data/predictions_joint_latest.csv
-              data/predictions_joint_snapshots.csv
               data/rotation_features.csv
               data/situational_features.csv
               data/luck_regression_features.csv
               data/player_availability_features.csv
               data/player_season_summary.csv
               data/team_season_summary.csv
-              data/cbb_rankings.csv
-              data/cbb_rankings_by_conference.csv
             )
+            if [[ "${{ steps.resolve_inputs.outputs.run_rankings }}" == "true" ]]; then
+              FILES_TO_STAGE+=(data/cbb_rankings.csv data/cbb_rankings_by_conference.csv)
+            fi
           fi
 
           for _f in "${FILES_TO_STAGE[@]}"; do
             if [[ -e "$_f" ]]; then
-              echo "[INFO] staging: $_f"
               git add -- "$_f"
             else
-              echo "[SKIP] missing, not staging: $_f"
+              echo "[SKIP] missing: $_f"
             fi
           done
 
           if git diff --staged --quiet; then
-            echo "[SKIP] No curated output changes to commit"
+            echo "[SKIP] no output changes to commit"
             exit 0
           fi
 
           STAGED_BYTES=$(git diff --cached --name-only -z | xargs -0 -r du -cb | tail -n 1 | cut -f1)
           STAGED_BYTES=${STAGED_BYTES:-0}
-          # Curated daily payloads can exceed 50 MB during full refreshes.
-          MAX_BYTES=$((80 * 1024 * 1024))
-          if [[ "${{ needs.update.outputs.commit_scope }}" == "boxscore_history" ]]; then
-            MAX_BYTES=$((200 * 1024 * 1024))
+          if [[ "${{ steps.resolve_inputs.outputs.commit_scope }}" == "boxscore_history" ]]; then
+            MAX_BYTES=$(( 200 * 1024 * 1024 ))
+          else
+            MAX_BYTES=$(( 80 * 1024 * 1024 ))
           fi
           if (( STAGED_BYTES > MAX_BYTES )); then
             echo "[ERROR] staged payload ${STAGED_BYTES} bytes exceeds ${MAX_BYTES} byte guard"
             exit 1
           fi
 
-          git commit -m "data: update ESPN CBB artifacts + rankings [skip ci]"
-
-          STASH_CREATED=0
-          if ! git diff --quiet || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
-            echo "[INFO] Stashing unstaged/untracked changes before rebase"
-            git stash push --include-untracked -m "update_espn_rankings_pre_rebase_${GITHUB_RUN_ID}" >/dev/null 2>&1 || true
-            STASH_CREATED=1
-          fi
+          COMMIT_MSG="data: update ESPN CBB artifacts [skip ci]"
+          [[ "${{ steps.resolve_inputs.outputs.run_rankings }}" == "true" ]] && COMMIT_MSG="data: update ESPN CBB artifacts + rankings [skip ci]"
+          git commit -m "$COMMIT_MSG"
 
           for i in 1 2 3; do
-            if ! git pull --rebase origin main; then
-              echo "[ERROR] rebase conflict while syncing main on attempt ${i}"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              echo "[ERROR] rebase conflict on attempt ${i}"
               git rebase --abort || true
-              if (( STASH_CREATED == 1 )); then
-                git stash pop || true
-              fi
               exit 1
             fi
             if git push origin HEAD:main; then
               echo "[OK] push succeeded on attempt ${i}"
-              if (( STASH_CREATED == 1 )); then
-                git stash pop || true
-              fi
               exit 0
             fi
             echo "[WARN] push failed on attempt ${i}; retrying"
             sleep $((i * 2))
           done
-          if (( STASH_CREATED == 1 )); then
-            git stash pop || true
-          fi
           echo "[ERROR] failed to push after retries"
           exit 1

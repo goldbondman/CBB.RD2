@@ -554,6 +554,9 @@ def main() -> int:
     parser.add_argument("--job", choices=["update", "rankings"], required=True)
     parser.add_argument("--days-back", type=str, default="3")
     parser.add_argument("--game-type", type=str, default="regular")
+    parser.add_argument("--hours-ahead", type=str, default="48")
+    parser.add_argument("--hours-back", type=str, default="1")
+    parser.add_argument("--mc-mode", type=str, default="confidence_filter")
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--stages", type=str, default="", help="Optional comma-separated stage names to run with dependency closure")
     parser.add_argument("--dry-run", action="store_true")
@@ -575,6 +578,9 @@ def main() -> int:
     context = {
         "days_back": str(args.days_back),
         "game_type": str(args.game_type),
+        "hours_ahead": str(args.hours_ahead),
+        "hours_back": str(args.hours_back),
+        "mc_mode": str(args.mc_mode),
     }
 
     results: list[StageResult] = []

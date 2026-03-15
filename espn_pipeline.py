@@ -21,7 +21,7 @@ from espn_config import (
     OUT_WEIGHTED, OUT_PLAYER_METRICS,
     OUT_TOURNAMENT_METRICS, OUT_TOURNAMENT_SNAPSHOT,
     OUT_RANKINGS, OUT_RANKINGS_CONF,
-    DAYS_BACK, CHECKPOINT_FILE,
+    DAYS_BACK, DAYS_AHEAD, CHECKPOINT_FILE,
     ESPN_CONFERENCE_MAP,
     SOURCE, PARSE_VERSION,
     FETCH_SLEEP, DRY_RUN,
@@ -593,17 +593,17 @@ def _save_raw_json(subdir: str, name: str, data: Any) -> None:
 
 # ── Scoreboard pass ───────────────────────────────────────────────────────────
 
-def build_games(days_back: int = DAYS_BACK, strip_market_lines: bool = False) -> pd.DataFrame:
+def build_games(days_back: int = DAYS_BACK, days_ahead: int = DAYS_AHEAD, strip_market_lines: bool = False) -> pd.DataFrame:
     """
-    Fetch scoreboard for the past `days_back` days + today + tomorrow.
+    Fetch scoreboard for the past `days_back` days + today + `days_ahead` days forward.
     Returns a DataFrame of all parsed game rows and writes games.csv.
     """
     now = datetime.now(timezone.utc)
     dates = set()
     for i in range(days_back):
         dates.add((now - timedelta(days=i)).strftime("%Y%m%d"))
-    dates.add(now.strftime("%Y%m%d"))
-    dates.add((now + timedelta(days=1)).strftime("%Y%m%d"))  # catch late-night UTC games
+    for i in range(days_ahead + 1):  # +1 ensures today is always included
+        dates.add((now + timedelta(days=i)).strftime("%Y%m%d"))
 
     all_rows: List[Dict] = []
     for d in sorted(dates, reverse=True):
@@ -1053,13 +1053,14 @@ def build_team_and_player_logs(
 
 def run(
     days_back: int = DAYS_BACK,
+    days_ahead: int = DAYS_AHEAD,
     skip_odds_validation: bool = True,
     include_player_boxscores: bool = True,
     build_derived_features: bool = True,
     strip_market_lines: bool = False,
 ) -> None:
-    log.info(f"=== ESPN CBB Pipeline | DAYS_BACK={days_back} | PARSE_VERSION={PARSE_VERSION} ===")
-    games_df = build_games(days_back=days_back, strip_market_lines=strip_market_lines)
+    log.info(f"=== ESPN CBB Pipeline | DAYS_BACK={days_back} | DAYS_AHEAD={days_ahead} | PARSE_VERSION={PARSE_VERSION} ===")
+    games_df = build_games(days_back=days_back, days_ahead=days_ahead, strip_market_lines=strip_market_lines)
     if games_df.empty:
         log.error("No games from scoreboard — aborting")
         try:
@@ -1110,6 +1111,12 @@ if __name__ == "__main__":
         help=f"Number of days back to fetch (default: {DAYS_BACK})",
     )
     parser.add_argument(
+        "--days-ahead",
+        type=int,
+        default=DAYS_AHEAD,
+        help=f"Number of days ahead to fetch upcoming/scheduled games for lines (default: {DAYS_AHEAD})",
+    )
+    parser.add_argument(
         "--skip-odds-validation",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -1137,6 +1144,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     run(
         days_back=args.days_back,
+        days_ahead=args.days_ahead,
         skip_odds_validation=args.skip_odds_validation,
         include_player_boxscores=(args.summary_mode == "full"),
         build_derived_features=args.build_derived_features,
