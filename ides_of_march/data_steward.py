@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -47,6 +48,189 @@ _WIN_PROB_HOME_CANDIDATES: list[str] = [
 _WIN_PROB_AWAY_CANDIDATES: list[str] = [
     "away_win_prob", "market_away_win_prob", "away_implied_prob",
 ]
+
+
+_RE_NON_ALPHA = re.compile(r"[^a-z0-9 ]+")
+_WT_STOP_WORDS = frozenset({"university", "college", "of", "the", "at", "and"})
+
+
+def _wt_normalize_name(name: str) -> str:
+    """Normalise a team name for WagerTalk matching.
+
+    Lowercases the name, removes punctuation, expands the common "st"
+    abbreviation to "state", and strips common stop words.  Returns the
+    full normalised string; the matching logic uses a prefix strategy so
+    that a short WagerTalk name like "Duke" will align with the fuller ESPN
+    form "Duke Blue Devils".
+    """
+    if not name or str(name).lower() in ("nan", ""):
+        return ""
+    s = _RE_NON_ALPHA.sub(" ", str(name).lower().replace("'", ""))
+    tokens = ["state" if t == "st" else t for t in s.split() if t not in _WT_STOP_WORDS]
+    return " ".join(tokens)
+
+
+def _wt_name_matches(wt_norm: str, espn_norm: str) -> bool:
+    """Return True when *wt_norm* is a word-boundary prefix of *espn_norm*.
+
+    WagerTalk uses abbreviated school names (e.g. "Duke", "Ohio State") while
+    ESPN uses full name-plus-mascot forms (e.g. "Duke Blue Devils", "Ohio
+    State Buckeyes").  After stop-word removal and st→state expansion both
+    normalise to the same token sequence up to the mascot suffix.
+
+    Examples::
+
+        _wt_name_matches("duke", "duke blue devils")   → True
+        _wt_name_matches("ohio state", "ohio state buckeyes") → True
+        _wt_name_matches("texas", "texas a m aggies")  → False  (different 2nd token)
+    """
+    if not wt_norm or not espn_norm:
+        return False
+    if espn_norm == wt_norm:
+        return True
+    # wt tokens must exactly equal the leading tokens of espn
+    wt_tokens = wt_norm.split()
+    espn_tokens = espn_norm.split()
+    n = len(wt_tokens)
+    return n <= len(espn_tokens) and espn_tokens[:n] == wt_tokens
+
+
+def _attach_wagertalk_source(hist: pd.DataFrame, wagertalk: pd.DataFrame) -> pd.DataFrame:
+    """Attach WagerTalk data to the historical-games frame.
+
+    Matches each historical game row to a WagerTalk record by local game date
+    and normalised home / away team name.  Matching uses a prefix strategy so
+    that a short WagerTalk school name (e.g. "Duke") aligns with the full ESPN
+    form ("Duke Blue Devils") as long as the WagerTalk tokens are an exact
+    leading-token prefix of the ESPN tokens.  Matched rows receive
+    ``historical_odds_source = "wagertalk_historical_odds"`` and have
+    ``market_spread`` / ``market_total`` back-filled where those values are
+    currently NaN.  ``actual_home_covered`` is recomputed when a spread is
+    newly populated.
+
+    Args:
+        hist: Historical-games DataFrame from :func:`build_data_steward_frame`.
+        wagertalk: Raw WagerTalk DataFrame loaded from
+            ``wagertalk_historical_odds.csv``.
+
+    Returns:
+        Updated copy of *hist*.
+    """
+    if hist.empty or wagertalk.empty:
+        return hist
+
+    out = hist.copy()
+
+    # Derive local game-date key (YYYY-MM-DD).  Prefer the integer ``date``
+    # column (format YYYYMMDD) which matches the WagerTalk game_date exactly;
+    # fall back to extracting the calendar date from game_datetime_utc.
+    if "date" in out.columns:
+        date_series = pd.to_datetime(
+            out["date"].astype(str).str.zfill(8), format="%Y%m%d", errors="coerce"
+        ).dt.strftime("%Y-%m-%d")
+    else:
+        date_series = pd.to_datetime(
+            out.get("game_datetime_utc", pd.Series(pd.NaT, index=out.index)),
+            utc=True,
+            errors="coerce",
+        ).dt.strftime("%Y-%m-%d")
+    out["_gd"] = date_series
+
+    home_col = out["home_team"] if "home_team" in out.columns else pd.Series("", index=out.index)
+    away_col = out["away_team"] if "away_team" in out.columns else pd.Series("", index=out.index)
+    out["_hn"] = home_col.apply(_wt_normalize_name)
+    out["_an"] = away_col.apply(_wt_normalize_name)
+    # First-token keys for the initial (broader) merge.
+    out["_hk1"] = out["_hn"].str.split().str[0].fillna("")
+    out["_ak1"] = out["_an"].str.split().str[0].fillna("")
+
+    # Build the WagerTalk lookup table.
+    wt = wagertalk.copy()
+    wt_home = wt["home_team"] if "home_team" in wt.columns else pd.Series("", index=wt.index)
+    wt_away = wt["away_team"] if "away_team" in wt.columns else pd.Series("", index=wt.index)
+    wt["_wt_hn"] = wt_home.apply(_wt_normalize_name)
+    wt["_wt_an"] = wt_away.apply(_wt_normalize_name)
+    wt["_hk1"] = wt["_wt_hn"].str.split().str[0].fillna("")
+    wt["_ak1"] = wt["_wt_an"].str.split().str[0].fillna("")
+    wt["_wt_spread"] = _coalesce_numeric(wt, ["consensus_spread", "dk_spread", "fd_spread", "open_spread"])
+    wt["_wt_total"] = _coalesce_numeric(wt, ["consensus_total", "dk_total", "fd_total", "open_total"])
+
+    sort_col = "scraped_at_utc" if "scraped_at_utc" in wt.columns else wt.columns[0]
+    wt = wt.sort_values(sort_col, kind="stable")
+    # Dedup by full normalised names so same-first-token teams on the same date
+    # (e.g. "Texas" and "Texas Southern") remain separate rows in the lookup.
+    wt_lookup = wt.drop_duplicates(subset=["game_date", "_wt_hn", "_wt_an"], keep="last")[
+        ["game_date", "_hk1", "_ak1", "_wt_hn", "_wt_an", "_wt_spread", "_wt_total"]
+    ].copy()
+
+    # Initial join on (date, first-token-home, first-token-away).  This brings
+    # in multiple wagertalk candidates per ESPN game; we use a prefix filter
+    # in the next step to keep only the valid match.
+    merged = out.merge(
+        wt_lookup,
+        left_on=["_gd", "_hk1", "_ak1"],
+        right_on=["game_date", "_hk1", "_ak1"],
+        how="left",
+    )
+
+    # Vectorised prefix filter: the WagerTalk tokens must exactly equal the
+    # leading tokens of the ESPN name to accept the match.
+    wt_hn = merged["_wt_hn"].fillna("")
+    wt_an = merged["_wt_an"].fillna("")
+    espn_hn = merged["_hn"].fillna("")
+    espn_an = merged["_an"].fillna("")
+    home_ok = pd.Series(
+        [_wt_name_matches(w, e) for w, e in zip(wt_hn, espn_hn)], index=merged.index
+    )
+    away_ok = pd.Series(
+        [_wt_name_matches(w, e) for w, e in zip(wt_an, espn_an)], index=merged.index
+    )
+    valid_match = merged["game_date"].notna() & home_ok & away_ok
+
+    # Clear wagertalk values for rows where the prefix filter rejected the
+    # initial first-token match.
+    merged.loc[~valid_match, ["_wt_spread", "_wt_total", "game_date"]] = np.nan
+
+    # If the first-token merge produced duplicate ESPN rows (two wagertalk teams
+    # sharing the same first token on the same date), keep at most one wagertalk
+    # match per ESPN game by preferring valid-prefix matches.
+    if "event_id" in merged.columns and len(merged) > len(out):
+        merged["_match_rank"] = np.where(merged["game_date"].notna(), 0, 1)
+        merged = (
+            merged.sort_values("_match_rank", kind="stable")
+            .drop_duplicates(subset=["event_id"], keep="first")
+            .drop(columns=["_match_rank"])
+        )
+
+    matched_mask = merged["game_date"].notna() & (
+        merged["_wt_spread"].notna() | merged["_wt_total"].notna()
+    )
+    existing_source = merged.get("historical_odds_source", pd.Series(np.nan, index=merged.index))
+    merged["historical_odds_source"] = np.where(matched_mask, "wagertalk_historical_odds", existing_source)
+
+    if "market_spread" in merged.columns:
+        merged["market_spread"] = merged["market_spread"].where(
+            merged["market_spread"].notna(), merged["_wt_spread"]
+        )
+    else:
+        merged["market_spread"] = merged["_wt_spread"]
+
+    if "market_total" in merged.columns:
+        merged["market_total"] = merged["market_total"].where(
+            merged["market_total"].notna(), merged["_wt_total"]
+        )
+    else:
+        merged["market_total"] = merged["_wt_total"]
+
+    if "actual_margin" in merged.columns and "market_spread" in merged.columns:
+        merged["actual_home_covered"] = (
+            merged["actual_margin"] > home_spread_to_margin(merged["market_spread"])
+        )
+
+    tmp = ["_gd", "_hn", "_an", "_hk1", "_ak1", "game_date", "_wt_hn", "_wt_an", "_wt_spread", "_wt_total"]
+    merged = merged.drop(columns=[c for c in tmp if c in merged.columns], errors="ignore")
+
+    return merged
 
 
 def _pick_first(cols: list[str], candidates: list[str]) -> str | None:
@@ -458,12 +642,14 @@ def build_data_steward_frame(
     team_games = safe_read_csv(data_dir / "team_game_weighted.csv")
     market_by_game = safe_read_csv(data_dir / "market_lines_latest_by_game.csv")
     market_latest = safe_read_csv(data_dir / "market_lines_latest.csv")
+    wagertalk_odds = safe_read_csv(data_dir / "wagertalk_historical_odds.csv")
 
     audit: dict[str, Any] = {
         "inputs": {
             "games_rows": int(len(games)),
             "team_game_weighted_rows": int(len(team_games)),
             "market_rows": int(max(len(market_by_game), len(market_latest))),
+            "wagertalk_historical_odds_rows": int(len(wagertalk_odds)),
         },
         "as_of": as_of.isoformat(),
         "hours_ahead": int(hours_ahead),
@@ -495,6 +681,8 @@ def build_data_steward_frame(
         on="event_id",
         how="left",
     )
+
+    historical_frame = _attach_wagertalk_source(historical_frame, wagertalk_odds)
 
     audit["derived"] = {
         "upcoming_games": int(len(upcoming_frame)),
