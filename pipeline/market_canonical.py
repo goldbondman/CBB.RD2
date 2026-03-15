@@ -42,9 +42,14 @@ MARKET_SOURCE_SPECS = [
     ("market_lines_latest", "market_lines_latest.csv", 0),
     ("odds_snapshot", "odds_snapshot.csv", 1),
     ("market_lines", "market_lines.csv", 2),
-    ("market_lines_closing", "market_lines_closing.csv", 3),
-    ("market_lines_master", "market_lines_master.csv", 4),
+    ("market_lines_closing", "market_lines_closing.csv", 5),
+    ("market_lines_master", "market_lines_master.csv", 6),
 ]
+
+# ESPN DraftKings lines from the scoreboard (games.csv spread/over_under fields)
+# are treated as the primary live source (priority 3) — ahead of WagerTalk closing
+# lines (priority 5) so upcoming games always get a line when ESPN has one.
+ESPN_GAMES_SOURCE_PRIORITY = 3
 
 
 def canonicalize_event_id(value: Any) -> str:
@@ -209,7 +214,7 @@ def _build_games_fallback(data_dir: Path) -> pd.DataFrame:
     out["moneyline_away"] = pd.to_numeric(games.loc[out.index].get("away_ml"), errors="coerce")
     out["source"] = "espn_games"
     out["source_file"] = "games.csv"
-    out["source_priority"] = 90
+    out["source_priority"] = ESPN_GAMES_SOURCE_PRIORITY
     out["captured_at_utc"] = pd.NaT
     out["line_timestamp_utc"] = pd.NaT
     out["market_status"] = _status_from_lines(out["spread_line"], out["total_line"])

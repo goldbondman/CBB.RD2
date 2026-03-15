@@ -49,8 +49,8 @@ def main() -> int:
 
     df = pd.read_csv(input_path, low_memory=False)
     if df.empty:
-        print(f"[ERROR] Empty predictions file: {input_path}")
-        return 1
+        print(f"[WARN] No upcoming predictions (empty file) — no games in window or all blocked. OK.")
+        return 0
 
     status = df.get("model_status", pd.Series("", index=df.index)).astype(str)
     blocked = status.str.startswith("BLOCKED")

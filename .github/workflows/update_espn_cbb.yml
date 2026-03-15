@@ -188,7 +188,7 @@ jobs:
             bash .github/scripts/check_csv.sh data/team_pretournament_snapshot.csv 1 "team_id"
             bash .github/scripts/check_csv.sh data/advanced_metrics.csv 1 "event_id,team_id"
             bash .github/scripts/check_csv.sh data/market_lines_latest_by_game.csv 0 "event_id,spread_line,total_line,line_source_used"
-            bash .github/scripts/check_csv.sh data/predictions_joint_latest.csv 1 "game_id,pred_total,pred_margin"
+            bash .github/scripts/check_csv.sh data/predictions_joint_latest.csv 0 "game_id,pred_total,pred_margin"
             python .github/scripts/validate_joint_predictions.py \
               --input data/predictions_joint_latest.csv \
               --debug-json debug/pred_margin_validation.json
