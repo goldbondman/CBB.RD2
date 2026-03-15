@@ -21,7 +21,7 @@ on:
         default: "daily"
 
 concurrency:
-  group: cbb-data-pipeline
+  group: cbb-perplexity-pipeline
   cancel-in-progress: true
 
 permissions:

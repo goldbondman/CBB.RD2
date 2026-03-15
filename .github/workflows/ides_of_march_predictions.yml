@@ -29,7 +29,7 @@ on:
         default: "1"
 
 concurrency:
-  group: cbb-data-pipeline
+  group: cbb-ides-pipeline
   cancel-in-progress: true
 
 permissions:
