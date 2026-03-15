@@ -36,7 +36,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: cbb-data-pipeline
+  group: cbb-wagertalk-pipeline
   cancel-in-progress: false
 
 jobs:
@@ -96,8 +96,8 @@ jobs:
           fi
 
           if [[ "$mode" == "daily" ]]; then
-            start="$(date -d 'yesterday' +%F)"
-            end="$(date -d 'tomorrow' +%F)"
+            start="$(date -d '2 days ago' +%F)"
+            end="$(date -d '7 days' +%F)"
             force_refresh="true"
           elif [[ "$mode" == "backfill" ]]; then
             if [[ -n "$target" && (-n "$start" || -n "$end" || -n "$days_back") ]]; then
@@ -224,8 +224,44 @@ jobs:
           print(f"[INFO] range {df['game_date'].min()} -> {df['game_date'].max()} | rows={len(df)}")
           PY
 
-      - name: Upload artifact
-        if: always()
+      - name: Trim artifact to scrape window (daily only)
+        if: ${{ steps.target.outputs.run_mode == 'daily' }}
+        env:
+          START_DATE: ${{ steps.target.outputs.start_date }}
+          END_DATE: ${{ steps.target.outputs.end_date }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import pandas as pd
+
+          src = Path("data/wagertalk_historical_odds.csv")
+          dst = Path("data/artifact_staging/wagertalk_historical_odds.csv")
+          dst.parent.mkdir(parents=True, exist_ok=True)
+          start = os.environ["START_DATE"]
+          end = os.environ["END_DATE"]
+
+          df = pd.read_csv(src, low_memory=False)
+          if "game_date" in df.columns:
+              trimmed = df[(df["game_date"] >= start) & (df["game_date"] <= end)].copy()
+          else:
+              trimmed = df.copy()
+
+          trimmed.to_csv(dst, index=False)
+          print(f"[INFO] artifact trimmed: {len(df)} -> {len(trimmed)} rows ({start} .. {end})")
+          PY
+
+      - name: Upload artifact (daily — trimmed window)
+        if: ${{ always() && steps.target.outputs.run_mode == 'daily' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-wagertalk-historical-odds
+          if-no-files-found: error
+          retention-days: 30
+          path: data/artifact_staging/wagertalk_historical_odds.csv
+
+      - name: Upload artifact (backfill/custom — full file)
+        if: ${{ always() && steps.target.outputs.run_mode != 'daily' }}
         uses: actions/upload-artifact@v4
         with:
           name: INFRA-wagertalk-historical-odds
