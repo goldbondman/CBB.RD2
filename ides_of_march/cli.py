@@ -68,8 +68,8 @@ def build_parser() -> argparse.ArgumentParser:
     backtest.add_argument(
         "--require-wagertalk",
         action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Require WagerTalk historical odds to be present and matched in training rows (default: True).",
+        default=False,
+        help="Require WagerTalk historical odds to be present and matched in training rows (default: False).",
     )
 
     audit = sub.add_parser("audit", help="Run data-integrity audit for IDES pipeline")

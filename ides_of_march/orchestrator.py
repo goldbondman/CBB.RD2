@@ -1487,7 +1487,7 @@ class IDESOrchestrator:
         as_of: pd.Timestamp,
         start_date: str | None = None,
         end_date: str | None = None,
-        require_wagertalk: bool = True,
+        require_wagertalk: bool = False,
     ) -> RunResult:
         stages: list[StageRecord] = []
         outputs: dict[str, str] = {}
