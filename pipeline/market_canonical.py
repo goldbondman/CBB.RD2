@@ -39,17 +39,18 @@ CANONICAL_COLUMNS = [
 LATEST_BY_GAME_COLUMNS = CANONICAL_COLUMNS + ["line_source_used"]
 
 MARKET_SOURCE_SPECS = [
-    ("market_lines_latest", "market_lines_latest.csv", 0),
-    ("odds_snapshot", "odds_snapshot.csv", 1),
-    ("market_lines", "market_lines.csv", 2),
+    ("espn_games", "games.csv", 0),                          # ESPN DraftKings lines — first look
+    ("wagertalk_odds", "wagertalk_historical_odds.csv", 1),  # WagerTalk lines — second look
+    ("market_lines_latest", "market_lines_latest.csv", 2),
+    ("odds_snapshot", "odds_snapshot.csv", 3),
+    ("market_lines", "market_lines.csv", 4),
     ("market_lines_closing", "market_lines_closing.csv", 5),
     ("market_lines_master", "market_lines_master.csv", 6),
 ]
 
-# ESPN DraftKings lines from the scoreboard (games.csv spread/over_under fields)
-# are treated as the primary live source (priority 3) — ahead of WagerTalk closing
-# lines (priority 5) so upcoming games always get a line when ESPN has one.
-ESPN_GAMES_SOURCE_PRIORITY = 3
+# ESPN DraftKings lines from the scoreboard (games.csv spread/over_under fields).
+# Priority 0 = first source checked; WagerTalk at 1 = second; all others follow.
+ESPN_GAMES_SOURCE_PRIORITY = 0
 
 
 def canonicalize_event_id(value: Any) -> str:
