@@ -159,7 +159,7 @@ jobs:
           path: data/logs/contract_manifest_integrity.json
           retention-days: 14
 
-  backtest_calibration:
+  predict:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: integrity_gate
@@ -184,82 +184,18 @@ jobs:
           name: INFRA-ides-hydrated-inputs
           path: data/staging
 
-      - name: Merge hydrated inputs into data/
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import shutil
-
-          staging = Path("data/staging")
-          target = Path("data")
-          target.mkdir(parents=True, exist_ok=True)
-
-          preferred = {
-              "games.csv",
-              "team_game_weighted.csv",
-              "market_lines_latest_by_game.csv",
-              "market_lines_latest.csv",
-              "market_lines.csv",
-              "wagertalk_historical_odds.csv",
-          }
-          for path in staging.rglob("*"):
-              if not path.is_file():
-                  continue
-              if path.name not in preferred:
-                  continue
-              shutil.copy2(path, target / path.name)
-          PY
-
-      - name: Build IDES backtest calibration policy
-        run: |
-          python -m ides_of_march.cli backtest
-
-      - name: Upload IDES backtest calibration artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: INFRA-ides-backtest-calibration
-          if-no-files-found: error
-          path: |
-            data/reports/backtest_model_summary.csv
-            data/reports/backtest_edge_band_summary.csv
-            data/reports/backtest_bet_ledger.csv
-            data/reports/backtest_kelly_summary.csv
-            data/reports/backtest_calibration_policy.json
-            data/logs/pipeline_run_log.csv
-            data/logs/run_manifest.json
-          retention-days: 14
-
-  predict:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    needs: backtest_calibration
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          python -c "import pandas, numpy, scipy, sklearn"
-
-      - name: Download hydrated inputs
-        uses: actions/download-artifact@v4
-        with:
-          name: INFRA-ides-hydrated-inputs
-          path: data/staging
-
       - name: Download backtest calibration artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: INFRA-ides-backtest-calibration
-          path: data/backtest_calibration
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p data/backtest_calibration
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "ides_backtest_calibration.yml" \
+            --artifact-name "INFRA-ides-backtest-calibration" \
+            --branch "main" \
+            --max-runs 30 \
+            --dest "data/backtest_calibration" || { echo "[ERROR] Missing INFRA-ides-backtest-calibration — run ides_backtest_calibration.yml first"; exit 1; }
 
       - name: Merge hydrated inputs into data/
         run: |

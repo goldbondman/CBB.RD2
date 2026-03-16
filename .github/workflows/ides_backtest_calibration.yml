@@ -1,0 +1,113 @@
+name: IDES Backtest Calibration
+
+on:
+  schedule:
+    # 2 AM UTC daily — runs 2 hours before the prediction pipeline (4 AM UTC)
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: cbb-ides-backtest-calibration
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  TZ: UTC
+  PYTHONHASHSEED: "0"
+
+jobs:
+  backtest_calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -c "import pandas, numpy, scipy, sklearn"
+
+      - name: Hydrate upstream artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p data/staging
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "update_espn_cbb.yml" \
+            --artifact-name "INFRA-espn-data" \
+            --branch "main" \
+            --max-runs 30 \
+            --dest "data/staging" || { echo "[ERROR] Missing INFRA-espn-data"; exit 1; }
+
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "market_lines.yml" \
+            --artifact-name "INFRA-market-lines" \
+            --branch "main" \
+            --max-runs 30 \
+            --dest "data/staging" || { echo "[ERROR] Missing INFRA-market-lines"; exit 1; }
+
+          python .github/scripts/download_latest_artifact.py \
+            --repo "${{ github.repository }}" \
+            --workflow-file "wagertalk_historical_odds.yml" \
+            --artifact-name "INFRA-wagertalk-historical-odds" \
+            --branch "main" \
+            --max-runs 30 \
+            --dest "data/staging" || { echo "[ERROR] Missing INFRA-wagertalk-historical-odds"; exit 1; }
+
+      - name: Merge hydrated inputs into data/
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          staging = Path("data/staging")
+          target = Path("data")
+          target.mkdir(parents=True, exist_ok=True)
+
+          preferred = {
+              "games.csv",
+              "team_game_weighted.csv",
+              "market_lines_latest_by_game.csv",
+              "market_lines_latest.csv",
+              "market_lines.csv",
+              "wagertalk_historical_odds.csv",
+          }
+          for path in staging.rglob("*"):
+              if not path.is_file():
+                  continue
+              if path.name not in preferred:
+                  continue
+              shutil.copy2(path, target / path.name)
+          PY
+
+      - name: Build IDES backtest calibration policy
+        run: |
+          python -m ides_of_march.cli backtest --require-wagertalk
+
+      - name: Upload IDES backtest calibration artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: INFRA-ides-backtest-calibration
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            data/reports/backtest_model_summary.csv
+            data/reports/backtest_edge_band_summary.csv
+            data/reports/backtest_bet_ledger.csv
+            data/reports/backtest_kelly_summary.csv
+            data/reports/backtest_calibration_policy.json
+            data/logs/pipeline_run_log.csv
+            data/logs/run_manifest.json
