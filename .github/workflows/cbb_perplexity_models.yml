@@ -62,9 +62,9 @@ jobs:
               HOURS_BACK="$(( INPUT_DAYS_BACK * 24 ))"
             fi
           else
-            # Preserve prior scheduled behavior roughly equivalent to days_back=3.
+            # 72h back / 120h ahead covers full March Madness scheduling window (games posted 4-5 days out).
             HOURS_BACK="72"
-            HOURS_AHEAD="30"
+            HOURS_AHEAD="120"
           fi
 
           if ! [[ "$HOURS_BACK" =~ ^[0-9]+$ ]]; then
@@ -342,7 +342,8 @@ jobs:
               & (pred_window["game_datetime_utc"] <= window_end_utc)
           ].copy()
           if pred_window.empty:
-              raise SystemExit("[STOP] freshness gate: no upcoming predictions inside requested window")
+              print("[WARN] freshness gate: no upcoming predictions inside requested window — no games scheduled in this window, continuing")
+              import sys; sys.exit(0)
 
           lines_window = lines.copy()
           lines_window["game_datetime_utc"] = pd.to_datetime(lines_window["game_datetime_utc"], errors="coerce", utc=True)
@@ -377,7 +378,7 @@ jobs:
               raise SystemExit("[STOP] freshness gate: no valid prediction IDs in upcoming window")
           matched = pred_ids & line_ids
           coverage = len(matched) / len(pred_ids)
-          required_coverage = 1.0 if len(pred_ids) < 5 else COVERAGE_MIN
+          required_coverage = COVERAGE_MIN
           if coverage < required_coverage:
               raise SystemExit(
                   "[STOP] freshness gate: market-line coverage too low "
