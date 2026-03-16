@@ -322,6 +322,42 @@ jobs:
           lines_horizon = latest_ts(lines, ["game_datetime_utc", "game_date", "date"])
           if games_horizon is None or preds_horizon is None or lines_horizon is None:
               raise SystemExit("[STOP] freshness gate: unable to compute horizon coverage timestamps")
+
+          # Off-slate detection: games data is current (recently updated) but no future games
+          # are scheduled within the requested window. This happens between slates (e.g. the gap
+          # between conference tournaments ending and the NCAA tournament schedule being available).
+          # Treat this as a valid no-slate state rather than a data-staleness failure.
+          OFF_SLATE_MAX_GAME_AGE_HOURS = 48.0
+          games_age_h = (now_utc - games_horizon).total_seconds() / 3600.0
+          is_offslate = games_age_h <= OFF_SLATE_MAX_GAME_AGE_HOURS and games_horizon < horizon_min
+
+          if is_offslate:
+              print(
+                  f"[WARN] freshness gate: off-slate condition -- "
+                  f"games_horizon={games_horizon.isoformat()} (age={games_age_h:.1f}h <= "
+                  f"{OFF_SLATE_MAX_GAME_AGE_HOURS:.1f}h), "
+                  f"no games in window [{now_utc.isoformat()} -> {window_end_utc.isoformat()}]"
+              )
+              off_slate_report = {
+                  "now_utc": now_utc.isoformat(),
+                  "window_end_utc": window_end_utc.isoformat(),
+                  "games_horizon_utc": games_horizon.isoformat(),
+                  "games_horizon_age_hours": round(games_age_h, 3),
+                  "off_slate": True,
+                  "off_slate_reason": (
+                      "games data current but no upcoming games in requested window"
+                  ),
+              }
+              Path("debug").mkdir(parents=True, exist_ok=True)
+              Path("debug/perplexity_freshness_gate.json").write_text(
+                  json.dumps(off_slate_report, indent=2), encoding="utf-8"
+              )
+              print(
+                  "[OK] freshness gate passed (off-slate: data is current at "
+                  f"games_horizon={games_horizon.isoformat()}, no upcoming games)"
+              )
+              raise SystemExit(0)
+
           if games_horizon < horizon_min:
               raise SystemExit("[STOP] freshness gate: games horizon does not reach requested window")
           if preds_horizon < horizon_min:
