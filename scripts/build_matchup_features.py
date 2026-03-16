@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 from pathlib import Path
@@ -47,6 +48,12 @@ def _m(row: pd.Series | None, col: str, default: float = np.nan) -> float:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--hours-back", type=int, default=0,
+                        help="Include completed games whose start time falls within this many hours before now.")
+    args = parser.parse_args()
+    hours_back = args.hours_back
+
     audit = json.loads(Path("data/internal/audit_report.json").read_text(encoding="utf-8"))
     metrics = pd.read_csv("data/internal/core_metrics.csv", low_memory=False)
     market = pd.read_csv("data/market_lines_latest_by_game.csv", low_memory=False)
@@ -175,7 +182,9 @@ def main() -> int:
     rows: list[dict[str, object]] = []
     skipped: list[dict[str, str]] = []
     local_tz = ZoneInfo(DEFAULT_PIPELINE_TIMEZONE)
-    today_local = pd.Timestamp.now(tz=local_tz).date()
+    now_utc = pd.Timestamp.now(tz="UTC")
+    today_local = now_utc.astimezone(local_tz).date()
+    lookback_start = now_utc - pd.Timedelta(hours=hours_back) if hours_back > 0 else now_utc
 
     for _, game in market.iterrows():
         gdate = game[date_col]
@@ -263,11 +272,15 @@ def main() -> int:
         if event_id_value in score_map:
             home_score, away_score = score_map[event_id_value]
         has_scores = pd.notna(home_score) and pd.notna(away_score)
+        in_lookback = pd.notna(gdate) and (lookback_start <= gdate <= now_utc)
         if result_col and result_col in market.columns:
-            is_upcoming = pd.isna(game.get(result_col))
+            is_upcoming = pd.isna(game.get(result_col)) or in_lookback
         else:
             game_local_date = gdate.tz_convert(local_tz).date() if pd.notna(gdate) else None
-            is_upcoming = (not has_scores) and (game_local_date is not None) and (game_local_date >= today_local)
+            is_upcoming = (
+                ((not has_scores) and (game_local_date is not None) and (game_local_date >= today_local))
+                or (has_scores and in_lookback)
+            )
 
         rows.append(
             {

@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       hours_back:
-        description: "How many hours back from now to include (manual runs)"
+        description: "Hours back from now to include games (upcoming and recently completed). E.g. 100 generates picks for all games in the past 100 hours using only pre-game data for each."
         required: false
         default: "24"
       hours_ahead:
@@ -496,7 +496,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python scripts/build_matchup_features.py
+          python scripts/build_matchup_features.py --hours-back "${{ steps.resolve_inputs.outputs.hours_back }}"
           echo "[OK] matchup features written"
 
       - name: Train models
