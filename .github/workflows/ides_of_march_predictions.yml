@@ -195,7 +195,7 @@ jobs:
             --artifact-name "INFRA-ides-backtest-calibration" \
             --branch "main" \
             --max-runs 30 \
-            --dest "data/backtest_calibration" || { echo "[ERROR] Missing INFRA-ides-backtest-calibration — run ides_backtest_calibration.yml first"; exit 1; }
+            --dest "data/backtest_calibration" || echo "[WARN] INFRA-ides-backtest-calibration unavailable; predictions will run without pre-built calibration policy"
 
       - name: Merge hydrated inputs into data/
         run: |

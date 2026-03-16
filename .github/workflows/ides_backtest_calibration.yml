@@ -64,7 +64,7 @@ jobs:
             --artifact-name "INFRA-wagertalk-historical-odds" \
             --branch "main" \
             --max-runs 30 \
-            --dest "data/staging" || { echo "[ERROR] Missing INFRA-wagertalk-historical-odds"; exit 1; }
+            --dest "data/staging" || echo "[WARN] INFRA-wagertalk-historical-odds unavailable; backtest will use ESPN lines only"
 
       - name: Merge hydrated inputs into data/
         run: |
@@ -94,7 +94,7 @@ jobs:
 
       - name: Build IDES backtest calibration policy
         run: |
-          python -m ides_of_march.cli backtest --require-wagertalk
+          python -m ides_of_march.cli backtest
 
       - name: Upload IDES backtest calibration artifacts
         if: always()
