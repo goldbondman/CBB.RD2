@@ -667,9 +667,11 @@ def build_data_steward_frame(
     horizon_start = as_of - pd.Timedelta(hours=hours_back)
     horizon_end = as_of + pd.Timedelta(hours=hours_ahead)
     upcoming_games = games_norm[
-        (~completed)
-        & (games_norm["game_datetime_utc"] >= horizon_start)
-        & (games_norm["game_datetime_utc"] <= horizon_end)
+        (games_norm["game_datetime_utc"] >= horizon_start)
+        & (
+            (~completed & (games_norm["game_datetime_utc"] <= horizon_end))
+            | (completed & (games_norm["game_datetime_utc"] <= as_of))
+        )
     ].copy()
     completed_games = games_norm[completed].copy()
 

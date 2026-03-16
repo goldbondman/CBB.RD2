@@ -24,7 +24,7 @@ on:
         required: false
         default: "48"
       hours_back:
-        description: "Hours prior to run time to include recently started games"
+        description: "Hours prior to run time to include games (upcoming and recently completed). Set to e.g. 100 to generate predictions for all games in the past 100 hours using only pre-game data for each."
         required: false
         default: "1"
 
