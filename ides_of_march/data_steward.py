@@ -53,6 +53,78 @@ _WIN_PROB_AWAY_CANDIDATES: list[str] = [
 _RE_NON_ALPHA = re.compile(r"[^a-z0-9 ]+")
 _WT_STOP_WORDS = frozenset({"university", "college", "of", "the", "at", "and"})
 
+# ---------------------------------------------------------------------------
+# KenPom lookup cache (loaded once per process)
+# ---------------------------------------------------------------------------
+_KENPOM_LOOKUP: pd.DataFrame | None = None
+
+
+def _load_kenpom(data_dir: Path) -> pd.DataFrame:
+    """Load KenPom ratings and build a normalised-name lookup table."""
+    global _KENPOM_LOOKUP
+    if _KENPOM_LOOKUP is not None:
+        return _KENPOM_LOOKUP
+    path = data_dir / "kenpom_ratings.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    kp = pd.read_csv(path, dtype=str)
+    for col in ("kenpom_rank", "adj_o", "adj_d", "adj_em", "barthag", "seed"):
+        kp[col] = pd.to_numeric(kp.get(col, pd.Series(dtype=float)), errors="coerce")
+    kp["_kp_norm"] = kp["team_name"].apply(_wt_normalize_name)
+    _KENPOM_LOOKUP = kp
+    return kp
+
+
+def _join_kenpom(out: pd.DataFrame, kp: pd.DataFrame, side: str) -> pd.DataFrame:
+    """Left-join KenPom columns onto *out* for one side (home or away).
+
+    Uses the same prefix-matching strategy as WagerTalk: KenPom abbreviated
+    names (e.g. "Iowa St.") must be an exact leading-token prefix of the ESPN
+    full name ("Iowa State Cyclones") after normalisation.
+    """
+    if kp.empty:
+        return out
+
+    team_col = f"{side}_team"
+    if team_col not in out.columns:
+        return out
+
+    espn_norm = out[team_col].apply(_wt_normalize_name)
+    # First-token key for fast pre-filter
+    espn_first = espn_norm.str.split().str[0].fillna("")
+
+    kp_first = kp["_kp_norm"].str.split().str[0].fillna("")
+    kp_lookup = kp.set_index(kp_first)
+
+    kenpom_adj_em = pd.Series(np.nan, index=out.index)
+    kenpom_adj_o  = pd.Series(np.nan, index=out.index)
+    kenpom_adj_d  = pd.Series(np.nan, index=out.index)
+    kenpom_barthag = pd.Series(np.nan, index=out.index)
+    kenpom_rank    = pd.Series(np.nan, index=out.index)
+    kenpom_seed    = pd.Series(np.nan, index=out.index)
+
+    for idx, espn_nm, first_tok in zip(out.index, espn_norm, espn_first):
+        if first_tok not in kp_lookup.index:
+            continue
+        candidates = kp_lookup.loc[[first_tok]]
+        for _, row in candidates.iterrows():
+            if _wt_name_matches(row["_kp_norm"], espn_nm):
+                kenpom_adj_em[idx]  = row["adj_em"]
+                kenpom_adj_o[idx]   = row["adj_o"]
+                kenpom_adj_d[idx]   = row["adj_d"]
+                kenpom_barthag[idx] = row["barthag"]
+                kenpom_rank[idx]    = row["kenpom_rank"]
+                kenpom_seed[idx]    = row["seed"] if pd.notna(row["seed"]) else np.nan
+                break
+
+    out[f"{side}_kenpom_adj_em"]  = kenpom_adj_em
+    out[f"{side}_kenpom_adj_o"]   = kenpom_adj_o
+    out[f"{side}_kenpom_adj_d"]   = kenpom_adj_d
+    out[f"{side}_kenpom_barthag"] = kenpom_barthag
+    out[f"{side}_kenpom_rank"]    = kenpom_rank
+    out[f"{side}_seed"]           = kenpom_seed
+    return out
+
 
 def _wt_normalize_name(name: str) -> str:
     """Normalise a team name for WagerTalk matching.
@@ -446,8 +518,19 @@ def _build_team_history(team_games: pd.DataFrame) -> pd.DataFrame:
     df["Last12_AdjEM"] = df["adj_em_l12"]
     df["Form_Delta"] = df["Last5_AdjEM"] - df["Last12_AdjEM"]
 
+    # Season-long talent anchor: all prior games in the season (min 6).
+    # Used to stabilise extreme-mismatch predictions against recency bias.
+    shifted_adj_em = grouped["adj_em"].shift(1)
+    df["adj_em_season"] = (
+        shifted_adj_em
+        .groupby([df["team_id"], df["season_id"]])
+        .expanding(min_periods=6)
+        .mean()
+        .reset_index(level=[0, 1], drop=True)
+    )
+
     if df["sos_pre"].isna().all():
-        df["sos_pre"] = grouped["adj_em"].shift(1).groupby([df["team_id"], df["season_id"]]).rolling(12, min_periods=6).mean().reset_index(level=[0, 1], drop=True)
+        df["sos_pre"] = shifted_adj_em.groupby([df["team_id"], df["season_id"]]).rolling(12, min_periods=6).mean().reset_index(level=[0, 1], drop=True)
 
     return df
 
@@ -522,6 +605,7 @@ def _merge_team_asof(games: pd.DataFrame, team_history: pd.DataFrame, *, side: s
     base_cols = [
         "adj_em_l5",
         "adj_em_l12",
+        "adj_em_season",
         "Last5_AdjEM",
         "Last12_AdjEM",
         "Form_Delta",
@@ -564,7 +648,7 @@ def _merge_team_asof(games: pd.DataFrame, team_history: pd.DataFrame, *, side: s
     return merged[keep]
 
 
-def _build_game_feature_frame(games: pd.DataFrame, market: pd.DataFrame, team_history: pd.DataFrame, as_of: pd.Timestamp) -> pd.DataFrame:
+def _build_game_feature_frame(games: pd.DataFrame, market: pd.DataFrame, team_history: pd.DataFrame, as_of: pd.Timestamp, *, data_dir: Path = DATA_DIR) -> pd.DataFrame:
     g = games.copy()
     g = g[g["game_datetime_utc"].notna()].copy()
     g = g.sort_values("game_datetime_utc", kind="mergesort")
@@ -600,6 +684,7 @@ def _build_game_feature_frame(games: pd.DataFrame, market: pd.DataFrame, team_hi
     out["sos_diff"] = pd.to_numeric(out.get("home_sos_pre"), errors="coerce") - pd.to_numeric(out.get("away_sos_pre"), errors="coerce")
 
     out["adj_em_margin_l12"] = pd.to_numeric(out.get("home_adj_em_l12"), errors="coerce") - pd.to_numeric(out.get("away_adj_em_l12"), errors="coerce")
+    out["adj_em_margin_season"] = pd.to_numeric(out.get("home_adj_em_season"), errors="coerce") - pd.to_numeric(out.get("away_adj_em_season"), errors="coerce")
     out["efg_margin_l5"] = pd.to_numeric(out.get("home_efg_pct_l5"), errors="coerce") - pd.to_numeric(out.get("away_efg_pct_l5"), errors="coerce")
     out["to_margin_l5"] = pd.to_numeric(out.get("away_tov_pct_l5"), errors="coerce") - pd.to_numeric(out.get("home_tov_pct_l5"), errors="coerce")
     out["oreb_margin_l5"] = pd.to_numeric(out.get("home_orb_pct_l5"), errors="coerce") - pd.to_numeric(out.get("away_orb_pct_l5"), errors="coerce")
@@ -614,6 +699,19 @@ def _build_game_feature_frame(games: pd.DataFrame, market: pd.DataFrame, team_hi
         (110.0 + pd.to_numeric(out.get("home_adj_em_l12"), errors="coerce") / 2.0)
         + (110.0 + pd.to_numeric(out.get("away_adj_em_l12"), errors="coerce") / 2.0)
     ) / 100.0
+
+    # ── KenPom absolute team quality + seeds ─────────────────────────────────
+    # Join KenPom ratings (adj_em, adj_o, adj_d, seed) to home/away teams.
+    # KenPom AdjEM is a full-season absolute efficiency margin that is far more
+    # discriminating than the rolling ESPN adj_net_rtg for extreme mismatches.
+    kp = _load_kenpom(data_dir)
+    if not kp.empty:
+        out = _join_kenpom(out, kp, "home")
+        out = _join_kenpom(out, kp, "away")
+        out["kenpom_adj_em_margin"] = (
+            pd.to_numeric(out.get("home_kenpom_adj_em"), errors="coerce")
+            - pd.to_numeric(out.get("away_kenpom_adj_em"), errors="coerce")
+        )
 
     out["active_as_of_utc"] = as_of
     return out
@@ -675,8 +773,8 @@ def build_data_steward_frame(
     ].copy()
     completed_games = games_norm[completed].copy()
 
-    upcoming_frame = _build_game_feature_frame(upcoming_games, market_norm, team_history, as_of)
-    historical_feature_frame = _build_game_feature_frame(completed_games, market_norm, team_history, as_of)
+    upcoming_frame = _build_game_feature_frame(upcoming_games, market_norm, team_history, as_of, data_dir=data_dir)
+    historical_feature_frame = _build_game_feature_frame(completed_games, market_norm, team_history, as_of, data_dir=data_dir)
     labels = _build_historical_labels(completed_games, market_norm)
     historical_frame = historical_feature_frame.merge(
         labels[["event_id", "actual_margin", "actual_total", "home_won", "actual_home_covered"]],
