@@ -184,7 +184,6 @@ def main() -> int:
     local_tz = ZoneInfo(DEFAULT_PIPELINE_TIMEZONE)
     now_utc = pd.Timestamp.now(tz="UTC")
     today_local = now_utc.astimezone(local_tz).date()
-    lookback_start = now_utc - pd.Timedelta(hours=hours_back) if hours_back > 0 else now_utc
 
     for _, game in market.iterrows():
         gdate = game[date_col]
@@ -272,14 +271,15 @@ def main() -> int:
         if event_id_value in score_map:
             home_score, away_score = score_map[event_id_value]
         has_scores = pd.notna(home_score) and pd.notna(away_score)
-        in_lookback = pd.notna(gdate) and (lookback_start <= gdate <= now_utc)
+        game_local_date = gdate.tz_convert(local_tz).date() if pd.notna(gdate) else None
         if result_col and result_col in market.columns:
-            is_upcoming = pd.isna(game.get(result_col)) or in_lookback
+            # Upcoming = game has no recorded result yet AND is scheduled for today or later.
+            # The date check guards against stale/delayed ingestion leaving old games with null results.
+            is_upcoming = pd.isna(game.get(result_col)) and (game_local_date is not None) and (game_local_date >= today_local)
         else:
-            game_local_date = gdate.tz_convert(local_tz).date() if pd.notna(gdate) else None
+            # Upcoming = no final scores recorded AND game date is today or in the future.
             is_upcoming = (
-                ((not has_scores) and (game_local_date is not None) and (game_local_date >= today_local))
-                or (has_scores and in_lookback)
+                (not has_scores) and (game_local_date is not None) and (game_local_date >= today_local)
             )
 
         rows.append(
