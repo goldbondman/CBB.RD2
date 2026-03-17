@@ -72,10 +72,12 @@ def apply_base_strength(game_frame: pd.DataFrame) -> pd.DataFrame:
     kenpom_margin = pd.to_numeric(out.get("kenpom_adj_em_margin"), errors="coerce")
     has_kenpom = kenpom_margin.notna() & is_ncaa_tourney
 
+    # espn_blended_adj_em is a numpy ndarray; wrap as Series so fillna accepts it
+    espn_blended_s = pd.Series(espn_blended_adj_em, index=out.index)
     blended_adj_em = np.where(
         has_kenpom,
         (1.0 - KENPOM_TOURNAMENT_WEIGHT) * espn_blended_adj_em
-        + KENPOM_TOURNAMENT_WEIGHT * kenpom_margin.fillna(espn_blended_adj_em),
+        + KENPOM_TOURNAMENT_WEIGHT * kenpom_margin.fillna(espn_blended_s),
         espn_blended_adj_em,
     )
     out["adj_em_blended"] = blended_adj_em
