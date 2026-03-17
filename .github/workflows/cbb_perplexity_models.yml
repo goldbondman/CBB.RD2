@@ -8,13 +8,13 @@ on:
   workflow_dispatch:
     inputs:
       hours_back:
-        description: "Hours back from now to include games (upcoming and recently completed). E.g. 100 generates picks for all games in the past 100 hours using only pre-game data for each."
+        description: "Hours back from now to fetch historical game data for model features (used for data ingestion window, does not include completed games in picks output)."
         required: false
         default: "24"
       hours_ahead:
         description: "How many hours ahead from now to include (manual runs)"
         required: false
-        default: "48"
+        default: "96"
       run_mode:
         description: "Execution mode label"
         required: false
@@ -56,7 +56,7 @@ jobs:
 
           if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
             HOURS_BACK="${INPUT_HOURS_BACK:-24}"
-            HOURS_AHEAD="${INPUT_HOURS_AHEAD:-30}"
+            HOURS_AHEAD="${INPUT_HOURS_AHEAD:-96}"
             # Backward compatibility for callers still sending days_back programmatically.
             if [[ -z "${INPUT_HOURS_BACK:-}" && -n "${INPUT_DAYS_BACK:-}" && "${INPUT_DAYS_BACK}" =~ ^[0-9]+$ ]]; then
               HOURS_BACK="$(( INPUT_DAYS_BACK * 24 ))"
