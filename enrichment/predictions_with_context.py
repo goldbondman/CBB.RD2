@@ -343,6 +343,21 @@ def _enrich_ats_records(df: pd.DataFrame) -> pd.DataFrame:
     map_df = summary[["team_id", "ats_wins", "ats_losses"]].copy()
     map_df["team_id"] = map_df["team_id"].astype(str).str.strip()
 
+    # Drop any pre-existing ATS columns and their _x/_y collision variants to
+    # prevent pandas MergeError when the source DataFrame already carries these
+    # columns (e.g. committed predictions CSVs that include ATS data).
+    ats_cols = [
+        "home_ats_wins", "home_ats_losses",
+        "away_ats_wins", "away_ats_losses",
+    ]
+    drop_variants = []
+    for col in ats_cols:
+        for variant in (col, f"{col}_x", f"{col}_y"):
+            if variant in df.columns:
+                drop_variants.append(variant)
+    if drop_variants:
+        df = df.drop(columns=drop_variants)
+
     if "home_team_id" in df.columns:
         df["home_team_id"] = df["home_team_id"].astype(str).str.strip()
         home_map = map_df.rename(columns={
