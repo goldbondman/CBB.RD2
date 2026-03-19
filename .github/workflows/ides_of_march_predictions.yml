@@ -72,7 +72,8 @@ jobs:
             --artifact-name "INFRA-market-lines" \
             --branch "main" \
             --max-runs 30 \
-            --dest "data/staging" || { echo "[ERROR] Missing INFRA-market-lines"; exit 1; }
+            --allow-failed-runs \
+            --dest "data/staging" || { echo "[WARN] INFRA-market-lines unavailable; predictions will run without fresh market data"; }
 
           python .github/scripts/download_latest_artifact.py \
             --repo "${{ github.repository }}" \

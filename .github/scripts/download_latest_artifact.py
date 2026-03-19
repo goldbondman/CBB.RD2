@@ -181,41 +181,67 @@ def _find_artifact(
     branch: str,
     max_runs: int,
     token: str,
+    allow_failed_runs: bool = False,
 ) -> tuple[int, dict[str, Any], int]:
     workflow_ref = urllib.parse.quote(workflow_file, safe="")
-    runs_path = (
-        f"/repos/{repo}/actions/workflows/{workflow_ref}/runs"
-        f"?status=success&branch={urllib.parse.quote(branch, safe='')}&per_page={max_runs}"
-    )
-    runs_payload = _api_json(runs_path, token, stage="LOOKUP_FAILED")
-    runs = runs_payload.get("workflow_runs", [])
-    if not runs:
+    branch_enc = urllib.parse.quote(branch, safe="")
+
+    def _search_runs(status: str) -> tuple[list[Any], int | None, dict[str, Any] | None]:
+        runs_path = (
+            f"/repos/{repo}/actions/workflows/{workflow_ref}/runs"
+            f"?status={status}&branch={branch_enc}&per_page={max_runs}"
+        )
+        payload = _api_json(runs_path, token, stage="LOOKUP_FAILED")
+        candidate_runs = payload.get("workflow_runs", [])
+        for run in candidate_runs:
+            run_id = int(run["id"])
+            artifacts_payload = _api_json(
+                f"/repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100",
+                token,
+                stage="LOOKUP_FAILED",
+            )
+            for artifact in artifacts_payload.get("artifacts", []):
+                if artifact.get("name") != artifact_name:
+                    continue
+                if artifact.get("expired"):
+                    continue
+                if int(artifact.get("size_in_bytes", 0)) <= 0:
+                    continue
+                return candidate_runs, run_id, artifact
+        return candidate_runs, None, None
+
+    # Always try successful runs first.
+    success_runs, run_id, artifact = _search_runs("success")
+    if run_id is not None and artifact is not None:
+        return run_id, artifact, len(success_runs)
+
+    if not success_runs:
+        no_runs_msg = (
+            f"No successful runs found for workflow '{workflow_file}' on branch '{branch}'."
+        )
+        if not allow_failed_runs:
+            raise ArtifactDownloadError("LOOKUP_FAILED", no_runs_msg)
+
+    # Optionally fall back to completed (potentially failed) runs.  Workflows
+    # that upload artifacts via ``if: always()`` will have valid data even when
+    # the overall job conclusion is failure.
+    if allow_failed_runs:
+        failed_runs, run_id, artifact = _search_runs("failure")
+        total_searched = len(success_runs) + len(failed_runs)
+        if run_id is not None and artifact is not None:
+            return run_id, artifact, total_searched
         raise ArtifactDownloadError(
             "LOOKUP_FAILED",
-            f"No successful runs found for workflow '{workflow_file}' on branch '{branch}'.",
+            "No matching non-expired artifact found (searched successful and failed runs). "
+            f"workflow='{workflow_file}', artifact='{artifact_name}', branch='{branch}', "
+            f"searched_runs={total_searched}.",
         )
-
-    for run in runs:
-        run_id = int(run["id"])
-        artifacts_payload = _api_json(
-            f"/repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100",
-            token,
-            stage="LOOKUP_FAILED",
-        )
-        for artifact in artifacts_payload.get("artifacts", []):
-            if artifact.get("name") != artifact_name:
-                continue
-            if artifact.get("expired"):
-                continue
-            if int(artifact.get("size_in_bytes", 0)) <= 0:
-                continue
-            return run_id, artifact, len(runs)
 
     raise ArtifactDownloadError(
         "LOOKUP_FAILED",
         "No matching non-expired artifact found. "
         f"workflow='{workflow_file}', artifact='{artifact_name}', branch='{branch}', "
-        f"searched_runs={len(runs)}.",
+        f"searched_runs={len(success_runs)}.",
     )
 
 
@@ -249,6 +275,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--branch", default="main", help="Branch to search (default: main)")
     parser.add_argument("--dest", required=True, type=Path, help="Destination folder for extracted artifact")
     parser.add_argument("--max-runs", type=int, default=50, help="Maximum successful runs to inspect")
+    parser.add_argument(
+        "--allow-failed-runs",
+        action="store_true",
+        default=False,
+        help=(
+            "When no artifact is found in successful runs, also search the most recent "
+            "failed runs. Useful for workflows that upload artifacts via 'if: always()'."
+        ),
+    )
     parser.add_argument(
         "--debug-json",
         type=Path,
@@ -286,6 +321,7 @@ def main() -> int:
             branch=args.branch,
             max_runs=args.max_runs,
             token=token,
+            allow_failed_runs=args.allow_failed_runs,
         )
         artifact_id = int(artifact["id"])
         size = int(artifact.get("size_in_bytes", 0))
