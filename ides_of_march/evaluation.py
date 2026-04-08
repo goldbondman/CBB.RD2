@@ -13,7 +13,7 @@ from .layer2_context import apply_context_adjustments
 from .layer3_situational import apply_situational_layer, discover_situational_rules
 from .layer4_monte_carlo import apply_monte_carlo_layer
 from .layer5_agreement import apply_agreement_layer, summarize_agreement_buckets
-from .layer6_decision import apply_decision_layer, fit_direct_win_model
+from .layer6_decision import DirectWinModel, apply_decision_layer, fit_direct_win_model
 
 
 EDGE_BANDS: list[tuple[str, float, float | None]] = [
@@ -355,18 +355,38 @@ def _apply_variant_totals_projection(frame: pd.DataFrame, variant: Variant) -> p
     return out
 
 
-def _apply_variant(train_df: pd.DataFrame, test_df: pd.DataFrame, variant: Variant) -> tuple[pd.DataFrame, pd.DataFrame]:
-    train = apply_base_strength(train_df)
-    train = apply_context_adjustments(train)
-    test = apply_base_strength(test_df)
-    test = apply_context_adjustments(test)
+def _apply_variant(
+    ctx_train: pd.DataFrame,
+    ctx_test: pd.DataFrame,
+    variant: Variant,
+    *,
+    rulebook_sit: pd.DataFrame,
+    direct_model_b: DirectWinModel | None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Apply a single variant to pre-computed base+context frames.
+
+    Parameters
+    ----------
+    ctx_train:
+        Training frame already processed by apply_base_strength + apply_context_adjustments.
+    ctx_test:
+        Test frame already processed by apply_base_strength + apply_context_adjustments.
+    rulebook_sit:
+        Pre-computed situational rulebook (from discover_situational_rules on ctx_train).
+        Used when variant.situational_on is True; ignored otherwise.
+    direct_model_b:
+        Pre-fitted DirectWinModel for win_prob="B" variants (trained on the raw training data).
+        Passed as None when win_prob != "B".
+    """
+    train = ctx_train.copy()
+    test = ctx_test.copy()
 
     if variant.situational_on:
-        rulebook = discover_situational_rules(train)
+        rulebook = rulebook_sit
         train = apply_situational_layer(train, rulebook)
         test = apply_situational_layer(test, rulebook)
     else:
-        rulebook = discover_situational_rules(train.iloc[0:0])
+        rulebook = pd.DataFrame()
         for frame in (train, test):
             frame["situational_active_rules"] = ""
             frame["situational_score"] = 0.0
@@ -385,7 +405,7 @@ def _apply_variant(train_df: pd.DataFrame, test_df: pd.DataFrame, variant: Varia
     train = _apply_variant_totals_projection(train, variant)
     test = _apply_variant_totals_projection(test, variant)
 
-    direct_model = fit_direct_win_model(train) if variant.win_prob == "B" else None
+    direct_model = direct_model_b if variant.win_prob == "B" else None
     train = apply_decision_layer(train, direct_win_model=direct_model, mc_mode=variant.mc_mode)
     test = apply_decision_layer(test, direct_win_model=direct_model, mc_mode=variant.mc_mode)
 
@@ -806,16 +826,34 @@ def run_variant_backtest(historical_games: pd.DataFrame) -> BacktestArtifacts:
         min_train = max(1, len(df) - 1)
     windows = [(np.arange(0, min_train), np.arange(min_train, len(df)))]
 
+    # Pre-compute invariant stages that do not depend on any variant parameter.
+    # apply_base_strength and apply_context_adjustments are pure functions of the
+    # input data, so we compute them once per (train, test) window instead of
+    # once per variant (24×).  discover_situational_rules and fit_direct_win_model
+    # are likewise independent of variant parameters and are pre-computed once.
+    _precomputed: list[tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, DirectWinModel | None]] = []
+    for train_idx, test_idx in windows:
+        raw_train = df.iloc[train_idx].copy()
+        raw_test = df.iloc[test_idx].copy()
+        if raw_train.empty or raw_test.empty:
+            _precomputed.append((raw_train, raw_test, pd.DataFrame(), None))
+            continue
+        ctx_train = apply_context_adjustments(apply_base_strength(raw_train))
+        ctx_test = apply_context_adjustments(apply_base_strength(raw_test))
+        rulebook_sit = discover_situational_rules(ctx_train)
+        # fit_direct_win_model uses only DIRECT_WIN_FEATURES which are original input
+        # columns never mutated by any layer, so raw_train and ctx_train are equivalent.
+        direct_model_b = fit_direct_win_model(raw_train)
+        _precomputed.append((ctx_train, ctx_test, rulebook_sit, direct_model_b))
+
     score_rows: list[dict[str, object]] = []
     ledgers: list[pd.DataFrame] = []
     for variant in variant_matrix():
         scored_parts: list[pd.DataFrame] = []
-        for train_idx, test_idx in windows:
-            train = df.iloc[train_idx].copy()
-            test = df.iloc[test_idx].copy()
-            if train.empty or test.empty:
+        for (ctx_train, ctx_test, rulebook_sit, direct_model_b) in _precomputed:
+            if ctx_train.empty or ctx_test.empty:
                 continue
-            scored, _ = _apply_variant(train, test, variant)
+            scored, _ = _apply_variant(ctx_train, ctx_test, variant, rulebook_sit=rulebook_sit, direct_model_b=direct_model_b)
             scored_parts.append(scored)
 
         scored_all = pd.concat(scored_parts, ignore_index=True) if scored_parts else pd.DataFrame()
